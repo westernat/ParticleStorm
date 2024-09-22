@@ -1,0 +1,17 @@
+{
+    "required": true,
+    "minVersion": "0.8",
+    "package": "org.mesdag.particlestorm.mixin",
+    "compatibilityLevel": "JAVA_8",
+    "refmap": "particlestorm.refmap.json",
+    "mixins": [
+    ],
+    "client": [
+        "MinecraftMixin",
+        "ParticleEngineAccessor",
+        "TextureAtlasMixin"
+    ],
+    "injectors": {
+        "defaultRequire": 1
+  }
+}
