@@ -6,7 +6,9 @@ import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.particle.ParticleProvider;
 import net.minecraft.client.particle.ParticleRenderType;
 import net.minecraft.client.particle.TextureSheetParticle;
+import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.util.Mth;
+import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.Level;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
@@ -16,6 +18,7 @@ import org.joml.Vector3f;
 import org.mesdag.particlestorm.GameClient;
 import org.mesdag.particlestorm.ITextureAtlasSprite;
 import org.mesdag.particlestorm.data.component.IParticleComponent;
+import org.mesdag.particlestorm.data.molang.compiler.value.Variable;
 
 import java.util.Collection;
 import java.util.Objects;
@@ -24,17 +27,18 @@ import java.util.stream.Collectors;
 @OnlyIn(Dist.CLIENT)
 public class MolangParticleInstance extends TextureSheetParticle {
     public static final int FULL_LIGHT = 0xF000F0;
+    public final RandomSource random;
     public final ParticleDetail detail;
     protected final Collection<IParticleComponent> components;
-    public float uScale;
-    public float vScale;
+    public float originX;
+    public float originY;
     public float xRot = 0.0F;
     public float yRot = 0.0F;
     protected float xRotO = 0.0F;
     protected float yRotO = 0.0F;
     public float rolld = 0.0F;
-    public float[] billboardSize;
 
+    public float[] billboardSize;
     public float[] uvSize;
     public float[] uvStep;
     public int maxFrame = 1;
@@ -43,10 +47,15 @@ public class MolangParticleInstance extends TextureSheetParticle {
 
     public MolangParticleInstance(MolangParticleOption option, ClientLevel level, double x, double y, double z, double xSpeed, double ySpeed, double zSpeed, ExtendMutableSpriteSet sprites) {
         super(level, x, y, z);
+        this.random = level.getRandom();
         this.detail = Objects.requireNonNull(GameClient.LOADER.ID_2_DETAIL.get(option.getId()));
+        detail.variableTable.addVariable("variable.particle_random_1", s -> new Variable(s, random.nextDouble()));
+        detail.variableTable.addVariable("variable.particle_random_2", s -> new Variable(s, random.nextDouble()));
+        detail.variableTable.addVariable("variable.particle_random_3", s -> new Variable(s, random.nextDouble()));
+        detail.variableTable.addVariable("variable.particle_random_4", s -> new Variable(s, random.nextDouble()));
         setSprite(sprites.get(detail.effect.getDescription().parameters().getTextureIndex()));
-        this.uScale = sprite.contents().width() / (sprite.getU1() - sprite.getU0()) * ((ITextureAtlasSprite) sprite).particlestorm$getOriginX();
-        this.vScale = sprite.contents().height() / (sprite.getV1() - sprite.getV0()) * ((ITextureAtlasSprite) sprite).particlestorm$getOriginY();
+        this.originX = ((ITextureAtlasSprite) sprite).particlestorm$getOriginX();
+        this.originY = ((ITextureAtlasSprite) sprite).particlestorm$getOriginY();
         this.components = detail.effect.getComponents().values().stream().filter(c -> {
             if (c instanceof IParticleComponent p) {
                 p.apply(this);
@@ -54,6 +63,7 @@ public class MolangParticleInstance extends TextureSheetParticle {
             }
             return false;
         }).map(c -> (IParticleComponent) c).collect(Collectors.toList());
+        detail.toInit.removeIf(assignment -> assignment.get(this) == 0);
     }
 
     public double getXd() {
@@ -74,14 +84,22 @@ public class MolangParticleInstance extends TextureSheetParticle {
 
     public void setUV(float u, float v, float w, float h) {
         if (UV == null) this.UV = new float[4];
-        this.UV[0] = u / uScale;
-        this.UV[1] = v / vScale;
-        this.UV[2] = (u + w) / uScale;
-        this.UV[3] = (v + h) / vScale;
+        this.UV[0] = u / originX;
+        this.UV[1] = v / originY;
+        this.UV[2] = (u + w) / originX;
+        this.UV[3] = (v + h) / originY;
     }
 
     public Level level() {
         return level;
+    }
+
+    public int getAge() {
+        return age;
+    }
+
+    public TextureAtlasSprite getSprite() {
+        return sprite;
     }
 
     @Override
@@ -124,10 +142,9 @@ public class MolangParticleInstance extends TextureSheetParticle {
 
     @Override
     protected void renderVertex(@NotNull VertexConsumer buffer, @NotNull Quaternionf quaternion, float x, float y, float z, float xOffset, float yOffset, float quadSize, float u, float v, int packedLight) {
-        Vector3f vector3f = new Vector3f(xOffset, yOffset, 0.0F).rotate(quaternion).add(x, y, z);
-        if (billboardSize == null) vector3f.mul(quadSize);
-        else vector3f.mul(billboardSize[0], billboardSize[1], 1.0F);
-        buffer.addVertex(vector3f.x(), vector3f.y(), vector3f.z()).setUv(u, v).setColor(rCol, gCol, bCol, alpha).setLight(packedLight);
+        Vector3f start = billboardSize == null ? new Vector3f(xOffset, yOffset, 0.0F) : new Vector3f(xOffset * billboardSize[0], yOffset * billboardSize[1], 0.0F);
+        Vector3f end = start.rotate(quaternion).mul(0.1F).add(x, y, z);
+        buffer.addVertex(end.x(), end.y(), end.z()).setUv(u, v).setColor(rCol, gCol, bCol, alpha).setLight(packedLight);
     }
 
     public void updateRotation(double xdSqr, double zdSqr) {
@@ -160,9 +177,7 @@ public class MolangParticleInstance extends TextureSheetParticle {
 
         @Override
         public TextureSheetParticle createParticle(@NotNull MolangParticleOption option, @NotNull ClientLevel level, double x, double y, double z, double xSpeed, double ySpeed, double zSpeed) {
-            MolangParticleInstance instance = new MolangParticleInstance(option, level, x, y, z, xSpeed, ySpeed, zSpeed, sprites);
-            instance.setSprite(sprites.get(-1));
-            return instance;
+            return new MolangParticleInstance(option, level, x, y, z, xSpeed, ySpeed, zSpeed, sprites);
         }
     }
 }

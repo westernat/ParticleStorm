@@ -14,13 +14,12 @@ import org.mesdag.particlestorm.particle.MolangParticleInstance;
 public record VariableAssignment(Variable variable, MathValue value) implements MathValue {
     @Override
     public double get(MolangParticleInstance instance) {
-        this.variable.set(this.value.get(instance));
-
+        variable.set(value.get(instance));
         return 0;
     }
 
     @Override
     public String toString() {
-        return this.variable.name() + "=" + this.value.toString();
+        return variable.name() + "=" + value.toString();
     }
 }

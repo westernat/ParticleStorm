@@ -26,7 +26,7 @@ public class MolangExp {
     }
 
     public float calculate(MolangParticleInstance instance) {
-        if (variable == null) return 0.0F;
+        if (!initialized()) return 0.0F;
         return (float) variable.get(instance);
     }
 

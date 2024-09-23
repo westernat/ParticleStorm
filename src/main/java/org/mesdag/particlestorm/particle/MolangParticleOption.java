@@ -30,7 +30,7 @@ public class MolangParticleOption implements ParticleOptions {
         return ResourceLocation.CODEC.xmap(
                 id -> new MolangParticleOption(type, id),
                 option -> option.id
-        ).fieldOf("color");
+        ).fieldOf("id");
     }
 
     public static StreamCodec<? super ByteBuf, MolangParticleOption> streamCodec(ParticleType<MolangParticleOption> type) {

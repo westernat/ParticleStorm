@@ -1,7 +1,5 @@
 package org.mesdag.particlestorm.particle;
 
-import com.google.common.collect.ImmutableList;
-import it.unimi.dsi.fastutil.objects.Object2ObjectAVLTreeMap;
 import net.minecraft.client.particle.ParticleRenderType;
 import net.minecraft.client.particle.SingleQuadParticle;
 import net.neoforged.api.distmarker.Dist;
@@ -17,25 +15,13 @@ import org.mesdag.particlestorm.data.molang.compiler.value.CompoundValue;
 import org.mesdag.particlestorm.data.molang.compiler.value.Variable;
 import org.mesdag.particlestorm.data.molang.compiler.value.VariableAssignment;
 
+import java.util.ArrayList;
+import java.util.Hashtable;
+
 import static org.mesdag.particlestorm.data.molang.compiler.MolangQueries.applyPrefixAliases;
 
 @OnlyIn(Dist.CLIENT)
 public class ParticleDetail {
-    private static final ImmutableList<String> BUILTIN_VARIABLES = ImmutableList.<String>builder().add(
-            "variable.emitter_age",
-            "variable.emitter_lifetime",
-            "variable.emitter_random_1",
-            "variable.emitter_random_2",
-            "variable.emitter_random_3",
-            "variable.emitter_random_4",
-            "variable.entity_scale",
-            "variable.particle_age",
-            "variable.particle_lifetime",
-            "variable.particle_random_1",
-            "variable.particle_random_2",
-            "variable.particle_random_3",
-            "variable.particle_random_4"
-    ).build();
     public final ParticleEffect effect;
     public final ParticleRenderType renderType;
     public final SingleQuadParticle.FacingCameraMode facingCameraMode;
@@ -43,6 +29,7 @@ public class ParticleDetail {
     public final boolean environmentLighting;
 
     public final VariableTable variableTable;
+    public final ArrayList<VariableAssignment> toInit;
 
     public ParticleDetail(ParticleEffect effect) {
         this.effect = effect;
@@ -70,10 +57,11 @@ public class ParticleDetail {
         this.minSpeedThresholdSqr = particleAppearanceBillboard.direction().minSpeedThreshold() * particleAppearanceBillboard.direction().minSpeedThreshold();
         this.environmentLighting = effect.getComponents().get(ParticleAppearanceLighting.ID) != null;
 
-        Object2ObjectAVLTreeMap<String, Variable> table = new Object2ObjectAVLTreeMap<>();
-        for (String builtin : BUILTIN_VARIABLES) {
-            table.put(builtin, new Variable(builtin, 0));
-        }
+        Hashtable<String, Variable> table = new Hashtable<>();
+        ArrayList<VariableAssignment> toInit = new ArrayList<>();
+        table.computeIfAbsent("variable.particle_age", s -> new Variable(s, MolangParticleInstance::getAge));
+        table.computeIfAbsent("variable.particle_lifetime", s -> new Variable(s, MolangParticleInstance::getLifetime));
+
         MathParser parser = new MathParser(table);
         effect.getCurves().keySet().forEach(s -> {
             String name = applyPrefixAliases(s, "variable.", "v.");
@@ -83,26 +71,28 @@ public class ParticleDetail {
             component.getAllMolangExp().forEach(exp -> {
                 exp.compile(parser);
                 MathValue variable = exp.getVariable();
-                if (variable != null && !forAssignment(table, variable)) {
-                    forCompound(table, variable);
+                if (variable != null && !forAssignment(table, toInit, variable)) {
+                    forCompound(table, toInit, variable);
                 }
             });
         }
         this.variableTable = new VariableTable(table);
+        this.toInit = toInit;
     }
 
-    private static boolean forAssignment(Object2ObjectAVLTreeMap<String, Variable> table, MathValue value) {
+    private static boolean forAssignment(Hashtable<String, Variable> table, ArrayList<VariableAssignment> toInit, MathValue value) {
         if (value instanceof VariableAssignment assignment) {
             table.put(assignment.variable().name(), assignment.variable());
+            toInit.add(assignment);
             return true;
         }
         return false;
     }
 
-    private static void forCompound(Object2ObjectAVLTreeMap<String, Variable> table, MathValue variable) {
+    private static void forCompound(Hashtable<String, Variable> table, ArrayList<VariableAssignment> toInit, MathValue variable) {
         if (variable instanceof CompoundValue compoundValue) {
             for (MathValue value : compoundValue.subValues()) {
-                forAssignment(table, value);
+                forAssignment(table, toInit, value);
             }
         }
     }

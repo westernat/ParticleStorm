@@ -19,14 +19,13 @@ import java.io.Reader;
 import java.util.ArrayList;
 import java.util.Hashtable;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 
 @OnlyIn(Dist.CLIENT)
 public class MolangParticleLoader implements PreparableReloadListener {
-    public final Map<ResourceLocation, ParticleEffect> ID_2_EFFECT = new Hashtable<>();
-    public final Map<ResourceLocation, ParticleDetail> ID_2_DETAIL = new Hashtable<>();
+    public final Hashtable<ResourceLocation, ParticleEffect> ID_2_EFFECT = new Hashtable<>();
+    public final Hashtable<ResourceLocation, ParticleDetail> ID_2_DETAIL = new Hashtable<>();
     private static final FileToIdConverter PARTICLE_LISTER = FileToIdConverter.json("particle_definitions");
 
     @Override

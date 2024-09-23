@@ -1,7 +1,6 @@
 package org.mesdag.particlestorm.data.molang.compiler;
 
 import com.mojang.datafixers.util.Either;
-import it.unimi.dsi.fastutil.objects.Object2ObjectAVLTreeMap;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.minecraft.Util;
 import org.jetbrains.annotations.NotNull;
@@ -22,10 +21,7 @@ import org.mesdag.particlestorm.data.molang.compiler.function.random.RandomInteg
 import org.mesdag.particlestorm.data.molang.compiler.function.round.*;
 import org.mesdag.particlestorm.data.molang.compiler.value.*;
 
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
@@ -78,9 +74,9 @@ public class MathParser {
         map.put("math.to_rad", ToRadFunction::new);
         map.put("math.trunc", TruncateFunction::new);
     });
-    private final Object2ObjectAVLTreeMap<String, Variable> table;
+    private final Hashtable<String, Variable> table;
 
-    public MathParser(Object2ObjectAVLTreeMap<String, Variable> table) {
+    public MathParser(Hashtable<String, Variable> table) {
         this.table = table;
     }
 

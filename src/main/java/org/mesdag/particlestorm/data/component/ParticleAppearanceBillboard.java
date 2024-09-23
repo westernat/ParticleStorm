@@ -54,14 +54,14 @@ public record ParticleAppearanceBillboard(FloatMolangExp2 size, FaceCameraMode f
                 }
             }
         }
-        if (size.initialized()) {
-            instance.billboardSize = size.calculate(instance);
-        }
+        instance.billboardSize = size.calculate(instance);
         if (uv != UV.EMPTY) {
             if (uv.flipbook == UV.Flipbook.EMPTY) {
                 float[] base = uv.uv.calculate(instance);
                 float[] size = uv.uvSize.calculate(instance);
-                instance.setUV(base[0], base[1], size[0], size[1]);
+                int x = instance.getSprite().getX();
+                int y = instance.getSprite().getY();
+                instance.setUV(x + base[0], y + base[1], size[0], size[1]);
             } else if (instance.level().getGameTime() / uv.flipbook.getFramesPerTick(instance) < 1.0F) {
                 float[] base = uv.flipbook.baseUV.calculate(instance);
                 int index = instance.currentFrame - 1;
@@ -85,8 +85,6 @@ public record ParticleAppearanceBillboard(FloatMolangExp2 size, FaceCameraMode f
     public void apply(MolangParticleInstance instance) {
         if (uv != UV.EMPTY) {
             instance.UV = new float[4];
-            instance.uScale = uv.texturewidth / instance.uScale;
-            instance.vScale = uv.textureheight / instance.vScale;
             if (uv.flipbook != UV.Flipbook.EMPTY) {
                 instance.uvSize = uv.flipbook.getSizeUV();
                 instance.uvStep = uv.flipbook.getStepUV();
