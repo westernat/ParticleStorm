@@ -4,6 +4,7 @@ import net.minecraft.util.Mth;
 import org.jetbrains.annotations.Nullable;
 import org.mesdag.particlestorm.data.molang.compiler.MathValue;
 import org.mesdag.particlestorm.data.molang.compiler.function.MathFunction;
+import org.mesdag.particlestorm.particle.MolangParticleInstance;
 
 import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
@@ -45,16 +46,16 @@ public final class DieRollIntegerFunction extends MathFunction {
     }
 
     @Override
-    public double compute() {
-        final int rolls = (int)(Math.floor(this.rolls.get()));
-        final int min = Mth.floor(this.min.get());
-        final int max = Mth.ceil(this.max.get());
+    public double compute(MolangParticleInstance instance) {
+        final int rolls = (int)(Math.floor(this.rolls.get(instance)));
+        final int min = Mth.floor(this.min.get(instance));
+        final int max = Mth.ceil(this.max.get(instance));
         int sum = 0;
         Random random;
 
         if (this.random != null) {
             random = this.random;
-            random.setSeed((long)this.seed.get());
+            random.setSeed((long)this.seed.get(instance));
         }
         else {
             random = ThreadLocalRandom.current();

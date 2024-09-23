@@ -9,6 +9,8 @@ import net.minecraft.server.packs.resources.PreparableReloadListener;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.util.GsonHelper;
 import net.minecraft.util.profiling.ProfilerFiller;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.api.distmarker.OnlyIn;
 import org.jetbrains.annotations.NotNull;
 import org.mesdag.particlestorm.data.ParticleEffect;
 
@@ -21,6 +23,7 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 
+@OnlyIn(Dist.CLIENT)
 public class MolangParticleLoader implements PreparableReloadListener {
     public final Map<ResourceLocation, ParticleEffect> ID_2_EFFECT = new Hashtable<>();
     public final Map<ResourceLocation, ParticleDetail> ID_2_DETAIL = new Hashtable<>();

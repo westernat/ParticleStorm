@@ -1,6 +1,7 @@
 package org.mesdag.particlestorm.data.molang.compiler.value;
 
 import org.mesdag.particlestorm.data.molang.compiler.MathValue;
+import org.mesdag.particlestorm.particle.MolangParticleInstance;
 
 /**
  * {@link MathValue} value supplier
@@ -12,8 +13,8 @@ import org.mesdag.particlestorm.data.molang.compiler.MathValue;
  */
 public record BooleanNegate(MathValue value) implements MathValue {
     @Override
-    public double get() {
-        return this.value.get() == 0 ? 1 : 0;
+    public double get(MolangParticleInstance instance) {
+        return this.value.get(instance) == 0 ? 1 : 0;
     }
 
     @Override

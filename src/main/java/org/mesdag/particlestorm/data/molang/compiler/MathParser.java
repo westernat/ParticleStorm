@@ -7,7 +7,6 @@ import net.minecraft.Util;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.mesdag.particlestorm.ParticleStorm;
-import org.mesdag.particlestorm.data.molang.ParticleVariable;
 import org.mesdag.particlestorm.data.molang.compiler.function.MathFunction;
 import org.mesdag.particlestorm.data.molang.compiler.function.generic.*;
 import org.mesdag.particlestorm.data.molang.compiler.function.limit.ClampFunction;
@@ -79,9 +78,9 @@ public class MathParser {
         map.put("math.to_rad", ToRadFunction::new);
         map.put("math.trunc", TruncateFunction::new);
     });
-    private final Object2ObjectAVLTreeMap<String, ParticleVariable> table;
+    private final Object2ObjectAVLTreeMap<String, Variable> table;
 
-    public MathParser(Object2ObjectAVLTreeMap<String, ParticleVariable> table) {
+    public MathParser(Object2ObjectAVLTreeMap<String, Variable> table) {
         this.table = table;
     }
 
@@ -125,15 +124,15 @@ public class MathParser {
     /**
      * @return The registered {@link Variable} instance for the given name
      */
-    public ParticleVariable getVariableFor(String name) {
+    public Variable getVariableFor(String name) {
         if (name.startsWith("q")) {
             return MolangQueries.getQueryFor(name);
         }
-        name = applyPrefixAliases(name, "variable.", "v.");
-        return table.computeIfAbsent(name, s -> new ParticleVariable(new Variable(s.toString(), 0), 0));
+        String v = applyPrefixAliases(name, "variable.", "v.");
+        return table.computeIfAbsent(v, s -> new Variable(v, 0));
     }
 
-    public ParticleVariable compileMolang(String expression) {
+    public MathValue compileMolang(String expression) {
         if (expression.startsWith(MOLANG_RETURN)) {
             expression = expression.substring(MOLANG_RETURN.length());
 
@@ -155,10 +154,10 @@ public class MathParser {
                     break;
             }
 
-            return new ParticleVariable(new CompoundValue(subValues.toArray(new MathValue[0])), 0);
+            return new CompoundValue(subValues.toArray(new MathValue[0]));
         }
 
-        return new ParticleVariable(compileExpression(expression), 0);
+        return compileExpression(expression);
     }
 
     /**
@@ -402,7 +401,7 @@ public class MathParser {
                 continue;
 
             if (operator == Operator.ASSIGN_VARIABLE) {
-                if (!(parseSymbols(symbols.subList(0, i)) instanceof ParticleVariable pv && pv.raw() instanceof Variable v))
+                if (!(parseSymbols(symbols.subList(0, i)) instanceof Variable v))
                     throw new IllegalArgumentException("Attempted to assign a value to a non-variable");
 
                 return new VariableAssignment(v, parseSymbols(symbols.subList(i + 1, symbolCount)));

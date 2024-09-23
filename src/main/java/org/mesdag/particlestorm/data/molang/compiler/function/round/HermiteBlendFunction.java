@@ -2,6 +2,7 @@ package org.mesdag.particlestorm.data.molang.compiler.function.round;
 
 import org.mesdag.particlestorm.data.molang.compiler.MathValue;
 import org.mesdag.particlestorm.data.molang.compiler.function.MathFunction;
+import org.mesdag.particlestorm.particle.MolangParticleInstance;
 
 /**
  * {@link MathFunction} value supplier
@@ -26,8 +27,8 @@ public final class HermiteBlendFunction extends MathFunction {
     }
 
     @Override
-    public double compute() {
-        final double value = this.valueA.get();
+    public double compute(MolangParticleInstance instance) {
+        final double value = this.valueA.get(instance);
 
         return (3 * value * value) - (2 * value * value * value);
     }

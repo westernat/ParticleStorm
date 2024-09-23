@@ -10,7 +10,6 @@ import org.mesdag.particlestorm.data.ParticleEffect;
 import org.mesdag.particlestorm.data.component.IComponent;
 import org.mesdag.particlestorm.data.component.ParticleAppearanceBillboard;
 import org.mesdag.particlestorm.data.component.ParticleAppearanceLighting;
-import org.mesdag.particlestorm.data.molang.ParticleVariable;
 import org.mesdag.particlestorm.data.molang.VariableTable;
 import org.mesdag.particlestorm.data.molang.compiler.MathParser;
 import org.mesdag.particlestorm.data.molang.compiler.MathValue;
@@ -71,17 +70,20 @@ public class ParticleDetail {
         this.minSpeedThresholdSqr = particleAppearanceBillboard.direction().minSpeedThreshold() * particleAppearanceBillboard.direction().minSpeedThreshold();
         this.environmentLighting = effect.getComponents().get(ParticleAppearanceLighting.ID) != null;
 
-        Object2ObjectAVLTreeMap<String, ParticleVariable> table = new Object2ObjectAVLTreeMap<>();
+        Object2ObjectAVLTreeMap<String, Variable> table = new Object2ObjectAVLTreeMap<>();
         for (String builtin : BUILTIN_VARIABLES) {
-            table.put(builtin, new ParticleVariable(new Variable(builtin, 0), 0));
+            table.put(builtin, new Variable(builtin, 0));
         }
         MathParser parser = new MathParser(table);
-        effect.getCurves().keySet().forEach(s -> table.put(s, parser.compileMolang(applyPrefixAliases(s, "variable.", "v."))));
+        effect.getCurves().keySet().forEach(s -> {
+            String name = applyPrefixAliases(s, "variable.", "v.");
+            table.put(name, new Variable(name, parser.compileMolang(name)));
+        });
         for (IComponent component : effect.getComponents().values()) {
             component.getAllMolangExp().forEach(exp -> {
                 exp.compile(parser);
-                ParticleVariable variable = exp.getVariable();
-                if (variable != null && forAssignment(table, variable.raw(), variable)) {
+                MathValue variable = exp.getVariable();
+                if (variable != null && !forAssignment(table, variable)) {
                     forCompound(table, variable);
                 }
             });
@@ -89,18 +91,18 @@ public class ParticleDetail {
         this.variableTable = new VariableTable(table);
     }
 
-    private static boolean forAssignment(Object2ObjectAVLTreeMap<String, ParticleVariable> table, MathValue value, ParticleVariable variable) {
+    private static boolean forAssignment(Object2ObjectAVLTreeMap<String, Variable> table, MathValue value) {
         if (value instanceof VariableAssignment assignment) {
-            table.put(assignment.variable().name(), variable);
+            table.put(assignment.variable().name(), assignment.variable());
             return true;
         }
         return false;
     }
 
-    private static void forCompound(Object2ObjectAVLTreeMap<String, ParticleVariable> table, ParticleVariable variable) {
-        if (variable.raw() instanceof CompoundValue compoundValue) {
+    private static void forCompound(Object2ObjectAVLTreeMap<String, Variable> table, MathValue variable) {
+        if (variable instanceof CompoundValue compoundValue) {
             for (MathValue value : compoundValue.subValues()) {
-                forAssignment(table, value, variable);
+                forAssignment(table, value);
             }
         }
     }

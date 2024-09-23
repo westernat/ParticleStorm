@@ -2,6 +2,7 @@ package org.mesdag.particlestorm.data.molang.compiler.function.limit;
 
 import org.mesdag.particlestorm.data.molang.compiler.MathValue;
 import org.mesdag.particlestorm.data.molang.compiler.function.MathFunction;
+import org.mesdag.particlestorm.particle.MolangParticleInstance;
 
 /**
  * {@link MathFunction} value supplier
@@ -28,8 +29,8 @@ public final class MinFunction extends MathFunction {
     }
 
     @Override
-    public double compute() {
-        return Math.min(this.valueA.get(), this.valueB.get());
+    public double compute(MolangParticleInstance instance) {
+        return Math.min(this.valueA.get(instance), this.valueB.get(instance));
     }
 
     @Override

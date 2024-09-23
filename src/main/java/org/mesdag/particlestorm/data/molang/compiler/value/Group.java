@@ -1,6 +1,7 @@
 package org.mesdag.particlestorm.data.molang.compiler.value;
 
 import org.mesdag.particlestorm.data.molang.compiler.MathValue;
+import org.mesdag.particlestorm.particle.MolangParticleInstance;
 
 /**
  * {@link MathValue} value supplier
@@ -12,8 +13,8 @@ import org.mesdag.particlestorm.data.molang.compiler.MathValue;
  */
 public record Group(MathValue contents) implements MathValue {
     @Override
-    public double get() {
-        return this.contents.get();
+    public double get(MolangParticleInstance instance) {
+        return this.contents.get(instance);
     }
 
     @Override

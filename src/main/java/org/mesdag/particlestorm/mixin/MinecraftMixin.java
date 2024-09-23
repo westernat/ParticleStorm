@@ -20,7 +20,6 @@ import org.spongepowered.asm.mixin.injection.Coerce;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-import java.util.List;
 import java.util.Map;
 
 @Mixin(Minecraft.class)
@@ -36,15 +35,19 @@ public abstract class MinecraftMixin {
         ((ParticleEngineAccessor) particleEngine).providers().put(ParticleStorm.MOLANG.getId(), new MolangParticleInstance.Provider(extendMutableSpriteSet));
     }
 
-    @Inject(method = "onGameLoadFinished", at = @At("TAIL"))
+    @Inject(method = "onResourceLoadFinished", at = @At("TAIL"))
     private void onLoaded(@Coerce Object gameLoadCookie, CallbackInfo ci) {
-        if (((ParticleEngineAccessor) particleEngine).spriteSets().get(ParticleStorm.MOLANG.getId()) instanceof ParticleEngine.MutableSpriteSet spriteSet) {
+        if (((ParticleEngineAccessor) particleEngine).spriteSets().get(ParticleStorm.MOLANG.getId()) instanceof ExtendMutableSpriteSet spriteSet) {
             try (TextureAtlas textureAtlas = ((ParticleEngineAccessor) particleEngine).textureAtlas()) {
                 ((ITextureAtlas) textureAtlas).particlestorm$consume(preparations -> {
+                    int i = 0;
                     for (Map.Entry<ResourceLocation, ParticleEffect> entry : GameClient.LOADER.ID_2_EFFECT.entrySet()) {
                         TextureAtlasSprite missing = preparations.missing();
-                        TextureAtlasSprite sprite = preparations.regions().get(entry.getValue().getDescription().parameters().texture());
-                        spriteSet.rebind(List.of(sprite == null ? missing : sprite));
+                        spriteSet.setMissing(missing);
+                        ResourceLocation texture = entry.getValue().getDescription().parameters().bindTexture(i);
+                        TextureAtlasSprite sprite = preparations.regions().get(texture);
+                        spriteSet.addSprite(sprite == null ? missing : sprite);
+                        i++;
                     }
                 });
             }

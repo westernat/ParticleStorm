@@ -2,6 +2,7 @@ package org.mesdag.particlestorm.data.molang.compiler.value;
 
 import org.mesdag.particlestorm.data.molang.compiler.MathValue;
 import org.mesdag.particlestorm.data.molang.compiler.Operator;
+import org.mesdag.particlestorm.particle.MolangParticleInstance;
 
 /**
  * {@link MathValue} value supplier
@@ -39,12 +40,12 @@ public final class Calculation implements MathValue {
     }
 
     @Override
-    public double get() {
+    public double get(MolangParticleInstance instance) {
         if (this.isMutable)
-            return this.operator.compute(this.argA.get(), this.argB.get());
+            return this.operator.compute(this.argA.get(instance), this.argB.get(instance));
 
         if (this.cachedValue == Double.MIN_VALUE)
-            this.cachedValue = this.operator.compute(this.argA.get(), this.argB.get());
+            this.cachedValue = this.operator.compute(this.argA.get(instance), this.argB.get(instance));
 
         return this.cachedValue;
     }

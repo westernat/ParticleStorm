@@ -3,6 +3,7 @@ package org.mesdag.particlestorm.data.molang.compiler.function.generic;
 import net.minecraft.util.Mth;
 import org.mesdag.particlestorm.data.molang.compiler.MathValue;
 import org.mesdag.particlestorm.data.molang.compiler.function.MathFunction;
+import org.mesdag.particlestorm.particle.MolangParticleInstance;
 
 /**
  * {@link MathFunction} value supplier
@@ -27,8 +28,8 @@ public final class ACosFunction extends MathFunction {
     }
 
     @Override
-    public double compute() {
-        return Math.acos((float)this.value.get() * Mth.DEG_TO_RAD);
+    public double compute(MolangParticleInstance instance) {
+        return Math.acos(this.value.get(instance) * (double) Mth.DEG_TO_RAD);
     }
 
     @Override
@@ -38,6 +39,6 @@ public final class ACosFunction extends MathFunction {
 
     @Override
     public MathValue[] getArgs() {
-        return new MathValue[] {this.value};
+        return new MathValue[]{this.value};
     }
 }

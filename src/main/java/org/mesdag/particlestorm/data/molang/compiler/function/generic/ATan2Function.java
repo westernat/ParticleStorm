@@ -3,6 +3,7 @@ package org.mesdag.particlestorm.data.molang.compiler.function.generic;
 import net.minecraft.util.Mth;
 import org.mesdag.particlestorm.data.molang.compiler.MathValue;
 import org.mesdag.particlestorm.data.molang.compiler.function.MathFunction;
+import org.mesdag.particlestorm.particle.MolangParticleInstance;
 
 /**
  * {@link MathFunction} value supplier
@@ -29,8 +30,8 @@ public final class ATan2Function extends MathFunction {
     }
 
     @Override
-    public double compute() {
-        return Math.atan2(this.y.get(), this.x.get()) * Mth.RAD_TO_DEG;
+    public double compute(MolangParticleInstance instance) {
+        return Math.atan2(this.y.get(instance), this.x.get(instance)) * Mth.RAD_TO_DEG;
     }
 
     @Override

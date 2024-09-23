@@ -1,6 +1,7 @@
 package org.mesdag.particlestorm.data.molang.compiler.value;
 
 import org.mesdag.particlestorm.data.molang.compiler.MathValue;
+import org.mesdag.particlestorm.particle.MolangParticleInstance;
 
 import java.util.StringJoiner;
 
@@ -15,12 +16,12 @@ import java.util.StringJoiner;
  */
 public record CompoundValue(MathValue[] subValues) implements MathValue {
     @Override
-    public double get() {
+    public double get(MolangParticleInstance instance) {
         for (int i = 0; i < this.subValues.length - 1; i++) {
-            this.subValues[i].get();
+            this.subValues[i].get(instance);
         }
 
-        return this.subValues[this.subValues.length - 1].get();
+        return this.subValues[this.subValues.length - 1].get(instance);
     }
 
     @Override

@@ -43,7 +43,9 @@ public record ParticleAppearanceBillboard(FloatMolangExp2 size, FaceCameraMode f
         if (faceCameraMode.isDirection()) {
             if (direction.mode == ParticleAppearanceBillboard.Direction.Mode.CUSTOM_DIRECTION) {
                 double[] values = direction.customDirection.calculate(instance);
-                instance.setRot((float) values[0], (float) values[1], (float) values[2]);
+                instance.xRot = (float) values[0];
+                instance.yRot = (float) values[1];
+                instance.setRoll((float) values[2]);
             } else {
                 double xdSqr = instance.getXd() * instance.getXd();
                 double zdSqr = instance.getZd() * instance.getZd();
@@ -53,8 +55,13 @@ public record ParticleAppearanceBillboard(FloatMolangExp2 size, FaceCameraMode f
             }
         }
         if (size.initialized()) {
-            double[] values = size.calculate(instance);
-            instance.setBillboardSize((float) values[0], (float) values[1]);
+            instance.billboardSize = size.calculate(instance);
+        }
+        if (uv != UV.EMPTY) {
+            if (uv.flipbook != UV.Flipbook.EMPTY) {
+                // todo 计时
+                instance.baseUV = uv.flipbook.baseUV.calculate(instance);
+            }
         }
     }
 

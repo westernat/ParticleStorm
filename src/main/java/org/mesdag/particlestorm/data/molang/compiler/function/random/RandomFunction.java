@@ -3,6 +3,7 @@ package org.mesdag.particlestorm.data.molang.compiler.function.random;
 import org.jetbrains.annotations.Nullable;
 import org.mesdag.particlestorm.data.molang.compiler.MathValue;
 import org.mesdag.particlestorm.data.molang.compiler.function.MathFunction;
+import org.mesdag.particlestorm.particle.MolangParticleInstance;
 
 import java.util.Random;
 
@@ -43,12 +44,12 @@ public final class RandomFunction extends MathFunction {
     }
 
     @Override
-    public double compute() {
+    public double compute(MolangParticleInstance instance) {
         double result;
-        double valueA = this.valueA.get();
+        double valueA = this.valueA.get(instance);
 
         if (this.random != null) {
-            this.random.setSeed((long)this.seed.get());
+            this.random.setSeed((long)this.seed.get(instance));
 
             result = this.random.nextDouble();
         }
@@ -57,7 +58,7 @@ public final class RandomFunction extends MathFunction {
         }
 
         if (this.valueB != null) {
-            double valueB = this.valueB.get();
+            double valueB = this.valueB.get(instance);
             double min = Math.min(valueA, valueB);
             double max = Math.max(valueA, valueB);
 

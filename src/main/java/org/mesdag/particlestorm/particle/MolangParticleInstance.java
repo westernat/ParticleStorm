@@ -13,7 +13,6 @@ import org.jetbrains.annotations.NotNull;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
 import org.mesdag.particlestorm.GameClient;
-import org.mesdag.particlestorm.data.component.IComponent;
 import org.mesdag.particlestorm.data.component.IParticleComponent;
 
 import java.util.Collection;
@@ -24,14 +23,17 @@ import java.util.stream.Collectors;
 public class MolangParticleInstance extends TextureSheetParticle {
     public static final int FULL_LIGHT = 0xF000F0;
     public final ParticleDetail detail;
-    private final Collection<IComponent> components;
-    private float xRot = 0.0F;
-    private float yRot = 0.0F;
-    private float xRotO = 0.0F;
-    private float yRotO = 0.0F;
-    private float rolld = 0.0F;
-    private float sizeX = 1.0F;
-    private float sizeY = 1.0F;
+    protected final Collection<IParticleComponent> components;
+    public float xRot = 0.0F;
+    public float yRot = 0.0F;
+    protected float xRotO = 0.0F;
+    protected float yRotO = 0.0F;
+    public float rolld = 0.0F;
+    public float[] billboardSize = new float[0];
+
+    public float[] baseUV = new float[0];
+    public float[] uvSize = new float[0];
+    public float[] uvStep = new float[0];
 
     public MolangParticleInstance(MolangParticleOption option, ClientLevel level, double x, double y, double z, double xSpeed, double ySpeed, double zSpeed, ExtendMutableSpriteSet sprites) {
         super(level, x, y, z);
@@ -42,7 +44,8 @@ public class MolangParticleInstance extends TextureSheetParticle {
                 return p.requireUpdate();
             }
             return false;
-        }).collect(Collectors.toSet());
+        }).map(c -> (IParticleComponent) c).collect(Collectors.toList());
+        setSprite(sprites.get(detail.effect.getDescription().parameters().getTextureIndex()));
     }
 
     public double getXd() {
@@ -57,30 +60,18 @@ public class MolangParticleInstance extends TextureSheetParticle {
         return zd;
     }
 
-    public void setRot(float x, float y, float z) {
-        this.xRot = x;
-        this.yRot = y;
-        this.roll = z;
-    }
-
-    public void setBillboardSize(float x, float y) {
-        this.sizeX = x;
-        this.sizeY = y;
+    public void setRoll(float roll) {
+        this.roll = roll;
     }
 
     @Override
     public void tick() {
         super.tick();
-        if (xRotO == 0.0F && yRotO == 0.0F) {
-            updateRotation(xd * xd, yd * yd);
-        }
         this.xRotO = xRot;
         this.yRotO = yRot;
         this.oRoll = roll;
-        for (IComponent component : components) {
-            if (component instanceof IParticleComponent particleComponent) {
-                particleComponent.update(this);
-            }
+        for (IParticleComponent component : components) {
+            component.update(this);
         }
     }
 
@@ -94,7 +85,7 @@ public class MolangParticleInstance extends TextureSheetParticle {
     @Override
     protected void renderVertex(@NotNull VertexConsumer buffer, @NotNull Quaternionf quaternion, float x, float y, float z, float xOffset, float yOffset, float quadSize, float u, float v, int packedLight) {
         Vector3f vector3f = new Vector3f(xOffset, yOffset, 0.0F).rotate(quaternion).add(x, y, z);
-        if (sizeX != 1.0F || sizeY != 1.0F) vector3f.mul(sizeX, sizeY, 1.0F);
+        if (billboardSize[0] != 1.0F || billboardSize[1] != 1.0F) vector3f.mul(billboardSize[0], billboardSize[1], 1.0F);
         else vector3f.mul(quadSize);
         buffer.addVertex(vector3f.x(), vector3f.y(), vector3f.z()).setUv(u, v).setColor(rCol, gCol, bCol, alpha).setLight(packedLight);
     }
@@ -129,7 +120,9 @@ public class MolangParticleInstance extends TextureSheetParticle {
 
         @Override
         public TextureSheetParticle createParticle(@NotNull MolangParticleOption option, @NotNull ClientLevel level, double x, double y, double z, double xSpeed, double ySpeed, double zSpeed) {
-            return new MolangParticleInstance(option, level, x, y, z, xSpeed, ySpeed, zSpeed, sprites);
+            MolangParticleInstance instance = new MolangParticleInstance(option, level, x, y, z, xSpeed, ySpeed, zSpeed, sprites);
+            instance.setSprite(sprites.get(-1));
+            return instance;
         }
     }
 }

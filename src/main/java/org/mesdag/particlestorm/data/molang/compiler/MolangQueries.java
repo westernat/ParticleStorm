@@ -1,13 +1,12 @@
 package org.mesdag.particlestorm.data.molang.compiler;
 
-import org.mesdag.particlestorm.data.molang.ParticleVariable;
 import org.mesdag.particlestorm.data.molang.compiler.value.Variable;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 public final class MolangQueries {
-	private static final Map<String, ParticleVariable> QUERIES = new ConcurrentHashMap<>();
+	private static final Map<String, Variable> QUERIES = new ConcurrentHashMap<>();
 
 	static {
 		setDefaultQueryValues();
@@ -17,12 +16,12 @@ public final class MolangQueries {
 		return QUERIES.containsKey(name);
 	}
 
-	static void registerVariable(String name, ParticleVariable variable) {
+	static void registerVariable(String name, Variable variable) {
 		QUERIES.put(name, variable);
 	}
 
-	static ParticleVariable getQueryFor(String name) {
-		return QUERIES.computeIfAbsent(applyPrefixAliases(name, "query.", "q."), key -> new ParticleVariable(new Variable(key, 0), 0));
+	static Variable getQueryFor(String name) {
+		return QUERIES.computeIfAbsent(applyPrefixAliases(name, "query.", "q."), key -> new Variable(key, 0));
 	}
 
 	/**

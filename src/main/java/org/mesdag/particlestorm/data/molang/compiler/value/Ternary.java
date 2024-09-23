@@ -1,6 +1,7 @@
 package org.mesdag.particlestorm.data.molang.compiler.value;
 
 import org.mesdag.particlestorm.data.molang.compiler.MathValue;
+import org.mesdag.particlestorm.particle.MolangParticleInstance;
 
 /**
  * {@link MathValue} value supplier
@@ -13,8 +14,8 @@ import org.mesdag.particlestorm.data.molang.compiler.MathValue;
  */
 public record Ternary(MathValue condition, MathValue trueValue, MathValue falseValue) implements MathValue {
     @Override
-    public double get() {
-        return this.condition.get() != 0 ? this.trueValue.get() : this.falseValue.get();
+    public double get(MolangParticleInstance instance) {
+        return this.condition.get(instance) != 0 ? this.trueValue.get(instance) : this.falseValue.get(instance);
     }
 
     @Override

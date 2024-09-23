@@ -1,6 +1,8 @@
 package org.mesdag.particlestorm.data.molang.compiler;
 
-import java.util.function.DoubleSupplier;
+import org.mesdag.particlestorm.particle.MolangParticleInstance;
+
+import java.util.function.ToDoubleFunction;
 
 /**
  * Base interface for all computational values in the math system
@@ -8,11 +10,11 @@ import java.util.function.DoubleSupplier;
  * All mathematical objects are an extension of this interface, allowing for an indefinitely-nestable
  * mathematical system that can be accessed via this one access point
  */
-public interface MathValue extends DoubleSupplier {
+public interface MathValue extends ToDoubleFunction<MolangParticleInstance> {
     /**
      * Get computed or stored value
      */
-    double get();
+    double get(MolangParticleInstance instance);
 
     /**
      * Return whether this type of MathValue should be considered mutable; its value could change.
@@ -28,7 +30,7 @@ public interface MathValue extends DoubleSupplier {
      */
     @Deprecated()
     @Override
-    default double getAsDouble() {
-        return get();
+    default double applyAsDouble(MolangParticleInstance instance) {
+        return get(instance);
     }
 }

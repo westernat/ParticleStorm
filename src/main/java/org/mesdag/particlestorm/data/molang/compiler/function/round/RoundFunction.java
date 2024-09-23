@@ -2,6 +2,7 @@ package org.mesdag.particlestorm.data.molang.compiler.function.round;
 
 import org.mesdag.particlestorm.data.molang.compiler.MathValue;
 import org.mesdag.particlestorm.data.molang.compiler.function.MathFunction;
+import org.mesdag.particlestorm.particle.MolangParticleInstance;
 
 /**
  * {@link MathFunction} value supplier
@@ -26,8 +27,8 @@ public final class RoundFunction extends MathFunction {
     }
 
     @Override
-    public double compute() {
-        return Math.round(this.value.get());
+    public double compute(MolangParticleInstance instance) {
+        return Math.round(this.value.get(instance));
     }
 
     @Override
