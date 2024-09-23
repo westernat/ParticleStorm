@@ -142,9 +142,8 @@ public class MolangParticleInstance extends TextureSheetParticle {
 
     @Override
     protected void renderVertex(@NotNull VertexConsumer buffer, @NotNull Quaternionf quaternion, float x, float y, float z, float xOffset, float yOffset, float quadSize, float u, float v, int packedLight) {
-        Vector3f start = billboardSize == null ? new Vector3f(xOffset, yOffset, 0.0F) : new Vector3f(xOffset * billboardSize[0], yOffset * billboardSize[1], 0.0F);
-        Vector3f end = start.rotate(quaternion).mul(0.1F).add(x, y, z);
-        buffer.addVertex(end.x(), end.y(), end.z()).setUv(u, v).setColor(rCol, gCol, bCol, alpha).setLight(packedLight);
+        Vector3f vector3f = new Vector3f(xOffset * billboardSize[0], yOffset * billboardSize[1], 0.0F).rotate(quaternion).mul(0.1F).add(x, y, z);
+        buffer.addVertex(vector3f.x(), vector3f.y(), vector3f.z()).setUv(u, v).setColor(rCol, gCol, bCol, alpha).setLight(packedLight);
     }
 
     public void updateRotation(double xdSqr, double zdSqr) {
