@@ -42,10 +42,10 @@ public record ParticleAppearanceBillboard(FloatMolangExp2 size, FaceCameraMode f
     public void update(MolangParticleInstance instance) {
         if (faceCameraMode.isDirection()) {
             if (direction.mode == ParticleAppearanceBillboard.Direction.Mode.CUSTOM_DIRECTION) {
-                double[] values = direction.customDirection.calculate(instance);
-                instance.xRot = (float) values[0];
-                instance.yRot = (float) values[1];
-                instance.setRoll((float) values[2]);
+                float[] values = direction.customDirection.calculate(instance);
+                instance.xRot = values[0];
+                instance.yRot = values[1];
+                instance.setRoll(values[2]);
             } else {
                 double xdSqr = instance.getXd() * instance.getXd();
                 double zdSqr = instance.getZd() * instance.getZd();
@@ -58,9 +58,38 @@ public record ParticleAppearanceBillboard(FloatMolangExp2 size, FaceCameraMode f
             instance.billboardSize = size.calculate(instance);
         }
         if (uv != UV.EMPTY) {
+            if (uv.flipbook == UV.Flipbook.EMPTY) {
+                float[] base = uv.uv.calculate(instance);
+                float[] size = uv.uvSize.calculate(instance);
+                instance.setUV(base[0], base[1], size[0], size[1]);
+            } else if (instance.level().getGameTime() / uv.flipbook.getFramesPerTick(instance) < 1.0F) {
+                float[] base = uv.flipbook.baseUV.calculate(instance);
+                int index = instance.currentFrame - 1;
+                float u = instance.uvStep[0] * index;
+                float v = instance.uvStep[1] * index;
+                instance.setUV(base[0] + u, base[1] + v, instance.uvSize[0] + u, instance.uvSize[1] + v);
+                instance.maxFrame = (int) uv.flipbook.maxFrame.calculate(instance);
+                if (instance.currentFrame < instance.maxFrame) {
+                    instance.currentFrame++;
+                    if (uv.flipbook.loop && instance.currentFrame == instance.maxFrame) {
+                        instance.currentFrame = 1;
+                    }
+                } else {
+                    instance.currentFrame = instance.maxFrame - 1;
+                }
+            }
+        }
+    }
+
+    @Override
+    public void apply(MolangParticleInstance instance) {
+        if (uv != UV.EMPTY) {
+            instance.UV = new float[4];
+            instance.uScale = uv.texturewidth / instance.uScale;
+            instance.vScale = uv.textureheight / instance.vScale;
             if (uv.flipbook != UV.Flipbook.EMPTY) {
-                // todo 计时
-                instance.baseUV = uv.flipbook.baseUV.calculate(instance);
+                instance.uvSize = uv.flipbook.getSizeUV();
+                instance.uvStep = uv.flipbook.getStepUV();
             }
         }
     }
@@ -120,27 +149,114 @@ public record ParticleAppearanceBillboard(FloatMolangExp2 size, FaceCameraMode f
         }
     }
 
+    /**
+     * Specifies the UVs for the particle.
+     *
+     * @param texturewidth
+     * @param textureheight Specifies the assumed texture width/height, defaults to 1<p>
+     *                      When set to 1, UV's work just like normalized UV's<p>
+     *                      When set to the texture width/height, this works like texels
+     * @param uv
+     * @param uvSize        Assuming the specified texture width and height, use these uv coordinates.<p>
+     *                      Evaluated every frame
+     */
     public record UV(int texturewidth, int textureheight, FloatMolangExp2 uv, FloatMolangExp2 uvSize, Flipbook flipbook) {
         public static final UV EMPTY = new UV(0, 0, FloatMolangExp2.ZERO, FloatMolangExp2.ZERO, Flipbook.EMPTY);
         public static final Codec<UV> CODEC = RecordCodecBuilder.create(instance -> instance.group(
-                DuplicateFieldDecoder.fieldOf("texturewidth", "texture_width", ExtraCodecs.POSITIVE_INT).forGetter(UV::texturewidth),
-                DuplicateFieldDecoder.fieldOf("textureheight", "texture_height", ExtraCodecs.POSITIVE_INT).forGetter(UV::textureheight),
+                DuplicateFieldDecoder.fieldOf("texturewidth", "texture_width", ExtraCodecs.POSITIVE_INT).orElse(1).forGetter(UV::texturewidth),
+                DuplicateFieldDecoder.fieldOf("textureheight", "texture_height", ExtraCodecs.POSITIVE_INT).orElse(1).forGetter(UV::textureheight),
                 FloatMolangExp2.CODEC.fieldOf("uv").orElse(FloatMolangExp2.ZERO).forGetter(UV::uv),
                 FloatMolangExp2.CODEC.fieldOf("uv_size").orElse(FloatMolangExp2.ZERO).forGetter(UV::uvSize),
                 Flipbook.CODEC.fieldOf("flipbook").orElse(Flipbook.EMPTY).forGetter(UV::flipbook)
         ).apply(instance, UV::new));
 
-        public record Flipbook(FloatMolangExp2 baseUV, List<Float> sizeUV, List<Float> stepUV, float framesPerSecond, FloatMolangExp maxFrame, boolean stretchToLifetime, boolean loop) {
+        /**
+         * Alternate way via specifying a flipbook animation<p>
+         * A flipbook animation uses pieces of the texture to animate, by stepping over time from one <code>frame</code> to another
+         */
+        public static class Flipbook {
             public static final Flipbook EMPTY = new Flipbook(FloatMolangExp2.ZERO, List.of(), List.of(), 0, FloatMolangExp.ZERO, false, false);
             public static final Codec<Flipbook> CODEC = RecordCodecBuilder.create(instance -> instance.group(
                     FloatMolangExp2.CODEC.fieldOf("base_UV").orElse(FloatMolangExp2.ZERO).forGetter(Flipbook::baseUV),
                     Codec.list(Codec.FLOAT, 2, 2).fieldOf("size_UV").forGetter(Flipbook::sizeUV),
                     Codec.list(Codec.FLOAT, 2, 2).fieldOf("step_UV").forGetter(Flipbook::stepUV),
-                    Codec.FLOAT.fieldOf("frames_per_second").forGetter(Flipbook::framesPerSecond),
+                    Codec.FLOAT.fieldOf("frames_per_second").orElse(1.0F).forGetter(Flipbook::framesPerSecond),
                     FloatMolangExp.CODEC.fieldOf("max_frame").orElse(FloatMolangExp.ZERO).forGetter(Flipbook::maxFrame),
                     Codec.BOOL.fieldOf("stretch_to_lifetime").orElse(false).forGetter(Flipbook::stretchToLifetime),
                     Codec.BOOL.fieldOf("loop").orElse(false).forGetter(Flipbook::loop)
             ).apply(instance, Flipbook::new));
+            private final FloatMolangExp2 baseUV;
+            private final List<Float> sizeUV;
+            private final List<Float> stepUV;
+            private final float framesPerSecond;
+            private final FloatMolangExp maxFrame;
+            private final boolean stretchToLifetime;
+            private final boolean loop;
+
+            private float framesPerTick = 1.0F;
+
+            /**
+             * @param baseUV            Upper-left corner of starting UV patch
+             * @param sizeUV            Size of UV patch
+             * @param stepUV            How far to move the UV patch each frame
+             * @param framesPerSecond   Default frames per second
+             * @param maxFrame          Maximum frame number, with first frame being frame 1
+             * @param stretchToLifetime Optional, adjust fps to match lifetime of particle. Default=false
+             * @param loop              Optional, makes the animation loop when it reaches the end? Default=false
+             */
+            public Flipbook(FloatMolangExp2 baseUV, List<Float> sizeUV, List<Float> stepUV, float framesPerSecond, FloatMolangExp maxFrame, boolean stretchToLifetime, boolean loop) {
+                this.baseUV = baseUV;
+                this.sizeUV = sizeUV;
+                this.stepUV = stepUV;
+                this.framesPerSecond = framesPerSecond;
+                this.maxFrame = maxFrame;
+                this.stretchToLifetime = stretchToLifetime;
+                this.loop = loop;
+
+                if (framesPerSecond != 0.0F) {
+                    this.framesPerTick = 20.0F / framesPerSecond;
+                }
+            }
+
+            public float[] getSizeUV() {
+                return new float[]{sizeUV.getFirst(), sizeUV.getLast()};
+            }
+
+            public float[] getStepUV() {
+                return new float[]{stepUV.getFirst(), stepUV.getLast()};
+            }
+
+            public FloatMolangExp2 baseUV() {
+                return baseUV;
+            }
+
+            public List<Float> sizeUV() {
+                return sizeUV;
+            }
+
+            public List<Float> stepUV() {
+                return stepUV;
+            }
+
+            public float framesPerSecond() {
+                return framesPerSecond;
+            }
+
+            public FloatMolangExp maxFrame() {
+                return maxFrame;
+            }
+
+            public boolean stretchToLifetime() {
+                return stretchToLifetime;
+            }
+
+            public boolean loop() {
+                return loop;
+            }
+
+            public float getFramesPerTick(MolangParticleInstance instance) {
+                return stretchToLifetime ? (float) instance.getLifetime() / instance.maxFrame : framesPerTick;
+            }
         }
     }
 }

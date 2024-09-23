@@ -13,7 +13,7 @@ public record FloatMolangExp2(FloatMolangExp exp1, FloatMolangExp exp2) {
     );
 
     public float[] calculate(MolangParticleInstance instance) {
-        return new float[]{(float) exp1.variable.get(instance), (float) exp2.variable.get(instance)};
+        return new float[]{exp1.calculate(instance), exp2.calculate(instance)};
     }
 
     public boolean initialized() {

@@ -3,6 +3,7 @@ package org.mesdag.particlestorm.data.molang;
 import com.mojang.serialization.Codec;
 import org.mesdag.particlestorm.data.molang.compiler.MathParser;
 import org.mesdag.particlestorm.data.molang.compiler.MathValue;
+import org.mesdag.particlestorm.particle.MolangParticleInstance;
 
 public class MolangExp {
     public static final MolangExp EMPTY = new MolangExp("");
@@ -22,6 +23,11 @@ public class MolangExp {
         if (variable == null && !expStr.isEmpty() && !expStr.isBlank()) {
             this.variable = parser.compileMolang(expStr);
         }
+    }
+
+    public float calculate(MolangParticleInstance instance) {
+        if (variable == null) return 0.0F;
+        return (float) variable.get(instance);
     }
 
     public MathValue getVariable() {

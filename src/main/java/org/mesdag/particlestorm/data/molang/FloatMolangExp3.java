@@ -15,7 +15,7 @@ public record FloatMolangExp3(FloatMolangExp exp1, FloatMolangExp exp2, FloatMol
             exp3 -> List.of(exp3.exp1, exp3.exp2, exp3.exp3)
     );
 
-    public double[] calculate(MolangParticleInstance instance) {
-        return new double[]{exp1.variable.get(instance), exp2.variable.get(instance), exp3.variable.get(instance)};
+    public float[] calculate(MolangParticleInstance instance) {
+        return new float[]{exp1.calculate(instance), exp2.calculate(instance), exp3.calculate(instance)};
     }
 }
