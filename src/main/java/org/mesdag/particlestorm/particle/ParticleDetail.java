@@ -36,8 +36,8 @@ public class ParticleDetail {
 
     public ParticleDetail(ParticleEffect effect) {
         this.effect = effect;
-        this.id = effect.getDescription().identifier();
-        this.renderType = switch (effect.getDescription().parameters().material()) {
+        this.id = effect.description.identifier();
+        this.renderType = switch (effect.description.parameters().material()) {
             case TERRAIN_SHEET -> ParticleRenderType.TERRAIN_SHEET;
             case PARTICLE_SHEET_OPAQUE -> ParticleRenderType.PARTICLE_SHEET_OPAQUE;
             case PARTICLE_SHEET_TRANSLUCENT -> ParticleRenderType.PARTICLE_SHEET_TRANSLUCENT;
@@ -45,7 +45,7 @@ public class ParticleDetail {
             case CUSTOM -> ParticleRenderType.CUSTOM;
             case NO_RENDER -> ParticleRenderType.NO_RENDER;
         };
-        ParticleAppearanceBillboard particleAppearanceBillboard = (ParticleAppearanceBillboard) effect.getComponents().get(ParticleAppearanceBillboard.ID);
+        ParticleAppearanceBillboard particleAppearanceBillboard = (ParticleAppearanceBillboard) effect.components.get(ParticleAppearanceBillboard.ID);
         this.facingCameraMode = switch (particleAppearanceBillboard.faceCameraMode()) {
             case ROTATE_XYZ -> FaceCameraMode.ROTATE_XYZ;
             case ROTATE_Y -> FaceCameraMode.ROTATE_Y;
@@ -59,17 +59,17 @@ public class ParticleDetail {
             case EMITTER_TRANSFORM_YZ -> FaceCameraMode.EMITTER_TRANSFORM_YZ;
         };
         this.minSpeedThresholdSqr = particleAppearanceBillboard.direction().minSpeedThreshold() * particleAppearanceBillboard.direction().minSpeedThreshold();
-        this.environmentLighting = effect.getComponents().get(ParticleAppearanceLighting.ID) != null;
+        this.environmentLighting = effect.components.get(ParticleAppearanceLighting.ID) != null;
 
         Hashtable<String, Variable> table = addDefaultVariables();
         MathParser parser = new MathParser(table);
-        effect.getCurves().keySet().forEach(s -> {
+        effect.curves.keySet().forEach(s -> {
             String name = applyPrefixAliases(s, "variable.", "v.");
             table.put(name, new Variable(name, parser.compileMolang(name)));
         });
 
         ArrayList<VariableAssignment> toInit = new ArrayList<>();
-        for (IComponent component : effect.getComponents().values()) {
+        for (IComponent component : effect.components.values()) {
             component.getAllMolangExp().forEach(exp -> {
                 exp.compile(parser);
                 MathValue variable = exp.getVariable();

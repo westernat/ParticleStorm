@@ -52,12 +52,14 @@ public class MolangParticleInstance extends TextureSheetParticle {
     public int currentFrame = 1;
     public float[] UV;
 
+    public boolean insideKillPlane;
+
     public MolangParticleInstance(ParticleDetail detail, ClientLevel level, double x, double y, double z, double xSpeed, double ySpeed, double zSpeed, ExtendMutableSpriteSet sprites) {
         super(level, x, y, z);
         this.random = level.getRandom();
         this.detail = detail;
         this.variableTable = new VariableTable(detail.variableTable);
-        setSprite(sprites.get(detail.effect.getDescription().parameters().getTextureIndex()));
+        setSprite(sprites.get(detail.effect.description.parameters().getTextureIndex()));
         this.originX = ((ITextureAtlasSprite) sprite).particlestorm$getOriginX();
         this.originY = ((ITextureAtlasSprite) sprite).particlestorm$getOriginY();
 
@@ -65,7 +67,7 @@ public class MolangParticleInstance extends TextureSheetParticle {
         this.particleRandom2 = random.nextDouble();
         this.particleRandom3 = random.nextDouble();
         this.particleRandom4 = random.nextDouble();
-        this.components = detail.effect.getComponents().values().stream().filter(c -> {
+        this.components = detail.effect.components.values().stream().filter(c -> {
             if (c instanceof IParticleComponent p) {
                 p.apply(this);
                 return p.requireUpdate();
@@ -88,6 +90,18 @@ public class MolangParticleInstance extends TextureSheetParticle {
 
     public double getZd() {
         return zd;
+    }
+
+    public double getX() {
+        return x;
+    }
+
+    public double getY() {
+        return y;
+    }
+
+    public double getZ() {
+        return z;
     }
 
     public void setRoll(float roll) {

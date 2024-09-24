@@ -49,7 +49,7 @@ public class MolangParticleLoader implements PreparableReloadListener {
             ID_2_EFFECT.clear();
             ID_2_DETAIL.clear();
             effects.forEach(effect -> {
-                ResourceLocation id = effect.getDescription().identifier();
+                ResourceLocation id = effect.description.identifier();
                 ID_2_EFFECT.put(id, effect);
                 ID_2_DETAIL.put(id, new ParticleDetail(effect));
             });

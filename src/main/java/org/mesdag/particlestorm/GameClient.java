@@ -20,6 +20,11 @@ public final class GameClient {
 
     @SubscribeEvent
     public static void reload(RegisterClientReloadListenersEvent event) {
+        registerComponents();
+        event.registerReloadListener(LOADER);
+    }
+
+    private static void registerComponents() {
         IComponent.register("emitter_local_space", EmitterLocalSpace.CODEC);
         IComponent.register(EmitterInitialization.ID, EmitterInitialization.CODEC);
 
@@ -56,7 +61,5 @@ public final class GameClient {
         IComponent.register("particle_kill_plane", ParticleLifetimeKillPlane.CODEC);
         IComponent.register("particle_expire_if_in_blocks", ParticleExpireIfInBlocks.CODEC);
         IComponent.register("particle_expire_if_not_in_blocks", ParticleExpireIfNotInBlocks.CODEC);
-
-        event.registerReloadListener(LOADER);
     }
 }
