@@ -97,20 +97,20 @@ public record ParticleAppearanceBillboard(FloatMolangExp2 size, FaceCameraMode f
         return true;
     }
 
-    private void updateFlipbookUV(MolangParticleInstance instance) {
-        float[] base = uv.flipbook.baseUV.calculate(instance);
-        int index = instance.currentFrame - 1;
-        float u = instance.uvStep[0] * index;
-        float v = instance.uvStep[1] * index;
-        instance.setUV(base[0] + u, base[1] + v, instance.uvSize[0] + u, instance.uvSize[1] + v);
-    }
-
     private void updateSimpleUV(MolangParticleInstance instance) {
         float[] base = uv.uv.calculate(instance);
         float[] size = uv.uvSize.calculate(instance);
         int x = instance.getSprite().getX();
         int y = instance.getSprite().getY();
         instance.setUV(x + base[0], y + base[1], size[0], size[1]);
+    }
+
+    private void updateFlipbookUV(MolangParticleInstance instance) {
+        float[] base = uv.flipbook.baseUV.calculate(instance);
+        int index = instance.currentFrame - 1;
+        float u = instance.uvStep[0] * index;
+        float v = instance.uvStep[1] * index;
+        instance.setUV(base[0] + u, base[1] + v, instance.uvSize[0] + u, instance.uvSize[1] + v);
     }
 
     public enum FaceCameraMode implements StringRepresentable {

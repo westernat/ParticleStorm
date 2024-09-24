@@ -37,4 +37,9 @@ public class MolangExp {
     public boolean initialized() {
         return variable != null;
     }
+
+    @Override
+    public String toString() {
+        return "molang{" + expStr + "}";
+    }
 }
