@@ -3,14 +3,24 @@ package org.mesdag.particlestorm.data.component;
 import com.mojang.datafixers.util.Either;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.particle.Particle;
+import net.minecraft.core.particles.ParticleGroup;
+import net.minecraft.util.Mth;
+import net.minecraft.util.RandomSource;
 import net.minecraft.util.StringRepresentable;
 import org.jetbrains.annotations.NotNull;
+import org.joml.Quaternionf;
+import org.joml.Vector3f;
 import org.mesdag.particlestorm.data.molang.FloatMolangExp;
 import org.mesdag.particlestorm.data.molang.FloatMolangExp3;
 import org.mesdag.particlestorm.data.molang.MolangExp;
+import org.mesdag.particlestorm.mixin.ParticleEngineAccessor;
+import org.mesdag.particlestorm.particle.MolangParticleInstance;
+import org.mesdag.particlestorm.particle.ParticleEmitterEntity;
 
+import java.util.Arrays;
 import java.util.List;
-import java.util.Locale;
 
 public abstract class EmitterShape implements IEmitterComponent {
     protected final boolean surfaceOnly;
@@ -24,6 +34,30 @@ public abstract class EmitterShape implements IEmitterComponent {
      */
     public boolean isSurfaceOnly() {
         return surfaceOnly;
+    }
+
+    private static void emittingParticle(ParticleEmitterEntity entity, Vector3f position, Vector3f speed) {
+        Particle particle = Minecraft.getInstance().particleEngine.createParticle(entity.getDetail().option, position.x, position.y, position.z, speed.x, speed.y, speed.z);
+        if (particle instanceof MolangParticleInstance instance) {
+            instance.getVariableTable().subTable = entity.getVariableTable();
+
+            instance.detail.assignments.forEach(assignment -> {
+                // 重定向，防止污染变量表
+                instance.getVariableTable().setValue(assignment.variable().name(), assignment.variable());
+            });
+            instance.components = instance.detail.effect.components.values().stream().filter(c -> {
+                if (c instanceof IParticleComponent p) {
+                    p.apply(instance);
+                    return p.requireUpdate();
+                }
+                return false;
+            }).map(c -> (IParticleComponent) c).toList();
+        }
+    }
+
+    private static boolean hasSpaceInParticleLimit(ParticleEmitterEntity entity) {
+        ParticleGroup particleGroup = entity.particleGroup;
+        return ((ParticleEngineAccessor) Minecraft.getInstance().particleEngine).trackedParticleCounts().getInt(particleGroup) < particleGroup.getLimit();
     }
 
     /**
@@ -41,6 +75,8 @@ public abstract class EmitterShape implements IEmitterComponent {
         private final FloatMolangExp radius;
         private final PlaneNormal planeNormal;
         private final Direction direction;
+
+        private static final Vector3f EL = new Vector3f();
 
         public Disc(FloatMolangExp3 offset, FloatMolangExp radius, PlaneNormal planeNormal, Direction direction, boolean surfaceOnly) {
             super(surfaceOnly);
@@ -96,22 +132,72 @@ public abstract class EmitterShape implements IEmitterComponent {
             );
         }
 
+        @Override
+        public void update(ParticleEmitterEntity entity) {
+            if (entity.spawned) return;
+            for (int num = 0; num < entity.spawnRate; num++) {
+                if (hasSpaceInParticleLimit(entity)) {
+                    float[] off = offset.calculate(entity);
+                    Vector3f position = entity.position().toVector3f().add(off[0], off[1], off[2]);
+                    Vector3f speed = new Vector3f();
+                    float radius = this.radius.calculate(entity);
+                    float op = entity.level().random.nextFloat() * Mth.TWO_PI;
+                    float sp = surfaceOnly ? radius : radius * Mth.sqrt(entity.level().random.nextFloat());
+                    position.x += sp * Mth.cos(op);
+                    position.z += sp * Mth.sin(op);
+                    float[] lp = planeNormal.getPlane().calculate(entity);
+                    if (!Arrays.equals(lp, PlaneNormal.FN)) {
+                        Quaternionf quaternion = new Quaternionf();
+                        float dot = new Vector3f(PlaneNormal.FY).dot(new Vector3f(lp)) + 1;
+                        if (dot < 0) {
+                            quaternion.x = 0;
+                            quaternion.y = 0;
+                            quaternion.z = 1;
+                            quaternion.w = 0;
+                        } else {
+                            quaternion.x = lp[2];
+                            quaternion.y = 0;
+                            quaternion.z = -lp[0];
+                            quaternion.w = dot;
+                        }
+                        quaternion.normalize();
+
+                        float t = position.x, n = position.y, r = position.z;
+                        float i = quaternion.x;
+                        float a = quaternion.y;
+                        float o = quaternion.z;
+                        float s = quaternion.w;
+                        float l = s * t + a * r - o * n;
+                        float c = s * n + o * t - i * r;
+                        float u = s * r + i * n - a * t;
+                        float h = -i * t - a * n - o * r;
+                        position.x = l * s + h * -i + c * -o - u * -a;
+                        position.y = c * s + h * -a + u * -i - l * -o;
+                        position.z = u * s + h * -o + l * -a - c * -i;
+                    }
+                    direction.apply(entity, this, position, speed);
+                    emittingParticle(entity, position, speed);
+                }
+            }
+            entity.spawned = true;
+        }
+
+        @Override
+        public boolean requireUpdate() {
+            return true;
+        }
+
         /**
          * Custom direction for the normal
          */
         public static class PlaneNormal {
-            /**
-             * This variant has the normal in the x-axis
-             */
             public static final PlaneNormal X = new PlaneNormal("x", FloatMolangExp3.X);
-            /**
-             * This variant has the normal in the y-axis
-             */
             public static final PlaneNormal Y = new PlaneNormal("y", FloatMolangExp3.Y);
-            /**
-             * This variant has the normal in the z-axis
-             */
             public static final PlaneNormal Z = new PlaneNormal("z", FloatMolangExp3.Z);
+            public static final float[] FN = new float[]{0.0F, 0.0F, 0.0F};
+            public static final float[] FX = new float[]{1.0F, 0.0F, 0.0F};
+            public static final float[] FY = new float[]{0.0F, 1.0F, 0.0F};
+            public static final float[] FZ = new float[]{0.0F, 0.0F, 1.0F};
             public static final Codec<PlaneNormal> CODEC = Codec.either(Codec.STRING, FloatMolangExp3.CODEC).xmap(
                     either -> either.map(d -> switch (d) {
                         case "x" -> X;
@@ -363,6 +449,9 @@ public abstract class EmitterShape implements IEmitterComponent {
         private final String name;
         private final FloatMolangExp3 direct;
 
+        private static final Quaternionf HD = new Quaternionf();
+        private static final Vector3f OX = new Vector3f();
+
         Direction(String name, FloatMolangExp3 direct) {
             this.name = name;
             this.direct = direct;
@@ -374,7 +463,32 @@ public abstract class EmitterShape implements IEmitterComponent {
 
         @Override
         public @NotNull String getSerializedName() {
-            return name.toLowerCase(Locale.ROOT);
+            return name;
+        }
+
+        public void apply(ParticleEmitterEntity entity, EmitterShape shape, Vector3f position, Vector3f speed) {
+            // todo inherited_particle_speed
+            if (this == INWARDS || this == OUTWARDS) {
+                if (shape instanceof Point) {
+                    applyEuler(getRandomEuler(entity.level().random), speed.set(1, 0, 0));
+                } else {
+                    speed.set(position).normalize();
+                    if (this == INWARDS) speed.negate();
+                }
+            } else { // custom
+                speed.set(new Vector3f(direct.calculate(entity)).normalize());
+            }
+        }
+
+        private Vector3f getRandomEuler(RandomSource random) {
+            float x = random.nextFloat() * (random.nextBoolean() ? Mth.PI : -Mth.PI);
+            float y = random.nextFloat() * (random.nextBoolean() ? Mth.PI : -Mth.PI);
+            float z = random.nextFloat() * (random.nextBoolean() ? Mth.PI : -Mth.PI);
+            return OX.set(x, y, z);
+        }
+
+        private void applyEuler(Vector3f euler, Vector3f dest) {
+            HD.rotateXYZ(euler.x, euler.y, euler.z).transform(dest);
         }
     }
 }

@@ -38,7 +38,7 @@ public record ParticleAppearanceTinting(Color color, ColorField colorField) impl
 
     @Override
     public void update(MolangParticleInstance instance) {
-
+        // todo
     }
 
     @Override

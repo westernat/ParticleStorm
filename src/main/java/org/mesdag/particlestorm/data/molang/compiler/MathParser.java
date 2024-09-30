@@ -124,8 +124,8 @@ public class MathParser {
         if (name.startsWith("q")) {
             return MolangQueries.getQueryFor(name);
         }
-        String v = applyPrefixAliases(name, "variable.", "v.");
-        return table.computeIfAbsent(v, s -> new Variable(v, 0));
+        String n = applyPrefixAliases(name, "variable.", "v.");
+        return table.computeIfAbsent(n, s -> new Variable(s, p -> p.getVariableTable().getValue(s, p)));
     }
 
     public MathValue compileMolang(String expression) {

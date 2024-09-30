@@ -2,8 +2,11 @@ package org.mesdag.particlestorm.data.component;
 
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
+import net.neoforged.neoforge.network.PacketDistributor;
 import org.mesdag.particlestorm.data.molang.FloatMolangExp;
 import org.mesdag.particlestorm.data.molang.MolangExp;
+import org.mesdag.particlestorm.network.EmitterDiscardPacketC2S;
+import org.mesdag.particlestorm.particle.ParticleEmitterEntity;
 
 import java.util.List;
 
@@ -53,6 +56,27 @@ public abstract class EmitterLifetime implements IEmitterComponent {
         public List<MolangExp> getAllMolangExp() {
             return List.of(activationExpression, expirationExpression);
         }
+
+        @Override
+        public void update(ParticleEmitterEntity entity) {
+            if (expirationExpression.calculate(entity) != 0.0) {
+                PacketDistributor.sendToServer(new EmitterDiscardPacketC2S(entity.getId()));
+            }
+            entity.active = activationExpression.calculate(entity) != 0.0;
+        }
+
+        @Override
+        public boolean requireUpdate() {
+            return true;
+        }
+
+        @Override
+        public String toString() {
+            return "Expression{" +
+                    "activationExpression=" + activationExpression +
+                    ", expirationExpression=" + expirationExpression +
+                    '}';
+        }
     }
 
     /**
@@ -98,6 +122,32 @@ public abstract class EmitterLifetime implements IEmitterComponent {
         public List<MolangExp> getAllMolangExp() {
             return List.of(activeTime, sleepTime);
         }
+
+        @Override
+        public void update(ParticleEmitterEntity entity) {
+            entity.activeTime = (int) (activeTime.calculate(entity) * 20);
+            entity.fullLoopTime = entity.activeTime + (int) (sleepTime.calculate(entity) * 20);
+            if (entity.loopingTime <= entity.fullLoopTime) {
+                entity.active = entity.loopingTime <= entity.activeTime;
+                entity.loopingTime++;
+            } else {
+                entity.spawned = false;
+                entity.loopingTime = 0;
+            }
+        }
+
+        @Override
+        public boolean requireUpdate() {
+            return true;
+        }
+
+        @Override
+        public String toString() {
+            return "Looping{" +
+                    "activeTime=" + activeTime +
+                    ", sleepTime=" + sleepTime +
+                    '}';
+        }
     }
 
     public static class Once extends EmitterLifetime {
@@ -122,6 +172,32 @@ public abstract class EmitterLifetime implements IEmitterComponent {
         @Override
         public List<MolangExp> getAllMolangExp() {
             return List.of(activeTime);
+        }
+
+        @Override
+        public void update(ParticleEmitterEntity entity) {
+            if (entity.loopingTime < entity.activeTime) {
+                entity.loopingTime++;
+            } else {
+                PacketDistributor.sendToServer(new EmitterDiscardPacketC2S(entity.getId()));
+            }
+        }
+
+        @Override
+        public void apply(ParticleEmitterEntity entity) {
+            entity.activeTime = (int) (activeTime.calculate(entity) * 20);
+        }
+
+        @Override
+        public boolean requireUpdate() {
+            return true;
+        }
+
+        @Override
+        public String toString() {
+            return "Once{" +
+                    "activeTime=" + activeTime +
+                    '}';
         }
     }
 }

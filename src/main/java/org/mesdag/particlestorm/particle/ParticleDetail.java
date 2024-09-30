@@ -1,15 +1,15 @@
 package org.mesdag.particlestorm.particle;
 
 import net.minecraft.client.particle.ParticleRenderType;
-import net.minecraft.client.particle.SingleQuadParticle;
-import net.minecraft.resources.ResourceLocation;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 import org.jetbrains.annotations.NotNull;
 import org.mesdag.particlestorm.data.ParticleEffect;
 import org.mesdag.particlestorm.data.component.IComponent;
+import org.mesdag.particlestorm.data.component.IParticleComponent;
 import org.mesdag.particlestorm.data.component.ParticleAppearanceBillboard;
 import org.mesdag.particlestorm.data.component.ParticleAppearanceLighting;
+import org.mesdag.particlestorm.data.molang.MolangData;
 import org.mesdag.particlestorm.data.molang.VariableTable;
 import org.mesdag.particlestorm.data.molang.compiler.MathParser;
 import org.mesdag.particlestorm.data.molang.compiler.MathValue;
@@ -25,9 +25,8 @@ import static org.mesdag.particlestorm.data.molang.compiler.MolangQueries.applyP
 @OnlyIn(Dist.CLIENT)
 public class ParticleDetail {
     public final ParticleEffect effect;
-    public final ResourceLocation id;
     public final ParticleRenderType renderType;
-    public final SingleQuadParticle.FacingCameraMode facingCameraMode;
+    public final FaceCameraMode facingCameraMode;
     public final float minSpeedThresholdSqr;
     public final boolean environmentLighting;
 
@@ -36,7 +35,6 @@ public class ParticleDetail {
 
     public ParticleDetail(ParticleEffect effect) {
         this.effect = effect;
-        this.id = effect.description.identifier();
         this.renderType = switch (effect.description.parameters().material()) {
             case TERRAIN_SHEET -> ParticleRenderType.TERRAIN_SHEET;
             case PARTICLE_SHEET_OPAQUE -> ParticleRenderType.PARTICLE_SHEET_OPAQUE;
@@ -46,20 +44,9 @@ public class ParticleDetail {
             case NO_RENDER -> ParticleRenderType.NO_RENDER;
         };
         ParticleAppearanceBillboard particleAppearanceBillboard = (ParticleAppearanceBillboard) effect.components.get(ParticleAppearanceBillboard.ID);
-        this.facingCameraMode = switch (particleAppearanceBillboard.faceCameraMode()) {
-            case ROTATE_XYZ -> FaceCameraMode.ROTATE_XYZ;
-            case ROTATE_Y -> FaceCameraMode.ROTATE_Y;
-            case LOOKAT_XYZ -> SingleQuadParticle.FacingCameraMode.LOOKAT_XYZ;
-            case LOOKAT_Y -> SingleQuadParticle.FacingCameraMode.LOOKAT_Y;
-            case DIRECTION_X -> FaceCameraMode.DIRECTION_X;
-            case DIRECTION_Y -> FaceCameraMode.DIRECTION_Y;
-            case DIRECTION_Z -> FaceCameraMode.DIRECTION_Z;
-            case EMITTER_TRANSFORM_XY -> FaceCameraMode.EMITTER_TRANSFORM_XY;
-            case EMITTER_TRANSFORM_XZ -> FaceCameraMode.EMITTER_TRANSFORM_XZ;
-            case EMITTER_TRANSFORM_YZ -> FaceCameraMode.EMITTER_TRANSFORM_YZ;
-        };
+        this.facingCameraMode = FaceCameraMode.valueOf(particleAppearanceBillboard.faceCameraMode().name());
         this.minSpeedThresholdSqr = particleAppearanceBillboard.direction().minSpeedThreshold() * particleAppearanceBillboard.direction().minSpeedThreshold();
-        this.environmentLighting = effect.components.get(ParticleAppearanceLighting.ID) != null;
+        this.environmentLighting = effect.components.containsValue(ParticleAppearanceLighting.INSTANCE);
 
         Hashtable<String, Variable> table = addDefaultVariables();
         MathParser parser = new MathParser(table);
@@ -70,6 +57,7 @@ public class ParticleDetail {
 
         ArrayList<VariableAssignment> toInit = new ArrayList<>();
         for (IComponent component : effect.components.values()) {
+            if (!(component instanceof IParticleComponent)) continue;
             component.getAllMolangExp().forEach(exp -> {
                 exp.compile(parser);
                 MathValue variable = exp.getVariable();
@@ -84,12 +72,12 @@ public class ParticleDetail {
 
     private static @NotNull Hashtable<String, Variable> addDefaultVariables() {
         Hashtable<String, Variable> table = new Hashtable<>();
-        table.computeIfAbsent("variable.particle_age", s -> new Variable(s, MolangParticleInstance::getAge));
-        table.computeIfAbsent("variable.particle_lifetime", s -> new Variable(s, MolangParticleInstance::getLifetime));
-        table.computeIfAbsent("variable.particle_random_1", s -> new Variable(s, p -> p.particleRandom1));
-        table.computeIfAbsent("variable.particle_random_2", s -> new Variable(s, p -> p.particleRandom2));
-        table.computeIfAbsent("variable.particle_random_3", s -> new Variable(s, p -> p.particleRandom3));
-        table.computeIfAbsent("variable.particle_random_4", s -> new Variable(s, p -> p.particleRandom4));
+        table.computeIfAbsent("variable.particle_age", s -> new Variable(s, MolangData::getAge));
+        table.computeIfAbsent("variable.particle_lifetime", s -> new Variable(s, MolangData::getLifetime));
+        table.computeIfAbsent("variable.particle_random_1", s -> new Variable(s, MolangData::getRandom1));
+        table.computeIfAbsent("variable.particle_random_2", s -> new Variable(s, MolangData::getRandom2));
+        table.computeIfAbsent("variable.particle_random_3", s -> new Variable(s, MolangData::getRandom3));
+        table.computeIfAbsent("variable.particle_random_4", s -> new Variable(s, MolangData::getRandom4));
         return table;
     }
 
@@ -97,7 +85,7 @@ public class ParticleDetail {
         if (value instanceof VariableAssignment assignment) {
             Variable variable = assignment.variable();
             // 重定向，防止污染变量表
-            variable.set(p -> p.variableTable.table.computeIfAbsent(variable.name(), s -> new Variable(s, assignment.value())).get(p));
+            variable.set(p -> p.getVariableTable().table.computeIfAbsent(variable.name(), s -> new Variable(s, assignment.value())).get(p));
             table.put(variable.name(), variable);
             toInit.add(assignment);
             return true;

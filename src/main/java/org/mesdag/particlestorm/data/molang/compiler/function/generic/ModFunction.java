@@ -1,8 +1,8 @@
 package org.mesdag.particlestorm.data.molang.compiler.function.generic;
 
+import org.mesdag.particlestorm.data.molang.MolangData;
 import org.mesdag.particlestorm.data.molang.compiler.MathValue;
 import org.mesdag.particlestorm.data.molang.compiler.function.MathFunction;
-import org.mesdag.particlestorm.particle.MolangParticleInstance;
 
 /**
  * {@link MathFunction} value supplier
@@ -29,7 +29,7 @@ public final class ModFunction extends MathFunction {
     }
 
     @Override
-    public double compute(MolangParticleInstance instance) {
+    public double compute(MolangData instance) {
         return this.value.get(instance) % this.modulus.get(instance);
     }
 

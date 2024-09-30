@@ -22,6 +22,14 @@ public record EmitterLocalSpace(boolean position, boolean rotation, boolean velo
             Codec.BOOL.fieldOf("velocity").orElse(false).forGetter(EmitterLocalSpace::velocity)
     ).apply(instance, EmitterLocalSpace::new));
 
+    public EmitterLocalSpace(boolean position, boolean rotation, boolean velocity) {
+        this.position = position;
+        this.rotation = rotation;
+        this.velocity = velocity;
+
+        if (rotation && !position) throw new IllegalArgumentException("rotation = true and position = false is an invalid option");
+    }
+
     @Override
     public Codec<? extends IComponent> codec() {
         return null;
@@ -30,5 +38,13 @@ public record EmitterLocalSpace(boolean position, boolean rotation, boolean velo
     @Override
     public List<MolangExp> getAllMolangExp() {
         return List.of();
+    }
+
+    @Override
+    public String toString() {
+        return "EmitterLocalSpace[" +
+                "position=" + position + ", " +
+                "rotation=" + rotation + ", " +
+                "velocity=" + velocity + ']';
     }
 }

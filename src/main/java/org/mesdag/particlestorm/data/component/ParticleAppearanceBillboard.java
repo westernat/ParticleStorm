@@ -60,7 +60,7 @@ public record ParticleAppearanceBillboard(FloatMolangExp2 size, FaceCameraMode f
         if (uv != UV.EMPTY) {
             if (uv.flipbook == UV.Flipbook.EMPTY) {
                 updateSimpleUV(instance);
-            } else if (instance.level().getGameTime() / uv.flipbook.getFramesPerTick(instance) < 1.0F) {
+            } else if (instance.getLevel().getGameTime() / uv.flipbook.getFramesPerTick(instance) < 1.0F) {
                 updateFlipbookUV(instance);
                 instance.maxFrame = (int) uv.flipbook.maxFrame.calculate(instance);
                 if (instance.currentFrame < instance.maxFrame) {

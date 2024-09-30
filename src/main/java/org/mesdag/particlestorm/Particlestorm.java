@@ -11,9 +11,13 @@ import net.minecraft.world.entity.MobCategory;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.Mod;
+import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
+import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import org.jetbrains.annotations.NotNull;
+import org.mesdag.particlestorm.network.EmitterDiscardPacketC2S;
+import org.mesdag.particlestorm.network.EmitterManualPacketC2S;
 import org.mesdag.particlestorm.particle.MolangParticleOption;
 import org.mesdag.particlestorm.particle.ParticleEmitterEntity;
 import org.slf4j.Logger;
@@ -25,7 +29,7 @@ public final class ParticleStorm {
     public static final Logger LOGGER = LoggerFactory.getLogger("ParticleStorm");
 
     public static final DeferredRegister<EntityType<?>> ENTITIES = DeferredRegister.create(BuiltInRegistries.ENTITY_TYPE, MODID);
-    public static final DeferredHolder<EntityType<?>, EntityType<ParticleEmitterEntity>> PARTICLE_EMITTER = ENTITIES.register("particle_emitter", () -> EntityType.Builder.of(ParticleEmitterEntity::new, MobCategory.MISC).fireImmune().sized(0, 0).clientTrackingRange(10).updateInterval(1).build("particlestorm:particle_emitter"));
+    public static final DeferredHolder<EntityType<?>, EntityType<ParticleEmitterEntity>> PARTICLE_EMITTER = ENTITIES.register("particle_emitter", () -> EntityType.Builder.<ParticleEmitterEntity>of(ParticleEmitterEntity::new, MobCategory.MISC).fireImmune().sized(0, 0).clientTrackingRange(10).updateInterval(1).build("particlestorm:particle_emitter"));
 
     public static final DeferredRegister<ParticleType<?>> PARTICLE = DeferredRegister.create(BuiltInRegistries.PARTICLE_TYPE, MODID);
     public static final DeferredHolder<ParticleType<?>, ParticleType<MolangParticleOption>> MOLANG = PARTICLE.register("molang", () -> new ParticleType<MolangParticleOption>(false) {
@@ -43,6 +47,21 @@ public final class ParticleStorm {
     public ParticleStorm(IEventBus bus, ModContainer container) {
         ENTITIES.register(bus);
         PARTICLE.register(bus);
+        bus.addListener(ParticleStorm::registerPayloadHandlers);
+    }
+
+    private static void registerPayloadHandlers(RegisterPayloadHandlersEvent event) {
+        PayloadRegistrar registrar = event.registrar("1");
+        registrar.playToServer(
+                EmitterDiscardPacketC2S.TYPE,
+                EmitterDiscardPacketC2S.STREAM_CODEC,
+                EmitterDiscardPacketC2S::handle
+        );
+        registrar.playToServer(
+                EmitterManualPacketC2S.TYPE,
+                EmitterManualPacketC2S.STREAM_CODEC,
+                EmitterManualPacketC2S::handle
+        );
     }
 
     public static ResourceLocation asResource(String path) {

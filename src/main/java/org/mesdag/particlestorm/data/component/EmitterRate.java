@@ -2,12 +2,22 @@ package org.mesdag.particlestorm.data.component;
 
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
+import net.minecraft.core.particles.ParticleGroup;
+import net.neoforged.neoforge.network.PacketDistributor;
 import org.mesdag.particlestorm.data.molang.FloatMolangExp;
 import org.mesdag.particlestorm.data.molang.MolangExp;
+import org.mesdag.particlestorm.network.EmitterManualPacketC2S;
+import org.mesdag.particlestorm.particle.ParticleEmitterEntity;
 
 import java.util.List;
 
 public abstract class EmitterRate implements IEmitterComponent {
+    public enum Type {
+        INSTANT,
+        STEADY,
+        MANUAL
+    }
+
     /**
      * All particles come out at once, then no more unless the emitter loops.
      */
@@ -33,6 +43,22 @@ public abstract class EmitterRate implements IEmitterComponent {
         @Override
         public List<MolangExp> getAllMolangExp() {
             return List.of(numParticles);
+        }
+
+        @Override
+        public void apply(ParticleEmitterEntity entity) {
+            int calculate = (int) numParticles.calculate(entity);
+            if (entity.spawnRate != calculate) {
+                entity.spawnRate = calculate;
+                entity.particleGroup = new ParticleGroup(calculate);
+            }
+        }
+
+        @Override
+        public String toString() {
+            return "Instant{" +
+                    "numParticles=" + numParticles +
+                    '}';
         }
     }
 
@@ -69,6 +95,23 @@ public abstract class EmitterRate implements IEmitterComponent {
         public List<MolangExp> getAllMolangExp() {
             return List.of(spawnRate, maxParticles);
         }
+
+        @Override
+        public void apply(ParticleEmitterEntity entity) {
+            int calculated = (int) (spawnRate.calculate(entity) / 20);
+            if (entity.spawnRate != calculated) {
+                entity.spawnRate = calculated;
+                entity.particleGroup = new ParticleGroup((int) maxParticles.calculate(entity));
+            }
+        }
+
+        @Override
+        public String toString() {
+            return "Steady{" +
+                    "spawnRate=" + spawnRate +
+                    ", maxParticles=" + maxParticles +
+                    '}';
+        }
     }
 
     /**
@@ -76,7 +119,7 @@ public abstract class EmitterRate implements IEmitterComponent {
      */
     public static final class Manual extends EmitterRate {
         public static final Codec<Manual> CODEC = RecordCodecBuilder.create(instance -> instance.group(
-                FloatMolangExp.CODEC.fieldOf("max_particles").orElseGet(() -> FloatMolangExp.ofConstant(50)).forGetter(Manual::getMaxParticles)
+                FloatMolangExp.CODEC.fieldOf("max_particles").orElse(FloatMolangExp.ZERO).forGetter(Manual::getMaxParticles)
         ).apply(instance, Manual::new));
         private final FloatMolangExp maxParticles;
 
@@ -96,6 +139,23 @@ public abstract class EmitterRate implements IEmitterComponent {
         @Override
         public List<MolangExp> getAllMolangExp() {
             return List.of(maxParticles);
+        }
+
+        @Override
+        public void update(ParticleEmitterEntity entity) {
+            PacketDistributor.sendToServer(new EmitterManualPacketC2S(entity.getId(), (int) maxParticles.calculate(entity)));
+        }
+
+        @Override
+        public boolean requireUpdate() {
+            return true;
+        }
+
+        @Override
+        public String toString() {
+            return "Manual{" +
+                    "maxParticles=" + maxParticles +
+                    '}';
         }
     }
 }

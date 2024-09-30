@@ -2,9 +2,9 @@ package org.mesdag.particlestorm.data.molang.compiler.function.random;
 
 import net.minecraft.util.Mth;
 import org.jetbrains.annotations.Nullable;
+import org.mesdag.particlestorm.data.molang.MolangData;
 import org.mesdag.particlestorm.data.molang.compiler.MathValue;
 import org.mesdag.particlestorm.data.molang.compiler.function.MathFunction;
-import org.mesdag.particlestorm.particle.MolangParticleInstance;
 
 import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
@@ -46,7 +46,7 @@ public final class DieRollIntegerFunction extends MathFunction {
     }
 
     @Override
-    public double compute(MolangParticleInstance instance) {
+    public double compute(MolangData instance) {
         final int rolls = (int)(Math.floor(this.rolls.get(instance)));
         final int min = Mth.floor(this.min.get(instance));
         final int max = Mth.ceil(this.max.get(instance));

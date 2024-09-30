@@ -18,32 +18,31 @@ import org.joml.Vector3f;
 import org.mesdag.particlestorm.GameClient;
 import org.mesdag.particlestorm.ITextureAtlasSprite;
 import org.mesdag.particlestorm.data.component.IParticleComponent;
+import org.mesdag.particlestorm.data.molang.MolangData;
 import org.mesdag.particlestorm.data.molang.VariableTable;
 
-import java.util.Collection;
-import java.util.Objects;
-import java.util.stream.Collectors;
+import java.util.List;
 
 @OnlyIn(Dist.CLIENT)
-public class MolangParticleInstance extends TextureSheetParticle {
+public class MolangParticleInstance extends TextureSheetParticle implements MolangData {
     public static final int FULL_LIGHT = 0xF000F0;
     public final RandomSource random;
     public final ParticleDetail detail;
-    public final VariableTable variableTable;
-    public final float originX;
-    public final float originY;
+    private final VariableTable variableTable;
+    protected final float originX;
+    protected final float originY;
 
     public float xRot = 0.0F;
     public float yRot = 0.0F;
     protected float xRotO = 0.0F;
     protected float yRotO = 0.0F;
-    public float rolld = 0.0F;
+    protected float rolld = 0.0F;
 
-    public final double particleRandom1;
-    public final double particleRandom2;
-    public final double particleRandom3;
-    public final double particleRandom4;
-    protected final Collection<IParticleComponent> components;
+    protected final double particleRandom1;
+    protected final double particleRandom2;
+    protected final double particleRandom3;
+    protected final double particleRandom4;
+    public List<IParticleComponent> components;
 
     public float[] billboardSize = new float[2];
     public float[] uvSize;
@@ -55,7 +54,7 @@ public class MolangParticleInstance extends TextureSheetParticle {
     public boolean insideKillPlane;
 
     public MolangParticleInstance(ParticleDetail detail, ClientLevel level, double x, double y, double z, double xSpeed, double ySpeed, double zSpeed, ExtendMutableSpriteSet sprites) {
-        super(level, x, y, z);
+        super(level, x, y, z, xSpeed, ySpeed, zSpeed);
         this.random = level.getRandom();
         this.detail = detail;
         this.variableTable = new VariableTable(detail.variableTable);
@@ -67,17 +66,6 @@ public class MolangParticleInstance extends TextureSheetParticle {
         this.particleRandom2 = random.nextDouble();
         this.particleRandom3 = random.nextDouble();
         this.particleRandom4 = random.nextDouble();
-        this.components = detail.effect.components.values().stream().filter(c -> {
-            if (c instanceof IParticleComponent p) {
-                p.apply(this);
-                return p.requireUpdate();
-            }
-            return false;
-        }).map(c -> (IParticleComponent) c).collect(Collectors.toList());
-        detail.assignments.forEach(assignment -> {
-            // 重定向，防止污染变量表
-            variableTable.setValue(assignment.variable().name(), assignment.variable().get(this));
-        });
     }
 
     public double getXd() {
@@ -116,12 +104,38 @@ public class MolangParticleInstance extends TextureSheetParticle {
         this.UV[3] = (v + h) / originY;
     }
 
-    public Level level() {
+    @Override
+    public VariableTable getVariableTable() {
+        return variableTable;
+    }
+
+    @Override
+    public Level getLevel() {
         return level;
     }
 
     public int getAge() {
         return age;
+    }
+
+    @Override
+    public double getRandom1() {
+        return particleRandom1;
+    }
+
+    @Override
+    public double getRandom2() {
+        return particleRandom2;
+    }
+
+    @Override
+    public double getRandom3() {
+        return particleRandom3;
+    }
+
+    @Override
+    public double getRandom4() {
+        return particleRandom4;
     }
 
     public TextureAtlasSprite getSprite() {
@@ -160,6 +174,17 @@ public class MolangParticleInstance extends TextureSheetParticle {
     }
 
     @Override
+    public void render(VertexConsumer buffer, Camera renderInfo, float partialTicks) {
+        Quaternionf quaternionf = new Quaternionf();
+        getFacingCameraMode().setRotation((float) x, (float) y, (float) z, quaternionf, renderInfo, partialTicks);
+        if (this.roll != 0.0F) {
+            quaternionf.rotateZ(Mth.lerp(partialTicks, this.oRoll, this.roll));
+        }
+
+        renderRotatedQuad(buffer, renderInfo, quaternionf, partialTicks);
+    }
+
+    @Override
     protected void renderRotatedQuad(@NotNull VertexConsumer buffer, @NotNull Camera camera, @NotNull Quaternionf quaternion, float partialTicks) {
         if (xRot != 0.0F) quaternion.rotateX(Mth.lerp(partialTicks, xRotO, xRot));
         if (yRot != 0.0F) quaternion.rotateY(Mth.lerp(partialTicks, yRotO, yRot));
@@ -184,7 +209,7 @@ public class MolangParticleInstance extends TextureSheetParticle {
     }
 
     @Override
-    public @NotNull FacingCameraMode getFacingCameraMode() {
+    public @NotNull FaceCameraMode getFacingCameraMode() {
         return detail.facingCameraMode;
     }
 
@@ -195,7 +220,6 @@ public class MolangParticleInstance extends TextureSheetParticle {
 
     public static class Provider implements ParticleProvider<MolangParticleOption> {
         private final ExtendMutableSpriteSet sprites;
-        private ParticleDetail cachedDetail;
 
         public Provider(ExtendMutableSpriteSet sprites) {
             this.sprites = sprites;
@@ -203,7 +227,7 @@ public class MolangParticleInstance extends TextureSheetParticle {
 
         @Override
         public TextureSheetParticle createParticle(@NotNull MolangParticleOption option, @NotNull ClientLevel level, double x, double y, double z, double xSpeed, double ySpeed, double zSpeed) {
-            return new MolangParticleInstance(Objects.requireNonNull(GameClient.LOADER.ID_2_DETAIL.get(option.getId())), level, x, y, z, xSpeed, ySpeed, zSpeed, sprites);
+            return new MolangParticleInstance(GameClient.LOADER.ID_2_PARTICLE.get(option.getId()), level, x, y, z, xSpeed, ySpeed, zSpeed, sprites);
         }
     }
 }

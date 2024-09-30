@@ -4,6 +4,7 @@ import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.resources.ResourceLocation;
 import org.mesdag.particlestorm.data.molang.MolangExp;
+import org.mesdag.particlestorm.particle.ParticleEmitterEntity;
 
 import java.util.List;
 
@@ -28,5 +29,23 @@ public record EmitterInitialization(MolangExp creationExpression, MolangExp perU
     @Override
     public List<MolangExp> getAllMolangExp() {
         return List.of(creationExpression, perUpdateExpression);
+    }
+
+    @Override
+    public void update(ParticleEmitterEntity entity) {
+        perUpdateExpression.calculate(entity);
+    }
+
+    @Override
+    public boolean requireUpdate() {
+        return true;
+    }
+
+    @Override
+    public String toString() {
+        return "EmitterInitialization{" +
+                "creationExpression=" + creationExpression +
+                ", perUpdateExpression=" + perUpdateExpression +
+                '}';
     }
 }

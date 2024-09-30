@@ -2,7 +2,6 @@ package org.mesdag.particlestorm.data.molang;
 
 import com.mojang.datafixers.util.Either;
 import com.mojang.serialization.Codec;
-import org.mesdag.particlestorm.particle.MolangParticleInstance;
 
 public class FloatMolangExp extends MolangExp {
     public static final FloatMolangExp ZERO = FloatMolangExp.ofConstant(0);
@@ -28,9 +27,14 @@ public class FloatMolangExp extends MolangExp {
     }
 
     @Override
-    public float calculate(MolangParticleInstance instance) {
+    public float calculate(MolangData instance) {
         if (!initialized()) return 0.0F;
         return variable == null ? constant : (float) variable.get(instance);
+    }
+
+    @Override
+    public String toString() {
+        return "molang{" + (expStr.isEmpty() ? constant : expStr) + "}";
     }
 
     public static FloatMolangExp ofConstant(float constant) {

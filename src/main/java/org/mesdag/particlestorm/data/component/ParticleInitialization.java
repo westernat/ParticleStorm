@@ -5,6 +5,7 @@ import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.resources.ResourceLocation;
 import org.mesdag.particlestorm.data.molang.FloatMolangExp;
 import org.mesdag.particlestorm.data.molang.MolangExp;
+import org.mesdag.particlestorm.particle.MolangParticleInstance;
 
 import java.util.List;
 
@@ -25,5 +26,15 @@ public record ParticleInitialization(FloatMolangExp perRenderExpression) impleme
     @Override
     public List<MolangExp> getAllMolangExp() {
         return List.of(perRenderExpression);
+    }
+
+    @Override
+    public void update(MolangParticleInstance instance) {
+        perRenderExpression.calculate(instance);
+    }
+
+    @Override
+    public boolean requireUpdate() {
+        return true;
     }
 }

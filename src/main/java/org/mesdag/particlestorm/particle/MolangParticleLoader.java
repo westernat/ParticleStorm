@@ -13,6 +13,7 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 import org.jetbrains.annotations.NotNull;
 import org.mesdag.particlestorm.data.ParticleEffect;
+import org.mesdag.particlestorm.data.component.IEmitterComponent;
 
 import java.io.IOException;
 import java.io.Reader;
@@ -25,7 +26,8 @@ import java.util.concurrent.Executor;
 @OnlyIn(Dist.CLIENT)
 public class MolangParticleLoader implements PreparableReloadListener {
     public final Hashtable<ResourceLocation, ParticleEffect> ID_2_EFFECT = new Hashtable<>();
-    public final Hashtable<ResourceLocation, ParticleDetail> ID_2_DETAIL = new Hashtable<>();
+    public final Hashtable<ResourceLocation, ParticleDetail> ID_2_PARTICLE = new Hashtable<>();
+    public final Hashtable<ResourceLocation, EmitterDetail> ID_2_EMITTER = new Hashtable<>();
     private static final FileToIdConverter PARTICLE_LISTER = FileToIdConverter.json("particle_definitions");
 
     @Override
@@ -47,11 +49,17 @@ public class MolangParticleLoader implements PreparableReloadListener {
             return Util.sequence(list);
         }).thenCompose(preparationBarrier::wait).thenAcceptAsync(effects -> {
             ID_2_EFFECT.clear();
-            ID_2_DETAIL.clear();
+            ID_2_PARTICLE.clear();
             effects.forEach(effect -> {
                 ResourceLocation id = effect.description.identifier();
                 ID_2_EFFECT.put(id, effect);
-                ID_2_DETAIL.put(id, new ParticleDetail(effect));
+                ID_2_PARTICLE.put(id, new ParticleDetail(effect));
+                ID_2_EMITTER.put(id, new EmitterDetail(
+                        new MolangParticleOption(effect.description.identifier()),
+                        effect.components.values().stream()
+                                .filter(c -> c instanceof IEmitterComponent)
+                                .map(c -> (IEmitterComponent) c).toList()
+                ));
             });
         }, gameExecutor);
     }

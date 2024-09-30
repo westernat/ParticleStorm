@@ -1,7 +1,6 @@
 package org.mesdag.particlestorm.data.molang;
 
 import com.mojang.serialization.Codec;
-import org.mesdag.particlestorm.particle.MolangParticleInstance;
 
 import java.util.List;
 
@@ -15,7 +14,7 @@ public record FloatMolangExp3(FloatMolangExp exp1, FloatMolangExp exp2, FloatMol
             exp3 -> List.of(exp3.exp1, exp3.exp2, exp3.exp3)
     );
 
-    public float[] calculate(MolangParticleInstance instance) {
+    public float[] calculate(MolangData instance) {
         return new float[]{exp1.calculate(instance), exp2.calculate(instance), exp3.calculate(instance)};
     }
 }

@@ -7,6 +7,7 @@ import net.minecraft.core.particles.ParticleType;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.resources.ResourceLocation;
 import org.jetbrains.annotations.NotNull;
+import org.mesdag.particlestorm.ParticleStorm;
 
 public class MolangParticleOption implements ParticleOptions {
     private final ParticleType<MolangParticleOption> type;
@@ -15,6 +16,10 @@ public class MolangParticleOption implements ParticleOptions {
     private MolangParticleOption(ParticleType<MolangParticleOption> type, ResourceLocation id) {
         this.type = type;
         this.id = id;
+    }
+
+    MolangParticleOption(ResourceLocation id) {
+        this(ParticleStorm.MOLANG.get(), id);
     }
 
     public ResourceLocation getId() {

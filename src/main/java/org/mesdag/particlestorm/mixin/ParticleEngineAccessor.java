@@ -1,8 +1,10 @@
 package org.mesdag.particlestorm.mixin;
 
+import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 import net.minecraft.client.particle.ParticleEngine;
 import net.minecraft.client.particle.ParticleProvider;
 import net.minecraft.client.renderer.texture.TextureAtlas;
+import net.minecraft.core.particles.ParticleGroup;
 import net.minecraft.resources.ResourceLocation;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.gen.Accessor;
@@ -19,4 +21,7 @@ public interface ParticleEngineAccessor {
 
     @Accessor("textureAtlas")
     TextureAtlas textureAtlas();
+
+    @Accessor("trackedParticleCounts")
+    Object2IntOpenHashMap<ParticleGroup> trackedParticleCounts();
 }

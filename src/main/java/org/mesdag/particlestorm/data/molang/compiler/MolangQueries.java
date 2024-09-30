@@ -44,6 +44,6 @@ public final class MolangQueries {
     private static void setDefaultQueryValues() {
         getQueryFor("PI").set(Math.PI);
         getQueryFor("E").set(Math.E);
-        getQueryFor("game_time").set(p -> p.level().getGameTime());
+        getQueryFor("game_time").set(p -> p.getLevel().getGameTime());
     }
 }

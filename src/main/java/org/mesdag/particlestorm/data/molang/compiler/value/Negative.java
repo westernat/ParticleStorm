@@ -1,7 +1,7 @@
 package org.mesdag.particlestorm.data.molang.compiler.value;
 
+import org.mesdag.particlestorm.data.molang.MolangData;
 import org.mesdag.particlestorm.data.molang.compiler.MathValue;
-import org.mesdag.particlestorm.particle.MolangParticleInstance;
 
 /**
  * {@link MathValue} value supplier
@@ -13,7 +13,7 @@ import org.mesdag.particlestorm.particle.MolangParticleInstance;
  */
 public record Negative(MathValue value) implements MathValue {
     @Override
-    public double get(MolangParticleInstance instance) {
+    public double get(MolangData instance) {
         return -this.value.get(instance);
     }
 
