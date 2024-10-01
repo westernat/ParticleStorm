@@ -7,6 +7,7 @@ import net.minecraft.client.particle.ParticleProvider;
 import net.minecraft.client.particle.ParticleRenderType;
 import net.minecraft.client.particle.TextureSheetParticle;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
+import net.minecraft.core.particles.ParticleGroup;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.Entity;
@@ -24,6 +25,7 @@ import org.mesdag.particlestorm.data.molang.MolangData;
 import org.mesdag.particlestorm.data.molang.VariableTable;
 
 import java.util.List;
+import java.util.Optional;
 
 @OnlyIn(Dist.CLIENT)
 public class MolangParticleInstance extends TextureSheetParticle implements MolangData {
@@ -58,6 +60,7 @@ public class MolangParticleInstance extends TextureSheetParticle implements Mola
     public float[] UV;
 
     public boolean insideKillPlane;
+    public ParticleGroup particleGroup;
 
     public MolangParticleInstance(ParticleDetail detail, ClientLevel level, double x, double y, double z, double xSpeed, double ySpeed, double zSpeed, ExtendMutableSpriteSet sprites) {
         super(level, x, y, z);
@@ -276,6 +279,11 @@ public class MolangParticleInstance extends TextureSheetParticle implements Mola
     @Override
     protected int getLightColor(float partialTick) {
         return detail.environmentLighting ? super.getLightColor(partialTick) : FULL_LIGHT;
+    }
+
+    @Override
+    public @NotNull Optional<ParticleGroup> getParticleGroup() {
+        return Optional.ofNullable(particleGroup);
     }
 
     public static class Provider implements ParticleProvider<MolangParticleOption> {

@@ -133,6 +133,9 @@ public abstract class EmitterLifetime implements IEmitterComponent {
             } else {
                 entity.spawned = false;
                 entity.loopingTime = 0;
+                for (IEmitterComponent e : entity.getDetail().components) {
+                    e.apply(entity);
+                }
             }
         }
 

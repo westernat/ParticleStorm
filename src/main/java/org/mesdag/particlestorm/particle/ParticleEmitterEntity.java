@@ -46,6 +46,7 @@ public class ParticleEmitterEntity extends Entity implements MolangData {
     public int activeTime = 0;
     public int fullLoopTime = 0;
     public ParticleGroup particleGroup;
+    public int spawnDuration = 1;
     public int spawnRate = 0;
     public boolean spawned = false;
 

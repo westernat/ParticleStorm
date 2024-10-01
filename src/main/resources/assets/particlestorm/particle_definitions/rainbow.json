@@ -13,7 +13,7 @@
                 "creation_expression": "variable.radius = 0.2;"
             },
             "minecraft:emitter_rate_steady": {
-                "spawn_rate": 10,
+                "spawn_rate": 25,
                 "max_particles": 100
             },
             "minecraft:emitter_lifetime_once": {

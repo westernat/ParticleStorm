@@ -98,9 +98,10 @@ public abstract class EmitterRate implements IEmitterComponent {
 
         @Override
         public void apply(ParticleEmitterEntity entity) {
-            int calculated = Math.max((int) (20.0F / spawnRate.calculate(entity)), 1);
+            float calculated = spawnRate.calculate(entity);
+            entity.spawnDuration = Math.max((int) (20.0F / calculated), 1);
             if (entity.spawnRate != calculated) {
-                entity.spawnRate = calculated;
+                entity.spawnRate = entity.spawnDuration == 1 ? (int) calculated : 1;
                 entity.particleGroup = new ParticleGroup((int) maxParticles.calculate(entity));
             }
         }
