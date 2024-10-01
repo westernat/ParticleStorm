@@ -50,7 +50,7 @@ public record ParticleAppearanceBillboard(FloatMolangExp2 size, FaceCameraMode f
                 double xdSqr = instance.getXd() * instance.getXd();
                 double zdSqr = instance.getZd() * instance.getZd();
                 if (direction.minSpeedThreshold > 0.0F && xdSqr + instance.getYd() * instance.getYd() + zdSqr > instance.detail.minSpeedThresholdSqr) {
-                    instance.updateRotation(xdSqr, zdSqr);
+                    instance.updateBillboardRotation(xdSqr, zdSqr);
                 }
             }
         }

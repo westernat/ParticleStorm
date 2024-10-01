@@ -2,8 +2,10 @@ package org.mesdag.particlestorm.data.component;
 
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
+import net.minecraft.util.Mth;
 import org.mesdag.particlestorm.data.molang.FloatMolangExp;
 import org.mesdag.particlestorm.data.molang.MolangExp;
+import org.mesdag.particlestorm.particle.MolangParticleInstance;
 
 import java.util.List;
 
@@ -27,5 +29,11 @@ public record ParticleInitialSpin(FloatMolangExp rotation, FloatMolangExp rotati
     @Override
     public List<MolangExp> getAllMolangExp() {
         return List.of(rotation, rotationRate);
+    }
+
+    @Override
+    public void apply(MolangParticleInstance instance) {
+        instance.setRoll(rotation.calculate(instance) * Mth.DEG_TO_RAD);
+        instance.rolld = rotationRate.calculate(instance) / 20.0F;
     }
 }

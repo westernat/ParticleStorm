@@ -9,7 +9,9 @@ import net.minecraft.client.particle.TextureSheetParticle;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.phys.Vec3;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 import org.jetbrains.annotations.NotNull;
@@ -36,7 +38,11 @@ public class MolangParticleInstance extends TextureSheetParticle implements Mola
     public float yRot = 0.0F;
     protected float xRotO = 0.0F;
     protected float yRotO = 0.0F;
-    protected float rolld = 0.0F;
+    public float rolld = 0.0F;
+    private boolean hasCollision = false;
+    public float collisionDrag = 0.0F;
+    public float coefficientOfRestitution = 0.0F;
+    public boolean expireOnContact = false;
 
     protected final double particleRandom1;
     protected final double particleRandom2;
@@ -107,6 +113,10 @@ public class MolangParticleInstance extends TextureSheetParticle implements Mola
         this.UV[3] = (v + h) / originY;
     }
 
+    public void setCollision(boolean bool) {
+        this.hasCollision = bool;
+    }
+
     @Override
     public VariableTable getVariableTable() {
         return variableTable;
@@ -171,6 +181,7 @@ public class MolangParticleInstance extends TextureSheetParticle implements Mola
         this.xRotO = xRot;
         this.yRotO = yRot;
         this.oRoll = roll;
+        this.roll = roll + rolld * Mth.TWO_PI;
         for (IParticleComponent component : components) {
             component.update(this);
         }
@@ -200,10 +211,56 @@ public class MolangParticleInstance extends TextureSheetParticle implements Mola
         buffer.addVertex(vector3f.x(), vector3f.y(), vector3f.z()).setUv(u, v).setColor(rCol, gCol, bCol, alpha).setLight(packedLight);
     }
 
-    public void updateRotation(double xdSqr, double zdSqr) {
+    public void updateBillboardRotation(double xdSqr, double zdSqr) {
         double d0 = Math.sqrt(xdSqr + zdSqr);
         this.xRot = (float) (Mth.atan2(yd, d0) * Mth.RAD_TO_DEG);
         this.yRot = (float) (Mth.atan2(xd, zd) * Mth.RAD_TO_DEG);
+    }
+
+    @Override
+    public void move(double x, double y, double z) {
+        if (!stoppedByCollision) {
+            double d0 = x;
+            double d1 = y;
+            double d2 = z;
+            if (hasPhysics && (x != 0.0 || y != 0.0 || z != 0.0) && x * x + y * y + z * z < MAXIMUM_COLLISION_VELOCITY_SQUARED) {
+                Vec3 vec3 = Entity.collideBoundingBox(null, new Vec3(x, y, z), getBoundingBox(), level, List.of());
+                if (hasCollision) {
+                    if (x != vec3.x) {
+                        this.xd = -Mth.sign(xd) * Mth.clamp(Math.abs(xd) - collisionDrag, 0.0, Double.MAX_VALUE);
+                    }
+                    if (y != vec3.y) this.yd *= -coefficientOfRestitution;
+                    if (z != vec3.z) this.zd = -Mth.sign(zd) * Mth.clamp(Math.abs(zd) - collisionDrag, 0.0, Double.MAX_VALUE);
+                }
+                x = vec3.x;
+                y = vec3.y;
+                z = vec3.z;
+            }
+
+            if (x != 0.0 || y != 0.0 || z != 0.0) {
+                setBoundingBox(getBoundingBox().move(x, y, z));
+                setLocationFromBoundingbox();
+            }
+
+            if (Math.abs(d1) >= 1.0E-5F && Math.abs(y) < 1.0E-5F) {
+                this.stoppedByCollision = true;
+            }
+
+            this.onGround = d1 != y && d1 < 0.0;
+            boolean collided = false;
+            if (d0 != x) {
+                collided = true;
+                if (!hasCollision) this.xd = 0.0;
+            }
+            if (d2 != z) {
+                collided = true;
+                if (!hasCollision) this.zd = 0.0;
+            }
+
+            if (expireOnContact && (onGround || collided)) {
+                remove();
+            }
+        }
     }
 
     @Override

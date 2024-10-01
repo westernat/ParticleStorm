@@ -4,6 +4,7 @@ import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import org.mesdag.particlestorm.data.molang.BoolMolangExp;
 import org.mesdag.particlestorm.data.molang.MolangExp;
+import org.mesdag.particlestorm.particle.MolangParticleInstance;
 
 import java.util.List;
 
@@ -44,5 +45,25 @@ public record ParticleMotionCollision(BoolMolangExp enabled, float collisionDrag
     @Override
     public List<MolangExp> getAllMolangExp() {
         return List.of(enabled);
+    }
+
+    @Override
+    public void update(MolangParticleInstance instance) {
+        instance.setCollision(enabled.get(instance));
+    }
+
+    @Override
+    public void apply(MolangParticleInstance instance) {
+        instance.collisionDrag = collisionDrag / 20.0F;
+        instance.coefficientOfRestitution = coefficientOfRestitution;
+        float radius = Math.max(collisionRadius, 1E-4F);
+        instance.setBoundingBox(instance.getBoundingBox().inflate(radius, 0.0, radius));
+        instance.setLocationFromBoundingbox();
+        instance.expireOnContact = expireOnContact;
+    }
+
+    @Override
+    public boolean requireUpdate() {
+        return true;
     }
 }

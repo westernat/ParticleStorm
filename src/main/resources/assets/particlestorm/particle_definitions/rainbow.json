@@ -29,7 +29,7 @@
                 }
             },
             "minecraft:emitter_rate_instant": {
-                "num_particles": 500
+                "num_particles": 100
             },
             "minecraft:particle_initial_speed": 2,
             "minecraft:emitter_shape_disc": {
@@ -38,6 +38,15 @@
                 "plane_normal": [0, 0, 0],
                 "surface_only": true,
                 "direction": "inwards"
+            },
+            "minecraft:particle_motion_collision": {
+                "collision_drag": 0.2,
+                "coefficient_of_restitution": 0.6,
+                "collision_radius": 0.2
+            },
+            "minecraft:particle_initial_spin": {
+                "rotation": 1,
+                "rotation_rate": 2
             }
         }
     }
