@@ -61,6 +61,7 @@ public class MolangParticleInstance extends TextureSheetParticle implements Mola
 
     public MolangParticleInstance(ParticleDetail detail, ClientLevel level, double x, double y, double z, double xSpeed, double ySpeed, double zSpeed, ExtendMutableSpriteSet sprites) {
         super(level, x, y, z);
+        this.friction = 1.0F;
         this.xd = xSpeed / 20.0;
         this.yd = ySpeed / 20.0;
         this.zd = zSpeed / 20.0;
@@ -188,13 +189,12 @@ public class MolangParticleInstance extends TextureSheetParticle implements Mola
     }
 
     @Override
-    public void render(VertexConsumer buffer, Camera renderInfo, float partialTicks) {
+    public void render(@NotNull VertexConsumer buffer, @NotNull Camera renderInfo, float partialTicks) {
         Quaternionf quaternionf = new Quaternionf();
         getFacingCameraMode().setRotation((float) x, (float) y, (float) z, quaternionf, renderInfo, partialTicks);
         if (this.roll != 0.0F) {
             quaternionf.rotateZ(Mth.lerp(partialTicks, this.oRoll, this.roll));
         }
-
         renderRotatedQuad(buffer, renderInfo, quaternionf, partialTicks);
     }
 

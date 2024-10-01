@@ -34,6 +34,6 @@ public record ParticleInitialSpin(FloatMolangExp rotation, FloatMolangExp rotati
     @Override
     public void apply(MolangParticleInstance instance) {
         instance.setRoll(rotation.calculate(instance) * Mth.DEG_TO_RAD);
-        instance.rolld = rotationRate.calculate(instance) / 20.0F;
+        instance.rolld = rotationRate.calculate(instance) / 20.0F * Mth.DEG_TO_RAD;
     }
 }

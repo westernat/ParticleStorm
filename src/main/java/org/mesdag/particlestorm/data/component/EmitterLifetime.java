@@ -176,16 +176,14 @@ public abstract class EmitterLifetime implements IEmitterComponent {
 
         @Override
         public void update(ParticleEmitterEntity entity) {
-            if (entity.loopingTime < entity.activeTime) {
-                entity.loopingTime++;
-            } else {
+            if (entity.age >= entity.lifetime) {
                 PacketDistributor.sendToServer(new EmitterDiscardPacketC2S(entity.getId()));
             }
         }
 
         @Override
         public void apply(ParticleEmitterEntity entity) {
-            entity.activeTime = (int) (activeTime.calculate(entity) * 20);
+            entity.lifetime = (int) (activeTime.calculate(entity) * 20);
         }
 
         @Override

@@ -22,6 +22,7 @@ import org.mesdag.particlestorm.particle.ParticleEmitterEntity;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public abstract class EmitterShape implements IEmitterComponent {
     protected final boolean surfaceOnly;
@@ -46,13 +47,18 @@ public abstract class EmitterShape implements IEmitterComponent {
                 // 重定向，防止污染变量表
                 instance.getVariableTable().setValue(assignment.variable().name(), assignment.variable());
             });
+            AtomicBoolean motionDynamic = new AtomicBoolean();
             instance.components = instance.detail.effect.components.values().stream().filter(c -> {
                 if (c instanceof IParticleComponent p) {
+                    if (c instanceof ParticleMotionDynamic) {
+                        motionDynamic.set(true);
+                    }
                     p.apply(instance);
                     return p.requireUpdate();
                 }
                 return false;
             }).map(c -> (IParticleComponent) c).toList();
+            if (!motionDynamic.get()) instance.setParticleSpeed(0.0, 0.0, 0.0);
         }
     }
 
@@ -134,33 +140,46 @@ public abstract class EmitterShape implements IEmitterComponent {
         @Override
         public void update(ParticleEmitterEntity entity) {
             if (entity.spawned) return;
-            for (int num = 0; num < entity.spawnRate; num++) {
-                if (hasSpaceInParticleLimit(entity)) {
-                    float[] off = offset.calculate(entity);
-                    Vec3 emitterPos = entity.position();
-                    Vector3f position = new Vector3f(off);
-                    Vector3f speed = new Vector3f();
-                    float radius = this.radius.calculate(entity);
-                    float op = entity.level().random.nextFloat() * Mth.TWO_PI;
-                    float sp = surfaceOnly ? radius : radius * Mth.sqrt(entity.level().random.nextFloat());
-                    position.x += sp * Mth.cos(op);
-                    position.z += sp * Mth.sin(op);
-                    float[] lp = planeNormal.getPlane().calculate(entity);
-                    if (!Arrays.equals(lp, PlaneNormal.FN)) {
-                        Quaternionf quaternion = planeNormal.setFromUnitVectors(PlaneNormal.VY, new Vector3f(lp), new Quaternionf());
-                        planeNormal.applyQuaternion(quaternion, position);
-                    }
-                    direction.apply(entity, this, position, speed);
-                    position.add((float) emitterPos.x, (float) emitterPos.y, (float) emitterPos.z);
-                    emittingParticle(entity, position, speed);
+            EmitterRate.Type emitterRateType = entity.getDetail().emitterRateType;
+            if (emitterRateType == EmitterRate.Type.STEADY) {
+                if (entity.age % entity.spawnRate == 0) {
+                    spawnParticle(entity);
+                }
+            } else {
+                for (int num = 0; num < entity.spawnRate; num++) {
+                    spawnParticle(entity);
+                }
+                if (emitterRateType == EmitterRate.Type.INSTANT) {
+                    entity.spawned = true;
                 }
             }
-            entity.spawned = true;
         }
 
         @Override
         public boolean requireUpdate() {
             return true;
+        }
+
+        private void spawnParticle(ParticleEmitterEntity entity) {
+            if (hasSpaceInParticleLimit(entity)) {
+                float[] off = offset.calculate(entity);
+                Vec3 emitterPos = entity.position();
+                Vector3f position = new Vector3f(off);
+                Vector3f speed = new Vector3f();
+                float radius = this.radius.calculate(entity);
+                float op = entity.level().random.nextFloat() * Mth.TWO_PI;
+                float sp = surfaceOnly ? radius : radius * Mth.sqrt(entity.level().random.nextFloat());
+                position.x += sp * Mth.cos(op);
+                position.z += sp * Mth.sin(op);
+                float[] lp = planeNormal.getPlane().calculate(entity);
+                if (!Arrays.equals(lp, PlaneNormal.FN)) {
+                    Quaternionf quaternion = planeNormal.setFromUnitVectors(PlaneNormal.VY, new Vector3f(lp), new Quaternionf());
+                    planeNormal.applyQuaternion(quaternion, position);
+                }
+                direction.apply(entity, this, position, speed);
+                position.add((float) emitterPos.x, (float) emitterPos.y, (float) emitterPos.z);
+                emittingParticle(entity, position, speed);
+            }
         }
 
         /**

@@ -82,6 +82,7 @@ public class ParticleEmitterEntity extends Entity implements MolangData {
                 for (IEmitterComponent component : components) {
                     component.update(this);
                 }
+                this.age++;
             } else {
                 this.detail = GameClient.LOADER.ID_2_EMITTER.get(ResourceLocation.parse(entityData.get(DATA_PARTICLE_ID)));
                 this.variableTable = new VariableTable(detail.variableTable);
