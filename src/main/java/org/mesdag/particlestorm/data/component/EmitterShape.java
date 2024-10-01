@@ -9,6 +9,7 @@ import net.minecraft.core.particles.ParticleGroup;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
 import net.minecraft.util.StringRepresentable;
+import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.NotNull;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
@@ -76,8 +77,6 @@ public abstract class EmitterShape implements IEmitterComponent {
         private final PlaneNormal planeNormal;
         private final Direction direction;
 
-        private static final Vector3f EL = new Vector3f();
-
         public Disc(FloatMolangExp3 offset, FloatMolangExp radius, PlaneNormal planeNormal, Direction direction, boolean surfaceOnly) {
             super(surfaceOnly);
             this.offset = offset;
@@ -138,7 +137,8 @@ public abstract class EmitterShape implements IEmitterComponent {
             for (int num = 0; num < entity.spawnRate; num++) {
                 if (hasSpaceInParticleLimit(entity)) {
                     float[] off = offset.calculate(entity);
-                    Vector3f position = entity.position().toVector3f().add(off[0], off[1], off[2]);
+                    Vec3 emitterPos = entity.position();
+                    Vector3f position = new Vector3f(off);
                     Vector3f speed = new Vector3f();
                     float radius = this.radius.calculate(entity);
                     float op = entity.level().random.nextFloat() * Mth.TWO_PI;
@@ -147,35 +147,11 @@ public abstract class EmitterShape implements IEmitterComponent {
                     position.z += sp * Mth.sin(op);
                     float[] lp = planeNormal.getPlane().calculate(entity);
                     if (!Arrays.equals(lp, PlaneNormal.FN)) {
-                        Quaternionf quaternion = new Quaternionf();
-                        float dot = new Vector3f(PlaneNormal.FY).dot(new Vector3f(lp)) + 1;
-                        if (dot < 0) {
-                            quaternion.x = 0;
-                            quaternion.y = 0;
-                            quaternion.z = 1;
-                            quaternion.w = 0;
-                        } else {
-                            quaternion.x = lp[2];
-                            quaternion.y = 0;
-                            quaternion.z = -lp[0];
-                            quaternion.w = dot;
-                        }
-                        quaternion.normalize();
-
-                        float t = position.x, n = position.y, r = position.z;
-                        float i = quaternion.x;
-                        float a = quaternion.y;
-                        float o = quaternion.z;
-                        float s = quaternion.w;
-                        float l = s * t + a * r - o * n;
-                        float c = s * n + o * t - i * r;
-                        float u = s * r + i * n - a * t;
-                        float h = -i * t - a * n - o * r;
-                        position.x = l * s + h * -i + c * -o - u * -a;
-                        position.y = c * s + h * -a + u * -i - l * -o;
-                        position.z = u * s + h * -o + l * -a - c * -i;
+                        Quaternionf quaternion = planeNormal.setFromUnitVectors(PlaneNormal.VY, new Vector3f(lp), new Quaternionf());
+                        planeNormal.applyQuaternion(quaternion, position);
                     }
                     direction.apply(entity, this, position, speed);
+                    position.add((float) emitterPos.x, (float) emitterPos.y, (float) emitterPos.z);
                     emittingParticle(entity, position, speed);
                 }
             }
@@ -198,6 +174,10 @@ public abstract class EmitterShape implements IEmitterComponent {
             public static final float[] FX = new float[]{1.0F, 0.0F, 0.0F};
             public static final float[] FY = new float[]{0.0F, 1.0F, 0.0F};
             public static final float[] FZ = new float[]{0.0F, 0.0F, 1.0F};
+            public static final Vector3f VN = new Vector3f(0.0F, 0.0F, 0.0F);
+            public static final Vector3f VX = new Vector3f(1.0F, 0.0F, 0.0F);
+            public static final Vector3f VY = new Vector3f(0.0F, 1.0F, 0.0F);
+            public static final Vector3f VZ = new Vector3f(0.0F, 0.0F, 1.0F);
             public static final Codec<PlaneNormal> CODEC = Codec.either(Codec.STRING, FloatMolangExp3.CODEC).xmap(
                     either -> either.map(d -> switch (d) {
                         case "x" -> X;
@@ -206,6 +186,7 @@ public abstract class EmitterShape implements IEmitterComponent {
                     }, list -> new PlaneNormal("custom", list)),
                     plane -> Either.right(plane.plane)
             );
+            public static final double EPSILON = 2.220446049250313e-16;
             private final String name;
             private final FloatMolangExp3 plane;
 
@@ -224,6 +205,40 @@ public abstract class EmitterShape implements IEmitterComponent {
 
             public boolean isCustom() {
                 return "custom".equals(name);
+            }
+
+            private Quaternionf setFromUnitVectors(Vector3f e, Vector3f t, Quaternionf dest) {
+                float n = e.dot(t) + 1.0F;
+                if (n < EPSILON) {
+                    if (Math.abs(e.x) > Math.abs(e.z)) {
+                        dest.x = -e.y;
+                        dest.y = e.x;
+                        dest.z = 0.0F;
+                    } else {
+                        dest.x = 0.0F;
+                        dest.y = -e.z;
+                        dest.z = e.y;
+                    }
+                    dest.w = 0.0F;
+                } else {
+                    dest.x = e.y * t.z - e.z * t.y;
+                    dest.y = e.z * t.x - e.x * t.z;
+                    dest.z = e.x * t.y - e.y * t.x;
+                    dest.w = n;
+                }
+                return dest.normalize();
+            }
+
+            private void applyQuaternion(Quaternionf e, Vector3f dest) {
+                float t = dest.x, n = dest.y, r = dest.z;
+                float i = e.x, a = e.y, o = e.z, s = e.w;
+                float l = s * t + a * r - o * n;
+                float c = s * n + o * t - i * r;
+                float u = s * r + i * n - a * t;
+                float h = -i * t - a * n - o * r;
+                dest.x = l * s + h * -i + c * -o - u * -a;
+                dest.y = c * s + h * -a + u * -i - l * -o;
+                dest.z = u * s + h * -o + l * -a - c * -i;
             }
         }
     }

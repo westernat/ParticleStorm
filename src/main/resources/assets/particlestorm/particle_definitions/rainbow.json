@@ -5,7 +5,7 @@
             "identifier": "snowstorm:rainbow",
             "basic_render_parameters": {
                 "material": "particle_sheet_translucent",
-                "texture": "minecraft:angry"
+                "texture": "minecraft:shriek"
             }
         },
         "components": {
@@ -13,7 +13,7 @@
                 "creation_expression": "variable.radius = 0.2;"
             },
             "minecraft:particle_lifetime_expression": {
-                "max_lifetime": "math.random(3, 4)"
+                "max_lifetime": "math.random(6, 8)"
             },
             "minecraft:emitter_lifetime_once": {
                 "active_time": 2
@@ -22,20 +22,20 @@
                 "size": ["variable.radius", "variable.radius"],
                 "facing_camera_mode": "lookat_xyz",
                 "uv": {
-                    "texture_width": 8,
-                    "texture_height": 8,
+                    "texture_width": 13,
+                    "texture_height": 13,
                     "uv": [0, 0],
-                    "uv_size": [8, 8]
+                    "uv_size": [13, 13]
                 }
             },
             "minecraft:emitter_rate_instant": {
-                "num_particles": 100
+                "num_particles": 500
             },
-            "minecraft:particle_initial_speed": 1,
+            "minecraft:particle_initial_speed": 2,
             "minecraft:emitter_shape_disc": {
                 "offset": [0, 0, 0],
-                "radius": 1.6,
-                "plane_normal": ["math.sin(variable.emitter_age*200)*6", 0, 1],
+                "radius": 3.2,
+                "plane_normal": [0, 0, 0],
                 "surface_only": true,
                 "direction": "inwards"
             }

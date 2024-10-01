@@ -26,6 +26,10 @@ public class ExtendMutableSpriteSet extends ParticleEngine.MutableSpriteSet {
         sprites.add(sprite);
     }
 
+    public void clear() {
+        sprites.clear();
+    }
+
     @Override
     public void rebind(@NotNull List<TextureAtlasSprite> sprites) {
         this.sprites = new ArrayList<>(sprites);

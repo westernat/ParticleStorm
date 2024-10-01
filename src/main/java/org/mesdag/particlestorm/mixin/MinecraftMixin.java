@@ -40,6 +40,7 @@ public abstract class MinecraftMixin {
         if (((ParticleEngineAccessor) particleEngine).spriteSets().get(ParticleStorm.MOLANG.getId()) instanceof ExtendMutableSpriteSet spriteSet) {
             try (TextureAtlas textureAtlas = ((ParticleEngineAccessor) particleEngine).textureAtlas()) {
                 ((ITextureAtlas) textureAtlas).particlestorm$consume(preparations -> {
+                    spriteSet.clear();
                     int i = 0;
                     for (Map.Entry<ResourceLocation, ParticleEffect> entry : GameClient.LOADER.ID_2_EFFECT.entrySet()) {
                         TextureAtlasSprite missing = preparations.missing();

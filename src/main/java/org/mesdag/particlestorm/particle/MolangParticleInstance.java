@@ -54,7 +54,10 @@ public class MolangParticleInstance extends TextureSheetParticle implements Mola
     public boolean insideKillPlane;
 
     public MolangParticleInstance(ParticleDetail detail, ClientLevel level, double x, double y, double z, double xSpeed, double ySpeed, double zSpeed, ExtendMutableSpriteSet sprites) {
-        super(level, x, y, z, xSpeed, ySpeed, zSpeed);
+        super(level, x, y, z);
+        this.xd = xSpeed / 20.0;
+        this.yd = ySpeed / 20.0;
+        this.zd = zSpeed / 20.0;
         this.random = level.getRandom();
         this.detail = detail;
         this.variableTable = new VariableTable(detail.variableTable);
