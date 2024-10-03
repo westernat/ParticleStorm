@@ -9,6 +9,7 @@ import net.minecraft.core.particles.ParticleGroup;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
 import net.minecraft.util.StringRepresentable;
+import net.minecraft.world.entity.EntityDimensions;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.NotNull;
 import org.joml.Quaternionf;
@@ -22,7 +23,6 @@ import org.mesdag.particlestorm.particle.ParticleEmitterEntity;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 public abstract class EmitterShape implements IEmitterComponent {
     protected final boolean surfaceOnly;
@@ -38,27 +38,64 @@ public abstract class EmitterShape implements IEmitterComponent {
         return surfaceOnly;
     }
 
+    @Override
+    public void update(ParticleEmitterEntity entity) {
+        if (entity.spawned) return;
+        if (entity.spawnDuration <= 1 || entity.age % entity.spawnDuration == 0) {
+            for (int num = 0; num < entity.spawnRate; num++) {
+                if (hasSpaceInParticleLimit(entity)) {
+                    Vector3f position = new Vector3f();
+                    Vector3f speed = new Vector3f();
+                    initializeParticle(entity, position, speed);
+                    if (entity.getDetail().localPosition) {
+                        Vec3 emitterPos = entity.position();
+                        position.add((float) emitterPos.x, (float) emitterPos.y, (float) emitterPos.z);
+                    }
+                    if (entity.getDetail().localRotation) {
+                        applyEuler(entity.getXRot(), entity.getYRot(), 0.0F, position);
+                    }
+                    if (entity.getDetail().localVelocity) {
+                        Vec3 emitterVec = entity.getDeltaMovement();
+                        speed.add((float) emitterVec.x, (float) emitterVec.y, (float) emitterVec.z);
+                    }
+                    emittingParticle(entity, position, speed);
+                }
+            }
+            if (entity.getDetail().emitterRateType == EmitterRate.Type.INSTANT) {
+                entity.spawned = true;
+            }
+        }
+    }
+
+    @Override
+    public boolean requireUpdate() {
+        return true;
+    }
+
+    protected abstract void initializeParticle(ParticleEmitterEntity entity, Vector3f position, Vector3f speed);
+
     private static void emittingParticle(ParticleEmitterEntity entity, Vector3f position, Vector3f speed) {
+        speed.mul(entity.invTickRate);
         Particle particle = ((ParticleEngineAccessor) Minecraft.getInstance().particleEngine).callMakeParticle(entity.getDetail().option, position.x, position.y, position.z, speed.x, speed.y, speed.z);
         if (particle instanceof MolangParticleInstance instance) {
+            instance.emitter = entity;
             instance.getVariableTable().subTable = entity.getVariableTable();
             instance.particleGroup = entity.particleGroup;
             instance.detail.assignments.forEach(assignment -> {
                 // 重定向，防止污染变量表
                 instance.getVariableTable().setValue(assignment.variable().name(), assignment.variable());
             });
-            AtomicBoolean motionDynamic = new AtomicBoolean();
             instance.components = instance.detail.effect.components.values().stream().filter(c -> {
                 if (c instanceof IParticleComponent p) {
                     if (c instanceof ParticleMotionDynamic) {
-                        motionDynamic.set(true);
+                        instance.motionDynamic = true;
                     }
                     p.apply(instance);
                     return p.requireUpdate();
                 }
                 return false;
             }).map(c -> (IParticleComponent) c).toList();
-            if (!motionDynamic.get()) instance.setParticleSpeed(0.0, 0.0, 0.0);
+            if (!instance.motionDynamic) instance.setParticleSpeed(0.0, 0.0, 0.0);
         }
         Minecraft.getInstance().particleEngine.add(particle);
     }
@@ -68,21 +105,56 @@ public abstract class EmitterShape implements IEmitterComponent {
         return ((ParticleEngineAccessor) Minecraft.getInstance().particleEngine).trackedParticleCounts().getInt(particleGroup) < particleGroup.getLimit();
     }
 
+    protected float randomab(RandomSource random, float a, float b) {
+        return a + (b - a) * random.nextFloat();
+    }
+
+    private static Vector3f getRandomEuler(RandomSource random) {
+        float x = random.nextFloat() * (random.nextBoolean() ? Mth.PI : -Mth.PI);
+        float y = random.nextFloat() * (random.nextBoolean() ? Mth.PI : -Mth.PI);
+        float z = random.nextFloat() * (random.nextBoolean() ? Mth.PI : -Mth.PI);
+        return new Vector3f(x, y, z);
+    }
+
+    private static void applyEuler(Vector3f euler, Vector3f dest) {
+        new Quaternionf().rotateXYZ(euler.x, euler.y, euler.z).transform(dest);
+    }
+
+    private static void applyEuler(float x, float y, float z, Vector3f dest) {
+        new Quaternionf().rotateXYZ(x, y, z).transform(dest);
+    }
+
     /**
      * This component spawns particles using a disc shape, particles can be spawned inside the shape or on its outer perimeter.
      */
     public static final class Disc extends EmitterShape {
         public static final Codec<Disc> CODEC = RecordCodecBuilder.create(instance -> instance.group(
-                FloatMolangExp3.CODEC.fieldOf("offset").orElseGet(() -> FloatMolangExp3.ZERO).forGetter(Disc::getOffset),
-                FloatMolangExp.CODEC.fieldOf("radius").orElse(FloatMolangExp.ONE).forGetter(Disc::getRadius),
-                PlaneNormal.CODEC.fieldOf("plane_normal").orElse(PlaneNormal.Y).forGetter(Disc::getPlaneNormal),
-                Direction.CODEC.fieldOf("direction").orElse(Direction.OUTWARDS).forGetter(Disc::getDirection),
+                FloatMolangExp3.CODEC.fieldOf("offset").orElseGet(() -> FloatMolangExp3.ZERO).forGetter(disc -> disc.offset),
+                FloatMolangExp.CODEC.fieldOf("radius").orElse(FloatMolangExp.ONE).forGetter(disc -> disc.radius),
+                PlaneNormal.CODEC.fieldOf("plane_normal").orElse(PlaneNormal.Y).forGetter(disc -> disc.planeNormal),
+                Direction.CODEC.fieldOf("direction").orElse(Direction.OUTWARDS).forGetter(disc -> disc.direction),
                 Codec.BOOL.fieldOf("surface_only").orElse(false).forGetter(EmitterShape::isSurfaceOnly)
         ).apply(instance, Disc::new));
-        private final FloatMolangExp3 offset;
-        private final FloatMolangExp radius;
-        private final PlaneNormal planeNormal;
-        private final Direction direction;
+        /**
+         * Specifies the offset from the emitter to emit the particles
+         * <p>
+         * Evaluated once per particle emitted
+         */
+        public final FloatMolangExp3 offset;
+        /**
+         * Disc radius
+         * <p>
+         * Evaluated once per particle emitted
+         */
+        public final FloatMolangExp radius;
+        /**
+         * Specifies the normal of the disc plane, the disc will be perpendicular to this direction
+         */
+        public final PlaneNormal planeNormal;
+        /**
+         * Specifies the direction of particles.
+         */
+        public final Direction direction;
 
         public Disc(FloatMolangExp3 offset, FloatMolangExp radius, PlaneNormal planeNormal, Direction direction, boolean surfaceOnly) {
             super(surfaceOnly);
@@ -90,38 +162,6 @@ public abstract class EmitterShape implements IEmitterComponent {
             this.radius = radius;
             this.planeNormal = planeNormal;
             this.direction = direction;
-        }
-
-        /**
-         * Specifies the offset from the emitter to emit the particles
-         * <p>
-         * Evaluated once per particle emitted
-         */
-        public FloatMolangExp3 getOffset() {
-            return offset;
-        }
-
-        /**
-         * Disc radius
-         * <p>
-         * Evaluated once per particle emitted
-         */
-        public FloatMolangExp getRadius() {
-            return radius;
-        }
-
-        /**
-         * Specifies the normal of the disc plane, the disc will be perpendicular to this direction
-         */
-        public PlaneNormal getPlaneNormal() {
-            return planeNormal;
-        }
-
-        /**
-         * Specifies the direction of particles.
-         */
-        public Direction getDirection() {
-            return direction;
         }
 
         @Override
@@ -139,39 +179,30 @@ public abstract class EmitterShape implements IEmitterComponent {
         }
 
         @Override
-        public void update(ParticleEmitterEntity entity) {
-            if (entity.spawned) return;
-            if (entity.age % entity.spawnDuration == 0) {
-                for (int num = 0; num < entity.spawnRate; num++) {
-                    if (hasSpaceInParticleLimit(entity)) {
-                        float[] off = offset.calculate(entity);
-                        Vec3 emitterPos = entity.position();
-                        Vector3f position = new Vector3f(off);
-                        Vector3f speed = new Vector3f();
-                        float radius = this.radius.calculate(entity);
-                        float op = entity.level().random.nextFloat() * Mth.TWO_PI;
-                        float sp = surfaceOnly ? radius : radius * Mth.sqrt(entity.level().random.nextFloat());
-                        position.x += sp * Mth.cos(op);
-                        position.z += sp * Mth.sin(op);
-                        float[] lp = planeNormal.getPlane().calculate(entity);
-                        if (!Arrays.equals(lp, PlaneNormal.FN)) {
-                            Quaternionf quaternion = planeNormal.setFromUnitVectors(PlaneNormal.VY, new Vector3f(lp), new Quaternionf());
-                            planeNormal.applyQuaternion(quaternion, position);
-                        }
-                        direction.apply(entity, this, position, speed);
-                        position.add((float) emitterPos.x, (float) emitterPos.y, (float) emitterPos.z);
-                        emittingParticle(entity, position, speed);
-                    }
-                }
-                if (entity.getDetail().emitterRateType == EmitterRate.Type.INSTANT) {
-                    entity.spawned = true;
-                }
+        protected void initializeParticle(ParticleEmitterEntity entity, Vector3f position, Vector3f speed) {
+            position.set(offset.calculate(entity));
+            float radius = this.radius.calculate(entity);
+            float op = entity.level().random.nextFloat() * Mth.TWO_PI;
+            float sp = surfaceOnly ? radius : radius * Mth.sqrt(entity.level().random.nextFloat());
+            position.x += sp * Mth.cos(op);
+            position.z += sp * Mth.sin(op);
+            float[] lp = planeNormal.plane.calculate(entity);
+            if (!Arrays.equals(lp, PlaneNormal.FN)) {
+                Quaternionf quaternion = planeNormal.setFromUnitVectors(PlaneNormal.VY, new Vector3f(lp), new Quaternionf());
+                planeNormal.applyQuaternion(quaternion, position);
             }
+            direction.apply(entity, this, position, speed);
         }
 
         @Override
-        public boolean requireUpdate() {
-            return true;
+        public String toString() {
+            return "Disc{" +
+                    "offset=" + offset +
+                    ", radius=" + radius +
+                    ", planeNormal=" + planeNormal +
+                    ", direction=" + direction +
+                    ", surfaceOnly=" + surfaceOnly +
+                    '}';
         }
 
         /**
@@ -198,20 +229,12 @@ public abstract class EmitterShape implements IEmitterComponent {
                     plane -> Either.right(plane.plane)
             );
             public static final double EPSILON = 2.220446049250313e-16;
-            private final String name;
-            private final FloatMolangExp3 plane;
+            public final String name;
+            public final FloatMolangExp3 plane;
 
             PlaneNormal(String name, FloatMolangExp3 list) {
                 this.name = name;
                 this.plane = list;
-            }
-
-            public FloatMolangExp3 getPlane() {
-                return plane;
-            }
-
-            public String getName() {
-                return name;
             }
 
             public boolean isCustom() {
@@ -251,6 +274,14 @@ public abstract class EmitterShape implements IEmitterComponent {
                 dest.y = c * s + h * -a + u * -i - l * -o;
                 dest.z = u * s + h * -o + l * -a - c * -i;
             }
+
+            @Override
+            public String toString() {
+                return "PlaneNormal{" +
+                        "name='" + name + '\'' +
+                        ", plane=" + plane +
+                        '}';
+            }
         }
     }
 
@@ -259,21 +290,27 @@ public abstract class EmitterShape implements IEmitterComponent {
      */
     public static final class Box extends EmitterShape {
         public static final Codec<Box> CODEC = RecordCodecBuilder.create(instance -> instance.group(
-                Direction.CODEC.fieldOf("direction").orElse(Direction.OUTWARDS).forGetter(Box::getDirection),
+                FloatMolangExp3.CODEC.fieldOf("offset").orElse(FloatMolangExp3.ZERO).forGetter(box -> box.offset),
+                FloatMolangExp3.CODEC.fieldOf("half_dimensions").orElse(FloatMolangExp3.ZERO).forGetter(box -> box.halfDimensions),
+                Direction.CODEC.fieldOf("direction").orElse(Direction.OUTWARDS).forGetter(box -> box.direction),
                 Codec.BOOL.fieldOf("surface_only").orElse(false).forGetter(EmitterShape::isSurfaceOnly)
         ).apply(instance, Box::new));
-        private final Direction direction;
-
-        public Box(Direction direction, boolean surfaceOnly) {
-            super(surfaceOnly);
-            this.direction = direction;
-        }
-
+        /**
+         * Specifies the offset from the emitter to emit the particles<p>
+         * Evaluated once per particle emitted
+         */
+        public final FloatMolangExp3 offset;
+        public final FloatMolangExp3 halfDimensions;
         /**
          * Specifies the direction of particles.
          */
-        public Direction getDirection() {
-            return direction;
+        public final Direction direction;
+
+        public Box(FloatMolangExp3 offset, FloatMolangExp3 halfDimensions, Direction direction, boolean surfaceOnly) {
+            super(surfaceOnly);
+            this.offset = offset;
+            this.halfDimensions = halfDimensions;
+            this.direction = direction;
         }
 
         @Override
@@ -285,41 +322,31 @@ public abstract class EmitterShape implements IEmitterComponent {
         public List<MolangExp> getAllMolangExp() {
             return List.of(direction.direct.exp1(), direction.direct.exp2(), direction.direct.exp3());
         }
-    }
 
-    /**
-     * All particles are emitted based on a specified set of Molang expressions.
-     */
-    public static final class Custom extends EmitterShape {
-        public static final Codec<Custom> CODEC = RecordCodecBuilder.create(instance -> instance.group(
-                FloatMolangExp3.CODEC.fieldOf("offset").orElse(FloatMolangExp3.ZERO).forGetter(Custom::getOffset),
-                FloatMolangExp3.CODEC.fieldOf("direction").orElse(FloatMolangExp3.ZERO).forGetter(Custom::getDirection)
-        ).apply(instance, Custom::new));
-        private final FloatMolangExp3 offset;
-        private final FloatMolangExp3 direction;
-
-        public Custom(FloatMolangExp3 offset, FloatMolangExp3 direction) {
-            super(false);
-            this.offset = offset;
-            this.direction = direction;
-        }
-
-        public FloatMolangExp3 getOffset() {
-            return offset;
-        }
-
-        public FloatMolangExp3 getDirection() {
-            return direction;
+        @Override
+        protected void initializeParticle(ParticleEmitterEntity entity, Vector3f position, Vector3f speed) {
+            position.set(offset.calculate(entity));
+            float[] n = halfDimensions.calculate(entity);
+            RandomSource random = entity.level().random;
+            position.x = randomab(random, -n[0], n[0]);
+            position.y = randomab(random, -n[1], n[1]);
+            position.z = randomab(random, -n[2], n[2]);
+            if (surfaceOnly) {
+                int r = random.nextInt(0, 3);
+                boolean i = random.nextBoolean();
+                position.setComponent(r, n[r] * (i ? 1 : -1));
+            }
+            direction.apply(entity, this, position, speed);
         }
 
         @Override
-        public Codec<Custom> codec() {
-            return CODEC;
-        }
-
-        @Override
-        public List<MolangExp> getAllMolangExp() {
-            return List.of(offset.exp1(), offset.exp2(), offset.exp3(), direction.exp1(), direction.exp2(), direction.exp3());
+        public String toString() {
+            return "Box{" +
+                    "surfaceOnly=" + surfaceOnly +
+                    ", direction=" + direction +
+                    ", halfDimensions=" + halfDimensions +
+                    ", offset=" + offset +
+                    '}';
         }
     }
 
@@ -328,28 +355,48 @@ public abstract class EmitterShape implements IEmitterComponent {
      */
     public static final class EntityAABB extends EmitterShape {
         public static final Codec<EntityAABB> CODEC = RecordCodecBuilder.create(instance -> instance.group(
-                Direction.CODEC.fieldOf("direction").orElse(Direction.OUTWARDS).forGetter(EntityAABB::getDirection),
+                Direction.CODEC.fieldOf("direction").orElse(Direction.OUTWARDS).forGetter(entityAABB -> entityAABB.direction),
                 Codec.BOOL.fieldOf("surface_only").orElse(false).forGetter(EmitterShape::isSurfaceOnly)
         ).apply(instance, EntityAABB::new));
-        private final Direction direction;
+        public final Direction direction;
 
         public EntityAABB(Direction direction, boolean surfaceOnly) {
             super(surfaceOnly);
             this.direction = direction;
         }
 
-        public Direction getDirection() {
-            return direction;
-        }
-
         @Override
-        public Codec<? extends IComponent> codec() {
-            return null;
+        public Codec<EntityAABB> codec() {
+            return CODEC;
         }
 
         @Override
         public List<MolangExp> getAllMolangExp() {
             return List.of(direction.direct.exp1(), direction.direct.exp2(), direction.direct.exp3());
+        }
+
+        @Override
+        protected void initializeParticle(ParticleEmitterEntity entity, Vector3f position, Vector3f speed) {
+            EntityDimensions dimensions = entity.attached.getDimensions(entity.attached.getPose());
+            Vector3f n = new Vector3f(dimensions.width(), dimensions.height(), dimensions.width());
+            RandomSource random = entity.level().random;
+            position.x = randomab(random, -n.x, n.x);
+            position.y = randomab(random, -n.y, n.y);
+            position.z = randomab(random, -n.z, n.z);
+            if (surfaceOnly) {
+                int r = random.nextInt(0, 3);
+                boolean i = random.nextBoolean();
+                position.setComponent(r, n.get(r) * (i ? 1 : -1));
+            }
+            direction.apply(entity, this, position, speed);
+        }
+
+        @Override
+        public String toString() {
+            return "EntityAABB{" +
+                    "direction=" + direction +
+                    ", surfaceOnly=" + surfaceOnly +
+                    '}';
         }
     }
 
@@ -358,32 +405,24 @@ public abstract class EmitterShape implements IEmitterComponent {
      */
     public static final class Point extends EmitterShape {
         public static final Codec<Point> CODEC = RecordCodecBuilder.create(instance -> instance.group(
-                FloatMolangExp3.CODEC.fieldOf("offset").orElse(FloatMolangExp3.ZERO).forGetter(Point::getOffset),
-                FloatMolangExp3.CODEC.fieldOf("direction").orElse(FloatMolangExp3.ZERO).forGetter(Point::getDirection)
+                FloatMolangExp3.CODEC.fieldOf("offset").orElse(FloatMolangExp3.ZERO).forGetter(point -> point.offset),
+                Direction.CODEC.fieldOf("direction").orElse(Direction.OUTWARDS).forGetter(point -> point.direction)
         ).apply(instance, Point::new));
-        private final FloatMolangExp3 offset;
-        private final FloatMolangExp3 direction;
-
-        public Point(FloatMolangExp3 offset, FloatMolangExp3 direction) {
-            super(false);
-            this.offset = offset;
-            this.direction = direction;
-        }
-
         /**
          * Specifies the offset from the emitter to emit the particles
          * <p>
          * Evaluated once per particle emitted
          */
-        public FloatMolangExp3 getOffset() {
-            return offset;
-        }
-
+        public final FloatMolangExp3 offset;
         /**
          * Specifies the direction of particles.
          */
-        public FloatMolangExp3 getDirection() {
-            return direction;
+        public final Direction direction;
+
+        public Point(FloatMolangExp3 offset, Direction direction) {
+            super(false);
+            this.offset = offset;
+            this.direction = direction;
         }
 
         @Override
@@ -393,52 +432,57 @@ public abstract class EmitterShape implements IEmitterComponent {
 
         @Override
         public List<MolangExp> getAllMolangExp() {
-            return List.of(offset.exp1(), offset.exp2(), offset.exp3(), direction.exp1(), direction.exp2(), direction.exp3());
+            return List.of(
+                    offset.exp1(), offset.exp2(), offset.exp3(),
+                    direction.direct.exp1(), direction.direct.exp2(), direction.direct.exp3()
+            );
+        }
+
+        @Override
+        protected void initializeParticle(ParticleEmitterEntity entity, Vector3f position, Vector3f speed) {
+            position.set(offset.calculate(entity));
+            direction.apply(entity, this, position, speed);
+        }
+
+        @Override
+        public String toString() {
+            return "Point{" +
+                    "surfaceOnly=" + surfaceOnly +
+                    ", direction=" + direction +
+                    ", offset=" + offset +
+                    '}';
         }
     }
 
     public static final class Sphere extends EmitterShape {
         public static final Codec<Sphere> CODEC = RecordCodecBuilder.create(instance -> instance.group(
-                FloatMolangExp3.CODEC.fieldOf("offset").orElse(FloatMolangExp3.ZERO).forGetter(Sphere::getOffset),
-                FloatMolangExp.CODEC.fieldOf("radius").orElse(FloatMolangExp.ONE).forGetter(Sphere::getRadius),
-                Direction.CODEC.fieldOf("direction").orElse(Direction.OUTWARDS).forGetter(Sphere::getDirection),
+                FloatMolangExp3.CODEC.fieldOf("offset").orElse(FloatMolangExp3.ZERO).forGetter(sphere -> sphere.offset),
+                FloatMolangExp.CODEC.fieldOf("radius").orElse(FloatMolangExp.ONE).forGetter(sphere -> sphere.radius),
+                Direction.CODEC.fieldOf("direction").orElse(Direction.OUTWARDS).forGetter(sphere -> sphere.direction),
                 Codec.BOOL.fieldOf("surface_only").orElse(false).forGetter(EmitterShape::isSurfaceOnly)
         ).apply(instance, Sphere::new));
-
-        private final FloatMolangExp3 offset;
-        private final FloatMolangExp radius;
-        private final Direction direction;
+        /**
+         * Specifies the offset from the emitter to emit the particles
+         * <p>
+         * Evaluated once per particle emitted
+         */
+        public final FloatMolangExp3 offset;
+        /**
+         * Sphere radius
+         * <p>
+         * Evaluated once per particle emitted
+         */
+        public final FloatMolangExp radius;
+        /**
+         * Specifies the direction of particles.
+         */
+        public final Direction direction;
 
         public Sphere(FloatMolangExp3 offset, FloatMolangExp radius, Direction direction, boolean surfaceOnly) {
             super(surfaceOnly);
             this.offset = offset;
             this.radius = radius;
             this.direction = direction;
-        }
-
-        /**
-         * Specifies the offset from the emitter to emit the particles
-         * <p>
-         * Evaluated once per particle emitted
-         */
-        public FloatMolangExp3 getOffset() {
-            return offset;
-        }
-
-        /**
-         * Sphere radius
-         * <p>
-         * Evaluated once per particle emitted
-         */
-        public FloatMolangExp getRadius() {
-            return radius;
-        }
-
-        /**
-         * Specifies the direction of particles.
-         */
-        public Direction getDirection() {
-            return direction;
         }
 
         @Override
@@ -452,6 +496,25 @@ public abstract class EmitterShape implements IEmitterComponent {
                     offset.exp1(), offset.exp2(), offset.exp3(), radius,
                     direction.direct.exp1(), direction.direct.exp2(), direction.direct.exp3()
             );
+        }
+
+        @Override
+        protected void initializeParticle(ParticleEmitterEntity entity, Vector3f position, Vector3f speed) {
+            position.set(offset.calculate(entity));
+            float a = radius.calculate(entity);
+            position.x = surfaceOnly ? a : a * entity.level().random.nextFloat();
+            applyEuler(getRandomEuler(entity.level().random), position);
+            direction.apply(entity, this, position, speed);
+        }
+
+        @Override
+        public String toString() {
+            return "Sphere{" +
+                    "offset=" + offset +
+                    ", radius=" + radius +
+                    ", direction=" + direction +
+                    ", surfaceOnly=" + surfaceOnly +
+                    '}';
         }
     }
 
@@ -472,19 +535,12 @@ public abstract class EmitterShape implements IEmitterComponent {
                 either -> either.map(dir -> dir, list -> new Direction("custom", list)),
                 dir -> dir.direct == FloatMolangExp3.ZERO ? Either.left(dir) : Either.right(dir.direct)
         );
-        private final String name;
-        private final FloatMolangExp3 direct;
-
-        private static final Quaternionf HD = new Quaternionf();
-        private static final Vector3f OX = new Vector3f();
+        public final String name;
+        public final FloatMolangExp3 direct;
 
         Direction(String name, FloatMolangExp3 direct) {
             this.name = name;
             this.direct = direct;
-        }
-
-        public FloatMolangExp3 getDirect() {
-            return direct;
         }
 
         @Override
@@ -494,27 +550,28 @@ public abstract class EmitterShape implements IEmitterComponent {
 
         public void apply(ParticleEmitterEntity entity, EmitterShape shape, Vector3f position, Vector3f speed) {
             // todo inherited_particle_speed
+            float invTickRate = entity.invTickRate;
             if (this == INWARDS || this == OUTWARDS) {
                 if (shape instanceof Point) {
-                    applyEuler(getRandomEuler(entity.level().random), speed.set(1, 0, 0));
+                    applyEuler(getRandomEuler(entity.level().random), speed.set(invTickRate, 0, 0));
                 } else {
                     speed.set(position).normalize();
                     if (this == INWARDS) speed.negate();
                 }
             } else { // custom
-                speed.set(new Vector3f(direct.calculate(entity)).normalize());
+                speed.set(direct.calculate(entity)).normalize();
             }
+            speed.x *= invTickRate;
+            speed.y *= invTickRate;
+            speed.z *= invTickRate;
         }
 
-        private Vector3f getRandomEuler(RandomSource random) {
-            float x = random.nextFloat() * (random.nextBoolean() ? Mth.PI : -Mth.PI);
-            float y = random.nextFloat() * (random.nextBoolean() ? Mth.PI : -Mth.PI);
-            float z = random.nextFloat() * (random.nextBoolean() ? Mth.PI : -Mth.PI);
-            return OX.set(x, y, z);
-        }
-
-        private void applyEuler(Vector3f euler, Vector3f dest) {
-            HD.rotateXYZ(euler.x, euler.y, euler.z).transform(dest);
+        @Override
+        public String toString() {
+            return "Direction{" +
+                    "name='" + name + '\'' +
+                    ", direct=" + direct +
+                    '}';
         }
     }
 }

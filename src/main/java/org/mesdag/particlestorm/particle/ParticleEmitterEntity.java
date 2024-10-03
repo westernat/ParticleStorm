@@ -2,8 +2,6 @@ package org.mesdag.particlestorm.particle;
 
 import net.minecraft.core.particles.ParticleGroup;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.network.syncher.EntityDataAccessor;
-import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
@@ -13,6 +11,7 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.network.PacketDistributor;
+import org.jetbrains.annotations.NotNull;
 import org.mesdag.particlestorm.GameClient;
 import org.mesdag.particlestorm.ParticleStorm;
 import org.mesdag.particlestorm.data.component.EmitterRate;
@@ -20,12 +19,12 @@ import org.mesdag.particlestorm.data.component.IEmitterComponent;
 import org.mesdag.particlestorm.data.molang.MolangData;
 import org.mesdag.particlestorm.data.molang.VariableTable;
 import org.mesdag.particlestorm.network.EmitterManualPacketC2S;
+import org.mesdag.particlestorm.network.EmitterParticlePacketS2C;
 
 import java.util.Collection;
 import java.util.List;
 
 public class ParticleEmitterEntity extends Entity implements MolangData {
-    private static final EntityDataAccessor<String> DATA_PARTICLE_ID = SynchedEntityData.defineId(ParticleEmitterEntity.class, EntityDataSerializers.STRING);
     public ManualData manualData;
     public ResourceLocation particleId;
     protected boolean haveHadSync = false;
@@ -38,6 +37,7 @@ public class ParticleEmitterEntity extends Entity implements MolangData {
     protected double emitterRandom2 = 0.0;
     protected double emitterRandom3 = 0.0;
     protected double emitterRandom4 = 0.0;
+    public float invTickRate = 1.0F / level().tickRateManager().tickrate();
 
     public int age = 0;
     public int lifetime = 0;
@@ -49,6 +49,7 @@ public class ParticleEmitterEntity extends Entity implements MolangData {
     public int spawnDuration = 1;
     public int spawnRate = 0;
     public boolean spawned = false;
+    public Entity attached;
 
     // Client Only
     public ParticleEmitterEntity(EntityType<?> entityType, Level level) {
@@ -74,39 +75,36 @@ public class ParticleEmitterEntity extends Entity implements MolangData {
     @Override
     public void tick() {
         super.tick();
-        if (level().isClientSide) {
-            if (haveHadSync) {
-                if (detail.emitterRateType == EmitterRate.Type.MANUAL) {
-                    PacketDistributor.sendToServer(new EmitterManualPacketC2S(getId(), 0));
-                    return;
-                }
-                for (IEmitterComponent component : components) {
-                    component.update(this);
-                }
-                this.age++;
-            } else {
-                this.detail = GameClient.LOADER.ID_2_EMITTER.get(ResourceLocation.parse(entityData.get(DATA_PARTICLE_ID)));
-                this.variableTable = new VariableTable(detail.variableTable);
-                detail.assignments.forEach(assignment -> {
-                    // 重定向，防止污染变量表
-                    variableTable.setValue(assignment.variable().name(), assignment.variable());
-                });
-                this.components = detail.components.stream().filter(e -> {
-                    e.apply(this);
-                    return e.requireUpdate();
-                }).toList();
-                this.haveHadSync = true;
+        if (!level().isClientSide) return;
+        if (haveHadSync) {
+            if (detail.emitterRateType == EmitterRate.Type.MANUAL) {
+                PacketDistributor.sendToServer(new EmitterManualPacketC2S(getId(), 0));
+                return;
             }
-        } else if (!haveHadSync) {
-            entityData.set(DATA_PARTICLE_ID, particleId.toString());
+            this.invTickRate = 1.0F / level().tickRateManager().tickrate();
+            for (IEmitterComponent component : components) {
+                component.update(this);
+            }
+            this.age++;
+        } else if (particleId != null) {
+            this.detail = GameClient.LOADER.ID_2_EMITTER.get(particleId);
+            this.variableTable = new VariableTable(detail.variableTable);
+            detail.assignments.forEach(assignment -> {
+                // 重定向，防止污染变量表
+                variableTable.setValue(assignment.variable().name(), assignment.variable());
+            });
+            this.components = detail.components.stream().filter(e -> {
+                e.apply(this);
+                return e.requireUpdate();
+            }).toList();
             this.haveHadSync = true;
+        } else {
+            PacketDistributor.sendToServer(new EmitterParticlePacketS2C(getId(), EmitterParticlePacketS2C.REQUEST_ID));
         }
     }
 
     @Override
-    protected void defineSynchedData(SynchedEntityData.Builder builder) {
-        builder.define(DATA_PARTICLE_ID, "snowstorm:rainbow");
-    }
+    protected void defineSynchedData(SynchedEntityData.@NotNull Builder builder) {}
 
     @Override
     protected void readAdditionalSaveData(CompoundTag compound) {
@@ -142,13 +140,13 @@ public class ParticleEmitterEntity extends Entity implements MolangData {
     }
 
     @Override
-    public int getAge() {
-        return age;
+    public float tickAge() {
+        return age * invTickRate;
     }
 
     @Override
-    public int getLifetime() {
-        return lifetime;
+    public float tickLifetime() {
+        return lifetime * invTickRate;
     }
 
     @Override

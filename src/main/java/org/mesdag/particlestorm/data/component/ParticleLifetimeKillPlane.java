@@ -35,6 +35,7 @@ public final class ParticleLifetimeKillPlane implements IParticleComponent {
 
     @Override
     public void update(MolangParticleInstance instance) {
+        if (instance.motionDynamic) return;
         if (distanceSqr(instance.getX(), instance.getY(), instance.getZ()) > killDistanceSqr == instance.insideKillPlane) {
             instance.remove();
         }

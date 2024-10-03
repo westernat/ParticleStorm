@@ -60,13 +60,13 @@ public record ParticleAppearanceBillboard(FloatMolangExp2 size, FaceCameraMode f
         if (uv != UV.EMPTY) {
             if (uv.flipbook == UV.Flipbook.EMPTY) {
                 updateSimpleUV(instance);
-            } else if (instance.getLevel().getGameTime() / uv.flipbook.getFramesPerTick(instance) < 1.0F) {
+            } else if (instance.getLevel().getGameTime() % uv.flipbook.getFramesPerTick(instance) < 1.0F) {
                 updateFlipbookUV(instance);
                 instance.maxFrame = (int) uv.flipbook.maxFrame.calculate(instance);
                 if (instance.currentFrame < instance.maxFrame) {
                     instance.currentFrame++;
                     if (uv.flipbook.loop && instance.currentFrame == instance.maxFrame) {
-                        instance.currentFrame = 1;
+                        instance.currentFrame = 0;
                     }
                 } else {
                     instance.currentFrame = instance.maxFrame - 1;
@@ -107,10 +107,22 @@ public record ParticleAppearanceBillboard(FloatMolangExp2 size, FaceCameraMode f
 
     private void updateFlipbookUV(MolangParticleInstance instance) {
         float[] base = uv.flipbook.baseUV.calculate(instance);
-        int index = instance.currentFrame - 1;
+        int index = instance.currentFrame;
         float u = instance.uvStep[0] * index;
         float v = instance.uvStep[1] * index;
-        instance.setUV(base[0] + u, base[1] + v, instance.uvSize[0] + u, instance.uvSize[1] + v);
+        int x = instance.getSprite().getX();
+        int y = instance.getSprite().getY();
+        instance.setUV(x + base[0] + u, y + base[1] + v, instance.uvSize[0], instance.uvSize[1]);
+    }
+
+    @Override
+    public String toString() {
+        return "ParticleAppearanceBillboard{" +
+                "size=" + size +
+                ", faceCameraMode=" + faceCameraMode +
+                ", direction=" + direction +
+                ", uv=" + uv +
+                '}';
     }
 
     public enum FaceCameraMode implements StringRepresentable {
@@ -135,6 +147,11 @@ public record ParticleAppearanceBillboard(FloatMolangExp2 size, FaceCameraMode f
         public boolean isDirection() {
             return this == DIRECTION_X || this == DIRECTION_Y || this == DIRECTION_Z;
         }
+
+        @Override
+        public String toString() {
+            return getSerializedName();
+        }
     }
 
     public record Direction(Mode mode, float minSpeedThreshold, FloatMolangExp3 customDirection) {
@@ -146,6 +163,15 @@ public record ParticleAppearanceBillboard(FloatMolangExp2 size, FaceCameraMode f
                         Codec.FLOAT.fieldOf("min_speed_threshold").forGetter(Direction::minSpeedThreshold)
                 ).apply(instance, f -> new Direction(mode, f, FloatMolangExp3.ZERO)))
         ).codec();
+
+        @Override
+        public String toString() {
+            return "Direction{" +
+                    "mode=" + mode +
+                    ", minSpeedThreshold=" + minSpeedThreshold +
+                    ", customDirection=" + customDirection +
+                    '}';
+        }
 
         public enum Mode implements StringRepresentable {
             CUSTOM_DIRECTION,
@@ -160,8 +186,15 @@ public record ParticleAppearanceBillboard(FloatMolangExp2 size, FaceCameraMode f
             public @NotNull String getSerializedName() {
                 return name().toLowerCase(Locale.ROOT);
             }
+
+            @Override
+            public String toString() {
+                return getSerializedName();
+            }
         }
     }
+
+    // todo 处理 texturewidth 和 textureheight
 
     /**
      * Specifies the UVs for the particle.
@@ -183,6 +216,17 @@ public record ParticleAppearanceBillboard(FloatMolangExp2 size, FaceCameraMode f
                 FloatMolangExp2.CODEC.fieldOf("uv_size").orElse(FloatMolangExp2.ZERO).forGetter(UV::uvSize),
                 Flipbook.CODEC.fieldOf("flipbook").orElse(Flipbook.EMPTY).forGetter(UV::flipbook)
         ).apply(instance, UV::new));
+
+        @Override
+        public String toString() {
+            return "UV{" +
+                    "texturewidth=" + texturewidth +
+                    ", textureheight=" + textureheight +
+                    ", uv=" + uv +
+                    ", uvSize=" + uvSize +
+                    ", flipbook=" + flipbook +
+                    '}';
+        }
 
         /**
          * Alternate way via specifying a flipbook animation<p>
@@ -269,7 +313,20 @@ public record ParticleAppearanceBillboard(FloatMolangExp2 size, FaceCameraMode f
             }
 
             public float getFramesPerTick(MolangParticleInstance instance) {
-                return stretchToLifetime ? (float) instance.getLifetime() / instance.maxFrame : framesPerTick;
+                return stretchToLifetime ? (float) instance.getAge() / instance.maxFrame : framesPerTick;
+            }
+
+            @Override
+            public String toString() {
+                return "Flipbook{" +
+                        "baseUV=" + baseUV +
+                        ", sizeUV=" + sizeUV +
+                        ", stepUV=" + stepUV +
+                        ", framesPerSecond=" + framesPerSecond +
+                        ", maxFrame=" + maxFrame +
+                        ", stretchToLifetime=" + stretchToLifetime +
+                        ", loop=" + loop +
+                        '}';
             }
         }
     }

@@ -5,6 +5,7 @@ import com.mojang.serialization.codecs.RecordCodecBuilder;
 import org.mesdag.particlestorm.data.molang.FloatMolangExp;
 import org.mesdag.particlestorm.data.molang.FloatMolangExp3;
 import org.mesdag.particlestorm.data.molang.MolangExp;
+import org.mesdag.particlestorm.particle.MolangParticleInstance;
 
 import java.util.List;
 
@@ -46,6 +47,40 @@ public record ParticleMotionDynamic(FloatMolangExp3 linerAcceleration, FloatMola
 
     @Override
     public List<MolangExp> getAllMolangExp() {
-        return List.of(linerAcceleration.exp1(), linerAcceleration.exp2(), linerAcceleration.exp3(), linearDragCoefficient, rotationAcceleration, rotationDragCoefficient);
+        return List.of(
+                linerAcceleration.exp1(), linerAcceleration.exp2(), linerAcceleration.exp3(),
+                linearDragCoefficient, rotationAcceleration, rotationDragCoefficient
+        );
+    }
+
+    @Override
+    public void update(MolangParticleInstance instance) {
+        float invTickRate = instance.emitter.invTickRate;
+        float i = -linearDragCoefficient.calculate(instance);
+        float[] linearAcceleration = linerAcceleration.calculate(instance);
+        float x = (linearAcceleration[0] + (float) (instance.getXd() * i)) * invTickRate;
+        float y = (linearAcceleration[1] + (float) (instance.getYd() * i)) * invTickRate;
+        float z = (linearAcceleration[2] + (float) (instance.getZd() * i)) * invTickRate;
+        instance.setParticleSpeed(x, y, z);
+
+        float c = -rotationDragCoefficient.calculate(instance);
+        float u = rotationAcceleration.calculate(instance);
+        u += c * instance.rolld;
+        instance.rolld += u * invTickRate;
+    }
+
+    @Override
+    public boolean requireUpdate() {
+        return true;
+    }
+
+    @Override
+    public String toString() {
+        return "ParticleMotionDynamic{" +
+                "linerAcceleration=" + linerAcceleration +
+                ", linearDragCoefficient=" + linearDragCoefficient +
+                ", rotationAcceleration=" + rotationAcceleration +
+                ", rotationDragCoefficient=" + rotationDragCoefficient +
+                '}';
     }
 }

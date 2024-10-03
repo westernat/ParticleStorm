@@ -44,7 +44,7 @@ public abstract class MinecraftMixin {
                     int i = 0;
                     for (Map.Entry<ResourceLocation, ParticleEffect> entry : GameClient.LOADER.ID_2_EFFECT.entrySet()) {
                         TextureAtlasSprite missing = preparations.missing();
-                        spriteSet.setMissing(missing);
+                        spriteSet.bindMissing(missing);
                         ResourceLocation texture = entry.getValue().description.parameters().bindTexture(i);
                         TextureAtlasSprite sprite = preparations.regions().get(texture);
                         spriteSet.addSprite(sprite == null ? missing : sprite);

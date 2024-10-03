@@ -32,19 +32,28 @@ public record ParticleInitialSpeed(float value, FloatMolangExp3 exp3) implements
 
     @Override
     public void apply(MolangParticleInstance instance) {
+        float invTickRate = instance.emitter.invTickRate;
         if (exp3 == FloatMolangExp3.ZERO) {
             instance.setParticleSpeed(
-                    instance.getXd() * value,
-                    instance.getYd() * value,
-                    instance.getZd() * value
+                    value * invTickRate,
+                    value * invTickRate,
+                    value * invTickRate
             );
         } else {
             float[] mul = exp3.calculate(instance);
             instance.setParticleSpeed(
-                    instance.getXd() * mul[0],
-                    instance.getYd() * mul[1],
-                    instance.getZd() * mul[2]
+                    mul[0] * invTickRate,
+                    mul[1] * invTickRate,
+                    mul[2] * invTickRate
             );
         }
+    }
+
+    @Override
+    public String toString() {
+        return "ParticleInitialSpeed{" +
+                "value=" + value +
+                ", exp3=" + exp3 +
+                '}';
     }
 }

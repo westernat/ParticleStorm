@@ -8,9 +8,9 @@ public interface MolangData {
 
     Level getLevel();
 
-    int getAge();
+    float tickAge();
 
-    int getLifetime();
+    float tickLifetime();
 
     double getRandom1();
 

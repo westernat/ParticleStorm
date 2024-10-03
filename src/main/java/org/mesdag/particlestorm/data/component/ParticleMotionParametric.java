@@ -5,6 +5,7 @@ import com.mojang.serialization.codecs.RecordCodecBuilder;
 import org.mesdag.particlestorm.data.molang.FloatMolangExp;
 import org.mesdag.particlestorm.data.molang.FloatMolangExp3;
 import org.mesdag.particlestorm.data.molang.MolangExp;
+import org.mesdag.particlestorm.particle.MolangParticleInstance;
 
 import java.util.List;
 
@@ -37,6 +38,34 @@ public record ParticleMotionParametric(FloatMolangExp3 relativePosition, FloatMo
 
     @Override
     public List<MolangExp> getAllMolangExp() {
-        return List.of(relativePosition.exp1(), relativePosition.exp2(), relativePosition.exp3(), direction.exp1(), direction.exp2(), direction.exp3(), rotation);
+        return List.of(
+                relativePosition.exp1(), relativePosition.exp2(), relativePosition.exp3(),
+                direction.exp1(), direction.exp2(), direction.exp3(), rotation
+        );
+    }
+
+    @Override
+    public void update(MolangParticleInstance instance) {
+        float[] pos = relativePosition.calculate(instance);
+        instance.moveDirectly(pos[0], pos[1], pos[2]);
+        if (direction != FloatMolangExp3.ZERO) {
+            float[] dir = direction.calculate(instance);
+            instance.setParticleSpeed(dir[0], dir[1], dir[2]);
+        }
+        instance.setRoll(rotation.calculate(instance));
+    }
+
+    @Override
+    public boolean requireUpdate() {
+        return true;
+    }
+
+    @Override
+    public String toString() {
+        return "ParticleMotionParametric{" +
+                "relativePosition=" + relativePosition +
+                ", direction=" + direction +
+                ", rotation=" + rotation +
+                '}';
     }
 }

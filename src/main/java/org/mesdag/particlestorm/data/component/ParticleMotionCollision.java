@@ -54,7 +54,7 @@ public record ParticleMotionCollision(BoolMolangExp enabled, float collisionDrag
 
     @Override
     public void apply(MolangParticleInstance instance) {
-        instance.collisionDrag = collisionDrag / 20.0F;
+        instance.collisionDrag = collisionDrag * instance.emitter.invTickRate;
         instance.coefficientOfRestitution = coefficientOfRestitution;
         float radius = Math.max(collisionRadius, 1E-4F);
         instance.setBoundingBox(instance.getBoundingBox().inflate(radius, 0.0, radius));
@@ -65,5 +65,16 @@ public record ParticleMotionCollision(BoolMolangExp enabled, float collisionDrag
     @Override
     public boolean requireUpdate() {
         return true;
+    }
+
+    @Override
+    public String toString() {
+        return "ParticleMotionCollision{" +
+                "enabled=" + enabled +
+                ", collisionDrag=" + collisionDrag +
+                ", coefficientOfRestitution=" + coefficientOfRestitution +
+                ", collisionRadius=" + collisionRadius +
+                ", expireOnContact=" + expireOnContact +
+                '}';
     }
 }

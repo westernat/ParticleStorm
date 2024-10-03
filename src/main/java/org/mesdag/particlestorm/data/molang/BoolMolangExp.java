@@ -32,6 +32,11 @@ public class BoolMolangExp extends MolangExp {
         return constant || variable != null;
     }
 
+    @Override
+    public String toString() {
+        return "BoolMolangExp{" + (expStr.isEmpty() ? constant : expStr) + '}';
+    }
+
     public static BoolMolangExp ofExpression(String expression) {
         return new BoolMolangExp(true, expression);
     }

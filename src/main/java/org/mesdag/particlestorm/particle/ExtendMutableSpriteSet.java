@@ -18,7 +18,7 @@ public class ExtendMutableSpriteSet extends ParticleEngine.MutableSpriteSet {
     }
 
     public TextureAtlasSprite get(int index) {
-        if (index < 0) return missing;
+        if (index < 0 || index >= sprites.size()) return missing;
         return sprites.get(index);
     }
 
@@ -35,7 +35,7 @@ public class ExtendMutableSpriteSet extends ParticleEngine.MutableSpriteSet {
         this.sprites = new ArrayList<>(sprites);
     }
 
-    public void setMissing(TextureAtlasSprite missing) {
+    public void bindMissing(TextureAtlasSprite missing) {
         this.missing = missing;
     }
 }

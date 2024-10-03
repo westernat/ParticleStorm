@@ -4,14 +4,14 @@ import com.google.common.collect.ImmutableMap;
 import com.mojang.datafixers.util.Either;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
+import net.minecraft.util.Mth;
+import net.minecraft.util.Tuple;
 import org.mesdag.particlestorm.data.molang.FloatMolangExp;
+import org.mesdag.particlestorm.data.molang.MolangData;
 import org.mesdag.particlestorm.data.molang.MolangExp;
 import org.mesdag.particlestorm.particle.MolangParticleInstance;
 
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Stream;
 
 public record ParticleAppearanceTinting(Color color, ColorField colorField) implements IParticleComponent {
@@ -38,12 +38,54 @@ public record ParticleAppearanceTinting(Color color, ColorField colorField) impl
 
     @Override
     public void update(MolangParticleInstance instance) {
-        // todo
+        apply(instance);
+    }
+
+    private float[] getCalculatedColor(MolangParticleInstance instance, LinkedList<Tuple<Float, ColorField>> list, float ratio) {
+        for (int index = 0; index < list.size(); index++) {
+            Tuple<Float, ColorField> tuple = list.get(index);
+            if (ratio > tuple.getA()) {
+                if (index == 0 || index == list.size() - 1) {
+                    return tuple.getB().calculate(instance);
+                }
+                Tuple<Float, ColorField> next = list.get(index + 1);
+                float[] color = tuple.getB().calculate(instance);
+                float[] another = next.getB().calculate(instance);
+                float percent = (ratio - tuple.getA()) / (next.getA() - tuple.getA());
+                float r = Mth.clamp(color[0] - (color[0] - another[0]) * percent, 0.0F, 1.0F);
+                float g = Mth.clamp(color[1] - (color[1] - another[1]) * percent, 0.0F, 1.0F);
+                float b = Mth.clamp(color[2] - (color[2] - another[2]) * percent, 0.0F, 1.0F);
+                float a = Mth.clamp(color[3] - (color[3] - another[3]) * percent, 0.0F, 1.0F);
+                return new float[]{r, g, b, a};
+            }
+        }
+        return new float[4];
+    }
+
+    @Override
+    public void apply(MolangParticleInstance instance) {
+        // todo 处理empty
+        if (color.interpolant.initialized() && !color.gradient.map.isEmpty()) {
+            float interpolant = color.interpolant.calculate(instance);
+            float[] calculated = getCalculatedColor(instance, color.gradient.list, interpolant / color.gradient.range * 100);
+            instance.setColor(calculated[0], calculated[1], calculated[2], calculated[3]);
+        } else {
+            float[] color = colorField.calculate(instance);
+            instance.setColor(color[0], color[1], color[2], color[3]);
+        }
     }
 
     @Override
     public boolean requireUpdate() {
         return true;
+    }
+
+    @Override
+    public String toString() {
+        return "ParticleAppearanceTinting{" +
+                "color=" + color +
+                ", colorField=" + colorField +
+                '}';
     }
 
     public record Color(Gradient gradient, FloatMolangExp interpolant) {
@@ -53,7 +95,15 @@ public record ParticleAppearanceTinting(Color color, ColorField colorField) impl
                 FloatMolangExp.CODEC.fieldOf("interpolant").orElse(FloatMolangExp.ZERO).forGetter(Color::interpolant)
         ).apply(instance, Color::new));
 
-        public record Gradient(Map<String, ColorField> map) {
+        @Override
+        public String toString() {
+            return "Color{" +
+                    "gradient=" + gradient +
+                    ", interpolant=" + interpolant +
+                    '}';
+        }
+
+        public static final class Gradient {
             public static final Gradient EMPTY = new Gradient(Map.of());
             public static final Codec<Gradient> CODEC = Codec.either(Codec.list(ColorField.CODEC), Codec.unboundedMap(Codec.STRING, ColorField.CODEC)).xmap(
                     either -> either.map(l -> {
@@ -74,6 +124,27 @@ public record ParticleAppearanceTinting(Color color, ColorField colorField) impl
                     }, Gradient::new),
                     gradient -> Either.right(gradient.map)
             );
+            public final Map<String, ColorField> map;
+
+            public final float range;
+            public final LinkedList<Tuple<Float, ColorField>> list;
+
+            public Gradient(Map<String, ColorField> map) {
+                this.map = map;
+                this.list = new LinkedList<>();
+                map.entrySet().stream()
+                        .map(entry -> new Tuple<>(Float.parseFloat(entry.getKey()), entry.getValue()))
+                        .sorted(Comparator.comparing(Tuple::getA))
+                        .forEachOrdered(list::add);
+                this.range = list.isEmpty() ? 0.0F : list.getLast().getA();
+            }
+
+            @Override
+            public String toString() {
+                return "Gradient{" +
+                        "map=" + map +
+                        '}';
+            }
         }
     }
 
@@ -94,5 +165,24 @@ public record ParticleAppearanceTinting(Color color, ColorField colorField) impl
                 }, exps -> new ColorField(exps.getFirst(), exps.get(1), exps.get(2), exps.size() == 4 ? exps.get(3) : FloatMolangExp.ONE)),
                 field -> Either.right(List.of(field.red, field.green, field.blue, field.alpha))
         );
+
+        public float[] calculate(MolangData instance) {
+            return new float[]{
+                    red.calculate(instance),
+                    green.calculate(instance),
+                    blue.calculate(instance),
+                    alpha.calculate(instance)
+            };
+        }
+
+        @Override
+        public String toString() {
+            return "ColorField{" +
+                    "red=" + red +
+                    ", green=" + green +
+                    ", blue=" + blue +
+                    ", alpha=" + alpha +
+                    '}';
+        }
     }
 }

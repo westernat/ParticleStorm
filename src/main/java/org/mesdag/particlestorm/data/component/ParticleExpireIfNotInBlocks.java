@@ -8,6 +8,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+// todo
+
 public record ParticleExpireIfNotInBlocks(Set<BlockState> blocks) implements IParticleComponent {
     public static final Codec<ParticleExpireIfNotInBlocks> CODEC = Codec.list(BlockState.CODEC).xmap(
             states -> new ParticleExpireIfNotInBlocks(new HashSet<>(states)),

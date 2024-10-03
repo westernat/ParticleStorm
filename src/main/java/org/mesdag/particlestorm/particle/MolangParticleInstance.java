@@ -51,12 +51,14 @@ public class MolangParticleInstance extends TextureSheetParticle implements Mola
     protected final double particleRandom3;
     protected final double particleRandom4;
     public List<IParticleComponent> components;
+    public ParticleEmitterEntity emitter;
+    public boolean motionDynamic = false;
 
     public float[] billboardSize = new float[2];
     public float[] uvSize;
     public float[] uvStep;
     public int maxFrame = 1;
-    public int currentFrame = 1;
+    public int currentFrame = 0;
     public float[] UV;
 
     public boolean insideKillPlane;
@@ -65,9 +67,9 @@ public class MolangParticleInstance extends TextureSheetParticle implements Mola
     public MolangParticleInstance(ParticleDetail detail, ClientLevel level, double x, double y, double z, double xSpeed, double ySpeed, double zSpeed, ExtendMutableSpriteSet sprites) {
         super(level, x, y, z);
         this.friction = 1.0F;
-        this.xd = xSpeed / 20.0;
-        this.yd = ySpeed / 20.0;
-        this.zd = zSpeed / 20.0;
+        this.xd = xSpeed;
+        this.yd = ySpeed;
+        this.zd = zSpeed;
         this.random = level.getRandom();
         this.detail = detail;
         this.variableTable = new VariableTable(detail.variableTable);
@@ -109,6 +111,11 @@ public class MolangParticleInstance extends TextureSheetParticle implements Mola
         this.roll = roll;
     }
 
+    public void setColor(float red, float green, float blue, float alpha) {
+        super.setColor(red, green, blue);
+        super.setAlpha(alpha);
+    }
+
     public void setUV(float u, float v, float w, float h) {
         if (UV == null) this.UV = new float[4];
         this.UV[0] = u / originX;
@@ -121,6 +128,12 @@ public class MolangParticleInstance extends TextureSheetParticle implements Mola
         this.hasCollision = bool;
     }
 
+    public void addAcceleration(float x, float y, float z) {
+        this.xd += x;
+        this.yd += y;
+        this.zd += z;
+    }
+
     @Override
     public VariableTable getVariableTable() {
         return variableTable;
@@ -131,8 +144,13 @@ public class MolangParticleInstance extends TextureSheetParticle implements Mola
         return level;
     }
 
-    public int getAge() {
-        return age;
+    public float tickAge() {
+        return age * emitter.invTickRate;
+    }
+
+    @Override
+    public float tickLifetime() {
+        return lifetime * emitter.invTickRate;
     }
 
     @Override
@@ -179,6 +197,10 @@ public class MolangParticleInstance extends TextureSheetParticle implements Mola
         return UV == null ? super.getV1() : UV[3];
     }
 
+    public int getAge() {
+        return age;
+    }
+
     @Override
     public void tick() {
         super.tick();
@@ -220,6 +242,11 @@ public class MolangParticleInstance extends TextureSheetParticle implements Mola
         this.yRot = (float) (Mth.atan2(xd, zd) * Mth.RAD_TO_DEG);
     }
 
+    public void moveDirectly(double x, double y, double z) {
+        setBoundingBox(getBoundingBox().move(x, y, z));
+        setLocationFromBoundingbox();
+    }
+
     @Override
     public void move(double x, double y, double z) {
         if (!stoppedByCollision) {
@@ -241,8 +268,7 @@ public class MolangParticleInstance extends TextureSheetParticle implements Mola
             }
 
             if (x != 0.0 || y != 0.0 || z != 0.0) {
-                setBoundingBox(getBoundingBox().move(x, y, z));
-                setLocationFromBoundingbox();
+                moveDirectly(x, y, z);
             }
 
             if (Math.abs(d1) >= 1.0E-5F && Math.abs(y) < 1.0E-5F) {

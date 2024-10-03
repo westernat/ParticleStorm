@@ -54,4 +54,12 @@ public record ParticleLifetimeExpression(FloatMolangExp expirationExpression, Fl
     public boolean requireUpdate() {
         return true;
     }
+
+    @Override
+    public String toString() {
+        return "ParticleLifetimeExpression{" +
+                "expirationExpression=" + expirationExpression +
+                ", maxLifetime=" + maxLifetime +
+                '}';
+    }
 }

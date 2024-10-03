@@ -1,10 +1,7 @@
 package org.mesdag.particlestorm.particle;
 
 import org.jetbrains.annotations.NotNull;
-import org.mesdag.particlestorm.data.component.EmitterLifetime;
-import org.mesdag.particlestorm.data.component.EmitterRate;
-import org.mesdag.particlestorm.data.component.EmitterShape;
-import org.mesdag.particlestorm.data.component.IEmitterComponent;
+import org.mesdag.particlestorm.data.component.*;
 import org.mesdag.particlestorm.data.molang.MolangData;
 import org.mesdag.particlestorm.data.molang.VariableTable;
 import org.mesdag.particlestorm.data.molang.compiler.MathParser;
@@ -23,6 +20,9 @@ public class EmitterDetail {
     public final VariableTable variableTable;
     public final ArrayList<VariableAssignment> assignments;
     public EmitterRate.Type emitterRateType = EmitterRate.Type.MANUAL;
+    public boolean localPosition = false;
+    public boolean localRotation = false;
+    public boolean localVelocity = false;
 
     public EmitterDetail(MolangParticleOption option, List<IEmitterComponent> components) {
         this.option = option;
@@ -51,6 +51,10 @@ public class EmitterDetail {
             } else if (component instanceof EmitterShape) {
                 if (shape) throw new IllegalArgumentException("Duplicate emitter shape component");
                 else shape = true;
+            } else if (component instanceof EmitterLocalSpace localSpace) {
+                this.localPosition = localSpace.position();
+                this.localRotation = localSpace.rotation();
+                this.localVelocity = localSpace.velocity();
             }
             component.getAllMolangExp().forEach(exp -> {
                 exp.compile(parser);
@@ -61,14 +65,14 @@ public class EmitterDetail {
             });
         }
 
-        this.variableTable = new VariableTable(null);
+        this.variableTable = new VariableTable(table, null);
         this.assignments = toInit;
     }
 
     private static @NotNull Hashtable<String, Variable> addDefaultVariables() {
         Hashtable<String, Variable> table = new Hashtable<>();
-        table.computeIfAbsent("variable.emitter_age", s -> new Variable(s, MolangData::getAge));
-        table.computeIfAbsent("variable.emitter_lifetime", s -> new Variable(s, MolangData::getLifetime));
+        table.computeIfAbsent("variable.emitter_age", s -> new Variable(s, MolangData::tickAge));
+        table.computeIfAbsent("variable.emitter_lifetime", s -> new Variable(s, MolangData::tickLifetime));
         table.computeIfAbsent("variable.emitter_random_1", s -> new Variable(s, MolangData::getRandom1));
         table.computeIfAbsent("variable.emitter_random_2", s -> new Variable(s, MolangData::getRandom2));
         table.computeIfAbsent("variable.emitter_random_3", s -> new Variable(s, MolangData::getRandom3));

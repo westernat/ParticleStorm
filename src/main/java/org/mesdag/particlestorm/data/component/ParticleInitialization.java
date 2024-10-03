@@ -37,4 +37,11 @@ public record ParticleInitialization(FloatMolangExp perRenderExpression) impleme
     public boolean requireUpdate() {
         return true;
     }
+
+    @Override
+    public String toString() {
+        return "ParticleInitialization{" +
+                "perRenderExpression=" + perRenderExpression +
+                '}';
+    }
 }

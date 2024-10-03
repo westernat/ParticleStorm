@@ -72,8 +72,8 @@ public class ParticleDetail {
 
     private static @NotNull Hashtable<String, Variable> addDefaultVariables() {
         Hashtable<String, Variable> table = new Hashtable<>();
-        table.computeIfAbsent("variable.particle_age", s -> new Variable(s, MolangData::getAge));
-        table.computeIfAbsent("variable.particle_lifetime", s -> new Variable(s, MolangData::getLifetime));
+        table.computeIfAbsent("variable.particle_age", s -> new Variable(s, MolangData::tickAge));
+        table.computeIfAbsent("variable.particle_lifetime", s -> new Variable(s, MolangData::tickLifetime));
         table.computeIfAbsent("variable.particle_random_1", s -> new Variable(s, MolangData::getRandom1));
         table.computeIfAbsent("variable.particle_random_2", s -> new Variable(s, MolangData::getRandom2));
         table.computeIfAbsent("variable.particle_random_3", s -> new Variable(s, MolangData::getRandom3));

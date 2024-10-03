@@ -39,6 +39,6 @@ public class MolangExp {
 
     @Override
     public String toString() {
-        return "molang{" + expStr + "}";
+        return "MolangExp{" + expStr + "}";
     }
 }

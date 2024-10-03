@@ -40,7 +40,6 @@ public final class GameClient {
         IComponent.register("emitter_shape_point", EmitterShape.Point.CODEC);
         IComponent.register("emitter_shape_sphere", EmitterShape.Sphere.CODEC);
         IComponent.register("emitter_shape_box", EmitterShape.Box.CODEC);
-        IComponent.register("emitter_shape_custom", EmitterShape.Custom.CODEC);
         IComponent.register("emitter_shape_entity_aabb", EmitterShape.EntityAABB.CODEC);
         IComponent.register("emitter_shape_disc", EmitterShape.Disc.CODEC);
 

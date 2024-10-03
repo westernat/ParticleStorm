@@ -34,7 +34,7 @@ public class FloatMolangExp extends MolangExp {
 
     @Override
     public String toString() {
-        return "molang{" + (expStr.isEmpty() ? constant : expStr) + "}";
+        return "FloatMolangExp{" + (expStr.isEmpty() ? constant : expStr) + '}';
     }
 
     public static FloatMolangExp ofConstant(float constant) {

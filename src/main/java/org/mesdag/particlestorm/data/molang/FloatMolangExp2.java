@@ -18,4 +18,12 @@ public record FloatMolangExp2(FloatMolangExp exp1, FloatMolangExp exp2) {
     public boolean initialized() {
         return exp1.initialized() && exp2.initialized();
     }
+
+    @Override
+    public String toString() {
+        return "FloatMolangExp2{" +
+                "exp1=" + exp1 +
+                ", exp2=" + exp2 +
+                '}';
+    }
 }

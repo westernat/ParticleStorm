@@ -12,18 +12,22 @@ import org.joml.Vector3f;
 @OnlyIn(Dist.CLIENT)
 public enum FaceCameraMode implements SingleQuadParticle.FacingCameraMode {
     LOOKAT_XYZ {
+        private final Vector3f wd = new Vector3f();
+        private final Vector3f qd = new Vector3f();
+        private final Vector3f up = new Vector3f(0, 1, 0);
+
         @Override
         public void setRotation(Quaternionf quaternion, Camera camera, float partialTick) {}
 
         @Override
         public void setRotation(float x, float y, float z, Quaternionf quaternion, Camera camera, float partialTick) {
             Vector3f xd = camera.getPosition().toVector3f().sub(x, y, z).normalize();
-            UP.cross(xd, WD).normalize();
-            xd.cross(WD, QD);
+            up.cross(xd, wd).normalize();
+            xd.cross(wd, qd);
             quaternion.setFromNormalized(new Matrix4f(
-                    WD.x, QD.x, xd.x, 0,
-                    WD.y, QD.y, xd.y, 0,
-                    WD.z, QD.z, xd.z, 0,
+                    wd.x, qd.x, xd.x, 0,
+                    wd.y, qd.y, xd.y, 0,
+                    wd.z, qd.z, xd.z, 0,
                     0, 0, 0, 1
             ).invert());
         }
@@ -87,10 +91,6 @@ public enum FaceCameraMode implements SingleQuadParticle.FacingCameraMode {
             quaternion.rotationXYZ(0.0F, -Mth.HALF_PI, 0.0F);
         }
     };
-
-    private static final Vector3f WD = new Vector3f();
-    private static final Vector3f QD = new Vector3f();
-    private static final Vector3f UP = new Vector3f(0, 1, 0);
 
     public void setRotation(float x, float y, float z, Quaternionf quaternion, Camera camera, float partialTick) {
         setRotation(quaternion, camera, partialTick);

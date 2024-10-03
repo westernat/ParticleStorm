@@ -17,4 +17,13 @@ public record FloatMolangExp3(FloatMolangExp exp1, FloatMolangExp exp2, FloatMol
     public float[] calculate(MolangData instance) {
         return new float[]{exp1.calculate(instance), exp2.calculate(instance), exp3.calculate(instance)};
     }
+
+    @Override
+    public String toString() {
+        return "FloatMolangExp3{" +
+                "exp1=" + exp1 +
+                ", exp2=" + exp2 +
+                ", exp3=" + exp3 +
+                '}';
+    }
 }
