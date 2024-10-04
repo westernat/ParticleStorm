@@ -1,6 +1,6 @@
 package org.mesdag.particlestorm.data.molang.compiler.value;
 
-import org.mesdag.particlestorm.data.molang.MolangData;
+import org.mesdag.particlestorm.data.molang.MolangInstance;
 import org.mesdag.particlestorm.data.molang.compiler.MathValue;
 import org.mesdag.particlestorm.data.molang.compiler.Operator;
 
@@ -28,7 +28,7 @@ public final class Calculation implements MathValue {
     }
 
     @Override
-    public double get(MolangData instance) {
+    public double get(MolangInstance instance) {
         if (this.isMutable)
             return this.operator.compute(this.argA.get(instance), this.argB.get(instance));
 

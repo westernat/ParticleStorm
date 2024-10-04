@@ -2,7 +2,7 @@ package org.mesdag.particlestorm.particle;
 
 import org.jetbrains.annotations.NotNull;
 import org.mesdag.particlestorm.data.component.*;
-import org.mesdag.particlestorm.data.molang.MolangData;
+import org.mesdag.particlestorm.data.molang.MolangInstance;
 import org.mesdag.particlestorm.data.molang.VariableTable;
 import org.mesdag.particlestorm.data.molang.compiler.MathParser;
 import org.mesdag.particlestorm.data.molang.compiler.MathValue;
@@ -71,12 +71,12 @@ public class EmitterDetail {
 
     private static @NotNull Hashtable<String, Variable> addDefaultVariables() {
         Hashtable<String, Variable> table = new Hashtable<>();
-        table.computeIfAbsent("variable.emitter_age", s -> new Variable(s, MolangData::tickAge));
-        table.computeIfAbsent("variable.emitter_lifetime", s -> new Variable(s, MolangData::tickLifetime));
-        table.computeIfAbsent("variable.emitter_random_1", s -> new Variable(s, MolangData::getRandom1));
-        table.computeIfAbsent("variable.emitter_random_2", s -> new Variable(s, MolangData::getRandom2));
-        table.computeIfAbsent("variable.emitter_random_3", s -> new Variable(s, MolangData::getRandom3));
-        table.computeIfAbsent("variable.emitter_random_4", s -> new Variable(s, MolangData::getRandom4));
+        table.computeIfAbsent("variable.emitter_age", s -> new Variable(s, MolangInstance::tickAge));
+        table.computeIfAbsent("variable.emitter_lifetime", s -> new Variable(s, MolangInstance::tickLifetime));
+        table.computeIfAbsent("variable.emitter_random_1", s -> new Variable(s, MolangInstance::getRandom1));
+        table.computeIfAbsent("variable.emitter_random_2", s -> new Variable(s, MolangInstance::getRandom2));
+        table.computeIfAbsent("variable.emitter_random_3", s -> new Variable(s, MolangInstance::getRandom3));
+        table.computeIfAbsent("variable.emitter_random_4", s -> new Variable(s, MolangInstance::getRandom4));
         return table;
     }
 

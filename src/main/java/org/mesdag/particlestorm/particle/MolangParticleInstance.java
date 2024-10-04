@@ -21,14 +21,14 @@ import org.joml.Vector3f;
 import org.mesdag.particlestorm.GameClient;
 import org.mesdag.particlestorm.ITextureAtlasSprite;
 import org.mesdag.particlestorm.data.component.IParticleComponent;
-import org.mesdag.particlestorm.data.molang.MolangData;
+import org.mesdag.particlestorm.data.molang.MolangInstance;
 import org.mesdag.particlestorm.data.molang.VariableTable;
 
 import java.util.List;
 import java.util.Optional;
 
 @OnlyIn(Dist.CLIENT)
-public class MolangParticleInstance extends TextureSheetParticle implements MolangData {
+public class MolangParticleInstance extends TextureSheetParticle implements MolangInstance {
     public static final int FULL_LIGHT = 0xF000F0;
     public final RandomSource random;
     public final ParticleDetail detail;

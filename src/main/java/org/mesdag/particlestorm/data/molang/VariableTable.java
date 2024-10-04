@@ -20,7 +20,7 @@ public class VariableTable {
         this(new Hashtable<>(), previous);
     }
 
-    public double getValue(String name, MolangData instance) {
+    public double getValue(String name, MolangInstance instance) {
         Variable variable = table.get(name);
         if (variable == null) {
             if (subTable == null) {
@@ -32,7 +32,7 @@ public class VariableTable {
         return variable.get(instance);
     }
 
-    public void setValue(String name, ToDoubleFunction<MolangData> function) {
+    public void setValue(String name, ToDoubleFunction<MolangInstance> function) {
         Variable variable = table.get(name);
         if (variable == null) {
             table.put(name, new Variable(name, function));

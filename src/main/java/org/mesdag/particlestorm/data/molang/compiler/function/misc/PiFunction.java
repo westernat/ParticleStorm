@@ -1,6 +1,6 @@
 package org.mesdag.particlestorm.data.molang.compiler.function.misc;
 
-import org.mesdag.particlestorm.data.molang.MolangData;
+import org.mesdag.particlestorm.data.molang.MolangInstance;
 import org.mesdag.particlestorm.data.molang.compiler.MathValue;
 import org.mesdag.particlestorm.data.molang.compiler.function.MathFunction;
 import org.mesdag.particlestorm.data.molang.compiler.value.Constant;
@@ -24,7 +24,7 @@ public final class PiFunction extends MathFunction {
     }
 
     @Override
-    public double compute(MolangData instance) {
+    public double compute(MolangInstance instance) {
         return Math.PI;
     }
 

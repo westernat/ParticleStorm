@@ -22,7 +22,7 @@ public class BoolMolangExp extends MolangExp {
         return constant;
     }
 
-    public boolean get(MolangData instance) {
+    public boolean get(MolangInstance instance) {
         if (!initialized()) return false;
         return variable == null ? constant : variable.get(instance) != 0.0;
     }

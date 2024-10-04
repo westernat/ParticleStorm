@@ -24,7 +24,7 @@ public class MolangExp {
         }
     }
 
-    public float calculate(MolangData instance) {
+    public float calculate(MolangInstance instance) {
         if (!initialized()) return 0.0F;
         return (float) variable.get(instance);
     }

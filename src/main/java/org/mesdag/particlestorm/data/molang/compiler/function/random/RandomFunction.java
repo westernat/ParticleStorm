@@ -1,7 +1,7 @@
 package org.mesdag.particlestorm.data.molang.compiler.function.random;
 
 import org.jetbrains.annotations.Nullable;
-import org.mesdag.particlestorm.data.molang.MolangData;
+import org.mesdag.particlestorm.data.molang.MolangInstance;
 import org.mesdag.particlestorm.data.molang.compiler.MathValue;
 import org.mesdag.particlestorm.data.molang.compiler.function.MathFunction;
 
@@ -44,7 +44,7 @@ public final class RandomFunction extends MathFunction {
     }
 
     @Override
-    public double compute(MolangData instance) {
+    public double compute(MolangInstance instance) {
         double result;
         double valueA = this.valueA.get(instance);
 

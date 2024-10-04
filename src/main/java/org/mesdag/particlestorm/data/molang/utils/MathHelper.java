@@ -42,7 +42,7 @@ public class MathHelper {
     }
 
     /**
-     * Adjust the angle so that his value is in range [-180;180[
+     * Adjust the angle so that his value is in range [-180;180]
      */
     public static int wrapDegrees(int angle)
     {

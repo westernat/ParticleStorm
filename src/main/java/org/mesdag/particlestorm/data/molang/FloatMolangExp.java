@@ -27,7 +27,7 @@ public class FloatMolangExp extends MolangExp {
     }
 
     @Override
-    public float calculate(MolangData instance) {
+    public float calculate(MolangInstance instance) {
         if (!initialized()) return 0.0F;
         return variable == null ? constant : (float) variable.get(instance);
     }

@@ -1,7 +1,7 @@
 package org.mesdag.particlestorm.data.molang.compiler.function.round;
 
 import net.minecraft.util.Mth;
-import org.mesdag.particlestorm.data.molang.MolangData;
+import org.mesdag.particlestorm.data.molang.MolangInstance;
 import org.mesdag.particlestorm.data.molang.compiler.MathValue;
 import org.mesdag.particlestorm.data.molang.compiler.function.MathFunction;
 
@@ -32,7 +32,7 @@ public final class LerpFunction extends MathFunction {
     }
 
     @Override
-    public double compute(MolangData instance) {
+    public double compute(MolangInstance instance) {
         return Mth.lerp(this.delta.get(instance), this.min.get(instance), this.max.get(instance));
     }
 

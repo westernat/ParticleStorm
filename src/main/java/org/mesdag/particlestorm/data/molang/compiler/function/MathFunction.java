@@ -1,6 +1,6 @@
 package org.mesdag.particlestorm.data.molang.compiler.function;
 
-import org.mesdag.particlestorm.data.molang.MolangData;
+import org.mesdag.particlestorm.data.molang.MolangInstance;
 import org.mesdag.particlestorm.data.molang.compiler.MathValue;
 
 import java.util.StringJoiner;
@@ -29,7 +29,7 @@ public abstract class MathFunction implements MathValue {
     public abstract String getName();
 
     @Override
-    public final double get(MolangData instance) {
+    public final double get(MolangInstance instance) {
         if (this.isMutable)
             return compute(instance);
 
@@ -42,7 +42,7 @@ public abstract class MathFunction implements MathValue {
     /**
      * Compute the result of this function from its stored arguments
      */
-    public abstract double compute(MolangData instance);
+    public abstract double compute(MolangInstance instance);
 
     /**
      * @return Whether this function should be considered mutable; the value could change

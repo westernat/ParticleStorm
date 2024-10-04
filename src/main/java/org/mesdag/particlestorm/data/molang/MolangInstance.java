@@ -3,7 +3,7 @@ package org.mesdag.particlestorm.data.molang;
 
 import net.minecraft.world.level.Level;
 
-public interface MolangData {
+public interface MolangInstance {
     VariableTable getVariableTable();
 
     Level getLevel();

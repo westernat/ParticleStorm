@@ -16,7 +16,7 @@ import org.mesdag.particlestorm.GameClient;
 import org.mesdag.particlestorm.ParticleStorm;
 import org.mesdag.particlestorm.data.component.EmitterRate;
 import org.mesdag.particlestorm.data.component.IEmitterComponent;
-import org.mesdag.particlestorm.data.molang.MolangData;
+import org.mesdag.particlestorm.data.molang.MolangInstance;
 import org.mesdag.particlestorm.data.molang.VariableTable;
 import org.mesdag.particlestorm.network.EmitterManualPacketC2S;
 import org.mesdag.particlestorm.network.EmitterParticlePacketS2C;
@@ -24,7 +24,7 @@ import org.mesdag.particlestorm.network.EmitterParticlePacketS2C;
 import java.util.Collection;
 import java.util.List;
 
-public class ParticleEmitterEntity extends Entity implements MolangData {
+public class ParticleEmitterEntity extends Entity implements MolangInstance {
     public ManualData manualData;
     public ResourceLocation particleId;
     protected boolean haveHadSync = false;

@@ -1,6 +1,6 @@
 package org.mesdag.particlestorm.data.molang.compiler.function.round;
 
-import org.mesdag.particlestorm.data.molang.MolangData;
+import org.mesdag.particlestorm.data.molang.MolangInstance;
 import org.mesdag.particlestorm.data.molang.compiler.MathValue;
 import org.mesdag.particlestorm.data.molang.compiler.function.MathFunction;
 
@@ -27,7 +27,7 @@ public final class CeilFunction extends MathFunction {
     }
 
     @Override
-    public double compute(MolangData instance) {
+    public double compute(MolangInstance instance) {
         return Math.ceil(this.value.get(instance));
     }
 

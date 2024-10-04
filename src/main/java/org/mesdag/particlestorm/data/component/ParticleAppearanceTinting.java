@@ -7,8 +7,8 @@ import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.util.Mth;
 import net.minecraft.util.Tuple;
 import org.mesdag.particlestorm.data.molang.FloatMolangExp;
-import org.mesdag.particlestorm.data.molang.MolangData;
 import org.mesdag.particlestorm.data.molang.MolangExp;
+import org.mesdag.particlestorm.data.molang.MolangInstance;
 import org.mesdag.particlestorm.particle.MolangParticleInstance;
 
 import java.util.*;
@@ -166,7 +166,7 @@ public record ParticleAppearanceTinting(Color color, ColorField colorField) impl
                 field -> Either.right(List.of(field.red, field.green, field.blue, field.alpha))
         );
 
-        public float[] calculate(MolangData instance) {
+        public float[] calculate(MolangInstance instance) {
             return new float[]{
                     red.calculate(instance),
                     green.calculate(instance),

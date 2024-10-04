@@ -12,7 +12,7 @@ import net.minecraft.util.profiling.ProfilerFiller;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 import org.jetbrains.annotations.NotNull;
-import org.mesdag.particlestorm.data.ParticleEffect;
+import org.mesdag.particlestorm.data.DefinedParticleEffect;
 import org.mesdag.particlestorm.data.component.IEmitterComponent;
 
 import java.io.IOException;
@@ -25,7 +25,7 @@ import java.util.concurrent.Executor;
 
 @OnlyIn(Dist.CLIENT)
 public class MolangParticleLoader implements PreparableReloadListener {
-    public final Hashtable<ResourceLocation, ParticleEffect> ID_2_EFFECT = new Hashtable<>();
+    public final Hashtable<ResourceLocation, DefinedParticleEffect> ID_2_EFFECT = new Hashtable<>();
     public final Hashtable<ResourceLocation, ParticleDetail> ID_2_PARTICLE = new Hashtable<>();
     public final Hashtable<ResourceLocation, EmitterDetail> ID_2_EMITTER = new Hashtable<>();
     private static final FileToIdConverter PARTICLE_LISTER = FileToIdConverter.json("particle_definitions");
@@ -35,12 +35,12 @@ public class MolangParticleLoader implements PreparableReloadListener {
         return CompletableFuture.supplyAsync(
                 () -> PARTICLE_LISTER.listMatchingResources(resourceManager), backgroundExecutor
         ).thenCompose(map -> {
-            List<CompletableFuture<ParticleEffect>> list = new ArrayList<>(map.size());
+            List<CompletableFuture<DefinedParticleEffect>> list = new ArrayList<>(map.size());
             map.forEach((file, resource) -> {
                 ResourceLocation id = PARTICLE_LISTER.fileToId(file);
                 list.add(CompletableFuture.supplyAsync(() -> {
                     try (Reader reader = resource.openAsReader()) {
-                        return ParticleEffect.CODEC.parse(JsonOps.INSTANCE, GsonHelper.parse(reader).get("particle_effect")).getOrThrow(JsonParseException::new);
+                        return DefinedParticleEffect.CODEC.parse(JsonOps.INSTANCE, GsonHelper.parse(reader).get("particle_effect")).getOrThrow(JsonParseException::new);
                     } catch (IOException exception) {
                         throw new IllegalStateException("Failed to load definition for particle " + id, exception);
                     }

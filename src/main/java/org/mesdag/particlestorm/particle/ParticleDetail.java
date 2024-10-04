@@ -4,12 +4,12 @@ import net.minecraft.client.particle.ParticleRenderType;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 import org.jetbrains.annotations.NotNull;
-import org.mesdag.particlestorm.data.ParticleEffect;
+import org.mesdag.particlestorm.data.DefinedParticleEffect;
 import org.mesdag.particlestorm.data.component.IComponent;
 import org.mesdag.particlestorm.data.component.IParticleComponent;
 import org.mesdag.particlestorm.data.component.ParticleAppearanceBillboard;
 import org.mesdag.particlestorm.data.component.ParticleAppearanceLighting;
-import org.mesdag.particlestorm.data.molang.MolangData;
+import org.mesdag.particlestorm.data.molang.MolangInstance;
 import org.mesdag.particlestorm.data.molang.VariableTable;
 import org.mesdag.particlestorm.data.molang.compiler.MathParser;
 import org.mesdag.particlestorm.data.molang.compiler.MathValue;
@@ -24,7 +24,7 @@ import static org.mesdag.particlestorm.data.molang.compiler.MolangQueries.applyP
 
 @OnlyIn(Dist.CLIENT)
 public class ParticleDetail {
-    public final ParticleEffect effect;
+    public final DefinedParticleEffect effect;
     public final ParticleRenderType renderType;
     public final FaceCameraMode facingCameraMode;
     public final float minSpeedThresholdSqr;
@@ -33,7 +33,7 @@ public class ParticleDetail {
     public final VariableTable variableTable;
     public final ArrayList<VariableAssignment> assignments;
 
-    public ParticleDetail(ParticleEffect effect) {
+    public ParticleDetail(DefinedParticleEffect effect) {
         this.effect = effect;
         this.renderType = switch (effect.description.parameters().material()) {
             case TERRAIN_SHEET -> ParticleRenderType.TERRAIN_SHEET;
@@ -72,12 +72,12 @@ public class ParticleDetail {
 
     private static @NotNull Hashtable<String, Variable> addDefaultVariables() {
         Hashtable<String, Variable> table = new Hashtable<>();
-        table.computeIfAbsent("variable.particle_age", s -> new Variable(s, MolangData::tickAge));
-        table.computeIfAbsent("variable.particle_lifetime", s -> new Variable(s, MolangData::tickLifetime));
-        table.computeIfAbsent("variable.particle_random_1", s -> new Variable(s, MolangData::getRandom1));
-        table.computeIfAbsent("variable.particle_random_2", s -> new Variable(s, MolangData::getRandom2));
-        table.computeIfAbsent("variable.particle_random_3", s -> new Variable(s, MolangData::getRandom3));
-        table.computeIfAbsent("variable.particle_random_4", s -> new Variable(s, MolangData::getRandom4));
+        table.computeIfAbsent("variable.particle_age", s -> new Variable(s, MolangInstance::tickAge));
+        table.computeIfAbsent("variable.particle_lifetime", s -> new Variable(s, MolangInstance::tickLifetime));
+        table.computeIfAbsent("variable.particle_random_1", s -> new Variable(s, MolangInstance::getRandom1));
+        table.computeIfAbsent("variable.particle_random_2", s -> new Variable(s, MolangInstance::getRandom2));
+        table.computeIfAbsent("variable.particle_random_3", s -> new Variable(s, MolangInstance::getRandom3));
+        table.computeIfAbsent("variable.particle_random_4", s -> new Variable(s, MolangInstance::getRandom4));
         return table;
     }
 

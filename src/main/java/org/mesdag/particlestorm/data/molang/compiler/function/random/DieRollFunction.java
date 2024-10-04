@@ -1,7 +1,7 @@
 package org.mesdag.particlestorm.data.molang.compiler.function.random;
 
 import org.jetbrains.annotations.Nullable;
-import org.mesdag.particlestorm.data.molang.MolangData;
+import org.mesdag.particlestorm.data.molang.MolangInstance;
 import org.mesdag.particlestorm.data.molang.compiler.MathValue;
 import org.mesdag.particlestorm.data.molang.compiler.function.MathFunction;
 
@@ -45,7 +45,7 @@ public final class DieRollFunction extends MathFunction {
     }
 
     @Override
-    public double compute(MolangData instance) {
+    public double compute(MolangInstance instance) {
         final int rolls = (int)(Math.floor(this.rolls.get(instance)));
         final double min = this.min.get(instance);
         final double max = this.max.get(instance);

@@ -1,7 +1,7 @@
 package org.mesdag.particlestorm.data.molang.compiler.value;
 
 import org.mesdag.particlestorm.ParticleStorm;
-import org.mesdag.particlestorm.data.molang.MolangData;
+import org.mesdag.particlestorm.data.molang.MolangInstance;
 import org.mesdag.particlestorm.data.molang.compiler.MathValue;
 
 import java.util.concurrent.atomic.AtomicReference;
@@ -15,17 +15,17 @@ import java.util.function.ToDoubleFunction;
  * <br>
  * Returns the currently stored value, which may be modified at any given time via {@link #set}. Values may be lazily evaluated to eliminate wasteful usage
  */
-public record Variable(String name, AtomicReference<ToDoubleFunction<MolangData>> value) implements MathValue {
+public record Variable(String name, AtomicReference<ToDoubleFunction<MolangInstance>> value) implements MathValue {
     public Variable(String name, double value) {
         this(name, instance -> value);
     }
 
-    public Variable(String name, ToDoubleFunction<MolangData> value) {
+    public Variable(String name, ToDoubleFunction<MolangInstance> value) {
         this(name, new AtomicReference<>(value));
     }
 
     @Override
-    public double get(MolangData instance) {
+    public double get(MolangInstance instance) {
         try {
             return this.value.get().applyAsDouble(instance);
         } catch (Exception ex) {
@@ -39,7 +39,7 @@ public record Variable(String name, AtomicReference<ToDoubleFunction<MolangData>
     }
 
     @Override
-    public void set(final ToDoubleFunction<MolangData> value) {
+    public void set(final ToDoubleFunction<MolangInstance> value) {
         this.value.set(value);
     }
 
