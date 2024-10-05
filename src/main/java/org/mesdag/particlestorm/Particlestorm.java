@@ -53,7 +53,6 @@ public final class ParticleStorm {
             either -> either.map(Collections::singletonList, l -> l),
             l -> l.size() == 1 ? Either.left(l.getFirst()) : Either.right(l)
     );
-    public static final ResourceLocation EMPTY_LOCATION = asResource("./empty");
 
     public ParticleStorm(IEventBus bus, ModContainer container) {
         ENTITIES.register(bus);

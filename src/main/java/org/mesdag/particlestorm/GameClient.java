@@ -26,7 +26,7 @@ public final class GameClient {
 
     private static void registerComponents() {
         IComponent.register("emitter_local_space", EmitterLocalSpace.CODEC);
-        IComponent.register(EmitterInitialization.ID, EmitterInitialization.CODEC);
+        IComponent.register("emitter_initialization", EmitterInitialization.CODEC);
 
         IComponent.register("emitter_rate_instant", EmitterRate.Instant.CODEC);
         IComponent.register("emitter_rate_steady", EmitterRate.Steady.CODEC);
@@ -35,7 +35,7 @@ public final class GameClient {
         IComponent.register("emitter_lifetime_looping", EmitterLifetime.Looping.CODEC);
         IComponent.register("emitter_lifetime_once", EmitterLifetime.Once.CODEC);
         IComponent.register("emitter_lifetime_expression", EmitterLifetime.Expression.CODEC);
-        // todo emitter_lifetime_events
+        IComponent.register("emitter_lifetime_events", EmitterLifetimeEvents.CODEC);
 
         IComponent.register("emitter_shape_point", EmitterShape.Point.CODEC);
         IComponent.register("emitter_shape_sphere", EmitterShape.Sphere.CODEC);
@@ -45,7 +45,7 @@ public final class GameClient {
 
         IComponent.register("particle_initial_speed", ParticleInitialSpeed.CODEC);
         IComponent.register("particle_initial_spin", ParticleInitialSpin.CODEC);
-        IComponent.register(ParticleInitialization.ID, ParticleInitialization.CODEC);
+        IComponent.register("particle_initialization", ParticleInitialization.CODEC);
 
         IComponent.register("particle_motion_dynamic", ParticleMotionDynamic.CODEC);
         IComponent.register("particle_motion_parametric", ParticleMotionParametric.CODEC);
@@ -53,10 +53,10 @@ public final class GameClient {
 
         IComponent.register(ParticleAppearanceBillboard.ID, ParticleAppearanceBillboard.CODEC);
         IComponent.register("particle_appearance_tinting", ParticleAppearanceTinting.CODEC);
-        IComponent.register(ParticleAppearanceLighting.ID, ParticleAppearanceLighting.CODEC);
+        IComponent.register("particle_appearance_lighting", ParticleAppearanceLighting.CODEC);
 
-        IComponent.register(ParticleLifetimeExpression.ID, ParticleLifetimeExpression.CODEC);
-        // todo particle_lifetime_events
+        IComponent.register("particle_lifetime_expression", ParticleLifetimeExpression.CODEC);
+        IComponent.register("particle_lifetime_events", ParticleLifeTimeEvents.CODEC);
         IComponent.register("particle_kill_plane", ParticleLifetimeKillPlane.CODEC);
         IComponent.register("particle_expire_if_in_blocks", ParticleExpireIfInBlocks.CODEC);
         IComponent.register("particle_expire_if_not_in_blocks", ParticleExpireIfNotInBlocks.CODEC);

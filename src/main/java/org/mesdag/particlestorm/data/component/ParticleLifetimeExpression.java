@@ -2,7 +2,6 @@ package org.mesdag.particlestorm.data.component;
 
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
-import net.minecraft.resources.ResourceLocation;
 import org.mesdag.particlestorm.data.molang.FloatMolangExp;
 import org.mesdag.particlestorm.data.molang.MolangExp;
 import org.mesdag.particlestorm.particle.MolangParticleInstance;
@@ -20,7 +19,6 @@ import java.util.List;
  *                             Evaluated once
  */
 public record ParticleLifetimeExpression(FloatMolangExp expirationExpression, FloatMolangExp maxLifetime) implements IParticleComponent {
-    public static final ResourceLocation ID = ResourceLocation.withDefaultNamespace("particle_lifetime_expression");
     public static final Codec<ParticleLifetimeExpression> CODEC = RecordCodecBuilder.create(instance -> instance.group(
             FloatMolangExp.CODEC.fieldOf("expiration_expression").orElse(FloatMolangExp.ZERO).forGetter(ParticleLifetimeExpression::expirationExpression),
             FloatMolangExp.CODEC.fieldOf("max_lifetime").orElse(FloatMolangExp.ZERO).forGetter(ParticleLifetimeExpression::maxLifetime)

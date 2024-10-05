@@ -50,6 +50,7 @@ public class MolangParticleLoader implements PreparableReloadListener {
         }).thenCompose(preparationBarrier::wait).thenAcceptAsync(effects -> {
             ID_2_EFFECT.clear();
             ID_2_PARTICLE.clear();
+            ID_2_EMITTER.clear();
             effects.forEach(effect -> {
                 ResourceLocation id = effect.description.identifier();
                 ID_2_EFFECT.put(id, effect);

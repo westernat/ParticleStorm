@@ -10,12 +10,14 @@
         },
         "events": {
             "a": {
-                "sequence": [
+                "randomize": [
                     {
-                        "particle_effect": {
-                            "effect": "snowstorm:trail",
-                            "type": "emitter"
-                        }
+                        "weight": 1,
+                        "randomize": [
+                            {
+                                "weight": 1
+                            }
+                        ]
                     }
                 ]
             }

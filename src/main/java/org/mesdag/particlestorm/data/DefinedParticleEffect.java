@@ -20,9 +20,9 @@ public class DefinedParticleEffect {
     public final ParticleDescription description;
     public final Map<String, ParticleCurve> curves;
     public final Map<ResourceLocation, IComponent> components;
-    public final Map<String, IEventNode> events;
+    public final Map<String, Map<String, IEventNode>> events;
 
-    public DefinedParticleEffect(ParticleDescription description, Map<String, ParticleCurve> curves, Map<ResourceLocation, IComponent> components, Map<String, IEventNode> events) {
+    public DefinedParticleEffect(ParticleDescription description, Map<String, ParticleCurve> curves, Map<ResourceLocation, IComponent> components, Map<String, Map<String, IEventNode>> events) {
         this.description = description;
         this.curves = curves;
         this.components = components;

@@ -17,14 +17,4 @@ public record SoundEffect(Holder<SoundEvent> soundEffect) implements IEventNode 
     public static final MapCodec<SoundEffect> CODEC = RecordCodecBuilder.mapCodec(instance -> instance.group(
             SOUND_EFFECT_CODEC.fieldOf("sound_effect").orElseGet(() -> Holder.direct(SoundEvents.EMPTY)).forGetter(SoundEffect::soundEffect)
     ).apply(instance, SoundEffect::new));
-
-    @Override
-    public MapCodec<SoundEffect> codec() {
-        return CODEC;
-    }
-
-    @Override
-    public String name() {
-        return "sound_effect";
-    }
 }
