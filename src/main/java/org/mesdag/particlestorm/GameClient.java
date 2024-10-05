@@ -56,7 +56,7 @@ public final class GameClient {
         IComponent.register("particle_appearance_lighting", ParticleAppearanceLighting.CODEC);
 
         IComponent.register("particle_lifetime_expression", ParticleLifetimeExpression.CODEC);
-        IComponent.register("particle_lifetime_events", ParticleLifeTimeEvents.CODEC);
+        IComponent.register(ParticleLifeTimeEvents.ID, ParticleLifeTimeEvents.CODEC);
         IComponent.register("particle_kill_plane", ParticleLifetimeKillPlane.CODEC);
         IComponent.register("particle_expire_if_in_blocks", ParticleExpireIfInBlocks.CODEC);
         IComponent.register("particle_expire_if_not_in_blocks", ParticleExpireIfNotInBlocks.CODEC);

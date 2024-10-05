@@ -5,10 +5,7 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 import org.jetbrains.annotations.NotNull;
 import org.mesdag.particlestorm.data.DefinedParticleEffect;
-import org.mesdag.particlestorm.data.component.IComponent;
-import org.mesdag.particlestorm.data.component.IParticleComponent;
-import org.mesdag.particlestorm.data.component.ParticleAppearanceBillboard;
-import org.mesdag.particlestorm.data.component.ParticleAppearanceLighting;
+import org.mesdag.particlestorm.data.component.*;
 import org.mesdag.particlestorm.data.molang.MolangInstance;
 import org.mesdag.particlestorm.data.molang.VariableTable;
 import org.mesdag.particlestorm.data.molang.compiler.MathParser;
@@ -29,6 +26,7 @@ public class ParticleDetail {
     public final FaceCameraMode facingCameraMode;
     public final float minSpeedThresholdSqr;
     public final boolean environmentLighting;
+    public ParticleLifeTimeEvents lifeTimeEvents;
 
     public final VariableTable variableTable;
     public final ArrayList<VariableAssignment> assignments;
@@ -47,6 +45,7 @@ public class ParticleDetail {
         this.facingCameraMode = FaceCameraMode.valueOf(particleAppearanceBillboard.faceCameraMode().name());
         this.minSpeedThresholdSqr = particleAppearanceBillboard.direction().minSpeedThreshold() * particleAppearanceBillboard.direction().minSpeedThreshold();
         this.environmentLighting = effect.components.containsValue(ParticleAppearanceLighting.INSTANCE);
+        this.lifeTimeEvents = (ParticleLifeTimeEvents) effect.components.get(ParticleLifeTimeEvents.ID);
 
         Hashtable<String, Variable> table = addDefaultVariables();
         MathParser parser = new MathParser(table);

@@ -64,6 +64,7 @@ public class MolangParticleInstance extends TextureSheetParticle implements Mola
 
     public boolean insideKillPlane;
     public ParticleGroup particleGroup;
+    public int lastTimeline = 0;
 
     public MolangParticleInstance(ParticleDetail detail, ClientLevel level, double x, double y, double z, double xSpeed, double ySpeed, double zSpeed, ExtendMutableSpriteSet sprites) {
         super(level, x, y, z);
@@ -301,6 +302,14 @@ public class MolangParticleInstance extends TextureSheetParticle implements Mola
                 remove();
             }
         }
+    }
+
+    @Override
+    public void remove() {
+        if (detail.lifeTimeEvents != null) {
+            detail.lifeTimeEvents.onExpiration(this);
+        }
+        super.remove();
     }
 
     @Override
