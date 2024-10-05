@@ -8,6 +8,7 @@ import net.minecraft.client.particle.ParticleRenderType;
 import net.minecraft.client.particle.TextureSheetParticle;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.core.particles.ParticleGroup;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.Entity;
@@ -171,6 +172,16 @@ public class MolangParticleInstance extends TextureSheetParticle implements Mola
     @Override
     public double getRandom4() {
         return particleRandom4;
+    }
+
+    @Override
+    public ResourceLocation getIdentity() {
+        return detail.effect.description.identifier();
+    }
+
+    @Override
+    public Vec3 getPosition() {
+        return getPos();
     }
 
     public TextureAtlasSprite getSprite() {

@@ -50,6 +50,10 @@ public class ParticleEmitterEntity extends Entity implements MolangInstance {
     public int spawnRate = 0;
     public boolean spawned = false;
     public Entity attached;
+    public int lastTimeline = 0;
+    public float moveDistO = 0.0F;
+    public int lastTravelDist = 0;
+    public float[] cachedLooping;
 
     // Client Only
     public ParticleEmitterEntity(EntityType<?> entityType, Level level) {
@@ -82,6 +86,7 @@ public class ParticleEmitterEntity extends Entity implements MolangInstance {
                 return;
             }
             this.invTickRate = 1.0F / level().tickRateManager().tickrate();
+            this.moveDistO = moveDist;
             for (IEmitterComponent component : components) {
                 component.update(this);
             }
@@ -167,6 +172,22 @@ public class ParticleEmitterEntity extends Entity implements MolangInstance {
     @Override
     public double getRandom4() {
         return emitterRandom4;
+    }
+
+    @Override
+    public ResourceLocation getIdentity() {
+        return particleId;
+    }
+
+    @Override
+    public Vec3 getPosition() {
+        return position();
+    }
+
+    public void beforeRemove() {
+        if (detail.lifetimeEvents != null) {
+            detail.lifetimeEvents.onExpiration(this);
+        }
     }
 
     public record ManualData(ServerLevel serverLevel, MolangParticleOption particleData, Vec3 pos, Vec3 delta, float speed, int count, boolean force, Collection<ServerPlayer> viewers) {

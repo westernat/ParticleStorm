@@ -2,6 +2,7 @@ package org.mesdag.particlestorm.particle;
 
 import org.jetbrains.annotations.NotNull;
 import org.mesdag.particlestorm.data.component.*;
+import org.mesdag.particlestorm.data.event.IEventNode;
 import org.mesdag.particlestorm.data.molang.MolangInstance;
 import org.mesdag.particlestorm.data.molang.VariableTable;
 import org.mesdag.particlestorm.data.molang.compiler.MathParser;
@@ -13,20 +14,24 @@ import org.mesdag.particlestorm.data.molang.compiler.value.VariableAssignment;
 import java.util.ArrayList;
 import java.util.Hashtable;
 import java.util.List;
+import java.util.Map;
 
 public class EmitterDetail {
     public final MolangParticleOption option;
     public final List<IEmitterComponent> components;
+    public final Map<String, Map<String, IEventNode>> events;
     public final VariableTable variableTable;
     public final ArrayList<VariableAssignment> assignments;
     public EmitterRate.Type emitterRateType = EmitterRate.Type.MANUAL;
     public boolean localPosition = false;
     public boolean localRotation = false;
     public boolean localVelocity = false;
+    public EmitterLifetimeEvents lifetimeEvents;
 
-    public EmitterDetail(MolangParticleOption option, List<IEmitterComponent> components) {
+    public EmitterDetail(MolangParticleOption option, List<IEmitterComponent> components, Map<String, Map<String, IEventNode>> events) {
         this.option = option;
         this.components = components;
+        this.events = events;
         Hashtable<String, Variable> table = addDefaultVariables();
         MathParser parser = new MathParser(table);
         ArrayList<VariableAssignment> toInit = new ArrayList<>();
@@ -55,6 +60,8 @@ public class EmitterDetail {
                 this.localPosition = localSpace.position();
                 this.localRotation = localSpace.rotation();
                 this.localVelocity = localSpace.velocity();
+            } else if (component instanceof EmitterLifetimeEvents e) {
+                this.lifetimeEvents = e;
             }
             component.getAllMolangExp().forEach(exp -> {
                 exp.compile(parser);

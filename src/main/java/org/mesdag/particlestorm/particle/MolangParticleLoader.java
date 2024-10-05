@@ -59,7 +59,8 @@ public class MolangParticleLoader implements PreparableReloadListener {
                         new MolangParticleOption(effect.description.identifier()),
                         effect.components.values().stream()
                                 .filter(c -> c instanceof IEmitterComponent)
-                                .map(c -> (IEmitterComponent) c).toList()
+                                .map(c -> (IEmitterComponent) c).toList(),
+                        effect.events
                 ));
             });
         }, gameExecutor);

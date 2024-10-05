@@ -60,6 +60,7 @@ public abstract class EmitterLifetime implements IEmitterComponent {
         @Override
         public void update(ParticleEmitterEntity entity) {
             if (expirationExpression.calculate(entity) != 0.0) {
+                entity.beforeRemove();
                 PacketDistributor.sendToServer(new EmitterDiscardPacketC2S(entity.getId()));
             }
             entity.active = activationExpression.calculate(entity) != 0.0;
@@ -180,6 +181,7 @@ public abstract class EmitterLifetime implements IEmitterComponent {
         @Override
         public void update(ParticleEmitterEntity entity) {
             if (entity.age >= entity.lifetime) {
+                entity.beforeRemove();
                 PacketDistributor.sendToServer(new EmitterDiscardPacketC2S(entity.getId()));
             }
         }
