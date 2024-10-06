@@ -5,8 +5,6 @@ import net.minecraft.core.particles.ParticleOptions;
 import net.minecraft.server.commands.ParticleCommand;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.phys.Vec3;
-import org.mesdag.particlestorm.data.event.ParticleEffect;
-import org.mesdag.particlestorm.data.molang.MolangExp;
 import org.mesdag.particlestorm.particle.MolangParticleOption;
 import org.mesdag.particlestorm.particle.ParticleEmitterEntity;
 import org.spongepowered.asm.mixin.Mixin;
@@ -22,7 +20,7 @@ public abstract class ParticleCommandMixin {
     private static void createEmitter(CommandSourceStack source, ParticleOptions particleData, Vec3 pos, Vec3 delta, float speed, int count, boolean force, Collection<ServerPlayer> viewers, CallbackInfoReturnable<Integer> cir) {
         if (particleData instanceof MolangParticleOption option) {
             ParticleEmitterEntity.ManualData manualData = new ParticleEmitterEntity.ManualData(source.getLevel(), option, pos, delta, speed, count, force, viewers);
-            source.getLevel().addFreshEntity(new ParticleEmitterEntity(source.getLevel(), manualData, option.getId(), pos, ParticleEffect.Type.EMITTER, MolangExp.EMPTY));
+            source.getLevel().addFreshEntity(new ParticleEmitterEntity(source.getLevel(), manualData, option.getId(), pos));
             cir.setReturnValue(1);
         }
     }

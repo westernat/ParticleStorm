@@ -6,6 +6,7 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.EntityRenderersEvent;
 import net.neoforged.neoforge.client.event.RegisterClientReloadListenersEvent;
 import org.mesdag.particlestorm.data.component.*;
+import org.mesdag.particlestorm.data.event.*;
 import org.mesdag.particlestorm.particle.MolangParticleLoader;
 import org.mesdag.particlestorm.particle.ParticleEmitterRenderer;
 
@@ -21,6 +22,7 @@ public final class GameClient {
     @SubscribeEvent
     public static void reload(RegisterClientReloadListenersEvent event) {
         registerComponents();
+        registerEventNodes();
         event.registerReloadListener(LOADER);
     }
 
@@ -60,5 +62,14 @@ public final class GameClient {
         IComponent.register("particle_kill_plane", ParticleLifetimeKillPlane.CODEC);
         IComponent.register("particle_expire_if_in_blocks", ParticleExpireIfInBlocks.CODEC);
         IComponent.register("particle_expire_if_not_in_blocks", ParticleExpireIfNotInBlocks.CODEC);
+    }
+    
+    private static void registerEventNodes() {
+        IEventNode.register("sequence", EventSequence.CODEC);
+        IEventNode.register("weight", EventRandomize.Weight.CODEC);
+        IEventNode.register("randomize", EventRandomize.CODEC);
+        IEventNode.register("particle_effect", ParticleEffect.CODEC.codec());
+        IEventNode.register("sound_effect", SoundEffect.CODEC.codec());
+        IEventNode.register("expression", NodeMolangExp.CODEC);
     }
 }

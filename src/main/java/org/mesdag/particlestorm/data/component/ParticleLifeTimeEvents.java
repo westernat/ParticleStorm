@@ -69,6 +69,7 @@ public final class ParticleLifeTimeEvents implements IParticleComponent {
                 for (String event : tuple.getB()) {
                     events.get(event).forEach((name, node) -> node.execute(instance));
                 }
+                break;
             }
         }
     }

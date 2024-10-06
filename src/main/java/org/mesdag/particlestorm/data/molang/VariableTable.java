@@ -4,6 +4,7 @@ import org.jetbrains.annotations.Nullable;
 import org.mesdag.particlestorm.data.molang.compiler.value.Variable;
 
 import java.util.Hashtable;
+import java.util.function.Function;
 import java.util.function.ToDoubleFunction;
 
 public class VariableTable {
@@ -46,7 +47,19 @@ public class VariableTable {
         if (variable == null) {
             table.put(name, value);
         } else {
-            variable.set(value);
+            variable.set(value.value().get());
         }
+    }
+
+    public Variable computeIfAbsent(String name, Function<String, Variable> function) {
+        Variable variable = table.get(name);
+        if (variable == null) {
+            if (subTable == null) {
+                if (previous == null) return function.apply(name);
+                return previous.computeIfAbsent(name, function);
+            }
+            return subTable.computeIfAbsent(name, function);
+        }
+        return variable;
     }
 }

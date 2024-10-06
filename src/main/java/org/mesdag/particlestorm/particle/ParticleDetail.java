@@ -47,11 +47,11 @@ public class ParticleDetail {
         this.environmentLighting = effect.components.containsValue(ParticleAppearanceLighting.INSTANCE);
         this.lifeTimeEvents = (ParticleLifeTimeEvents) effect.components.get(ParticleLifeTimeEvents.ID);
 
-        Hashtable<String, Variable> table = addDefaultVariables();
+        VariableTable table = new VariableTable(addDefaultVariables(), null);
         MathParser parser = new MathParser(table);
         effect.curves.keySet().forEach(s -> {
             String name = applyPrefixAliases(s, "variable.", "v.");
-            table.put(name, new Variable(name, parser.compileMolang(name)));
+            table.table.put(name, new Variable(name, parser.compileMolang(name)));
         });
 
         ArrayList<VariableAssignment> toInit = new ArrayList<>();
@@ -60,12 +60,12 @@ public class ParticleDetail {
             component.getAllMolangExp().forEach(exp -> {
                 exp.compile(parser);
                 MathValue variable = exp.getVariable();
-                if (variable != null && !forAssignment(table, toInit, variable)) {
-                    forCompound(table, toInit, variable);
+                if (variable != null && !forAssignment(table.table, toInit, variable)) {
+                    forCompound(table.table, toInit, variable);
                 }
             });
         }
-        this.variableTable = new VariableTable(table, null);
+        this.variableTable = table;
         this.assignments = toInit;
     }
 
@@ -83,8 +83,6 @@ public class ParticleDetail {
     private static boolean forAssignment(Hashtable<String, Variable> table, ArrayList<VariableAssignment> toInit, MathValue value) {
         if (value instanceof VariableAssignment assignment) {
             Variable variable = assignment.variable();
-            // 重定向，防止污染变量表
-            variable.set(p -> p.getVariableTable().table.computeIfAbsent(variable.name(), s -> new Variable(s, assignment.value())).get(p));
             table.put(variable.name(), variable);
             toInit.add(assignment);
             return true;

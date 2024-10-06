@@ -30,8 +30,8 @@ import java.util.List;
 public class ParticleEmitterEntity extends Entity implements MolangInstance {
     public ManualData manualData;
     public ResourceLocation particleId;
-    public ParticleEffect.Type effectType;
-    public MolangExp expression;
+    public ParticleEffect.Type effectType = ParticleEffect.Type.EMITTER;
+    public MolangExp expression = MolangExp.EMPTY;
     protected boolean haveHadSync = false;
 
     protected EmitterDetail detail;
@@ -66,12 +66,10 @@ public class ParticleEmitterEntity extends Entity implements MolangInstance {
     }
 
     // Server Only
-    public ParticleEmitterEntity(Level level, ManualData manualData, ResourceLocation particleId, Vec3 pos, ParticleEffect.Type effectType, MolangExp expression) {
+    public ParticleEmitterEntity(Level level, ManualData manualData, ResourceLocation particleId, Vec3 pos) {
         super(ParticleStorm.PARTICLE_EMITTER.get(), level);
         this.manualData = manualData;
         this.particleId = particleId;
-        this.effectType = effectType;
-        this.expression = expression;
         setPos(pos);
         this.emitterRandom1 = level.random.nextDouble();
         this.emitterRandom2 = level.random.nextDouble();
@@ -101,11 +99,11 @@ public class ParticleEmitterEntity extends Entity implements MolangInstance {
         } else if (particleId != null) {
             this.detail = GameClient.LOADER.ID_2_EMITTER.get(particleId);
             this.variableTable = new VariableTable(detail.variableTable);
-            this.expression.compile(new MathParser(variableTable.table));
+            if (expression != null) expression.compile(new MathParser(variableTable));
             // todo effect type
             detail.assignments.forEach(assignment -> {
                 // 重定向，防止污染变量表
-                variableTable.setValue(assignment.variable().name(), assignment.variable());
+                variableTable.setValue(assignment.variable().name(), assignment.value());
             });
             this.components = detail.components.stream().filter(e -> {
                 e.apply(this);

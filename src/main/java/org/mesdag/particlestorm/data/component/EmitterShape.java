@@ -17,6 +17,7 @@ import org.joml.Vector3f;
 import org.mesdag.particlestorm.data.molang.FloatMolangExp;
 import org.mesdag.particlestorm.data.molang.FloatMolangExp3;
 import org.mesdag.particlestorm.data.molang.MolangExp;
+import org.mesdag.particlestorm.data.molang.compiler.value.Variable;
 import org.mesdag.particlestorm.mixin.ParticleEngineAccessor;
 import org.mesdag.particlestorm.particle.MolangParticleInstance;
 import org.mesdag.particlestorm.particle.ParticleEmitterEntity;
@@ -83,7 +84,8 @@ public abstract class EmitterShape implements IEmitterComponent {
             instance.particleGroup = entity.particleGroup;
             instance.detail.assignments.forEach(assignment -> {
                 // 重定向，防止污染变量表
-                instance.getVariableTable().setValue(assignment.variable().name(), assignment.variable());
+                String name = assignment.variable().name();
+                instance.getVariableTable().setValue(name, new Variable(name, assignment.value()));
             });
             instance.components = instance.detail.effect.components.values().stream().filter(c -> {
                 if (c instanceof IParticleComponent p) {

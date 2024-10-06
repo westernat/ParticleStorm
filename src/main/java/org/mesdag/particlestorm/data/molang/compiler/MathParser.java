@@ -6,6 +6,7 @@ import net.minecraft.Util;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.mesdag.particlestorm.ParticleStorm;
+import org.mesdag.particlestorm.data.molang.VariableTable;
 import org.mesdag.particlestorm.data.molang.compiler.function.MathFunction;
 import org.mesdag.particlestorm.data.molang.compiler.function.generic.*;
 import org.mesdag.particlestorm.data.molang.compiler.function.limit.ClampFunction;
@@ -21,7 +22,10 @@ import org.mesdag.particlestorm.data.molang.compiler.function.random.RandomInteg
 import org.mesdag.particlestorm.data.molang.compiler.function.round.*;
 import org.mesdag.particlestorm.data.molang.compiler.value.*;
 
-import java.util.*;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
@@ -74,9 +78,9 @@ public class MathParser {
         map.put("math.to_rad", ToRadFunction::new);
         map.put("math.trunc", TruncateFunction::new);
     });
-    private final Hashtable<String, Variable> table;
+    private final VariableTable table;
 
-    public MathParser(Hashtable<String, Variable> table) {
+    public MathParser(VariableTable table) {
         this.table = table;
     }
 

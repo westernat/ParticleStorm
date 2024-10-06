@@ -7,7 +7,8 @@ import org.mesdag.particlestorm.data.molang.MolangInstance;
 public record EventLog(String log) implements IEventNode {
     public static final Codec<EventLog> CODEC = Codec.STRING.xmap(EventLog::new, EventLog::log);
 
-    public void print(MolangInstance instance) {
+    @Override
+    public void execute(MolangInstance instance) {
         ParticleStorm.LOGGER.info("{}[{}]: {}", instance.getIdentity(), instance.getPosition(), log);
     }
 }

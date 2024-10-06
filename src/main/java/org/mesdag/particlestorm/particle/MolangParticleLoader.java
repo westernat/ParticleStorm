@@ -32,9 +32,7 @@ public class MolangParticleLoader implements PreparableReloadListener {
 
     @Override
     public @NotNull CompletableFuture<Void> reload(PreparationBarrier preparationBarrier, @NotNull ResourceManager resourceManager, @NotNull ProfilerFiller preparationsProfiler, @NotNull ProfilerFiller reloadProfiler, @NotNull Executor backgroundExecutor, @NotNull Executor gameExecutor) {
-        return CompletableFuture.supplyAsync(
-                () -> PARTICLE_LISTER.listMatchingResources(resourceManager), backgroundExecutor
-        ).thenCompose(map -> {
+        return CompletableFuture.supplyAsync(() -> PARTICLE_LISTER.listMatchingResources(resourceManager), backgroundExecutor).thenCompose(map -> {
             List<CompletableFuture<DefinedParticleEffect>> list = new ArrayList<>(map.size());
             map.forEach((file, resource) -> {
                 ResourceLocation id = PARTICLE_LISTER.fileToId(file);

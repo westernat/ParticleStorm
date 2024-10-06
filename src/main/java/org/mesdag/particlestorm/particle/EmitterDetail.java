@@ -32,7 +32,7 @@ public class EmitterDetail {
         this.option = option;
         this.components = components;
         this.events = events;
-        Hashtable<String, Variable> table = addDefaultVariables();
+        VariableTable table = new VariableTable(addDefaultVariables(), null);
         MathParser parser = new MathParser(table);
         ArrayList<VariableAssignment> toInit = new ArrayList<>();
         boolean lifeTime = false;
@@ -66,13 +66,13 @@ public class EmitterDetail {
             component.getAllMolangExp().forEach(exp -> {
                 exp.compile(parser);
                 MathValue variable = exp.getVariable();
-                if (variable != null && !forAssignment(table, toInit, variable)) {
-                    forCompound(table, toInit, variable);
+                if (variable != null && !forAssignment(table.table, toInit, variable)) {
+                    forCompound(table.table, toInit, variable);
                 }
             });
         }
 
-        this.variableTable = new VariableTable(table, null);
+        this.variableTable = table;
         this.assignments = toInit;
     }
 
@@ -90,8 +90,6 @@ public class EmitterDetail {
     private static boolean forAssignment(Hashtable<String, Variable> table, ArrayList<VariableAssignment> toInit, MathValue value) {
         if (value instanceof VariableAssignment assignment) {
             Variable variable = assignment.variable();
-            // 重定向，防止污染变量表
-            variable.set(p -> p.getVariableTable().table.computeIfAbsent(variable.name(), s -> new Variable(s, assignment.value())).get(p));
             table.put(variable.name(), variable);
             toInit.add(assignment);
             return true;

@@ -85,6 +85,7 @@ public final class EmitterLifetimeEvents implements IEmitterComponent {
                 for (String event : tuple.getB()) {
                     events.get(event).forEach((name, node) -> node.execute(entity));
                 }
+                break;
             }
         }
         if (entity.moveDist == entity.moveDistO) return;
@@ -96,6 +97,7 @@ public final class EmitterLifetimeEvents implements IEmitterComponent {
                 for (String event : tuple.getB()) {
                     events.get(event).forEach((name, node) -> node.execute(entity));
                 }
+                break;
             }
         }
         for (int i = 0; i < loopingTravelDistanceEvents.size(); i++) {
@@ -106,6 +108,7 @@ public final class EmitterLifetimeEvents implements IEmitterComponent {
                 for (String event : loopingEvent.effects) {
                     events.get(event).forEach((name, node) -> node.execute(entity));
                 }
+                break;
             }
         }
     }

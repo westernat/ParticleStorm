@@ -41,7 +41,9 @@ public record EmitterCreationPacketC2S(ResourceLocation particle, Vec3 pos, Part
             if (context.player() instanceof ServerPlayer serverPlayer) {
                 ServerLevel serverLevel = serverPlayer.serverLevel();
                 ParticleEmitterEntity.ManualData manualData = new ParticleEmitterEntity.ManualData(serverLevel, new MolangParticleOption(particle), pos, Vec3.ZERO, 0, 1, false, Collections.singleton(serverPlayer));
-                ParticleEmitterEntity entity = new ParticleEmitterEntity(serverLevel, manualData, particle, pos, effectType, expression);
+                ParticleEmitterEntity entity = new ParticleEmitterEntity(serverLevel, manualData, particle, pos);
+                entity.effectType = effectType;
+                entity.expression = expression;
                 serverLevel.addFreshEntity(entity);
             }
         }).exceptionally(e -> {
