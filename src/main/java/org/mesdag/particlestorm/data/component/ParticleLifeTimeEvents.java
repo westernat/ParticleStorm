@@ -19,7 +19,7 @@ import java.util.function.Function;
  * All events use the event names in the event section<p>
  * All events can be either an array or a string
  */
-public class ParticleLifeTimeEvents implements IParticleComponent {
+public final class ParticleLifeTimeEvents implements IParticleComponent {
     public static final ResourceLocation ID = ResourceLocation.withDefaultNamespace("particle_lifetime_events");
     public static final Codec<ParticleLifeTimeEvents> CODEC = RecordCodecBuilder.create(instance -> instance.group(
             ParticleStorm.STRING_LIST_CODEC.fieldOf("creation_event").orElseGet(List::of).forGetter(events -> events.creationEvent),

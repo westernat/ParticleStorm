@@ -1,12 +1,19 @@
 package org.mesdag.particlestorm.data.molang;
 
 import com.mojang.serialization.Codec;
+import io.netty.buffer.ByteBuf;
+import net.minecraft.network.codec.ByteBufCodecs;
+import net.minecraft.network.codec.StreamCodec;
 import org.mesdag.particlestorm.data.molang.compiler.MathParser;
 import org.mesdag.particlestorm.data.molang.compiler.MathValue;
 
 public class MolangExp {
     public static final MolangExp EMPTY = new MolangExp("");
     public static final Codec<MolangExp> CODEC = Codec.STRING.xmap(MolangExp::new, e -> e.expStr);
+    public static final StreamCodec<ByteBuf, MolangExp> STREAM_CODEC = StreamCodec.composite(
+            ByteBufCodecs.STRING_UTF8, e -> e.expStr,
+            MolangExp::new
+    );
     protected final String expStr;
     protected MathValue variable;
 

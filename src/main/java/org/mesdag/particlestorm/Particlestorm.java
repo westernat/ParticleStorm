@@ -18,9 +18,10 @@ import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import org.jetbrains.annotations.NotNull;
+import org.mesdag.particlestorm.network.EmitterCreationPacketC2S;
 import org.mesdag.particlestorm.network.EmitterDiscardPacketC2S;
+import org.mesdag.particlestorm.network.EmitterInitializePacketS2C;
 import org.mesdag.particlestorm.network.EmitterManualPacketC2S;
-import org.mesdag.particlestorm.network.EmitterParticlePacketS2C;
 import org.mesdag.particlestorm.particle.MolangParticleOption;
 import org.mesdag.particlestorm.particle.ParticleEmitterEntity;
 import org.slf4j.Logger;
@@ -72,10 +73,15 @@ public final class ParticleStorm {
                 EmitterManualPacketC2S.STREAM_CODEC,
                 EmitterManualPacketC2S::handle
         );
+        registrar.playToServer(
+                EmitterCreationPacketC2S.TYPE,
+                EmitterCreationPacketC2S.STREAM_CODEC,
+                EmitterCreationPacketC2S::handle
+        );
         registrar.playBidirectional(
-                EmitterParticlePacketS2C.TYPE,
-                EmitterParticlePacketS2C.STREAM_CODEC,
-                EmitterParticlePacketS2C::handle
+                EmitterInitializePacketS2C.TYPE,
+                EmitterInitializePacketS2C.STREAM_CODEC,
+                EmitterInitializePacketS2C::handle
         );
     }
 

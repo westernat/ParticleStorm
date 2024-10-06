@@ -18,7 +18,7 @@ public class MolangParticleOption implements ParticleOptions {
         this.id = id;
     }
 
-    MolangParticleOption(ResourceLocation id) {
+    public MolangParticleOption(ResourceLocation id) {
         this(ParticleStorm.MOLANG.get(), id);
     }
 

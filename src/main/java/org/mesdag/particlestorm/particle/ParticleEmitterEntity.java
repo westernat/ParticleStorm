@@ -16,10 +16,13 @@ import org.mesdag.particlestorm.GameClient;
 import org.mesdag.particlestorm.ParticleStorm;
 import org.mesdag.particlestorm.data.component.EmitterRate;
 import org.mesdag.particlestorm.data.component.IEmitterComponent;
+import org.mesdag.particlestorm.data.event.ParticleEffect;
+import org.mesdag.particlestorm.data.molang.MolangExp;
 import org.mesdag.particlestorm.data.molang.MolangInstance;
 import org.mesdag.particlestorm.data.molang.VariableTable;
+import org.mesdag.particlestorm.data.molang.compiler.MathParser;
+import org.mesdag.particlestorm.network.EmitterInitializePacketS2C;
 import org.mesdag.particlestorm.network.EmitterManualPacketC2S;
-import org.mesdag.particlestorm.network.EmitterParticlePacketS2C;
 
 import java.util.Collection;
 import java.util.List;
@@ -27,6 +30,8 @@ import java.util.List;
 public class ParticleEmitterEntity extends Entity implements MolangInstance {
     public ManualData manualData;
     public ResourceLocation particleId;
+    public ParticleEffect.Type effectType;
+    public MolangExp expression;
     protected boolean haveHadSync = false;
 
     protected EmitterDetail detail;
@@ -61,10 +66,12 @@ public class ParticleEmitterEntity extends Entity implements MolangInstance {
     }
 
     // Server Only
-    public ParticleEmitterEntity(Level level, ManualData manualData, ResourceLocation particleId, Vec3 pos) {
+    public ParticleEmitterEntity(Level level, ManualData manualData, ResourceLocation particleId, Vec3 pos, ParticleEffect.Type effectType, MolangExp expression) {
         super(ParticleStorm.PARTICLE_EMITTER.get(), level);
         this.manualData = manualData;
         this.particleId = particleId;
+        this.effectType = effectType;
+        this.expression = expression;
         setPos(pos);
         this.emitterRandom1 = level.random.nextDouble();
         this.emitterRandom2 = level.random.nextDouble();
@@ -94,6 +101,8 @@ public class ParticleEmitterEntity extends Entity implements MolangInstance {
         } else if (particleId != null) {
             this.detail = GameClient.LOADER.ID_2_EMITTER.get(particleId);
             this.variableTable = new VariableTable(detail.variableTable);
+            this.expression.compile(new MathParser(variableTable.table));
+            // todo effect type
             detail.assignments.forEach(assignment -> {
                 // 重定向，防止污染变量表
                 variableTable.setValue(assignment.variable().name(), assignment.variable());
@@ -104,7 +113,7 @@ public class ParticleEmitterEntity extends Entity implements MolangInstance {
             }).toList();
             this.haveHadSync = true;
         } else {
-            PacketDistributor.sendToServer(new EmitterParticlePacketS2C(getId(), EmitterParticlePacketS2C.REQUEST_ID));
+            PacketDistributor.sendToServer(new EmitterInitializePacketS2C(getId(), EmitterInitializePacketS2C.REQUEST_ID, effectType, expression));
         }
     }
 
