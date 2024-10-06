@@ -8,20 +8,6 @@
                 "texture": "particlestorm:glitter"
             }
         },
-        "events": {
-            "a": {
-                "randomize": [
-                    {
-                        "weight": 1,
-                        "randomize": [
-                            {
-                                "weight": 1
-                            }
-                        ]
-                    }
-                ]
-            }
-        },
         "components": {
             "minecraft:emitter_initialization": {
                 "creation_expression": "variable.size = 0.08;variable.radius = 0.6;"

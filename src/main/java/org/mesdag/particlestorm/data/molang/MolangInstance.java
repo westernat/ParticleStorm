@@ -2,8 +2,10 @@ package org.mesdag.particlestorm.data.molang;
 
 
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
+import org.mesdag.particlestorm.particle.ParticleEmitterEntity;
 
 public interface MolangInstance {
     VariableTable getVariableTable();
@@ -25,4 +27,10 @@ public interface MolangInstance {
     ResourceLocation getIdentity();
 
     Vec3 getPosition();
+
+    Entity getAttachedEntity();
+
+    float getInvTickRate();
+
+    ParticleEmitterEntity getEmitter();
 }

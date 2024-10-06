@@ -41,33 +41,34 @@ public record ParticleAppearanceTinting(Color color, ColorField colorField) impl
         apply(instance);
     }
 
-    private float[] getCalculatedColor(MolangParticleInstance instance, LinkedList<Tuple<Float, ColorField>> list, float ratio) {
+    private float[] getCalculatedColor(MolangParticleInstance instance, ArrayList<Tuple<Float, ColorField>> list, float ratio) {
+        int n = 0;
         for (int index = 0; index < list.size(); index++) {
             Tuple<Float, ColorField> tuple = list.get(index);
-            if (ratio > tuple.getA()) {
-                if (index == 0 || index == list.size() - 1) {
-                    return tuple.getB().calculate(instance);
-                }
-                Tuple<Float, ColorField> next = list.get(index + 1);
-                float[] color = tuple.getB().calculate(instance);
-                float[] another = next.getB().calculate(instance);
-                float percent = (ratio - tuple.getA()) / (next.getA() - tuple.getA());
-                float r = Mth.clamp(color[0] - (color[0] - another[0]) * percent, 0.0F, 1.0F);
-                float g = Mth.clamp(color[1] - (color[1] - another[1]) * percent, 0.0F, 1.0F);
-                float b = Mth.clamp(color[2] - (color[2] - another[2]) * percent, 0.0F, 1.0F);
-                float a = Mth.clamp(color[3] - (color[3] - another[3]) * percent, 0.0F, 1.0F);
-                return new float[]{r, g, b, a};
+            if (tuple.getA() <= ratio) {
+                n = index;
             }
         }
-        return new float[4];
+        Tuple<Float, ColorField> tuple = list.get(n);
+        if (n == 0 || n == list.size() - 1) {
+            return tuple.getB().calculate(instance);
+        }
+        Tuple<Float, ColorField> next = list.get(n + 1);
+        float[] color = tuple.getB().calculate(instance);
+        float[] another = next.getB().calculate(instance);
+        float percent = (ratio - tuple.getA()) / (next.getA() - tuple.getA());
+        float r = Mth.clamp(color[0] - (color[0] - another[0]) * percent, 0.0F, 1.0F);
+        float g = Mth.clamp(color[1] - (color[1] - another[1]) * percent, 0.0F, 1.0F);
+        float b = Mth.clamp(color[2] - (color[2] - another[2]) * percent, 0.0F, 1.0F);
+        float a = Mth.clamp(color[3] - (color[3] - another[3]) * percent, 0.0F, 1.0F);
+        return new float[]{r, g, b, a};
     }
 
     @Override
     public void apply(MolangParticleInstance instance) {
-        // todo 处理empty
         if (color.interpolant.initialized() && !color.gradient.map.isEmpty()) {
             float interpolant = color.interpolant.calculate(instance);
-            float[] calculated = getCalculatedColor(instance, color.gradient.list, interpolant / color.gradient.range * 100);
+            float[] calculated = getCalculatedColor(instance, color.gradient.list, interpolant / color.gradient.range);
             instance.setColor(calculated[0], calculated[1], calculated[2], calculated[3]);
         } else {
             float[] color = colorField.calculate(instance);
@@ -127,11 +128,11 @@ public record ParticleAppearanceTinting(Color color, ColorField colorField) impl
             public final Map<String, ColorField> map;
 
             public final float range;
-            public final LinkedList<Tuple<Float, ColorField>> list;
+            public final ArrayList<Tuple<Float, ColorField>> list;
 
             public Gradient(Map<String, ColorField> map) {
                 this.map = map;
-                this.list = new LinkedList<>();
+                this.list = new ArrayList<>();
                 map.entrySet().stream()
                         .map(entry -> new Tuple<>(Float.parseFloat(entry.getKey()), entry.getValue()))
                         .sorted(Comparator.comparing(Tuple::getA))
@@ -154,12 +155,20 @@ public record ParticleAppearanceTinting(Color color, ColorField colorField) impl
                 either -> either.map(hex -> {
                     hex = hex.replace("#", "");
                     if (hex.length() != 6 && hex.length() != 8) throw new IllegalArgumentException("The size is not allowed");
-                    float r = Integer.parseInt(hex.substring(0, 2), 16) / 255.0F;
-                    float g = Integer.parseInt(hex.substring(2, 4), 16) / 255.0F;
-                    float b = Integer.parseInt(hex.substring(4, 6), 16) / 255.0F;
-                    float a = 1.0F;
-                    if (hex.length() == 8) {
-                        a = Integer.parseInt(hex.substring(6, 8), 16) / 255.0F;
+                    float a, r, g, b;
+                    float v0 = Integer.parseInt(hex.substring(0, 2), 16) / 255.0F;
+                    float v1 = Integer.parseInt(hex.substring(2, 4), 16) / 255.0F;
+                    float v2 = Integer.parseInt(hex.substring(4, 6), 16) / 255.0F;
+                    if (hex.length() == 6) {
+                        a = 1.0F;
+                        r = v0;
+                        g = v1;
+                        b = v2;
+                    } else {
+                        a = v0;
+                        r = v1;
+                        g = v2;
+                        b = Integer.parseInt(hex.substring(6, 8), 16) / 255.0F;
                     }
                     return new ColorField(FloatMolangExp.ofConstant(r), FloatMolangExp.ofConstant(g), FloatMolangExp.ofConstant(b), FloatMolangExp.ofConstant(a));
                 }, exps -> new ColorField(exps.getFirst(), exps.get(1), exps.get(2), exps.size() == 4 ? exps.get(3) : FloatMolangExp.ONE)),

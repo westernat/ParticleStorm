@@ -49,9 +49,12 @@ public class ParticleDetail {
 
         VariableTable table = new VariableTable(addDefaultVariables(), null);
         MathParser parser = new MathParser(table);
-        effect.curves.keySet().forEach(s -> {
-            String name = applyPrefixAliases(s, "variable.", "v.");
-            table.table.put(name, new Variable(name, parser.compileMolang(name)));
+        effect.curves.forEach((key, value) -> {
+            value.input.compile(parser);
+            value.horizontalRange.compile(parser);
+            value.nodes.either.ifRight(exps -> exps.forEach(exp -> exp.compile(parser)));
+            String name = applyPrefixAliases(key, "variable.", "v.");
+            table.table.put(name, new Variable(name, p -> value.calculate(p, name)));
         });
 
         ArrayList<VariableAssignment> toInit = new ArrayList<>();

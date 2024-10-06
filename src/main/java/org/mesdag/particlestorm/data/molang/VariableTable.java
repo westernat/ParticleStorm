@@ -24,11 +24,11 @@ public class VariableTable {
     public double getValue(String name, MolangInstance instance) {
         Variable variable = table.get(name);
         if (variable == null) {
-            if (subTable == null) {
-                if (previous == null) return 0.0;
-                return previous.getValue(name, instance);
+            if (previous == null) {
+                if (subTable == null) return 0.0;
+                return subTable.getValue(name, instance);
             }
-            return subTable.getValue(name, instance);
+            return previous.getValue(name, instance);
         }
         return variable.get(instance);
     }

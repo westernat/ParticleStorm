@@ -191,6 +191,21 @@ public class ParticleEmitterEntity extends Entity implements MolangInstance {
         return position();
     }
 
+    @Override
+    public Entity getAttachedEntity() {
+        return attached;
+    }
+
+    @Override
+    public float getInvTickRate() {
+        return invTickRate;
+    }
+
+    @Override
+    public ParticleEmitterEntity getEmitter() {
+        return this;
+    }
+
     public void beforeRemove() {
         if (detail.lifetimeEvents != null) {
             detail.lifetimeEvents.onExpiration(this);

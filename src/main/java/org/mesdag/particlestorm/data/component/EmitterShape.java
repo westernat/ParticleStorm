@@ -17,6 +17,7 @@ import org.joml.Vector3f;
 import org.mesdag.particlestorm.data.molang.FloatMolangExp;
 import org.mesdag.particlestorm.data.molang.FloatMolangExp3;
 import org.mesdag.particlestorm.data.molang.MolangExp;
+import org.mesdag.particlestorm.data.molang.MolangInstance;
 import org.mesdag.particlestorm.data.molang.compiler.value.Variable;
 import org.mesdag.particlestorm.mixin.ParticleEngineAccessor;
 import org.mesdag.particlestorm.particle.MolangParticleInstance;
@@ -45,21 +46,7 @@ public abstract class EmitterShape implements IEmitterComponent {
         if (entity.spawnDuration <= 1 || entity.age % entity.spawnDuration == 0) {
             for (int num = 0; num < entity.spawnRate; num++) {
                 if (hasSpaceInParticleLimit(entity)) {
-                    Vector3f position = new Vector3f();
-                    Vector3f speed = new Vector3f();
-                    initializeParticle(entity, position, speed);
-                    if (entity.getDetail().localPosition) {
-                        Vec3 emitterPos = entity.position();
-                        position.add((float) emitterPos.x, (float) emitterPos.y, (float) emitterPos.z);
-                    }
-                    if (entity.getDetail().localRotation) {
-                        applyEuler(entity.getXRot(), entity.getYRot(), 0.0F, position);
-                    }
-                    if (entity.getDetail().localVelocity) {
-                        Vec3 emitterVec = entity.getDeltaMovement();
-                        speed.add((float) emitterVec.x, (float) emitterVec.y, (float) emitterVec.z);
-                    }
-                    emittingParticle(entity, position, speed);
+                    emittingParticle(entity);
                 }
             }
             if (entity.getDetail().emitterRateType == EmitterRate.Type.INSTANT) {
@@ -73,14 +60,33 @@ public abstract class EmitterShape implements IEmitterComponent {
         return true;
     }
 
-    protected abstract void initializeParticle(ParticleEmitterEntity entity, Vector3f position, Vector3f speed);
+    protected abstract void initializeParticle(MolangInstance instance, Vector3f position, Vector3f speed);
 
-    private static void emittingParticle(ParticleEmitterEntity entity, Vector3f position, Vector3f speed) {
-        speed.mul(entity.invTickRate);
-        Particle particle = ((ParticleEngineAccessor) Minecraft.getInstance().particleEngine).callMakeParticle(entity.getDetail().option, position.x, position.y, position.z, speed.x, speed.y, speed.z);
+    private void emittingParticle(ParticleEmitterEntity entity) {
+        Particle particle = ((ParticleEngineAccessor) Minecraft.getInstance().particleEngine).callMakeParticle(entity.getDetail().option, entity.getX(), entity.getY(), entity.getZ(), 0.0, 0.0, 0.0);
         if (particle instanceof MolangParticleInstance instance) {
             instance.emitter = entity;
             instance.getVariableTable().subTable = entity.getVariableTable();
+
+            Vector3f position = new Vector3f();
+            Vector3f speed = new Vector3f();
+            initializeParticle(instance, position, speed);
+            if (entity.getDetail().localPosition) {
+                Vec3 emitterPos = entity.position();
+                position.add((float) emitterPos.x, (float) emitterPos.y, (float) emitterPos.z);
+            }
+            if (entity.getDetail().localRotation) {
+                applyEuler(entity.getXRot(), entity.getYRot(), 0.0F, position);
+            }
+            if (entity.getDetail().localVelocity) {
+                Vec3 emitterVec = entity.getDeltaMovement();
+                speed.add((float) emitterVec.x, (float) emitterVec.y, (float) emitterVec.z);
+            }
+            speed.mul(entity.invTickRate);
+            instance.setParticleSpeed(speed.x, speed.y, speed.z);
+            instance.setPos(position.x, position.y, position.z);
+            instance.setPosO(position.x, position.y, position.z);
+
             instance.particleGroup = entity.particleGroup;
             instance.detail.assignments.forEach(assignment -> {
                 // 重定向，防止污染变量表
@@ -181,19 +187,19 @@ public abstract class EmitterShape implements IEmitterComponent {
         }
 
         @Override
-        protected void initializeParticle(ParticleEmitterEntity entity, Vector3f position, Vector3f speed) {
-            position.set(offset.calculate(entity));
-            float radius = this.radius.calculate(entity);
-            float op = entity.level().random.nextFloat() * Mth.TWO_PI;
-            float sp = surfaceOnly ? radius : radius * Mth.sqrt(entity.level().random.nextFloat());
+        protected void initializeParticle(MolangInstance instance, Vector3f position, Vector3f speed) {
+            position.set(offset.calculate(instance));
+            float radius = this.radius.calculate(instance);
+            float op = instance.getLevel().random.nextFloat() * Mth.TWO_PI;
+            float sp = surfaceOnly ? radius : radius * Mth.sqrt(instance.getLevel().random.nextFloat());
             position.x += sp * Mth.cos(op);
             position.z += sp * Mth.sin(op);
-            float[] lp = planeNormal.plane.calculate(entity);
+            float[] lp = planeNormal.plane.calculate(instance);
             if (!Arrays.equals(lp, PlaneNormal.FN)) {
                 Quaternionf quaternion = planeNormal.setFromUnitVectors(PlaneNormal.VY, new Vector3f(lp), new Quaternionf());
                 planeNormal.applyQuaternion(quaternion, position);
             }
-            direction.apply(entity, this, position, speed);
+            direction.apply(instance, this, position, speed);
         }
 
         @Override
@@ -326,10 +332,10 @@ public abstract class EmitterShape implements IEmitterComponent {
         }
 
         @Override
-        protected void initializeParticle(ParticleEmitterEntity entity, Vector3f position, Vector3f speed) {
-            position.set(offset.calculate(entity));
-            float[] n = halfDimensions.calculate(entity);
-            RandomSource random = entity.level().random;
+        protected void initializeParticle(MolangInstance instance, Vector3f position, Vector3f speed) {
+            position.set(offset.calculate(instance));
+            float[] n = halfDimensions.calculate(instance);
+            RandomSource random = instance.getLevel().random;
             position.x = randomab(random, -n[0], n[0]);
             position.y = randomab(random, -n[1], n[1]);
             position.z = randomab(random, -n[2], n[2]);
@@ -338,7 +344,7 @@ public abstract class EmitterShape implements IEmitterComponent {
                 boolean i = random.nextBoolean();
                 position.setComponent(r, n[r] * (i ? 1 : -1));
             }
-            direction.apply(entity, this, position, speed);
+            direction.apply(instance, this, position, speed);
         }
 
         @Override
@@ -378,10 +384,10 @@ public abstract class EmitterShape implements IEmitterComponent {
         }
 
         @Override
-        protected void initializeParticle(ParticleEmitterEntity entity, Vector3f position, Vector3f speed) {
-            EntityDimensions dimensions = entity.attached.getDimensions(entity.attached.getPose());
+        protected void initializeParticle(MolangInstance instance, Vector3f position, Vector3f speed) {
+            EntityDimensions dimensions = instance.getAttachedEntity().getDimensions(instance.getAttachedEntity().getPose());
             Vector3f n = new Vector3f(dimensions.width(), dimensions.height(), dimensions.width());
-            RandomSource random = entity.level().random;
+            RandomSource random = instance.getLevel().random;
             position.x = randomab(random, -n.x, n.x);
             position.y = randomab(random, -n.y, n.y);
             position.z = randomab(random, -n.z, n.z);
@@ -390,7 +396,7 @@ public abstract class EmitterShape implements IEmitterComponent {
                 boolean i = random.nextBoolean();
                 position.setComponent(r, n.get(r) * (i ? 1 : -1));
             }
-            direction.apply(entity, this, position, speed);
+            direction.apply(instance, this, position, speed);
         }
 
         @Override
@@ -441,9 +447,9 @@ public abstract class EmitterShape implements IEmitterComponent {
         }
 
         @Override
-        protected void initializeParticle(ParticleEmitterEntity entity, Vector3f position, Vector3f speed) {
-            position.set(offset.calculate(entity));
-            direction.apply(entity, this, position, speed);
+        protected void initializeParticle(MolangInstance instance, Vector3f position, Vector3f speed) {
+            position.set(offset.calculate(instance));
+            direction.apply(instance, this, position, speed);
         }
 
         @Override
@@ -501,12 +507,12 @@ public abstract class EmitterShape implements IEmitterComponent {
         }
 
         @Override
-        protected void initializeParticle(ParticleEmitterEntity entity, Vector3f position, Vector3f speed) {
-            position.set(offset.calculate(entity));
-            float a = radius.calculate(entity);
-            position.x = surfaceOnly ? a : a * entity.level().random.nextFloat();
-            applyEuler(getRandomEuler(entity.level().random), position);
-            direction.apply(entity, this, position, speed);
+        protected void initializeParticle(MolangInstance invTickRate, Vector3f position, Vector3f speed) {
+            position.set(offset.calculate(invTickRate));
+            float a = radius.calculate(invTickRate);
+            position.x = surfaceOnly ? a : a * invTickRate.getLevel().random.nextFloat();
+            applyEuler(getRandomEuler(invTickRate.getLevel().random), position);
+            direction.apply(invTickRate, this, position, speed);
         }
 
         @Override
@@ -550,18 +556,18 @@ public abstract class EmitterShape implements IEmitterComponent {
             return name;
         }
 
-        public void apply(ParticleEmitterEntity entity, EmitterShape shape, Vector3f position, Vector3f speed) {
+        public void apply(MolangInstance instance, EmitterShape shape, Vector3f position, Vector3f speed) {
             // todo inherited_particle_speed
-            float invTickRate = entity.invTickRate;
+            float invTickRate = instance.getInvTickRate();
             if (this == INWARDS || this == OUTWARDS) {
                 if (shape instanceof Point) {
-                    applyEuler(getRandomEuler(entity.level().random), speed.set(invTickRate, 0, 0));
+                    applyEuler(getRandomEuler(instance.getLevel().random), speed.set(invTickRate, 0, 0));
                 } else {
                     speed.set(position).normalize();
                     if (this == INWARDS) speed.negate();
                 }
             } else { // custom
-                speed.set(direct.calculate(entity)).normalize();
+                speed.set(direct.calculate(instance)).normalize();
             }
             speed.x *= invTickRate;
             speed.y *= invTickRate;

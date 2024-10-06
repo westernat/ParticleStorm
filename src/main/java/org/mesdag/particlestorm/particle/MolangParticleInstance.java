@@ -69,9 +69,6 @@ public class MolangParticleInstance extends TextureSheetParticle implements Mola
     public MolangParticleInstance(ParticleDetail detail, ClientLevel level, double x, double y, double z, double xSpeed, double ySpeed, double zSpeed, ExtendMutableSpriteSet sprites) {
         super(level, x, y, z);
         this.friction = 1.0F;
-        this.xd = xSpeed;
-        this.yd = ySpeed;
-        this.zd = zSpeed;
         this.random = level.getRandom();
         this.detail = detail;
         this.variableTable = new VariableTable(detail.variableTable);
@@ -109,6 +106,12 @@ public class MolangParticleInstance extends TextureSheetParticle implements Mola
         return z;
     }
 
+    public void setPosO(double x, double y, double z) {
+        this.xo = x;
+        this.yo = y;
+        this.zo = z;
+    }
+
     public void setRoll(float roll) {
         this.roll = roll;
     }
@@ -128,12 +131,6 @@ public class MolangParticleInstance extends TextureSheetParticle implements Mola
 
     public void setCollision(boolean bool) {
         this.hasCollision = bool;
-    }
-
-    public void addAcceleration(float x, float y, float z) {
-        this.xd += x;
-        this.yd += y;
-        this.zd += z;
     }
 
     @Override
@@ -183,6 +180,21 @@ public class MolangParticleInstance extends TextureSheetParticle implements Mola
     @Override
     public Vec3 getPosition() {
         return getPos();
+    }
+
+    @Override
+    public Entity getAttachedEntity() {
+        return emitter.attached;
+    }
+
+    @Override
+    public float getInvTickRate() {
+        return emitter.invTickRate;
+    }
+
+    @Override
+    public ParticleEmitterEntity getEmitter() {
+        return emitter;
     }
 
     public TextureAtlasSprite getSprite() {
