@@ -23,6 +23,10 @@
             }
         },
         "components": {
+            "minecraft:emitter_local_space": {
+                "position": true,
+                "rotation": true
+            },
             "minecraft:emitter_initialization": {
                 "creation_expression": "variable.radius = 2.5;"
             },

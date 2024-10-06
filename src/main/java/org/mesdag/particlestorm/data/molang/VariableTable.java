@@ -28,7 +28,11 @@ public class VariableTable {
                 if (subTable == null) return 0.0;
                 return subTable.getValue(name, instance);
             }
-            return previous.getValue(name, instance);
+            double value = previous.getValue(name, instance);
+            if (value == 0.0 && subTable != null) {
+                return subTable.getValue(name, instance);
+            }
+            return value;
         }
         return variable.get(instance);
     }

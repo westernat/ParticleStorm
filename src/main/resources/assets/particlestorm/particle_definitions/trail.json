@@ -9,6 +9,10 @@
             }
         },
         "components": {
+            "minecraft:emitter_local_space": {
+                "position": true,
+                "rotation": true
+            },
             "minecraft:emitter_initialization": {
                 "creation_expression": "variable.size = 0.03;variable.lifetime = 2.2;"
             },
