@@ -61,8 +61,8 @@ public final class ParticleCurve {
                     curve = new SplineCurve.CatMullRom(points);
                     cachedCurves.put(name, curve);
                 }
-                int c = nodes.length();
-                float u = (1 + (i * (c - 3))) / (c + 2);
+                int c = nodes.length() - 3;
+                float u = (1 + i * c) / (c + 2);
                 return curve.getPoint(u).y;
             }
             case LINEAR -> {

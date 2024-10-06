@@ -50,7 +50,7 @@ public record ParticleAppearanceTinting(Color color, ColorField colorField) impl
             }
         }
         Tuple<Float, ColorField> tuple = list.get(n);
-        if (n == 0 || n == list.size() - 1) {
+        if ((n == 0 && list.size() == 1) || n == list.size() - 1) {
             return tuple.getB().calculate(instance);
         }
         Tuple<Float, ColorField> next = list.get(n + 1);
