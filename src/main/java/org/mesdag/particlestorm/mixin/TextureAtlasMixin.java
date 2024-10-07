@@ -2,7 +2,7 @@ package org.mesdag.particlestorm.mixin;
 
 import net.minecraft.client.renderer.texture.SpriteLoader;
 import net.minecraft.client.renderer.texture.TextureAtlas;
-import org.mesdag.particlestorm.ITextureAtlas;
+import org.mesdag.particlestorm.mixinauxi.ITextureAtlas;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;

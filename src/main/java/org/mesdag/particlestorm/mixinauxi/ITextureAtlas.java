@@ -1,4 +1,4 @@
-package org.mesdag.particlestorm;
+package org.mesdag.particlestorm.mixinauxi;
 
 import net.minecraft.client.renderer.texture.SpriteLoader;
 

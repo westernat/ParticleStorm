@@ -20,10 +20,10 @@ import org.jetbrains.annotations.NotNull;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
 import org.mesdag.particlestorm.GameClient;
-import org.mesdag.particlestorm.ITextureAtlasSprite;
 import org.mesdag.particlestorm.data.component.IParticleComponent;
 import org.mesdag.particlestorm.data.molang.MolangInstance;
 import org.mesdag.particlestorm.data.molang.VariableTable;
+import org.mesdag.particlestorm.mixinauxi.ITextureAtlasSprite;
 
 import java.util.List;
 import java.util.Optional;

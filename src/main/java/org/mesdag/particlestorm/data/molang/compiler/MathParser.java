@@ -5,7 +5,6 @@ import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.minecraft.Util;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.mesdag.particlestorm.ParticleStorm;
 import org.mesdag.particlestorm.data.molang.VariableTable;
 import org.mesdag.particlestorm.data.molang.compiler.function.MathFunction;
 import org.mesdag.particlestorm.data.molang.compiler.function.generic.*;
@@ -32,19 +31,10 @@ import java.util.regex.Pattern;
 
 import static org.mesdag.particlestorm.data.molang.compiler.MolangQueries.applyPrefixAliases;
 
-/**
- * Mathematical expression parser that breaks down String-expressions into tokenised objects that can be used for automated computation.
- * <p>
- * Original design: <a href="https://github.com/fadookie/particleman/tree/be1ce93c3cbd0f894742e3f41c0c6b23880be046/mclib">McLib - McHorse, Eliot Lash, Hiroku</a>
- * under <a href="https://github.com/fadookie/particleman/blob/be1ce93c3cbd0f894742e3f41c0c6b23880be046/LICENSE-mclib.md">MIT License</a>
- * <p>
- * Overhauled by Tslat for GeckoLib and redesigned specifically for <a href="https://learn.microsoft.com/en-us/minecraft/creator/reference/content/molangreference/examples/molangconcepts/molangintroduction?view=minecraft-bedrock-stable">Molang</a> use
- */
 public class MathParser {
     private static final Pattern EXPRESSION_FORMAT = Pattern.compile("^[\\w\\s_+-/*%^&|<>=!?:.,()]+$");
     private static final Pattern WHITESPACE = Pattern.compile("\\s");
     private static final Pattern NUMERIC = Pattern.compile("^-?\\d+(\\.\\d+)?$");
-    private static final Pattern VALID_DOUBLE = Pattern.compile("[\\x00-\\x20]*[+-]?(NaN|Infinity|((((\\d+)(\\.)?((\\d+)?)([eE][+-]?(\\d+))?)|(\\.(\\d+)([eE][+-]?(\\d+))?)|(((0[xX](\\p{XDigit}+)(\\.)?)|(0[xX](\\p{XDigit}+)?(\\.)(\\p{XDigit}+)))[pP][+-]?(\\d+)))[fFdD]?))[\\x00-\\x20]*");
     private static final String MOLANG_RETURN = "return ";
     private static final String STATEMENT_DELIMITER = ";";
     private static final Map<String, MathFunction.Factory<?>> FUNCTION_FACTORIES = Util.make(new ConcurrentHashMap<>(18), map -> {
@@ -84,35 +74,10 @@ public class MathParser {
         this.table = table;
     }
 
-    /**
-     * @return Whether a {@link MathFunction} has been registered under the given expression name
-     */
     public boolean isFunctionRegistered(String name) {
         return FUNCTION_FACTORIES.containsKey(name);
     }
 
-    /**
-     * Register a new {@link MathFunction} to be handled by GeckoLib for parsing and internal use.
-     * <p>
-     * Overrides are supported, but should be avoided unless specifically needed
-     *
-     * @param name    The string representation of the function. This will be the parsed value from input math strings.
-     * @param factory The constructor-factory for the given function
-     */
-    public void registerFunction(String name, MathFunction.Factory<?> factory) {
-        if (FUNCTION_FACTORIES.put(name, factory) != null)
-            ParticleStorm.LOGGER.warn("Duplicate registration of MathFunction: '{}'. Ignore if intentional override", name);
-
-        ParticleStorm.LOGGER.debug("Registered MathFunction '{}'", name);
-    }
-
-    /**
-     * Construct a {@link MathFunction} from the given symbol and values
-     *
-     * @param name   The expression name of the function
-     * @param values The input values for the function
-     * @return A new instance of the MathFunction
-     */
     @Nullable
     public <T extends MathFunction> T buildFunction(String name, MathValue... values) {
         if (!FUNCTION_FACTORIES.containsKey(name))
@@ -121,9 +86,6 @@ public class MathParser {
         return (T) FUNCTION_FACTORIES.get(name).create(values);
     }
 
-    /**
-     * @return The registered {@link Variable} instance for the given name
-     */
     public Variable getVariableFor(String name) {
         if (name.startsWith("q")) {
             return MolangQueries.getQueryFor(name);
@@ -160,16 +122,10 @@ public class MathParser {
         return compileExpression(expression);
     }
 
-    /**
-     * Parse and compile a full expression into a single {@link MathValue} object
-     */
     public MathValue compileExpression(String expression) {
         return parseSymbols(compileSymbols(decomposeExpression(expression)));
     }
 
-    /**
-     * Breakdown an expression into component characters, sanity-checking for invalid characters, stripping out whitespace, and pre-checking group parenthesis balancing
-     */
     public char[] decomposeExpression(String expression) throws IllegalArgumentException {
         if (!EXPRESSION_FORMAT.matcher(expression).matches())
             throw new IllegalArgumentException("Invalid characters found in expression: '" + expression + "'");
@@ -194,11 +150,6 @@ public class MathParser {
         return chars;
     }
 
-    /**
-     * Attempt to construct the most relevant operator given the input character array and start index
-     * <p>
-     * This allows for arbitrary-length operators and best-matching for partially-colliding operators
-     */
     @Nullable
     protected String tryMergeOperativeSymbols(char[] chars, int index) {
         char ch = chars[index];
@@ -221,18 +172,6 @@ public class MathParser {
         return null;
     }
 
-    /**
-     * Compile a collection of 'symbols' from the given char array representing the expression split into individual characters
-     *
-     * @return A list of either string symbols, or a group of pre-compiled arguments of a grouping
-     * <p>
-     * This list is formatted such that each entry is either:
-     * <ul>
-     *     <li>A self-contained value or expression</li>
-     *     <li>A pre-compiled {@link MathValue} representing an expression group</li>
-     *     <li>A {@link MathFunction} name immediately followed by a pre-compiled {@link MathValue} argument group</li>
-     * </ul>
-     */
     public List<Either<String, List<MathValue>>> compileSymbols(char[] chars) {
         final List<Either<String, List<MathValue>>> symbols = new ObjectArrayList<>();
         final StringBuilder buffer = new StringBuilder();
@@ -307,11 +246,6 @@ public class MathParser {
         return symbols;
     }
 
-    /**
-     * Compiles a given raw list of {@link #compileSymbols(char[]) symbols} into a singular {@link MathValue}, ready for use
-     *
-     * @throws IllegalArgumentException If the given symbols list cannot be compiled down into a MathValue
-     */
     public MathValue parseSymbols(List<Either<String, List<MathValue>>> symbols) throws IllegalArgumentException {
         if (symbols.size() == 2) {
             Optional<String> prefix = symbols.getFirst().left().filter(left -> left.startsWith("-") || left.startsWith("!") || isFunctionRegistered(left));
@@ -329,12 +263,6 @@ public class MathParser {
         throw new IllegalArgumentException("Unable to parse compiled symbols from expression: " + symbols);
     }
 
-    /**
-     * Compile the given {@link #compileSymbols(char[]) symbols} down into a singular {@link MathValue}, ready for use
-     *
-     * @return A compiled MathValue instance, or null if not applicable
-     * @throws IllegalArgumentException If there is a parsing failure for any of the contents of the symbols
-     */
     @Nullable
     protected MathValue compileValue(List<Either<String, List<MathValue>>> symbols) throws IllegalArgumentException {
         if (symbols.size() == 1)
@@ -348,12 +276,6 @@ public class MathParser {
         return compileCalculation(symbols);
     }
 
-    /**
-     * Compile a singular-argument {@link MathValue} instance from the given symbols list, if applicable
-     *
-     * @return A compiled MathValue value, or null if not applicable
-     * @throws IllegalArgumentException If there is a parsing failure for any of the contents of the symbols
-     */
     @Nullable
     protected MathValue compileSingleValue(Either<String, List<MathValue>> symbol) throws IllegalArgumentException {
         if (symbol.right().isPresent())
@@ -380,12 +302,6 @@ public class MathParser {
         }).orElse(null);
     }
 
-    /**
-     * Compile a MathValue value instance from the given symbols list, if applicable
-     *
-     * @return A compiled {@link Calculation} or {@link VariableAssignment} value, or null if not applicable
-     * @throws IllegalArgumentException If there is a parsing failure for any of the contents of the symbols
-     */
     @Nullable
     protected MathValue compileCalculation(List<Either<String, List<MathValue>>> symbols) throws IllegalArgumentException {
         final int symbolCount = symbols.size();
@@ -418,12 +334,6 @@ public class MathParser {
         return lastOperator == null ? null : new Calculation(lastOperator, parseSymbols(symbols.subList(0, operatorIndex)), parseSymbols(symbols.subList(operatorIndex + 1, symbolCount)));
     }
 
-    /**
-     * Compile a {@link Ternary} value instance from the given symbols list, if applicable
-     *
-     * @return A compiled Ternary value, or null if not applicable
-     * @throws IllegalArgumentException If there is a parsing failure for any of the contents of the symbols
-     */
     @Nullable
     protected Ternary compileTernary(List<Either<String, List<MathValue>>> symbols) throws IllegalArgumentException {
         final int symbolCount = symbols.size();
@@ -465,16 +375,6 @@ public class MathParser {
         return null;
     }
 
-    /**
-     * Compiles a {@link MathValue} for the given symbols list, if applicable.
-     * <p>
-     * Note that due to parsing flexibility, this method doesn't necessarily generate a {@link MathFunction}, as some calls may be for value-value pairs instead
-     *
-     * @param name The name of the function or value
-     * @param args The symbols list for the value
-     * @return A compiled MathValue, or null if not applicable
-     * @throws IllegalArgumentException If there is a parsing failure for any of the contents of the symbols
-     */
     @Nullable
     protected MathValue compileFunction(String name, List<MathValue> args) throws IllegalArgumentException {
         if (name.startsWith("!")) {
@@ -497,57 +397,29 @@ public class MathParser {
         return buildFunction(name, args.toArray(new MathValue[0]));
     }
 
-    /**
-     * @return Whether the given String should be considered an operator or operator-like symbol
-     * @deprecated Has no functional use, see {@link Operator#isOperator(String)}
-     */
     @Deprecated(forRemoval = true)
     public static boolean isOperativeSymbol(char symbol) {
         return isOperativeSymbol(String.valueOf(symbol));
     }
 
-    /**
-     * @return Whether the given String should be considered an operator or operator-like symbol
-     * @deprecated Has no functional use, see {@link Operator#isOperator(String)}
-     */
     @Deprecated(forRemoval = true)
     public static boolean isOperativeSymbol(@NotNull String symbol) {
         return Operator.isOperator(symbol) || symbol.equals("?") || symbol.equals(":");
     }
 
-    /**
-     * Determine if the given string can be considered numeric, supporting both negative values and decimal values, but not strings omitting a preceding digit before a decimal point
-     *
-     * @return Whether the string is numeric
-     */
     public static boolean isNumeric(String string) {
         return NUMERIC.matcher(string).matches();
     }
 
-    /**
-     * Get an {@link Operator} for a given operator string, throwing an exception if one does not exist
-     */
     protected static Operator getOperatorFor(String op) throws IllegalArgumentException {
         return Operator.getOperatorFor(op).orElseThrow(() -> new IllegalArgumentException("Unknown operator symbol '" + op + "'"));
     }
 
-    /**
-     * Determine if the given string is likely to be a variable/function of some kind.
-     * <p>
-     * Functionally this is just a confirmation-by-elimination check, since names don't really have a defined form
-     *
-     * @deprecated This is no longer used and isn't really a reliable check, try {@link #isFunctionRegistered(String)} or {@link #isLikelyVariable(String)}
-     */
     @Deprecated(forRemoval = true)
     protected static boolean isQueryOrFunctionName(String string) {
         return !isNumeric(string) && !isOperativeSymbol(string);
     }
 
-    /**
-     * Determine if the given string is likely to be an existing or new variable declaration
-     * <p>
-     * Functionally this is just a confirmation-by-elimination check, since names don't really have a defined form
-     */
     protected boolean isLikelyVariable(String string) {
         if (MolangQueries.isExistingVariable(string))
             return true;
