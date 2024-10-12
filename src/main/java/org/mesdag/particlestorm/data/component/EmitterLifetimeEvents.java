@@ -6,7 +6,7 @@ import net.minecraft.util.Tuple;
 import org.mesdag.particlestorm.ParticleStorm;
 import org.mesdag.particlestorm.data.event.IEventNode;
 import org.mesdag.particlestorm.data.molang.MolangExp;
-import org.mesdag.particlestorm.particle.ParticleEmitterEntity;
+import org.mesdag.particlestorm.particle.ParticleEmitter;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -76,7 +76,7 @@ public final class EmitterLifetimeEvents implements IEmitterComponent {
     }
 
     @Override
-    public void update(ParticleEmitterEntity entity) {
+    public void update(ParticleEmitter entity) {
         for (int i = entity.lastTimeline; i < sortedTimeline.size(); i++) {
             Tuple<Function<Integer, Boolean>, List<String>> tuple = sortedTimeline.get(i);
             if (tuple.getA().apply(entity.lifetime)) {
@@ -114,7 +114,7 @@ public final class EmitterLifetimeEvents implements IEmitterComponent {
     }
 
     @Override
-    public void apply(ParticleEmitterEntity entity) {
+    public void apply(ParticleEmitter entity) {
         Map<String, Map<String, IEventNode>> events = entity.getDetail().events;
         for (String event : creationEvent) {
             events.get(event).forEach((name, node) -> node.execute(entity));
@@ -127,7 +127,7 @@ public final class EmitterLifetimeEvents implements IEmitterComponent {
         return true;
     }
 
-    public void onExpiration(ParticleEmitterEntity entity) {
+    public void onExpiration(ParticleEmitter entity) {
         Map<String, Map<String, IEventNode>> events = entity.getDetail().events;
         for (String event : expirationEvent) {
             events.get(event).forEach((name, node) -> node.execute(entity));

@@ -5,7 +5,6 @@
     "compatibilityLevel": "JAVA_8",
     "refmap": "particlestorm.refmap.json",
     "mixins": [
-        "ParticleCommandMixin",
         "integration.geckolib.AnimationControllerMixin",
         "integration.geckolib.AnimationProcessorMixin",
         "integration.geckolib.BakedModelFactory$BuiltinMixin",

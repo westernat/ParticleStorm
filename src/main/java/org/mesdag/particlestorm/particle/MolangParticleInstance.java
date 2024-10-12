@@ -52,7 +52,7 @@ public class MolangParticleInstance extends TextureSheetParticle implements Mola
     protected final double particleRandom3;
     protected final double particleRandom4;
     public List<IParticleComponent> components;
-    public ParticleEmitterEntity emitter;
+    public ParticleEmitter emitter;
     public boolean motionDynamic = false;
 
     public float[] billboardSize = new float[2];
@@ -193,7 +193,7 @@ public class MolangParticleInstance extends TextureSheetParticle implements Mola
     }
 
     @Override
-    public ParticleEmitterEntity getEmitter() {
+    public ParticleEmitter getEmitter() {
         return emitter;
     }
 

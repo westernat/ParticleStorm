@@ -1,22 +1,35 @@
 package org.mesdag.particlestorm;
 
+import net.minecraft.client.Minecraft;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.neoforge.client.event.EntityRenderersEvent;
+import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
+import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.event.RegisterClientReloadListenersEvent;
+import net.neoforged.neoforge.common.NeoForge;
 import org.mesdag.particlestorm.data.component.*;
 import org.mesdag.particlestorm.data.event.*;
 import org.mesdag.particlestorm.particle.MolangParticleLoader;
-import org.mesdag.particlestorm.particle.ParticleEmitterRenderer;
 
 @EventBusSubscriber(modid = ParticleStorm.MODID, bus = EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
 public final class GameClient {
     public static final MolangParticleLoader LOADER = new MolangParticleLoader();
 
+
     @SubscribeEvent
-    public static void registerRenderers(EntityRenderersEvent.RegisterRenderers event) {
-        event.registerEntityRenderer(ParticleStorm.PARTICLE_EMITTER.get(), ParticleEmitterRenderer::new);
+    public static void clientSetup(FMLClientSetupEvent event) {
+        event.enqueueWork(() -> {
+            NeoForge.EVENT_BUS.addListener(GameClient::tick);
+        });
+    }
+
+    private static void tick(ClientTickEvent.Pre event) {
+        if (Minecraft.getInstance().level == null) {
+            LOADER.removeAll();
+        } else {
+            LOADER.tick();
+        }
     }
 
     @SubscribeEvent
@@ -63,7 +76,7 @@ public final class GameClient {
         IComponent.register("particle_expire_if_in_blocks", ParticleExpireIfInBlocks.CODEC);
         IComponent.register("particle_expire_if_not_in_blocks", ParticleExpireIfNotInBlocks.CODEC);
     }
-    
+
     private static void registerEventNodes() {
         IEventNode.register("sequence", EventSequence.CODEC);
         IEventNode.register("weight", EventRandomize.Weight.CODEC);

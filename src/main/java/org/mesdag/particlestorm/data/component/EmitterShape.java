@@ -21,7 +21,7 @@ import org.mesdag.particlestorm.data.molang.MolangInstance;
 import org.mesdag.particlestorm.data.molang.compiler.value.Variable;
 import org.mesdag.particlestorm.mixin.ParticleEngineAccessor;
 import org.mesdag.particlestorm.particle.MolangParticleInstance;
-import org.mesdag.particlestorm.particle.ParticleEmitterEntity;
+import org.mesdag.particlestorm.particle.ParticleEmitter;
 
 import java.util.Arrays;
 import java.util.List;
@@ -41,7 +41,7 @@ public abstract class EmitterShape implements IEmitterComponent {
     }
 
     @Override
-    public void update(ParticleEmitterEntity entity) {
+    public void update(ParticleEmitter entity) {
         if (entity.spawned) return;
         if (entity.spawnDuration <= 1 || entity.age % entity.spawnDuration == 0) {
             for (int num = 0; num < entity.spawnRate; num++) {
@@ -62,32 +62,32 @@ public abstract class EmitterShape implements IEmitterComponent {
 
     protected abstract void initializeParticle(MolangInstance instance, Vector3f position, Vector3f speed);
 
-    private void emittingParticle(ParticleEmitterEntity entity) {
-        Particle particle = ((ParticleEngineAccessor) Minecraft.getInstance().particleEngine).callMakeParticle(entity.getDetail().option, entity.getX(), entity.getY(), entity.getZ(), 0.0, 0.0, 0.0);
+    private void emittingParticle(ParticleEmitter emitter) {
+        Particle particle = ((ParticleEngineAccessor) Minecraft.getInstance().particleEngine).callMakeParticle(emitter.getDetail().option, emitter.getX(), emitter.getY(), emitter.getZ(), 0.0, 0.0, 0.0);
         if (particle instanceof MolangParticleInstance instance) {
-            instance.emitter = entity;
-            instance.getVariableTable().subTable = entity.getVariableTable();
+            instance.emitter = emitter;
+            instance.getVariableTable().subTable = emitter.getVariableTable();
 
             Vector3f position = new Vector3f();
             Vector3f speed = new Vector3f();
             initializeParticle(instance, position, speed);
-            if (entity.getDetail().localPosition) {
-                Vec3 emitterPos = entity.position();
+            if (emitter.getDetail().localPosition) {
+                Vec3 emitterPos = emitter.getPosition();
                 position.add((float) emitterPos.x, (float) emitterPos.y, (float) emitterPos.z);
             }
-            if (entity.getDetail().localRotation) {
-                applyEuler(entity.getXRot(), entity.getYRot(), 0.0F, position);
+            if (emitter.getDetail().localRotation) {
+                applyEuler(emitter.getXRot(), emitter.getYRot(), 0.0F, position);
             }
-            if (entity.getDetail().localVelocity) {
-                Vec3 emitterVec = entity.getDeltaMovement();
+            if (emitter.getDetail().localVelocity) {
+                Vec3 emitterVec = emitter.deltaMovement;
                 speed.add((float) emitterVec.x, (float) emitterVec.y, (float) emitterVec.z);
             }
-            speed.mul(entity.invTickRate);
+            speed.mul(emitter.invTickRate);
             instance.setParticleSpeed(speed.x, speed.y, speed.z);
             instance.setPos(position.x, position.y, position.z);
             instance.setPosO(position.x, position.y, position.z);
 
-            instance.particleGroup = entity.particleGroup;
+            instance.particleGroup = emitter.particleGroup;
             instance.detail.assignments.forEach(assignment -> {
                 // 重定向，防止污染变量表
                 String name = assignment.variable().name();
@@ -108,8 +108,8 @@ public abstract class EmitterShape implements IEmitterComponent {
         Minecraft.getInstance().particleEngine.add(particle);
     }
 
-    private static boolean hasSpaceInParticleLimit(ParticleEmitterEntity entity) {
-        ParticleGroup particleGroup = entity.particleGroup;
+    private static boolean hasSpaceInParticleLimit(ParticleEmitter emitter) {
+        ParticleGroup particleGroup = emitter.particleGroup;
         return ((ParticleEngineAccessor) Minecraft.getInstance().particleEngine).trackedParticleCounts().getInt(particleGroup) < particleGroup.getLimit();
     }
 

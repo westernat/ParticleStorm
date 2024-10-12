@@ -3,7 +3,7 @@ package org.mesdag.particlestorm.data.component;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import org.mesdag.particlestorm.data.molang.MolangExp;
-import org.mesdag.particlestorm.particle.ParticleEmitterEntity;
+import org.mesdag.particlestorm.particle.ParticleEmitter;
 
 import java.util.List;
 
@@ -30,7 +30,7 @@ public record EmitterInitialization(MolangExp creationExpression, MolangExp perU
     }
 
     @Override
-    public void update(ParticleEmitterEntity entity) {
+    public void update(ParticleEmitter entity) {
         perUpdateExpression.calculate(entity);
     }
 

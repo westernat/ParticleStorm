@@ -3,11 +3,9 @@ package org.mesdag.particlestorm.data.component;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.core.particles.ParticleGroup;
-import net.neoforged.neoforge.network.PacketDistributor;
 import org.mesdag.particlestorm.data.molang.FloatMolangExp;
 import org.mesdag.particlestorm.data.molang.MolangExp;
-import org.mesdag.particlestorm.network.EmitterManualPacketC2S;
-import org.mesdag.particlestorm.particle.ParticleEmitterEntity;
+import org.mesdag.particlestorm.particle.ParticleEmitter;
 
 import java.util.List;
 
@@ -46,7 +44,7 @@ public abstract class EmitterRate implements IEmitterComponent {
         }
 
         @Override
-        public void apply(ParticleEmitterEntity entity) {
+        public void apply(ParticleEmitter entity) {
             int calculate = (int) numParticles.calculate(entity);
             if (entity.spawnRate != calculate) {
                 entity.spawnRate = calculate;
@@ -97,7 +95,7 @@ public abstract class EmitterRate implements IEmitterComponent {
         }
 
         @Override
-        public void apply(ParticleEmitterEntity entity) {
+        public void apply(ParticleEmitter entity) {
             float calculated = spawnRate.calculate(entity);
             entity.spawnDuration = Math.max((int) (20.0F / calculated), 1);
             if (entity.spawnRate != calculated) {
@@ -143,13 +141,8 @@ public abstract class EmitterRate implements IEmitterComponent {
         }
 
         @Override
-        public void update(ParticleEmitterEntity entity) {
-            PacketDistributor.sendToServer(new EmitterManualPacketC2S(entity.getId(), (int) maxParticles.calculate(entity)));
-        }
-
-        @Override
-        public boolean requireUpdate() {
-            return true;
+        public void apply(ParticleEmitter emitter) {
+            emitter.particleGroup = new ParticleGroup((int) maxParticles.calculate(emitter));
         }
 
         @Override

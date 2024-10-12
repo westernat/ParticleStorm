@@ -2,11 +2,9 @@ package org.mesdag.particlestorm.data.component;
 
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
-import net.neoforged.neoforge.network.PacketDistributor;
 import org.mesdag.particlestorm.data.molang.FloatMolangExp;
 import org.mesdag.particlestorm.data.molang.MolangExp;
-import org.mesdag.particlestorm.network.EmitterDiscardPacketC2S;
-import org.mesdag.particlestorm.particle.ParticleEmitterEntity;
+import org.mesdag.particlestorm.particle.ParticleEmitter;
 
 import java.util.List;
 
@@ -58,12 +56,11 @@ public abstract class EmitterLifetime implements IEmitterComponent {
         }
 
         @Override
-        public void update(ParticleEmitterEntity entity) {
-            if (expirationExpression.calculate(entity) != 0.0) {
-                entity.beforeRemove();
-                PacketDistributor.sendToServer(new EmitterDiscardPacketC2S(entity.getId()));
+        public void update(ParticleEmitter emitter) {
+            if (expirationExpression.calculate(emitter) != 0.0) {
+                emitter.remove();
             }
-            entity.active = activationExpression.calculate(entity) != 0.0;
+            emitter.active = activationExpression.calculate(emitter) != 0.0;
         }
 
         @Override
@@ -125,18 +122,18 @@ public abstract class EmitterLifetime implements IEmitterComponent {
         }
 
         @Override
-        public void update(ParticleEmitterEntity entity) {
-            entity.activeTime = (int) (activeTime.calculate(entity) * 20);
-            entity.fullLoopTime = entity.activeTime + (int) (sleepTime.calculate(entity) * 20);
-            if (entity.loopingTime <= entity.fullLoopTime) {
-                entity.active = entity.loopingTime <= entity.activeTime;
-                entity.loopingTime++;
+        public void update(ParticleEmitter emitter) {
+            emitter.activeTime = (int) (activeTime.calculate(emitter) * 20);
+            emitter.fullLoopTime = emitter.activeTime + (int) (sleepTime.calculate(emitter) * 20);
+            if (emitter.loopingTime <= emitter.fullLoopTime) {
+                emitter.active = emitter.loopingTime <= emitter.activeTime;
+                emitter.loopingTime++;
             } else {
-                entity.spawned = false;
-                entity.loopingTime = 0;
-                entity.age = 0;
-                for (IEmitterComponent e : entity.getDetail().components) {
-                    e.apply(entity);
+                emitter.spawned = false;
+                emitter.loopingTime = 0;
+                emitter.age = 0;
+                for (IEmitterComponent e : emitter.getDetail().components) {
+                    e.apply(emitter);
                 }
             }
         }
@@ -180,16 +177,15 @@ public abstract class EmitterLifetime implements IEmitterComponent {
         }
 
         @Override
-        public void update(ParticleEmitterEntity entity) {
-            if (entity.age >= entity.lifetime) {
-                entity.beforeRemove();
-                PacketDistributor.sendToServer(new EmitterDiscardPacketC2S(entity.getId()));
+        public void update(ParticleEmitter emitter) {
+            if (emitter.age >= emitter.lifetime) {
+                emitter.remove();
             }
         }
 
         @Override
-        public void apply(ParticleEmitterEntity entity) {
-            entity.lifetime = (int) (activeTime.calculate(entity) * 20);
+        public void apply(ParticleEmitter emitter) {
+            emitter.lifetime = (int) (activeTime.calculate(emitter) * 20);
         }
 
         @Override

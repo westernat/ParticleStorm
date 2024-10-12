@@ -2,18 +2,12 @@ package org.mesdag.particlestorm.particle;
 
 import net.minecraft.core.particles.ParticleGroup;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.server.level.ServerLevel;
-import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
-import net.neoforged.neoforge.network.PacketDistributor;
-import org.jetbrains.annotations.NotNull;
+import org.joml.Vector3f;
 import org.mesdag.particlestorm.GameClient;
-import org.mesdag.particlestorm.ParticleStorm;
 import org.mesdag.particlestorm.data.component.EmitterRate;
 import org.mesdag.particlestorm.data.component.IEmitterComponent;
 import org.mesdag.particlestorm.data.event.ParticleEffect;
@@ -21,28 +15,25 @@ import org.mesdag.particlestorm.data.molang.MolangExp;
 import org.mesdag.particlestorm.data.molang.MolangInstance;
 import org.mesdag.particlestorm.data.molang.VariableTable;
 import org.mesdag.particlestorm.data.molang.compiler.MathParser;
-import org.mesdag.particlestorm.network.EmitterInitializePacketS2C;
-import org.mesdag.particlestorm.network.EmitterManualPacketC2S;
 
-import java.util.Collection;
 import java.util.List;
 
-public class ParticleEmitterEntity extends Entity implements MolangInstance {
-    public ManualData manualData;
+public class ParticleEmitter implements MolangInstance {
     public ResourceLocation particleId;
-    public ParticleEffect.Type effectType = ParticleEffect.Type.EMITTER;
-    public MolangExp expression = MolangExp.EMPTY;
+    public ParticleEffect.Type effectType;
+    public MolangExp expression;
     protected boolean haveHadSync = false;
 
     protected EmitterDetail detail;
     protected VariableTable variableTable;
     protected List<IEmitterComponent> components;
 
-    protected double emitterRandom1 = 0.0;
-    protected double emitterRandom2 = 0.0;
-    protected double emitterRandom3 = 0.0;
-    protected double emitterRandom4 = 0.0;
-    public float invTickRate = 1.0F / level().tickRateManager().tickrate();
+    protected double emitterRandom1;
+    protected double emitterRandom2;
+    protected double emitterRandom3;
+    protected double emitterRandom4;
+    public float invTickRate;
+    public int id;
 
     public int age = 0;
     public int lifetime = 0;
@@ -56,50 +47,52 @@ public class ParticleEmitterEntity extends Entity implements MolangInstance {
     public boolean spawned = false;
     public Entity attached;
     public int lastTimeline = 0;
+    public float moveDist = 0.0F;
     public float moveDistO = 0.0F;
     public int lastTravelDist = 0;
     public float[] cachedLooping;
 
-    // Client Only
-    public ParticleEmitterEntity(EntityType<?> entityType, Level level) {
-        super(entityType, level);
-    }
+    public final Level level;
+    public Vec3 pos;
+    public Vector3f rot = new Vector3f();
+    public Vec3 deltaMovement = Vec3.ZERO;
+    private boolean removed = false;
 
-    // Server Only
-    public ParticleEmitterEntity(Level level, ManualData manualData, ResourceLocation particleId, Vec3 pos) {
-        super(ParticleStorm.PARTICLE_EMITTER.get(), level);
-        this.manualData = manualData;
+    public ParticleEmitter(Level level, Vector3f pos, ResourceLocation particleId, ParticleEffect.Type type, MolangExp expression) {
+        this.level = level;
+        setPos(new Vec3(pos.x, pos.y, pos.z));
         this.particleId = particleId;
-        setPos(pos);
+        this.effectType = type;
+        this.expression = expression;
         this.emitterRandom1 = level.random.nextDouble();
         this.emitterRandom2 = level.random.nextDouble();
         this.emitterRandom3 = level.random.nextDouble();
         this.emitterRandom4 = level.random.nextDouble();
+        this.invTickRate = 1.0F / level.tickRateManager().tickrate();
     }
 
-    public EmitterDetail getDetail() {
-        return detail;
+    public ParticleEmitter(Level level, Vector3f pos, ResourceLocation particleId) {
+        this(level, pos, particleId, ParticleEffect.Type.EMITTER, MolangExp.EMPTY);
     }
 
-    @Override
     public void tick() {
-        super.tick();
-        if (!level().isClientSide) return;
         if (haveHadSync) {
-            if (detail.emitterRateType == EmitterRate.Type.MANUAL) {
-                PacketDistributor.sendToServer(new EmitterManualPacketC2S(getId(), 0));
-                return;
-            }
-            this.invTickRate = 1.0F / level().tickRateManager().tickrate();
+            this.invTickRate = 1.0F / level.tickRateManager().tickrate();
             this.moveDistO = moveDist;
             for (IEmitterComponent component : components) {
                 component.update(this);
+            }
+            if (detail.emitterRateType == EmitterRate.Type.MANUAL) {
+                remove();
+                return;
             }
             this.age++;
         } else if (particleId != null) {
             this.detail = GameClient.LOADER.ID_2_EMITTER.get(particleId);
             this.variableTable = new VariableTable(detail.variableTable);
-            if (expression != null) expression.compile(new MathParser(variableTable));
+            if (expression != null && !expression.initialized()) {
+                expression.compile(new MathParser(variableTable));
+            }
             // todo effect type
             detail.assignments.forEach(assignment -> {
                 // 重定向，防止污染变量表
@@ -110,16 +103,35 @@ public class ParticleEmitterEntity extends Entity implements MolangInstance {
                 return e.requireUpdate();
             }).toList();
             this.haveHadSync = true;
-        } else {
-            PacketDistributor.sendToServer(new EmitterInitializePacketS2C(getId(), EmitterInitializePacketS2C.REQUEST_ID, effectType, expression));
         }
+        move(deltaMovement);
     }
 
-    @Override
-    protected void defineSynchedData(SynchedEntityData.@NotNull Builder builder) {}
+    public void remove() {
+        if (detail.lifetimeEvents != null) {
+            detail.lifetimeEvents.onExpiration(this);
+        }
+        this.removed = true;
+    }
 
-    @Override
-    protected void readAdditionalSaveData(CompoundTag compound) {
+    public boolean isRemoved() {
+        return removed;
+    }
+
+    public void move(Vec3 delta) {
+        this.moveDist += (float) delta.length();
+        pos.add((float) delta.x, (float) delta.y, (float) delta.z);
+    }
+
+    public void setPos(Vec3 pos) {
+        this.pos = pos;
+    }
+
+    public EmitterDetail getDetail() {
+        return detail;
+    }
+
+    public void deserialize(CompoundTag compound) {
         this.particleId = ResourceLocation.parse(compound.getString("particleId"));
         this.emitterRandom1 = compound.getDouble("emitterRandom1");
         this.emitterRandom2 = compound.getDouble("emitterRandom2");
@@ -127,8 +139,7 @@ public class ParticleEmitterEntity extends Entity implements MolangInstance {
         this.emitterRandom4 = compound.getDouble("emitterRandom4");
     }
 
-    @Override
-    protected void addAdditionalSaveData(CompoundTag compound) {
+    public void serialize(CompoundTag compound) {
         compound.putString("particleId", particleId.toString());
         compound.putDouble("emitterRandom1", emitterRandom1);
         compound.putDouble("emitterRandom2", emitterRandom2);
@@ -136,9 +147,24 @@ public class ParticleEmitterEntity extends Entity implements MolangInstance {
         compound.putDouble("emitterRandom4", emitterRandom4);
     }
 
-    @Override
-    public boolean isNoGravity() {
-        return true;
+    public double getX() {
+        return pos.x;
+    }
+
+    public double getY() {
+        return pos.y;
+    }
+
+    public double getZ() {
+        return pos.z;
+    }
+
+    public float getXRot() {
+        return rot.x;
+    }
+
+    public float getYRot() {
+        return rot.y;
     }
 
     @Override
@@ -148,7 +174,7 @@ public class ParticleEmitterEntity extends Entity implements MolangInstance {
 
     @Override
     public Level getLevel() {
-        return level();
+        return level;
     }
 
     @Override
@@ -188,7 +214,7 @@ public class ParticleEmitterEntity extends Entity implements MolangInstance {
 
     @Override
     public Vec3 getPosition() {
-        return position();
+        return pos;
     }
 
     @Override
@@ -202,22 +228,7 @@ public class ParticleEmitterEntity extends Entity implements MolangInstance {
     }
 
     @Override
-    public ParticleEmitterEntity getEmitter() {
+    public ParticleEmitter getEmitter() {
         return this;
-    }
-
-    public void beforeRemove() {
-        if (detail.lifetimeEvents != null) {
-            detail.lifetimeEvents.onExpiration(this);
-        }
-    }
-
-    public record ManualData(ServerLevel serverLevel, MolangParticleOption particleData, Vec3 pos, Vec3 delta, float speed, int count, boolean force, Collection<ServerPlayer> viewers) {
-        public void doSendParticle(int count) {
-            int actually = count == 0 ? this.count : count;
-            for (ServerPlayer serverplayer : viewers) {
-                serverLevel.sendParticles(serverplayer, particleData, force, pos.x, pos.y, pos.z, actually, delta.x, delta.y, delta.z, speed);
-            }
-        }
     }
 }

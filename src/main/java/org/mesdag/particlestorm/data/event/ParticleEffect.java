@@ -9,11 +9,9 @@ import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.ByIdMap;
 import net.minecraft.util.StringRepresentable;
-import net.neoforged.neoforge.network.PacketDistributor;
 import org.jetbrains.annotations.NotNull;
 import org.mesdag.particlestorm.data.molang.MolangExp;
 import org.mesdag.particlestorm.data.molang.MolangInstance;
-import org.mesdag.particlestorm.network.EmitterCreationPacketC2S;
 
 import java.util.Locale;
 import java.util.function.IntFunction;
@@ -27,7 +25,7 @@ public record ParticleEffect(ResourceLocation effect, Type type, MolangExp preEf
 
     @Override
     public void execute(MolangInstance instance) {
-        PacketDistributor.sendToServer(new EmitterCreationPacketC2S(effect, instance.getPosition(), type, preEffectExpression));
+        // todo
     }
 
     public enum Type implements StringRepresentable {

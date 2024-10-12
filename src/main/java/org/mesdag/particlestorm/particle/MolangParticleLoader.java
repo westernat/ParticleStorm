@@ -2,6 +2,7 @@ package org.mesdag.particlestorm.particle;
 
 import com.google.gson.JsonParseException;
 import com.mojang.serialization.JsonOps;
+import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
 import net.minecraft.Util;
 import net.minecraft.resources.FileToIdConverter;
 import net.minecraft.resources.ResourceLocation;
@@ -17,18 +18,59 @@ import org.mesdag.particlestorm.data.component.IEmitterComponent;
 
 import java.io.IOException;
 import java.io.Reader;
-import java.util.ArrayList;
-import java.util.Hashtable;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 
 @OnlyIn(Dist.CLIENT)
 public class MolangParticleLoader implements PreparableReloadListener {
+    private static final FileToIdConverter PARTICLE_LISTER = FileToIdConverter.json("particle_definitions");
     public final Hashtable<ResourceLocation, DefinedParticleEffect> ID_2_EFFECT = new Hashtable<>();
     public final Hashtable<ResourceLocation, ParticleDetail> ID_2_PARTICLE = new Hashtable<>();
     public final Hashtable<ResourceLocation, EmitterDetail> ID_2_EMITTER = new Hashtable<>();
-    private static final FileToIdConverter PARTICLE_LISTER = FileToIdConverter.json("particle_definitions");
+    private final ArrayList<ParticleEmitter> emitters = new ArrayList<>();
+    private final Queue<Integer> emittersAboutToRemove = new ArrayDeque<>();
+    private final IntAllocator allocator = new IntAllocator();
+
+    public void tick() {
+        if (emittersAboutToRemove.isEmpty()) {
+            Iterator<ParticleEmitter> iterator = emitters.iterator();
+            while (iterator.hasNext()) {
+                ParticleEmitter emitter = iterator.next();
+                if (emitter.isRemoved()) {
+                    allocator.remove(emitter.id);
+                    iterator.remove();
+                } else { // todo distance
+                    emitter.tick();
+                }
+            }
+        } else {
+            while (!emittersAboutToRemove.isEmpty()) {
+                int removed = emittersAboutToRemove.remove();
+                emitters.removeIf(emitter -> emitter.id == removed);
+                allocator.remove(removed);
+            }
+        }
+    }
+
+    public void addEmitter(ParticleEmitter emitter) {
+        emitters.add(emitter);
+        emitter.id = allocator.insert();
+    }
+
+    public void removeEmitter(int id) {
+        emittersAboutToRemove.add(id);
+    }
+
+    public void removeEmitter(ParticleEmitter emitter) {
+        emittersAboutToRemove.add(emitter.id);
+    }
+
+    public void removeAll() {
+        emitters.clear();
+        emittersAboutToRemove.clear();
+        allocator.clear();
+    }
 
     @Override
     public @NotNull CompletableFuture<Void> reload(PreparationBarrier preparationBarrier, @NotNull ResourceManager resourceManager, @NotNull ProfilerFiller preparationsProfiler, @NotNull ProfilerFiller reloadProfiler, @NotNull Executor backgroundExecutor, @NotNull Executor gameExecutor) {
@@ -62,5 +104,33 @@ public class MolangParticleLoader implements PreparableReloadListener {
                 ));
             });
         }, gameExecutor);
+    }
+
+    private static class IntAllocator {
+        private final IntOpenHashSet table;
+
+        public IntAllocator() {
+            this.table = new IntOpenHashSet();
+        }
+
+        public int insert() {
+            int size = table.size();
+            for (int i = 0; i < size; i++) {
+                if (!table.contains(i)) {
+                    table.add(i);
+                    return i;
+                }
+            }
+            table.add(size);
+            return size;
+        }
+
+        public void remove(int id) {
+            table.remove(id);
+        }
+
+        public void clear() {
+            table.clear();
+        }
     }
 }
