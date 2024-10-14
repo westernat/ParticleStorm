@@ -4,17 +4,22 @@ import com.google.gson.JsonParseException;
 import com.mojang.serialization.JsonOps;
 import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
 import net.minecraft.Util;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.FileToIdConverter;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.PreparableReloadListener;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.util.GsonHelper;
 import net.minecraft.util.profiling.ProfilerFiller;
+import net.minecraft.world.entity.player.Player;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 import org.jetbrains.annotations.NotNull;
+import org.mesdag.particlestorm.ParticleStorm;
 import org.mesdag.particlestorm.data.DefinedParticleEffect;
 import org.mesdag.particlestorm.data.component.IEmitterComponent;
+import org.mesdag.particlestorm.network.EmitterRemovalPacket;
+import org.mesdag.particlestorm.network.EmitterSynchronizePacket;
 
 import java.io.IOException;
 import java.io.Reader;
@@ -53,17 +58,28 @@ public class MolangParticleLoader implements PreparableReloadListener {
         }
     }
 
-    public void addEmitter(ParticleEmitter emitter) {
+    public void loadEmitter(Player player, int id, CompoundTag tag) {
+        ParticleEmitter emitter = new ParticleEmitter(player.level(), tag);
+        emitters.add(emitter);
+        emitter.id = id;
+        if (allocator.forceAdd(id)) {
+            ParticleStorm.LOGGER.warn("There was an emitter exist before, now replaced");
+        }
+    }
+
+    public void addEmitter(ParticleEmitter emitter, boolean sync) {
         emitters.add(emitter);
         emitter.id = allocator.insert();
+        if (sync) EmitterSynchronizePacket.syncToServer(emitter);
     }
 
-    public void removeEmitter(int id) {
+    public void removeEmitter(int id, boolean sync) {
         emittersAboutToRemove.add(id);
+        if (sync) EmitterRemovalPacket.sendToServer(id);
     }
 
-    public void removeEmitter(ParticleEmitter emitter) {
-        emittersAboutToRemove.add(emitter.id);
+    public void removeEmitter(ParticleEmitter emitter, boolean sync) {
+        removeEmitter(emitter.id, sync);
     }
 
     public void removeAll() {
@@ -123,6 +139,10 @@ public class MolangParticleLoader implements PreparableReloadListener {
             }
             table.add(size);
             return size;
+        }
+
+        public boolean forceAdd(int id) {
+            return table.add(id);
         }
 
         public void remove(int id) {

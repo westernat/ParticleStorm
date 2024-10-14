@@ -1,6 +1,7 @@
 package org.mesdag.particlestorm.particle;
 
 import com.mojang.brigadier.CommandDispatcher;
+import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.exceptions.SimpleCommandExceptionType;
 import net.minecraft.commands.CommandSourceStack;
@@ -17,6 +18,7 @@ import org.joml.Vector3f;
 import org.mesdag.particlestorm.data.event.ParticleEffect;
 import org.mesdag.particlestorm.data.molang.MolangExp;
 import org.mesdag.particlestorm.network.EmitterCreationPacketC2S;
+import org.mesdag.particlestorm.network.EmitterRemovalPacket;
 
 import java.util.Collection;
 
@@ -25,38 +27,63 @@ public class MolangParticleCommand {
 
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
         dispatcher.register(Commands.literal("particlestorm").requires(sourceStack -> sourceStack.hasPermission(2))
-                .then(Commands.argument("id", ResourceLocationArgument.id()).executes(context -> sendParticles(
+                .then(Commands.literal("add").then(Commands.argument("particle", ResourceLocationArgument.id()).executes(context -> sendParticle(
                                 context.getSource(),
-                                ResourceLocationArgument.getId(context, "id"),
+                                ResourceLocationArgument.getId(context, "particle"),
                                 context.getSource().getPosition(),
                                 context.getSource().getServer().getPlayerList().getPlayers()
-                        )).then(Commands.argument("pos", Vec3Argument.vec3()).executes(context -> sendParticles(
+                        )).then(Commands.argument("pos", Vec3Argument.vec3()).executes(context -> sendParticle(
                                         context.getSource(),
-                                        ResourceLocationArgument.getId(context, "id"),
+                                        ResourceLocationArgument.getId(context, "particle"),
                                         Vec3Argument.getVec3(context, "pos"),
                                         context.getSource().getServer().getPlayerList().getPlayers()
-                                )).then(Commands.argument("viewers", EntityArgument.players()).executes(context -> sendParticles(
+                                )).then(Commands.argument("viewers", EntityArgument.players()).executes(context -> sendParticle(
                                                 context.getSource(),
-                                                ResourceLocationArgument.getId(context, "id"),
+                                                ResourceLocationArgument.getId(context, "particle"),
                                                 Vec3Argument.getVec3(context, "pos"),
                                                 EntityArgument.getPlayers(context, "viewers")
                                         )
                                 ))
                         )
-                )
+                ))
+                .then(Commands.literal("remove").then(Commands.argument("id", IntegerArgumentType.integer(0)).executes(context -> removeParticle(
+                                context.getSource(),
+                                IntegerArgumentType.getInteger(context, "id"),
+                                context.getSource().getServer().getPlayerList().getPlayers()
+                        )).then(Commands.argument("viewers", EntityArgument.players()).executes(context -> removeParticle(
+                                        context.getSource(),
+                                        IntegerArgumentType.getInteger(context, "id"),
+                                        EntityArgument.getPlayers(context, "viewers")
+                                )
+                        ))
+                ))
         );
     }
 
-    private static int sendParticles(CommandSourceStack source, ResourceLocation id, Vec3 pos, Collection<ServerPlayer> viewers) throws CommandSyntaxException {
+    private static int removeParticle(CommandSourceStack source, int id, Collection<ServerPlayer> viewers) throws CommandSyntaxException {
         int i = 0;
         for (ServerPlayer serverplayer : viewers) {
-            PacketDistributor.sendToPlayer(serverplayer, new EmitterCreationPacketC2S(id, new Vector3f((float) pos.x, (float) pos.y, (float) pos.z), ParticleEffect.Type.EMITTER, MolangExp.EMPTY));
+            EmitterRemovalPacket.sendToClient(serverplayer, id);
             i++;
         }
         if (i == 0) {
             throw ERROR_FAILED.create();
         } else {
-            source.sendSuccess(() -> Component.translatable("commands.particle.success", id.toString()), true);
+            source.sendSuccess(() -> Component.translatable("commands.particlestorm.remove", id), true);
+            return i;
+        }
+    }
+
+    private static int sendParticle(CommandSourceStack source, ResourceLocation particle, Vec3 pos, Collection<ServerPlayer> viewers) throws CommandSyntaxException {
+        int i = 0;
+        for (ServerPlayer serverplayer : viewers) {
+            PacketDistributor.sendToPlayer(serverplayer, new EmitterCreationPacketC2S(particle, new Vector3f((float) pos.x, (float) pos.y, (float) pos.z), ParticleEffect.Type.EMITTER, MolangExp.EMPTY));
+            i++;
+        }
+        if (i == 0) {
+            throw ERROR_FAILED.create();
+        } else {
+            source.sendSuccess(() -> Component.translatable("commands.particle.success", particle.toString()), true);
             return i;
         }
     }

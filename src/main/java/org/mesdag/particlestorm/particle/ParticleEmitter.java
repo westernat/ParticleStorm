@@ -75,6 +75,12 @@ public class ParticleEmitter implements MolangInstance {
         this(level, pos, particleId, ParticleEffect.Type.EMITTER, MolangExp.EMPTY);
     }
 
+    public ParticleEmitter(Level level, CompoundTag tag) {
+        this.level = level;
+        deserialize(tag);
+        this.invTickRate = 1.0F / level.tickRateManager().tickrate();
+    }
+
     public void tick() {
         if (haveHadSync) {
             this.invTickRate = 1.0F / level.tickRateManager().tickrate();
@@ -133,18 +139,34 @@ public class ParticleEmitter implements MolangInstance {
 
     public void deserialize(CompoundTag compound) {
         this.particleId = ResourceLocation.parse(compound.getString("particleId"));
+        this.effectType = ParticleEffect.Type.getById(compound.getInt("effectType"));
+        this.expression = new MolangExp(compound.getString("expression"));
         this.emitterRandom1 = compound.getDouble("emitterRandom1");
         this.emitterRandom2 = compound.getDouble("emitterRandom2");
         this.emitterRandom3 = compound.getDouble("emitterRandom3");
         this.emitterRandom4 = compound.getDouble("emitterRandom4");
+        this.pos = new Vec3(compound.getDouble("posX"), compound.getDouble("posY"), compound.getDouble("posZ"));
+        this.rot.set(compound.getFloat("rotX"), compound.getFloat("rotY"), compound.getFloat("rotZ"));
+        this.deltaMovement = new Vec3(compound.getDouble("movX"), compound.getDouble("movY"), compound.getDouble("movZ"));
     }
 
     public void serialize(CompoundTag compound) {
         compound.putString("particleId", particleId.toString());
+        compound.putInt("effectType", effectType.getId());
+        compound.putString("expression", expression.getExpStr());
         compound.putDouble("emitterRandom1", emitterRandom1);
         compound.putDouble("emitterRandom2", emitterRandom2);
         compound.putDouble("emitterRandom3", emitterRandom3);
         compound.putDouble("emitterRandom4", emitterRandom4);
+        compound.putDouble("posX", pos.x);
+        compound.putDouble("posY", pos.y);
+        compound.putDouble("posZ", pos.z);
+        compound.putFloat("rotX", rot.x);
+        compound.putFloat("rotY", rot.y);
+        compound.putFloat("rotZ", rot.z);
+        compound.putDouble("movX", deltaMovement.x);
+        compound.putDouble("movY", deltaMovement.y);
+        compound.putDouble("movZ", deltaMovement.z);
     }
 
     public double getX() {

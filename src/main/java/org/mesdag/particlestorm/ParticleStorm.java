@@ -5,21 +5,26 @@ import com.mojang.serialization.Codec;
 import com.mojang.serialization.MapCodec;
 import net.minecraft.core.particles.ParticleType;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
+import net.neoforged.neoforge.event.entity.player.PlayerEvent;
+import net.neoforged.neoforge.network.PacketDistributor;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import org.jetbrains.annotations.NotNull;
 import org.mesdag.particlestorm.network.EmitterCreationPacketC2S;
-import org.mesdag.particlestorm.network.EmitterRemovalPacketC2S;
+import org.mesdag.particlestorm.network.EmitterRemovalPacket;
+import org.mesdag.particlestorm.network.EmitterSynchronizePacket;
 import org.mesdag.particlestorm.particle.MolangParticleCommand;
 import org.mesdag.particlestorm.particle.MolangParticleOption;
 import org.slf4j.Logger;
@@ -27,6 +32,8 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Collections;
 import java.util.List;
+
+import static org.mesdag.particlestorm.network.EmitterSynchronizePacket.KEY;
 
 @Mod(ParticleStorm.MODID)
 public final class ParticleStorm {
@@ -54,24 +61,42 @@ public final class ParticleStorm {
         PARTICLE.register(bus);
         bus.addListener(ParticleStorm::registerPayloadHandlers);
         NeoForge.EVENT_BUS.addListener(ParticleStorm::registerCommands);
+        NeoForge.EVENT_BUS.addListener(ParticleStorm::playerLoggedIn);
     }
 
     private static void registerPayloadHandlers(RegisterPayloadHandlersEvent event) {
         PayloadRegistrar registrar = event.registrar("1");
         registrar.playToClient(
-                EmitterRemovalPacketC2S.TYPE,
-                EmitterRemovalPacketC2S.STREAM_CODEC,
-                EmitterRemovalPacketC2S::handle
-        );
-        registrar.playToClient(
                 EmitterCreationPacketC2S.TYPE,
                 EmitterCreationPacketC2S.STREAM_CODEC,
                 EmitterCreationPacketC2S::handle
+        );
+        registrar.playBidirectional(
+                EmitterRemovalPacket.TYPE,
+                EmitterRemovalPacket.STREAM_CODEC,
+                EmitterRemovalPacket::handle
+        );
+        registrar.playBidirectional(
+                EmitterSynchronizePacket.TYPE,
+                EmitterSynchronizePacket.STREAM_CODEC,
+                EmitterSynchronizePacket::handle
         );
     }
 
     private static void registerCommands(RegisterCommandsEvent event) {
         MolangParticleCommand.register(event.getDispatcher());
+    }
+
+    private static void playerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {
+        if (event.getEntity() instanceof ServerPlayer player) {
+            CompoundTag data = player.getPersistentData();
+            if (data.contains(KEY)) {
+                CompoundTag emitters = data.getCompound(KEY);
+                for (String id : emitters.getAllKeys()) {
+                    PacketDistributor.sendToPlayer(player, new EmitterSynchronizePacket(Integer.parseInt(id), emitters.getCompound(id)));
+                }
+            }
+        }
     }
 
     public static ResourceLocation asResource(String path) {

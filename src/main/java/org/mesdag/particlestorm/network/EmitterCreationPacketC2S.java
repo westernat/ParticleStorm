@@ -37,7 +37,7 @@ public record EmitterCreationPacketC2S(ResourceLocation id, Vector3f pos, Partic
             Player player = context.player();
             if (player.isLocalPlayer()) {
                 ParticleEmitter emitter = new ParticleEmitter(player.level(), pos, id, effectType, expression);
-                GameClient.LOADER.addEmitter(emitter);
+                GameClient.LOADER.addEmitter(emitter, true);
                 player.sendSystemMessage(Component.literal("id: " + emitter.id)); // todo
             }
         }).exceptionally(e -> {
