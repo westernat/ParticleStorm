@@ -41,7 +41,9 @@ public class ParticleDetail {
             case CUSTOM -> ParticleRenderType.CUSTOM;
             case NO_RENDER -> ParticleRenderType.NO_RENDER;
         };
-        ParticleAppearanceBillboard particleAppearanceBillboard = (ParticleAppearanceBillboard) effect.components.get(ParticleAppearanceBillboard.ID);
+        IComponent component1 = effect.components.get(ParticleAppearanceBillboard.ID);
+        if (component1 == null) throw new NullPointerException("No particle_appearance_billboard here");
+        ParticleAppearanceBillboard particleAppearanceBillboard = (ParticleAppearanceBillboard) component1;
         this.facingCameraMode = FaceCameraMode.valueOf(particleAppearanceBillboard.faceCameraMode().name());
         this.minSpeedThresholdSqr = particleAppearanceBillboard.direction().minSpeedThreshold() * particleAppearanceBillboard.direction().minSpeedThreshold();
         this.environmentLighting = effect.components.containsValue(ParticleAppearanceLighting.INSTANCE);

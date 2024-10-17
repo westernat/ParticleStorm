@@ -2,6 +2,7 @@ package org.mesdag.particlestorm.data.component;
 
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
+import org.joml.Vector3f;
 import org.mesdag.particlestorm.data.molang.FloatMolangExp;
 import org.mesdag.particlestorm.data.molang.FloatMolangExp3;
 import org.mesdag.particlestorm.data.molang.MolangExp;
@@ -20,7 +21,7 @@ import java.util.List;
  *                                Evaluated every frame
  * @param linearDragCoefficient   Equation is acceleration = -linear_drag_coefficient*velocity<p>
  *                                Where velocity is the current direction times speed<p>
- *                                Think of this as air-drag. The higher the value, the more drag<p>
+ *                                Think of this as air-drag. The higher the exp, the more drag<p>
  *                                Evaluated every frame
  * @param rotationAcceleration    Acceleration applies to the rotation speed of the particle<p>
  *                                Think of a disc spinning up or a smoke puff that starts rotating but slows down over time<p>
@@ -55,13 +56,19 @@ public record ParticleMotionDynamic(FloatMolangExp3 linerAcceleration, FloatMola
 
     @Override
     public void update(MolangParticleInstance instance) {
+        apply(instance);
+    }
+
+    @Override
+    public void apply(MolangParticleInstance instance) {
         float invTickRate = instance.emitter.invTickRate;
         float i = -linearDragCoefficient.calculate(instance);
         float[] linearAcceleration = linerAcceleration.calculate(instance);
         float x = (linearAcceleration[0] + (float) (instance.getXd() * i)) * invTickRate;
         float y = (linearAcceleration[1] + (float) (instance.getYd() * i)) * invTickRate;
         float z = (linearAcceleration[2] + (float) (instance.getZd() * i)) * invTickRate;
-        instance.setParticleSpeed(x, y, z);
+        Vector3f initialSpeed = instance.initialSpeed;
+        instance.setParticleSpeed(x * initialSpeed.x, y * initialSpeed.y, z * initialSpeed.z);
 
         float c = -rotationDragCoefficient.calculate(instance);
         float u = rotationAcceleration.calculate(instance);

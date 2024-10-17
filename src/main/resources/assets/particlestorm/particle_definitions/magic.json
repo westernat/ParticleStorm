@@ -10,8 +10,7 @@
         },
         "components": {
             "minecraft:emitter_local_space": {
-                "position": true,
-                "rotation": true
+                "position": true
             },
             "minecraft:emitter_rate_steady": {
                 "spawn_rate": 500,

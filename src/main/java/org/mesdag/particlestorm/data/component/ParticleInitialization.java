@@ -37,6 +37,11 @@ public record ParticleInitialization(FloatMolangExp perRenderExpression) impleme
     }
 
     @Override
+    public int order() {
+        return 400;
+    }
+
+    @Override
     public String toString() {
         return "ParticleInitialization{" +
                 "perRenderExpression=" + perRenderExpression +

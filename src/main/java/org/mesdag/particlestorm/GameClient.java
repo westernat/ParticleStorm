@@ -1,28 +1,20 @@
 package org.mesdag.particlestorm;
 
 import net.minecraft.client.Minecraft;
-import net.minecraft.world.entity.EntityType;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
-import net.neoforged.neoforge.client.event.EntityRenderersEvent;
 import net.neoforged.neoforge.client.event.RegisterClientReloadListenersEvent;
 import net.neoforged.neoforge.common.NeoForge;
 import org.mesdag.particlestorm.data.component.*;
 import org.mesdag.particlestorm.data.event.*;
-import org.mesdag.particlestorm.integration.geckolib.ReplacedCreeperRenderer;
 import org.mesdag.particlestorm.particle.MolangParticleLoader;
 
 @EventBusSubscriber(modid = ParticleStorm.MODID, bus = EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
 public final class GameClient {
     public static final MolangParticleLoader LOADER = new MolangParticleLoader();
-
-    @SubscribeEvent
-    public static void registerRenderers(EntityRenderersEvent.RegisterRenderers event) {
-        event.registerEntityRenderer(EntityType.CREEPER, ReplacedCreeperRenderer::new);
-    }
 
     @SubscribeEvent
     public static void clientSetup(FMLClientSetupEvent event) {

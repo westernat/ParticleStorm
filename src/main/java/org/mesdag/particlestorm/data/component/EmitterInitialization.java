@@ -40,6 +40,11 @@ public record EmitterInitialization(MolangExp creationExpression, MolangExp perU
     }
 
     @Override
+    public int order() {
+        return 500;
+    }
+
+    @Override
     public String toString() {
         return "EmitterInitialization{" +
                 "creationExpression=" + creationExpression +

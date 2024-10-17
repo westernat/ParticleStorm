@@ -22,4 +22,8 @@ public interface IComponent {
     Codec<? extends IComponent> codec();
 
     List<MolangExp> getAllMolangExp();
+
+    default int order() {
+        return 1000;
+    }
 }

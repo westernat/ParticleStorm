@@ -7,6 +7,7 @@ import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.ints.IntArraySet;
 import it.unimi.dsi.fastutil.objects.ObjectIterator;
 import net.minecraft.Util;
+import net.minecraft.client.Minecraft;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.FileToIdConverter;
 import net.minecraft.resources.ResourceLocation;
@@ -20,7 +21,8 @@ import net.neoforged.api.distmarker.OnlyIn;
 import org.jetbrains.annotations.NotNull;
 import org.mesdag.particlestorm.ParticleStorm;
 import org.mesdag.particlestorm.data.DefinedParticleEffect;
-import org.mesdag.particlestorm.data.component.IEmitterComponent;
+import org.mesdag.particlestorm.data.component.IComponent;
+import org.mesdag.particlestorm.data.component.IParticleComponent;
 import org.mesdag.particlestorm.network.EmitterRemovalPacket;
 import org.mesdag.particlestorm.network.EmitterSynchronizePacket;
 
@@ -39,9 +41,19 @@ public class MolangParticleLoader implements PreparableReloadListener {
     private final Int2ObjectOpenHashMap<ParticleEmitter> emitters = new Int2ObjectOpenHashMap<>();
     private final Queue<Integer> emittersAboutToRemove = new ArrayDeque<>();
     private final IntAllocator allocator = new IntAllocator();
+    private boolean initialized = false;
 
     public void tick() {
-        if (emittersAboutToRemove.isEmpty()) {
+        if (!initialized) {
+            for (ParticleDetail detail : ID_2_PARTICLE.values()) {
+                for (IComponent component : detail.effect.components.values()) {
+                    if (component instanceof IParticleComponent particleComponent) {
+                        particleComponent.initialize(Minecraft.getInstance().level);
+                    }
+                }
+            }
+            this.initialized = true;
+        } else if (emittersAboutToRemove.isEmpty()) {
             ObjectIterator<Int2ObjectMap.Entry<ParticleEmitter>> iterator = emitters.int2ObjectEntrySet().iterator();
             while (iterator.hasNext()) {
                 ParticleEmitter emitter = iterator.next().getValue();
@@ -120,9 +132,7 @@ public class MolangParticleLoader implements PreparableReloadListener {
                 ID_2_PARTICLE.put(id, new ParticleDetail(effect));
                 ID_2_EMITTER.put(id, new EmitterDetail(
                         new MolangParticleOption(effect.description.identifier()),
-                        effect.components.values().stream()
-                                .filter(c -> c instanceof IEmitterComponent)
-                                .map(c -> (IEmitterComponent) c).toList(),
+                        effect.orderedEmitterComponents,
                         effect.events
                 ));
             });

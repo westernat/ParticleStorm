@@ -23,6 +23,7 @@ import org.mesdag.particlestorm.mixin.ParticleEngineAccessor;
 import org.mesdag.particlestorm.particle.MolangParticleInstance;
 import org.mesdag.particlestorm.particle.ParticleEmitter;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -137,16 +138,17 @@ public abstract class EmitterShape implements IEmitterComponent {
                 String name = assignment.variable().name();
                 instance.getVariableTable().setValue(name, new Variable(name, assignment.value()));
             });
-            instance.components = instance.detail.effect.components.values().stream().filter(c -> {
-                if (c instanceof IParticleComponent p) {
-                    if (c instanceof ParticleMotionDynamic) {
-                        instance.motionDynamic = true;
-                    }
-                    p.apply(instance);
-                    return p.requireUpdate();
+            ArrayList<IParticleComponent> particleComponents = new ArrayList<>();
+            for (IParticleComponent component : instance.detail.effect.orderedParticleComponents) {
+                if (component instanceof ParticleMotionDynamic) {
+                    instance.motionDynamic = true;
                 }
-                return false;
-            }).map(c -> (IParticleComponent) c).toList();
+                component.apply(instance);
+                if (component.requireUpdate()) {
+                    particleComponents.add(component);
+                }
+            }
+            instance.components = particleComponents;
             if (!instance.motionDynamic) instance.setParticleSpeed(0.0, 0.0, 0.0);
         }
         Minecraft.getInstance().particleEngine.add(particle);
@@ -345,9 +347,9 @@ public abstract class EmitterShape implements IEmitterComponent {
             position.set(offset.calculate(instance));
             float[] n = halfDimensions.calculate(instance);
             RandomSource random = instance.getLevel().random;
-            position.x = randomab(random, -n[0], n[0]);
-            position.y = randomab(random, -n[1], n[1]);
-            position.z = randomab(random, -n[2], n[2]);
+            position.x += randomab(random, -n[0], n[0]);
+            position.y += randomab(random, -n[1], n[1]);
+            position.z += randomab(random, -n[2], n[2]);
             if (surfaceOnly) {
                 int r = random.nextInt(0, 3);
                 boolean i = random.nextBoolean();

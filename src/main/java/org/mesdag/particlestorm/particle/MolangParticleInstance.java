@@ -37,6 +37,7 @@ public class MolangParticleInstance extends TextureSheetParticle implements Mola
     protected final float originX;
     protected final float originY;
 
+    public Vector3f initialSpeed = new Vector3f();
     public float xRot = 0.0F;
     public float yRot = 0.0F;
     protected float xRotO = 0.0F;
