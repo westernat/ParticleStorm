@@ -4,8 +4,8 @@ import com.mojang.serialization.Codec;
 import io.netty.buffer.ByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
-import org.mesdag.particlestorm.data.molang.compiler.MathParser;
 import org.mesdag.particlestorm.data.molang.compiler.MathValue;
+import org.mesdag.particlestorm.data.molang.compiler.MolangParser;
 
 public class MolangExp {
     public static final MolangExp EMPTY = new MolangExp("");
@@ -25,7 +25,7 @@ public class MolangExp {
         return expStr;
     }
 
-    public void compile(MathParser parser) {
+    public void compile(MolangParser parser) {
         if (variable == null && !expStr.isEmpty() && !expStr.isBlank()) {
             this.variable = parser.compileMolang(expStr);
         }

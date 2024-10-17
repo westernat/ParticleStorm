@@ -7,6 +7,7 @@ import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 import org.jetbrains.annotations.NotNull;
 import org.joml.Vector3f;
@@ -36,7 +37,7 @@ public record EmitterCreationPacketC2S(ResourceLocation id, Vector3f pos, Partic
         context.enqueueWork(() -> {
             Player player = context.player();
             if (player.isLocalPlayer()) {
-                ParticleEmitter emitter = new ParticleEmitter(player.level(), pos, id, effectType, expression);
+                ParticleEmitter emitter = new ParticleEmitter(player.level(), new Vec3(pos.x, pos.y, pos.z), id, effectType, expression);
                 GameClient.LOADER.addEmitter(emitter, true);
                 player.sendSystemMessage(Component.literal("id: " + emitter.id)); // todo
             }

@@ -4,8 +4,8 @@ import org.jetbrains.annotations.NotNull;
 import org.mesdag.particlestorm.data.component.*;
 import org.mesdag.particlestorm.data.event.IEventNode;
 import org.mesdag.particlestorm.data.molang.VariableTable;
-import org.mesdag.particlestorm.data.molang.compiler.MathParser;
 import org.mesdag.particlestorm.data.molang.compiler.MathValue;
+import org.mesdag.particlestorm.data.molang.compiler.MolangParser;
 import org.mesdag.particlestorm.data.molang.compiler.value.CompoundValue;
 import org.mesdag.particlestorm.data.molang.compiler.value.Variable;
 import org.mesdag.particlestorm.data.molang.compiler.value.VariableAssignment;
@@ -32,7 +32,7 @@ public class EmitterDetail {
         this.components = components;
         this.events = events;
         VariableTable table = new VariableTable(addDefaultVariables(), null);
-        MathParser parser = new MathParser(table);
+        MolangParser parser = new MolangParser(table);
         ArrayList<VariableAssignment> toInit = new ArrayList<>();
         boolean lifeTime = false;
         boolean rate = false;

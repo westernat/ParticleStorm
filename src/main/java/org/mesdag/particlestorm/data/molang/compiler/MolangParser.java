@@ -31,7 +31,7 @@ import java.util.regex.Pattern;
 
 import static org.mesdag.particlestorm.data.molang.compiler.MolangQueries.applyPrefixAliases;
 
-public class MathParser {
+public class MolangParser {
     private static final Pattern EXPRESSION_FORMAT = Pattern.compile("^[\\w\\s_+-/*%^&|<>=!?:.,()]+$");
     private static final Pattern WHITESPACE = Pattern.compile("\\s");
     private static final Pattern NUMERIC = Pattern.compile("^-?\\d+(\\.\\d+)?$");
@@ -70,7 +70,7 @@ public class MathParser {
     });
     private final VariableTable table;
 
-    public MathParser(VariableTable table) {
+    public MolangParser(VariableTable table) {
         this.table = table;
     }
 
@@ -311,7 +311,7 @@ public class MathParser {
         for (int i = 1; i < symbolCount; i++) {
             Operator operator = symbols.get(i).left()
                     .filter(Operator::isOperator)
-                    .map(MathParser::getOperatorFor).orElse(null);
+                    .map(MolangParser::getOperatorFor).orElse(null);
 
             if (operator == null)
                 continue;

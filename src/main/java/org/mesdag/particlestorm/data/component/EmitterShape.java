@@ -33,6 +33,40 @@ public abstract class EmitterShape implements IEmitterComponent {
         this.surfaceOnly = surfaceOnly;
     }
 
+    public static Quaternionf setFromUnitVectors(Vector3f e, Vector3f t, Quaternionf dest) {
+        float n = e.dot(t) + 1.0F;
+        if (n < Mth.EPSILON) {
+            if (Math.abs(e.x) > Math.abs(e.z)) {
+                dest.x = -e.y;
+                dest.y = e.x;
+                dest.z = 0.0F;
+            } else {
+                dest.x = 0.0F;
+                dest.y = -e.z;
+                dest.z = e.y;
+            }
+            dest.w = 0.0F;
+        } else {
+            dest.x = e.y * t.z - e.z * t.y;
+            dest.y = e.z * t.x - e.x * t.z;
+            dest.z = e.x * t.y - e.y * t.x;
+            dest.w = n;
+        }
+        return dest.normalize();
+    }
+
+    public static void applyQuaternion(Quaternionf e, Vector3f dest) {
+        float t = dest.x, n = dest.y, r = dest.z;
+        float i = e.x, a = e.y, o = e.z, s = e.w;
+        float l = s * t + a * r - o * n;
+        float c = s * n + o * t - i * r;
+        float u = s * r + i * n - a * t;
+        float h = -i * t - a * n - o * r;
+        dest.x = l * s + h * -i + c * -o - u * -a;
+        dest.y = c * s + h * -a + u * -i - l * -o;
+        dest.z = u * s + h * -o + l * -a - c * -i;
+    }
+
     /**
      * Emit only from the edge of the shape
      */
@@ -71,22 +105,32 @@ public abstract class EmitterShape implements IEmitterComponent {
             Vector3f position = new Vector3f();
             Vector3f speed = new Vector3f();
             initializeParticle(instance, position, speed);
-            if (emitter.getDetail().localPosition) {
-                Vec3 emitterPos = emitter.getPosition();
-                position.add((float) emitterPos.x, (float) emitterPos.y, (float) emitterPos.z);
+            if (emitter.parentMode == ParticleEmitter.ParentMode.LOCATOR) {
+                position.x *= -1;
+                position.y *= -1;
+                speed.x *= -1;
+                speed.y *= -1;
+            }
+            if (emitter.parentMode != ParticleEmitter.ParentMode.WORLD && emitter.getDetail().localPosition && !emitter.getDetail().localRotation) {
+                speed.x *= -1;
+                speed.z *= -1;
             }
             if (emitter.getDetail().localRotation) {
                 applyEuler(emitter.getXRot(), emitter.getYRot(), 0.0F, position);
+            }
+            if (emitter.getDetail().localPosition) {
+                Vec3 emitterPos = emitter.getPosition();
+                position.add((float) emitterPos.x, (float) emitterPos.y, (float) emitterPos.z);
             }
             if (emitter.getDetail().localVelocity) {
                 Vec3 emitterVec = emitter.deltaMovement;
                 speed.add((float) emitterVec.x, (float) emitterVec.y, (float) emitterVec.z);
             }
             speed.mul(emitter.invTickRate);
+
             instance.setParticleSpeed(speed.x, speed.y, speed.z);
             instance.setPos(position.x, position.y, position.z);
             instance.setPosO(position.x, position.y, position.z);
-
             instance.particleGroup = emitter.particleGroup;
             instance.detail.assignments.forEach(assignment -> {
                 // 重定向，防止污染变量表
@@ -196,8 +240,8 @@ public abstract class EmitterShape implements IEmitterComponent {
             position.z += sp * Mth.sin(op);
             float[] lp = planeNormal.plane.calculate(instance);
             if (!Arrays.equals(lp, PlaneNormal.FN)) {
-                Quaternionf quaternion = planeNormal.setFromUnitVectors(PlaneNormal.VY, new Vector3f(lp), new Quaternionf());
-                planeNormal.applyQuaternion(quaternion, position);
+                Quaternionf quaternion = setFromUnitVectors(PlaneNormal.VY, new Vector3f(lp), new Quaternionf());
+                applyQuaternion(quaternion, position);
             }
             direction.apply(instance, this, position, speed);
         }
@@ -236,7 +280,6 @@ public abstract class EmitterShape implements IEmitterComponent {
                     }, list -> new PlaneNormal("custom", list)),
                     plane -> Either.right(plane.plane)
             );
-            public static final double EPSILON = 2.220446049250313e-16;
             public final String name;
             public final FloatMolangExp3 plane;
 
@@ -247,40 +290,6 @@ public abstract class EmitterShape implements IEmitterComponent {
 
             public boolean isCustom() {
                 return "custom".equals(name);
-            }
-
-            private Quaternionf setFromUnitVectors(Vector3f e, Vector3f t, Quaternionf dest) {
-                float n = e.dot(t) + 1.0F;
-                if (n < EPSILON) {
-                    if (Math.abs(e.x) > Math.abs(e.z)) {
-                        dest.x = -e.y;
-                        dest.y = e.x;
-                        dest.z = 0.0F;
-                    } else {
-                        dest.x = 0.0F;
-                        dest.y = -e.z;
-                        dest.z = e.y;
-                    }
-                    dest.w = 0.0F;
-                } else {
-                    dest.x = e.y * t.z - e.z * t.y;
-                    dest.y = e.z * t.x - e.x * t.z;
-                    dest.z = e.x * t.y - e.y * t.x;
-                    dest.w = n;
-                }
-                return dest.normalize();
-            }
-
-            private void applyQuaternion(Quaternionf e, Vector3f dest) {
-                float t = dest.x, n = dest.y, r = dest.z;
-                float i = e.x, a = e.y, o = e.z, s = e.w;
-                float l = s * t + a * r - o * n;
-                float c = s * n + o * t - i * r;
-                float u = s * r + i * n - a * t;
-                float h = -i * t - a * n - o * r;
-                dest.x = l * s + h * -i + c * -o - u * -a;
-                dest.y = c * s + h * -a + u * -i - l * -o;
-                dest.z = u * s + h * -o + l * -a - c * -i;
             }
 
             @Override

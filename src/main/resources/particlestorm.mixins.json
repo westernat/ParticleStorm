@@ -5,6 +5,7 @@
     "compatibilityLevel": "JAVA_8",
     "refmap": "particlestorm.refmap.json",
     "mixins": [
+        "EntityMixin",
         "integration.geckolib.AnimationControllerMixin",
         "integration.geckolib.AnimationProcessorMixin",
         "integration.geckolib.BakedModelFactory$BuiltinMixin",
@@ -15,7 +16,8 @@
         "MinecraftMixin",
         "ParticleEngineAccessor",
         "TextureAtlasMixin",
-        "TextureAtlasSpriteMixin"
+        "TextureAtlasSpriteMixin",
+        "integration.geckolib.GeoReplacedEntityRendererMixin"
     ],
     "injectors": {
         "defaultRequire": 1

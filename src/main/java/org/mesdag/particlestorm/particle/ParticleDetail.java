@@ -8,8 +8,8 @@ import org.mesdag.particlestorm.data.DefinedParticleEffect;
 import org.mesdag.particlestorm.data.component.*;
 import org.mesdag.particlestorm.data.molang.MolangInstance;
 import org.mesdag.particlestorm.data.molang.VariableTable;
-import org.mesdag.particlestorm.data.molang.compiler.MathParser;
 import org.mesdag.particlestorm.data.molang.compiler.MathValue;
+import org.mesdag.particlestorm.data.molang.compiler.MolangParser;
 import org.mesdag.particlestorm.data.molang.compiler.value.CompoundValue;
 import org.mesdag.particlestorm.data.molang.compiler.value.Variable;
 import org.mesdag.particlestorm.data.molang.compiler.value.VariableAssignment;
@@ -48,7 +48,7 @@ public class ParticleDetail {
         this.lifeTimeEvents = (ParticleLifeTimeEvents) effect.components.get(ParticleLifeTimeEvents.ID);
 
         VariableTable table = new VariableTable(addDefaultVariables(), null);
-        MathParser parser = new MathParser(table);
+        MolangParser parser = new MolangParser(table);
         effect.curves.forEach((key, value) -> {
             value.input.compile(parser);
             value.horizontalRange.compile(parser);

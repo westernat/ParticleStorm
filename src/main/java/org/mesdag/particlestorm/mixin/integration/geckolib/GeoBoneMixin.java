@@ -9,7 +9,7 @@ import software.bernie.geckolib.loading.json.raw.LocatorValue;
 import java.util.Map;
 
 @Pseudo
-@Mixin(targets = "software.bernie.geckolib.cache.object.GeoBone.GeoBone", remap = false)
+@Mixin(targets = "software.bernie.geckolib.cache.object.GeoBone", remap = false)
 public abstract class GeoBoneMixin implements IGeoBone {
     @Unique
     private Map<String, LocatorValue> particlestorm$locators;

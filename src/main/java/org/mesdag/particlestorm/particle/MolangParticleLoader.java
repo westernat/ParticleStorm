@@ -2,7 +2,10 @@ package org.mesdag.particlestorm.particle;
 
 import com.google.gson.JsonParseException;
 import com.mojang.serialization.JsonOps;
-import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
+import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
+import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
+import it.unimi.dsi.fastutil.ints.IntArraySet;
+import it.unimi.dsi.fastutil.objects.ObjectIterator;
 import net.minecraft.Util;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.FileToIdConverter;
@@ -33,15 +36,15 @@ public class MolangParticleLoader implements PreparableReloadListener {
     public final Hashtable<ResourceLocation, DefinedParticleEffect> ID_2_EFFECT = new Hashtable<>();
     public final Hashtable<ResourceLocation, ParticleDetail> ID_2_PARTICLE = new Hashtable<>();
     public final Hashtable<ResourceLocation, EmitterDetail> ID_2_EMITTER = new Hashtable<>();
-    private final ArrayList<ParticleEmitter> emitters = new ArrayList<>();
+    private final Int2ObjectOpenHashMap<ParticleEmitter> emitters = new Int2ObjectOpenHashMap<>();
     private final Queue<Integer> emittersAboutToRemove = new ArrayDeque<>();
     private final IntAllocator allocator = new IntAllocator();
 
     public void tick() {
         if (emittersAboutToRemove.isEmpty()) {
-            Iterator<ParticleEmitter> iterator = emitters.iterator();
+            ObjectIterator<Int2ObjectMap.Entry<ParticleEmitter>> iterator = emitters.int2ObjectEntrySet().iterator();
             while (iterator.hasNext()) {
-                ParticleEmitter emitter = iterator.next();
+                ParticleEmitter emitter = iterator.next().getValue();
                 if (emitter.isRemoved()) {
                     allocator.remove(emitter.id);
                     iterator.remove();
@@ -52,24 +55,28 @@ public class MolangParticleLoader implements PreparableReloadListener {
         } else {
             while (!emittersAboutToRemove.isEmpty()) {
                 int removed = emittersAboutToRemove.remove();
-                emitters.removeIf(emitter -> emitter.id == removed);
+                emitters.remove(removed);
                 allocator.remove(removed);
             }
         }
     }
 
+    public ParticleEmitter getEmitter(int id) {
+        return emitters.get(id);
+    }
+
     public void loadEmitter(Player player, int id, CompoundTag tag) {
         ParticleEmitter emitter = new ParticleEmitter(player.level(), tag);
-        emitters.add(emitter);
         emitter.id = id;
+        emitters.put(id, emitter);
         if (allocator.forceAdd(id)) {
             ParticleStorm.LOGGER.warn("There was an emitter exist before, now replaced");
         }
     }
 
     public void addEmitter(ParticleEmitter emitter, boolean sync) {
-        emitters.add(emitter);
         emitter.id = allocator.insert();
+        emitters.put(emitter.id, emitter);
         if (sync) EmitterSynchronizePacket.syncToServer(emitter);
     }
 
@@ -78,14 +85,14 @@ public class MolangParticleLoader implements PreparableReloadListener {
         if (sync) EmitterRemovalPacket.sendToServer(id);
     }
 
-    public void removeEmitter(ParticleEmitter emitter, boolean sync) {
-        removeEmitter(emitter.id, sync);
-    }
-
     public void removeAll() {
         emitters.clear();
         emittersAboutToRemove.clear();
         allocator.clear();
+    }
+
+    public boolean contains(int id) {
+        return allocator.table.contains(id);
     }
 
     @Override
@@ -123,10 +130,10 @@ public class MolangParticleLoader implements PreparableReloadListener {
     }
 
     private static class IntAllocator {
-        private final IntOpenHashSet table;
+        private final IntArraySet table;
 
         public IntAllocator() {
-            this.table = new IntOpenHashSet();
+            this.table = new IntArraySet();
         }
 
         public int insert() {

@@ -3,9 +3,12 @@ package org.mesdag.particlestorm.particle;
 import net.minecraft.core.particles.ParticleGroup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
+import org.joml.Matrix4f;
 import org.joml.Vector3f;
 import org.mesdag.particlestorm.GameClient;
 import org.mesdag.particlestorm.data.component.EmitterRate;
@@ -14,7 +17,7 @@ import org.mesdag.particlestorm.data.event.ParticleEffect;
 import org.mesdag.particlestorm.data.molang.MolangExp;
 import org.mesdag.particlestorm.data.molang.MolangInstance;
 import org.mesdag.particlestorm.data.molang.VariableTable;
-import org.mesdag.particlestorm.data.molang.compiler.MathParser;
+import org.mesdag.particlestorm.data.molang.compiler.MolangParser;
 
 import java.util.List;
 
@@ -22,45 +25,50 @@ public class ParticleEmitter implements MolangInstance {
     public ResourceLocation particleId;
     public ParticleEffect.Type effectType;
     public MolangExp expression;
-    protected boolean haveHadSync = false;
 
-    protected EmitterDetail detail;
-    protected VariableTable variableTable;
-    protected List<IEmitterComponent> components;
+    protected transient boolean haveHadSync = false;
+    public transient ParentMode parentMode = ParentMode.WORLD;
+    public transient Vec3 offsetPos;
+    public transient Vector3f offsetRot;
+    public transient Matrix4f modelSpace;
+    protected transient EmitterDetail detail;
+    protected transient VariableTable variableTable;
+    public transient VariableTable subTable;
+    protected transient List<IEmitterComponent> components;
 
     protected double emitterRandom1;
     protected double emitterRandom2;
     protected double emitterRandom3;
     protected double emitterRandom4;
-    public float invTickRate;
     public int id;
 
-    public int age = 0;
-    public int lifetime = 0;
-    public boolean active = false;
-    public int loopingTime = 0;
-    public int activeTime = 0;
-    public int fullLoopTime = 0;
-    public ParticleGroup particleGroup;
-    public int spawnDuration = 1;
-    public int spawnRate = 0;
-    public boolean spawned = false;
-    public Entity attached;
-    public int lastTimeline = 0;
-    public float moveDist = 0.0F;
-    public float moveDistO = 0.0F;
-    public int lastTravelDist = 0;
-    public float[] cachedLooping;
+    public transient float invTickRate;
+    public transient int age = 0;
+    public transient int lifetime = 0;
+    public transient boolean active = false;
+    public transient int loopingTime = 0;
+    public transient int activeTime = 0;
+    public transient int fullLoopTime = 0;
+    public transient ParticleGroup particleGroup;
+    public transient int spawnDuration = 1;
+    public transient int spawnRate = 0;
+    public transient boolean spawned = false;
+    public transient Entity attached;
+    public transient int lastTimeline = 0;
+    public transient float moveDist = 0.0F;
+    public transient float moveDistO = 0.0F;
+    public transient int lastTravelDist = 0;
+    public transient float[] cachedLooping;
 
-    public final Level level;
+    public transient final Level level;
     public Vec3 pos;
     public Vector3f rot = new Vector3f();
     public Vec3 deltaMovement = Vec3.ZERO;
-    private boolean removed = false;
+    private transient boolean removed = false;
 
-    public ParticleEmitter(Level level, Vector3f pos, ResourceLocation particleId, ParticleEffect.Type type, MolangExp expression) {
+    public ParticleEmitter(Level level, Vec3 pos, ResourceLocation particleId, ParticleEffect.Type type, MolangExp expression) {
         this.level = level;
-        setPos(new Vec3(pos.x, pos.y, pos.z));
+        setPos(pos);
         this.particleId = particleId;
         this.effectType = type;
         this.expression = expression;
@@ -71,7 +79,7 @@ public class ParticleEmitter implements MolangInstance {
         this.invTickRate = 1.0F / level.tickRateManager().tickrate();
     }
 
-    public ParticleEmitter(Level level, Vector3f pos, ResourceLocation particleId) {
+    public ParticleEmitter(Level level, Vec3 pos, ResourceLocation particleId) {
         this(level, pos, particleId, ParticleEffect.Type.EMITTER, MolangExp.EMPTY);
     }
 
@@ -88,16 +96,35 @@ public class ParticleEmitter implements MolangInstance {
             for (IEmitterComponent component : components) {
                 component.update(this);
             }
+            this.age++;
+            move(deltaMovement);
             if (detail.emitterRateType == EmitterRate.Type.MANUAL) {
                 remove();
                 return;
             }
-            this.age++;
+            if (attached != null) {
+                if (attached.isRemoved()) {
+                    remove();
+                    return;
+                }
+                if (modelSpace != null) {
+                    modelSpace.getEulerAnglesXYZ(rot).add(
+                            0.0F,
+                            -getAttachedYRot() * Mth.DEG_TO_RAD,
+                            0.0F
+                    ).add(offsetRot);
+                }
+                Vector3f rotated = offsetPos.toVector3f().rotateZ(rot.z).rotateY(rot.y).rotateX(rot.x);
+                this.pos = new Vec3(attached.getX() + rotated.x, attached.getY() + rotated.y, attached.getZ() + rotated.z);
+            }
         } else if (particleId != null) {
             this.detail = GameClient.LOADER.ID_2_EMITTER.get(particleId);
             this.variableTable = new VariableTable(detail.variableTable);
+            if (subTable != null && variableTable.subTable == null) {
+                variableTable.subTable = subTable;
+            }
             if (expression != null && !expression.initialized()) {
-                expression.compile(new MathParser(variableTable));
+                expression.compile(new MolangParser(variableTable));
             }
             // todo effect type
             detail.assignments.forEach(assignment -> {
@@ -110,7 +137,10 @@ public class ParticleEmitter implements MolangInstance {
             }).toList();
             this.haveHadSync = true;
         }
-        move(deltaMovement);
+    }
+
+    private float getAttachedYRot() {
+        return attached instanceof LivingEntity living ? living.yBodyRot : attached.getYRot();
     }
 
     public void remove() {
@@ -124,7 +154,7 @@ public class ParticleEmitter implements MolangInstance {
         return removed;
     }
 
-    public void move(Vec3 delta) {
+    public void move(Vec3 delta) { // todo
         this.moveDist += (float) delta.length();
         pos.add((float) delta.x, (float) delta.y, (float) delta.z);
     }
@@ -252,5 +282,10 @@ public class ParticleEmitter implements MolangInstance {
     @Override
     public ParticleEmitter getEmitter() {
         return this;
+    }
+
+    public enum ParentMode {
+        LOCATOR,
+        WORLD
     }
 }
