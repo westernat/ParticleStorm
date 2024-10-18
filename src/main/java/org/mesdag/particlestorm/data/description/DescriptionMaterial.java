@@ -12,7 +12,12 @@ public enum DescriptionMaterial implements StringRepresentable {
     PARTICLE_SHEET_TRANSLUCENT,
     PARTICLE_SHEET_LIT,
     CUSTOM,
-    NO_RENDER;
+    NO_RENDER,
+
+    particles_alpha,
+    particles_blend,
+    particles_add,
+    particles_opaque;
 
     public static final Codec<DescriptionMaterial> CODEC = StringRepresentable.fromEnum(DescriptionMaterial::values);
 

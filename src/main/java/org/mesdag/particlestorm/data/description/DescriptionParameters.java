@@ -6,7 +6,7 @@ import net.minecraft.resources.ResourceLocation;
 
 public class DescriptionParameters {
     public static final Codec<DescriptionParameters> CODEC = RecordCodecBuilder.create(instance -> instance.group(
-            DescriptionMaterial.CODEC.fieldOf("material").orElse(DescriptionMaterial.PARTICLE_SHEET_OPAQUE).forGetter(DescriptionParameters::material),
+            DescriptionMaterial.CODEC.fieldOf("material").orElse(DescriptionMaterial.PARTICLE_SHEET_TRANSLUCENT).forGetter(DescriptionParameters::material),
             ResourceLocation.CODEC.fieldOf("texture").forGetter(DescriptionParameters::texture)
     ).apply(instance, DescriptionParameters::new));
     private final DescriptionMaterial material;

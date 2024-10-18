@@ -37,13 +37,13 @@ public class ParticleDetail {
 
     public ParticleDetail(DefinedParticleEffect effect) {
         this.effect = effect;
-        this.renderType = switch (effect.description.parameters().material()) {
+        this.renderType = switch (effect.description.parameters().material()) { // todo particles_add
             case TERRAIN_SHEET -> ParticleRenderType.TERRAIN_SHEET;
-            case PARTICLE_SHEET_OPAQUE -> ParticleRenderType.PARTICLE_SHEET_OPAQUE;
-            case PARTICLE_SHEET_TRANSLUCENT -> ParticleRenderType.PARTICLE_SHEET_TRANSLUCENT;
-            case PARTICLE_SHEET_LIT -> ParticleRenderType.PARTICLE_SHEET_LIT;
+            case particles_opaque, PARTICLE_SHEET_OPAQUE -> ParticleRenderType.PARTICLE_SHEET_OPAQUE;
+            case particles_blend, particles_add, PARTICLE_SHEET_TRANSLUCENT -> ParticleRenderType.PARTICLE_SHEET_TRANSLUCENT;
+            case particles_alpha, PARTICLE_SHEET_LIT -> ParticleRenderType.PARTICLE_SHEET_LIT;
             case CUSTOM -> ParticleRenderType.CUSTOM;
-            case NO_RENDER -> ParticleRenderType.NO_RENDER;
+            default -> ParticleRenderType.NO_RENDER;
         };
         IComponent component1 = effect.components.get(ParticleAppearanceBillboard.ID);
         if (component1 == null) throw new NullPointerException("No particle_appearance_billboard here");
