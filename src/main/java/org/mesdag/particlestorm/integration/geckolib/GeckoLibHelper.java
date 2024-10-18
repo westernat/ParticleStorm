@@ -2,16 +2,16 @@ package org.mesdag.particlestorm.integration.geckolib;
 
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.fml.ModList;
 import org.joml.Vector3f;
 import org.mesdag.particlestorm.GameClient;
 import org.mesdag.particlestorm.data.event.ParticleEffect;
 import org.mesdag.particlestorm.data.molang.MolangExp;
-import org.mesdag.particlestorm.mixinauxi.IAnimationController;
-import org.mesdag.particlestorm.mixinauxi.IEntity;
-import org.mesdag.particlestorm.mixinauxi.IGeoBone;
-import org.mesdag.particlestorm.mixinauxi.IParticleKeyframeData;
+import org.mesdag.particlestorm.data.molang.VariableTable;
+import org.mesdag.particlestorm.mixinauxi.*;
 import org.mesdag.particlestorm.particle.ParticleEmitter;
 import software.bernie.geckolib.animation.AnimationController;
 import software.bernie.geckolib.animation.keyframe.event.ParticleKeyframeEvent;
@@ -58,38 +58,57 @@ public final class GeckoLibHelper {
      */
     public static boolean processParticleEffect(Object particleKeyframeEvent) {
         if (isLoaded() && particleKeyframeEvent instanceof ParticleKeyframeEvent<?> event) {
-            ParticleKeyframeData keyframeData = event.getKeyframeData();
-            IParticleKeyframeData iData = (IParticleKeyframeData) keyframeData;
-            Entity entity;
-            if (event.getAnimatable() instanceof Entity entity1) {
-                entity = entity1;
-            } else if (event.getAnimatable() instanceof GeoWithCurrentEntity withCurrentEntity && withCurrentEntity.getCurrentEntity() != null) {
-                entity = withCurrentEntity.getCurrentEntity();
-            } else {
-                return true;
-            }
             List<GeoBone> bones = ((IAnimationController) event.getController()).particlestorm$getBonesWhichHasLocators();
             if (bones.isEmpty()) return true;
+
+            ParticleKeyframeData keyframeData = event.getKeyframeData();
+            IParticleKeyframeData iData = (IParticleKeyframeData) keyframeData;
+            Entity entity = null;
+            VariableTable variableTable;
+            Level level;
+            switch (event.getAnimatable()) {
+                case Entity entity1 -> {
+                    entity = entity1;
+                    variableTable = ((IEntity) entity).particlestorm$getVariableTable();
+                    level = entity.level();
+                }
+                case GeoWithCurrentEntity withCurrentEntity when withCurrentEntity.getCurrentEntity() != null -> {
+                    entity = withCurrentEntity.getCurrentEntity();
+                    variableTable = ((IEntity) entity).particlestorm$getVariableTable();
+                    level = entity.level();
+                }
+                case BlockEntity blockEntity when blockEntity.getLevel() != null -> {
+                    variableTable = ((IBlockEntity) blockEntity).particlestorm$getVariableTable();
+                    level = blockEntity.getLevel();
+                }
+                case null, default -> {
+                    return true;
+                }
+            }
             ResourceLocation particle = iData.particlestorm$getParticle();
-            MolangExp expression = iData.particlestorm$getExpression(entity);
+            MolangExp expression = iData.particlestorm$getExpression(variableTable);
             int[] cachedId = iData.particlestorm$getCachedId(bones.size());
             for (int i = 0; i < cachedId.length; i++) {
-                int id = cachedId[i];
-                if (GameClient.LOADER.contains(id)) continue;
+                if (GameClient.LOADER.contains(cachedId[i])) continue;
+
                 GeoBone bone = bones.get(i);
                 LocatorValue locator = ((IGeoBone) bone).particlestorm$getLocators().get(keyframeData.getLocator());
-                if (locator == null) continue;
-                ParticleEmitter emitter = new ParticleEmitter(entity.level(), Vec3.ZERO, particle, ParticleEffect.Type.EMITTER, expression);
-                emitter.subTable = ((IEntity) entity).particlestorm$getVariableTable();
+                ParticleEmitter emitter = new ParticleEmitter(level, Vec3.ZERO, particle, ParticleEffect.Type.EMITTER, expression);
+                emitter.subTable = variableTable;
                 GameClient.LOADER.addEmitter(emitter, false);
                 cachedId[i] = emitter.id;
-                double[] offset = getLocatorOffset(locator);
-                double[] rotation = getLocatorRotation(locator);
-                emitter.offsetPos = new Vec3(offset[0] * 0.0625, offset[1] * 0.0625, -offset[2] * 0.0625);
-                emitter.offsetRot = new Vector3f((float) Math.toRadians(rotation[0]), (float) Math.toRadians(rotation[1]), (float) Math.toRadians(rotation[2]));
-                emitter.modelSpace = bone.getModelSpaceMatrix();
                 emitter.attached = entity;
-                emitter.parentMode = ParticleEmitter.ParentMode.LOCATOR;
+                if (locator == null) {
+                    emitter.offsetPos = Vec3.ZERO;
+                    emitter.offsetRot = new Vector3f();
+                } else {
+                    double[] offset = getLocatorOffset(locator);
+                    double[] rotation = getLocatorRotation(locator);
+                    emitter.offsetPos = new Vec3(offset[0] * 0.0625, offset[1] * 0.0625, -offset[2] * 0.0625);
+                    emitter.offsetRot = new Vector3f((float) Math.toRadians(rotation[0]), (float) Math.toRadians(rotation[1]), (float) Math.toRadians(rotation[2]));
+                    emitter.modelSpace = bone.getModelSpaceMatrix();
+                    emitter.parentMode = ParticleEmitter.ParentMode.LOCATOR;
+                }
             }
             return false;
         }

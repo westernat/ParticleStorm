@@ -73,6 +73,10 @@ public class MolangParticleLoader implements PreparableReloadListener {
         }
     }
 
+    public int totalEmitterCount() {
+        return emitters.size();
+    }
+
     public ParticleEmitter getEmitter(int id) {
         return emitters.get(id);
     }

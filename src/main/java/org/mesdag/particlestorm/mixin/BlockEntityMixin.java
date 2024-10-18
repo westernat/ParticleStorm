@@ -1,15 +1,15 @@
 package org.mesdag.particlestorm.mixin;
 
-import net.minecraft.world.entity.Entity;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import org.mesdag.particlestorm.data.molang.VariableTable;
-import org.mesdag.particlestorm.mixinauxi.IEntity;
+import org.mesdag.particlestorm.mixinauxi.IBlockEntity;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 
-@Mixin(Entity.class)
-public abstract class EntityMixin implements IEntity {
+@Mixin(BlockEntity.class)
+public abstract class BlockEntityMixin implements IBlockEntity {
     @Unique
-    private final VariableTable particlestorm$variableTable = new VariableTable(INITIAL_TABLE);
+    private final VariableTable particlestorm$variableTable = new VariableTable(null);
 
     @Override
     public VariableTable particlestorm$getVariableTable() {

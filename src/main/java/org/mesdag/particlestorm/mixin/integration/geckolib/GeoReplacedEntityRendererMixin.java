@@ -14,7 +14,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import software.bernie.geckolib.animatable.GeoAnimatable;
 
 @Pseudo
-@Mixin(targets = "software.bernie.geckolib.renderer.GeoReplacedEntityRenderer")
+@Mixin(targets = "software.bernie.geckolib.renderer.GeoReplacedEntityRenderer", remap = false)
 public abstract class GeoReplacedEntityRendererMixin<E extends Entity, T extends GeoAnimatable> {
     @Shadow
     @Final

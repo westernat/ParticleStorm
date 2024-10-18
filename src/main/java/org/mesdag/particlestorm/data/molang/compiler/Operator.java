@@ -22,7 +22,7 @@ public record Operator(String symbol, int precedence, Operation operation) imple
     private static final CharSet OPERATOR_SYMBOLS = Util.make(new CharOpenHashSet(15), set -> set.addAll(Arrays.asList('?', ':', ',')));
     private static int LONGEST_OPERATOR;
 
-    public static final Operator ADD = register("+", 1, (a, b) -> a + b);
+    public static final Operator ADD = register("+", 1, Double::sum);
     public static final Operator SUB = register("-", 1, (a, b) -> a - b);
     public static final Operator MUL = register("*", 2, (a, b) -> a * b);
     public static final Operator DIV = register("/", 2, (a, b) -> b == 0 ? a : a / b);
@@ -36,6 +36,7 @@ public record Operator(String symbol, int precedence, Operation operation) imple
     public static final Operator GTE = register(">=", 5, (a, b) -> a >= b ? 1 : 0);
     public static final Operator EQUAL = register("==", 5, (a, b) -> Math.abs(a - b) < 0.00001 ? 1 : 0);
     public static final Operator NOT_EQUAL = register("!=", 5, (a, b) -> Math.abs(a - b) >= 0.00001 ? 1 : 0);
+    //public static final Operator NULL_COALESCING = register("??", 6, (a, b) -> a == 0 ? b : a);
     public static final Operator ASSIGN_VARIABLE = register("=", Integer.MAX_VALUE, (a, b) -> 0);
 
     /**

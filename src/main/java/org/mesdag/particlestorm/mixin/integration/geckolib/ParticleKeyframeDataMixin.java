@@ -1,10 +1,9 @@
 package org.mesdag.particlestorm.mixin.integration.geckolib;
 
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.entity.Entity;
 import org.mesdag.particlestorm.data.molang.MolangExp;
+import org.mesdag.particlestorm.data.molang.VariableTable;
 import org.mesdag.particlestorm.data.molang.compiler.MolangParser;
-import org.mesdag.particlestorm.mixinauxi.IEntity;
 import org.mesdag.particlestorm.mixinauxi.IParticleKeyframeData;
 import org.spongepowered.asm.mixin.*;
 
@@ -36,10 +35,10 @@ public abstract class ParticleKeyframeDataMixin implements IParticleKeyframeData
     }
 
     @Override
-    public MolangExp particlestorm$getExpression(Entity entity) {
+    public MolangExp particlestorm$getExpression(VariableTable variableTable) {
         if (particlestorm$expression == null) {
             this.particlestorm$expression = new MolangExp(script);
-            particlestorm$expression.compile(new MolangParser(((IEntity) entity).particlestorm$getVariableTable()));
+            particlestorm$expression.compile(new MolangParser(variableTable));
         }
         return particlestorm$expression;
     }
