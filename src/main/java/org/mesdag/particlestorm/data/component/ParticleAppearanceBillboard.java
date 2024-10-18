@@ -85,8 +85,14 @@ public record ParticleAppearanceBillboard(FloatMolangExp2 size, FaceCameraMode f
             if (uv.flipbook == UV.Flipbook.EMPTY) {
                 updateSimpleUV(instance);
             } else {
+                float scaleU = instance.originX / uv.texturewidth;
+                float scaleV = instance.originY / uv.textureheight;
                 instance.uvSize = uv.flipbook.getSizeUV();
+                instance.uvSize[0] *= scaleU;
+                instance.uvSize[1] *= scaleV;
                 instance.uvStep = uv.flipbook.getStepUV();
+                instance.uvStep[0] *= scaleU;
+                instance.uvStep[1] *= scaleV;
                 updateFlipbookUV(instance);
             }
         }
@@ -102,7 +108,9 @@ public record ParticleAppearanceBillboard(FloatMolangExp2 size, FaceCameraMode f
         float[] size = uv.uvSize.calculate(instance);
         int x = instance.getSprite().getX();
         int y = instance.getSprite().getY();
-        instance.setUV(x + base[0], y + base[1], size[0], size[1]);
+        float scaleU = instance.originX / uv.texturewidth;
+        float scaleV = instance.originY / uv.textureheight;
+        instance.setUV(x + base[0], y + base[1], size[0] * scaleU, size[1] * scaleV);
     }
 
     private void updateFlipbookUV(MolangParticleInstance instance) {
@@ -194,8 +202,6 @@ public record ParticleAppearanceBillboard(FloatMolangExp2 size, FaceCameraMode f
         }
     }
 
-    // todo 处理 texturewidth 和 textureheight
-
     /**
      * Specifies the UVs for the particle.
      *
@@ -208,7 +214,7 @@ public record ParticleAppearanceBillboard(FloatMolangExp2 size, FaceCameraMode f
      *                      Evaluated every frame
      */
     public record UV(int texturewidth, int textureheight, FloatMolangExp2 uv, FloatMolangExp2 uvSize, Flipbook flipbook) {
-        public static final UV EMPTY = new UV(0, 0, FloatMolangExp2.ZERO, FloatMolangExp2.ZERO, Flipbook.EMPTY);
+        public static final UV EMPTY = new UV(1, 1, FloatMolangExp2.ZERO, FloatMolangExp2.ZERO, Flipbook.EMPTY);
         public static final Codec<UV> CODEC = RecordCodecBuilder.create(instance -> instance.group(
                 DuplicateFieldDecoder.fieldOf("texturewidth", "texture_width", ExtraCodecs.POSITIVE_INT).orElse(1).forGetter(UV::texturewidth),
                 DuplicateFieldDecoder.fieldOf("textureheight", "texture_height", ExtraCodecs.POSITIVE_INT).orElse(1).forGetter(UV::textureheight),

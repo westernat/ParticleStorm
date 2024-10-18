@@ -12,5 +12,5 @@ public interface IParticleComponent extends IComponent {
         return false;
     }
 
-    default void initialize(Level instance) {}
+    default void initialize(Level level) {}
 }

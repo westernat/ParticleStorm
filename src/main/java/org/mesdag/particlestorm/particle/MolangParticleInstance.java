@@ -21,11 +21,14 @@ import org.joml.Quaternionf;
 import org.joml.Vector3f;
 import org.mesdag.particlestorm.GameClient;
 import org.mesdag.particlestorm.data.component.IParticleComponent;
+import org.mesdag.particlestorm.data.component.ParticleMotionCollision;
+import org.mesdag.particlestorm.data.event.IEventNode;
 import org.mesdag.particlestorm.data.molang.MolangInstance;
 import org.mesdag.particlestorm.data.molang.VariableTable;
 import org.mesdag.particlestorm.mixinauxi.ITextureAtlasSprite;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @OnlyIn(Dist.CLIENT)
@@ -34,8 +37,8 @@ public class MolangParticleInstance extends TextureSheetParticle implements Mola
     public final RandomSource random;
     public final ParticleDetail detail;
     private final VariableTable variableTable;
-    protected final float originX;
-    protected final float originY;
+    public final float originX;
+    public final float originY;
 
     public Vector3f initialSpeed = new Vector3f();
     public float xRot = 0.0F;
@@ -311,8 +314,19 @@ public class MolangParticleInstance extends TextureSheetParticle implements Mola
                 if (!hasCollision) this.zd = 0.0;
             }
 
-            if (expireOnContact && (onGround || collided)) {
-                remove();
+            if (onGround || collided) {
+                if (!detail.collisionEvents.isEmpty()) {
+                    Map<String, Map<String, IEventNode>> events = detail.effect.events;
+                    for (ParticleMotionCollision.Event event : detail.collisionEvents) {
+                        float tickSpeed = event.minSpeed() * getInvTickRate();
+                        if (tickSpeed * tickSpeed < xd * xd + yd * yd + zd * zd) {
+                            events.get(event.event()).forEach((name, node) -> node.execute(this));
+                        }
+                    }
+                }
+                if (expireOnContact) {
+                    remove();
+                }
             }
         }
     }

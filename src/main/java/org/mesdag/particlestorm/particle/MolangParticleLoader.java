@@ -41,17 +41,24 @@ public class MolangParticleLoader implements PreparableReloadListener {
     private final Int2ObjectOpenHashMap<ParticleEmitter> emitters = new Int2ObjectOpenHashMap<>();
     private final Queue<Integer> emittersAboutToRemove = new ArrayDeque<>();
     private final IntAllocator allocator = new IntAllocator();
+
+    private Player player;
+    private int renderDistSqr = 1024;
     private boolean initialized = false;
 
     public void tick() {
         if (!initialized) {
+            this.player = Minecraft.getInstance().player;
+            if (player == null) return;
             for (ParticleDetail detail : ID_2_PARTICLE.values()) {
                 for (IComponent component : detail.effect.components.values()) {
                     if (component instanceof IParticleComponent particleComponent) {
-                        particleComponent.initialize(Minecraft.getInstance().level);
+                        particleComponent.initialize(player.level());
                     }
                 }
             }
+            Integer i = Minecraft.getInstance().options.renderDistance().get() * 16;
+            this.renderDistSqr = i * i;
             this.initialized = true;
         } else if (emittersAboutToRemove.isEmpty()) {
             ObjectIterator<Int2ObjectMap.Entry<ParticleEmitter>> iterator = emitters.int2ObjectEntrySet().iterator();
@@ -60,7 +67,7 @@ public class MolangParticleLoader implements PreparableReloadListener {
                 if (emitter.isRemoved()) {
                     allocator.remove(emitter.id);
                     iterator.remove();
-                } else { // todo distance
+                } else if (emitter.pos.distanceToSqr(player.position()) < renderDistSqr) {
                     emitter.tick();
                 }
             }
@@ -105,6 +112,7 @@ public class MolangParticleLoader implements PreparableReloadListener {
         emitters.clear();
         emittersAboutToRemove.clear();
         allocator.clear();
+        this.initialized = false;
     }
 
     public boolean contains(int id) {

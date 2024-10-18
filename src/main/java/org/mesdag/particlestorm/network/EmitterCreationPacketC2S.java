@@ -39,7 +39,6 @@ public record EmitterCreationPacketC2S(ResourceLocation id, Vector3f pos, Partic
             if (player.isLocalPlayer()) {
                 ParticleEmitter emitter = new ParticleEmitter(player.level(), new Vec3(pos.x, pos.y, pos.z), id, effectType, expression);
                 GameClient.LOADER.addEmitter(emitter, true);
-                player.sendSystemMessage(Component.literal("id: " + emitter.id)); // todo
             }
         }).exceptionally(e -> {
             context.disconnect(Component.translatable("neoforge.network.invalid_flow", e.getMessage()));

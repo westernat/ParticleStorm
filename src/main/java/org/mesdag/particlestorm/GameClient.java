@@ -63,7 +63,7 @@ public final class GameClient {
 
         IComponent.register("particle_motion_dynamic", ParticleMotionDynamic.CODEC);
         IComponent.register("particle_motion_parametric", ParticleMotionParametric.CODEC);
-        IComponent.register("particle_motion_collision", ParticleMotionCollision.CODEC);
+        IComponent.register(ParticleMotionCollision.ID, ParticleMotionCollision.CODEC);
 
         IComponent.register(ParticleAppearanceBillboard.ID, ParticleAppearanceBillboard.CODEC);
         IComponent.register("particle_appearance_tinting", ParticleAppearanceTinting.CODEC);

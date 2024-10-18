@@ -6,8 +6,6 @@ import org.mesdag.particlestorm.data.molang.MolangExp;
 
 import java.util.List;
 
-// todo
-
 /**
  * This component specifies the frame of reference of the emitter.<p>
  * Applies only when the emitter is attached to an entity.<p>

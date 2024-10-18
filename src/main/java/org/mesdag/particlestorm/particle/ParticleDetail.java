@@ -16,6 +16,7 @@ import org.mesdag.particlestorm.data.molang.compiler.value.VariableAssignment;
 
 import java.util.ArrayList;
 import java.util.Hashtable;
+import java.util.List;
 
 import static org.mesdag.particlestorm.data.molang.compiler.MolangQueries.applyPrefixAliases;
 
@@ -27,6 +28,7 @@ public class ParticleDetail {
     public final float minSpeedThresholdSqr;
     public final boolean environmentLighting;
     public ParticleLifeTimeEvents lifeTimeEvents;
+    public List<ParticleMotionCollision.Event> collisionEvents = List.of();
 
     public final VariableTable variableTable;
     public final ArrayList<VariableAssignment> assignments;
@@ -48,6 +50,8 @@ public class ParticleDetail {
         this.minSpeedThresholdSqr = particleAppearanceBillboard.direction().minSpeedThreshold() * particleAppearanceBillboard.direction().minSpeedThreshold();
         this.environmentLighting = effect.components.containsValue(ParticleAppearanceLighting.INSTANCE);
         this.lifeTimeEvents = (ParticleLifeTimeEvents) effect.components.get(ParticleLifeTimeEvents.ID);
+        ParticleMotionCollision motionCollision = (ParticleMotionCollision) effect.components.get(ParticleMotionCollision.ID);
+        if (motionCollision != null) this.collisionEvents = motionCollision.events();
 
         VariableTable table = new VariableTable(addDefaultVariables(), null);
         MolangParser parser = new MolangParser(table);

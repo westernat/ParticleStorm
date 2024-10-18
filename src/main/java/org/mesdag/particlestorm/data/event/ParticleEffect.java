@@ -10,8 +10,10 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.ByIdMap;
 import net.minecraft.util.StringRepresentable;
 import org.jetbrains.annotations.NotNull;
+import org.mesdag.particlestorm.GameClient;
 import org.mesdag.particlestorm.data.molang.MolangExp;
 import org.mesdag.particlestorm.data.molang.MolangInstance;
+import org.mesdag.particlestorm.particle.ParticleEmitter;
 
 import java.util.Locale;
 import java.util.function.IntFunction;
@@ -25,7 +27,16 @@ public record ParticleEffect(ResourceLocation effect, Type type, MolangExp preEf
 
     @Override
     public void execute(MolangInstance instance) {
-        // todo
+        GameClient.LOADER.addEmitter(new ParticleEmitter(instance.getLevel(), instance.getPosition(), effect, type, preEffectExpression), false);
+    }
+
+    @Override
+    public String toString() {
+        return "ParticleEffect{" +
+                "effect=" + effect +
+                ", type=" + type +
+                ", preEffectExpression=" + preEffectExpression +
+                '}';
     }
 
     public enum Type implements StringRepresentable {

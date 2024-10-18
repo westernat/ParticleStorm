@@ -154,7 +154,7 @@ public class ParticleEmitter implements MolangInstance {
         return removed;
     }
 
-    public void move(Vec3 delta) { // todo
+    public void move(Vec3 delta) {
         this.moveDist += (float) delta.length();
         pos.add((float) delta.x, (float) delta.y, (float) delta.z);
     }
