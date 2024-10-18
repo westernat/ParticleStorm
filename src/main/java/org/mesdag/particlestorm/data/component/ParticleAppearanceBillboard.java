@@ -80,21 +80,17 @@ public record ParticleAppearanceBillboard(FloatMolangExp2 size, FaceCameraMode f
         if (size.initialized()) {
             instance.billboardSize = size.calculate(instance);
         }
-        if (uv != UV.EMPTY) {
-            instance.UV = new float[4];
-            if (uv.flipbook == UV.Flipbook.EMPTY) {
-                updateSimpleUV(instance);
-            } else {
-                float scaleU = instance.originX / uv.texturewidth;
-                float scaleV = instance.originY / uv.textureheight;
-                instance.uvSize = uv.flipbook.getSizeUV();
-                instance.uvSize[0] *= scaleU;
-                instance.uvSize[1] *= scaleV;
-                instance.uvStep = uv.flipbook.getStepUV();
-                instance.uvStep[0] *= scaleU;
-                instance.uvStep[1] *= scaleV;
-                updateFlipbookUV(instance);
-            }
+        instance.UV = new float[4];
+        if (uv.flipbook == UV.Flipbook.EMPTY) {
+            updateSimpleUV(instance);
+        } else {
+            instance.uvSize = uv.flipbook.getSizeUV();
+            instance.uvSize[0] *= instance.scaleU;
+            instance.uvSize[1] *= instance.scaleV;
+            instance.uvStep = uv.flipbook.getStepUV();
+            instance.uvStep[0] *= instance.scaleU;
+            instance.uvStep[1] *= instance.scaleV;
+            updateFlipbookUV(instance);
         }
     }
 
@@ -108,9 +104,7 @@ public record ParticleAppearanceBillboard(FloatMolangExp2 size, FaceCameraMode f
         float[] size = uv.uvSize.calculate(instance);
         int x = instance.getSprite().getX();
         int y = instance.getSprite().getY();
-        float scaleU = instance.originX / uv.texturewidth;
-        float scaleV = instance.originY / uv.textureheight;
-        instance.setUV(x + base[0], y + base[1], size[0] * scaleU, size[1] * scaleV);
+        instance.setUV(x + base[0], y + base[1], size[0] * instance.scaleU, size[1] * instance.scaleV);
     }
 
     private void updateFlipbookUV(MolangParticleInstance instance) {

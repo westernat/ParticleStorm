@@ -38,7 +38,7 @@ public class MolangParticleLoader implements PreparableReloadListener {
     public final Hashtable<ResourceLocation, DefinedParticleEffect> ID_2_EFFECT = new Hashtable<>();
     public final Hashtable<ResourceLocation, ParticleDetail> ID_2_PARTICLE = new Hashtable<>();
     public final Hashtable<ResourceLocation, EmitterDetail> ID_2_EMITTER = new Hashtable<>();
-    private final Int2ObjectOpenHashMap<ParticleEmitter> emitters = new Int2ObjectOpenHashMap<>();
+    public final Int2ObjectOpenHashMap<ParticleEmitter> emitters = new Int2ObjectOpenHashMap<>();
     private final Queue<Integer> emittersAboutToRemove = new ArrayDeque<>();
     private final IntAllocator allocator = new IntAllocator();
 

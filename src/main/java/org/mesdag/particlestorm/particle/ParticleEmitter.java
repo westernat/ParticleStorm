@@ -26,10 +26,10 @@ public class ParticleEmitter implements MolangInstance {
     public ParticleEffect.Type effectType;
     public MolangExp expression;
 
-    protected transient boolean haveHadSync = false;
+    protected transient boolean initialized = false;
     public transient ParentMode parentMode = ParentMode.WORLD;
-    public transient Vec3 offsetPos;
-    public transient Vector3f offsetRot;
+    public transient Vec3 offsetPos = Vec3.ZERO;
+    public transient Vector3f offsetRot = new Vector3f();
     public transient Matrix4f modelSpace;
     protected transient EmitterDetail detail;
     protected transient VariableTable variableTable;
@@ -90,7 +90,7 @@ public class ParticleEmitter implements MolangInstance {
     }
 
     public void tick() {
-        if (haveHadSync) {
+        if (initialized) {
             this.invTickRate = 1.0F / level.tickRateManager().tickrate();
             this.moveDistO = moveDist;
             for (IEmitterComponent component : components) {
@@ -135,8 +135,12 @@ public class ParticleEmitter implements MolangInstance {
                 e.apply(this);
                 return e.requireUpdate();
             }).toList();
-            this.haveHadSync = true;
+            this.initialized = true;
         }
+    }
+
+    public boolean isInitialized() {
+        return initialized;
     }
 
     private float getAttachedYRot() {

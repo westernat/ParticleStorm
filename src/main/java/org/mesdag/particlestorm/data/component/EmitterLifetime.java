@@ -125,13 +125,13 @@ public abstract class EmitterLifetime implements IEmitterComponent {
         public void update(ParticleEmitter emitter) {
             emitter.activeTime = (int) (activeTime.calculate(emitter) * 20);
             emitter.fullLoopTime = emitter.activeTime + (int) (sleepTime.calculate(emitter) * 20);
-            if (emitter.loopingTime <= emitter.fullLoopTime) {
+            if (emitter.loopingTime < emitter.fullLoopTime) {
                 emitter.active = emitter.loopingTime <= emitter.activeTime;
                 emitter.loopingTime++;
             } else {
                 emitter.spawned = false;
                 emitter.loopingTime = 0;
-                emitter.age = 0;
+                emitter.age = 1;
                 for (IEmitterComponent e : emitter.getDetail().components) {
                     e.apply(emitter);
                 }

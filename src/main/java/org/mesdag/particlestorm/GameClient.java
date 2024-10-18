@@ -1,16 +1,24 @@
 package org.mesdag.particlestorm;
 
+import com.mojang.blaze3d.vertex.PoseStack;
+import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.LevelRenderer;
+import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.client.renderer.RenderType;
+import net.minecraft.client.renderer.debug.DebugRenderer;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.event.RegisterClientReloadListenersEvent;
+import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
 import net.neoforged.neoforge.common.NeoForge;
 import org.mesdag.particlestorm.data.component.*;
 import org.mesdag.particlestorm.data.event.*;
 import org.mesdag.particlestorm.particle.MolangParticleLoader;
+import org.mesdag.particlestorm.particle.ParticleEmitter;
 
 @EventBusSubscriber(modid = ParticleStorm.MODID, bus = EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
 public final class GameClient {
@@ -20,6 +28,7 @@ public final class GameClient {
     public static void clientSetup(FMLClientSetupEvent event) {
         event.enqueueWork(() -> {
             NeoForge.EVENT_BUS.addListener(GameClient::tick);
+            NeoForge.EVENT_BUS.addListener(GameClient::renderLevelStage);
         });
     }
 
@@ -29,6 +38,28 @@ public final class GameClient {
         } else {
             LOADER.tick();
         }
+    }
+
+    private static void renderLevelStage(RenderLevelStageEvent event) {
+        if (event.getStage() == RenderLevelStageEvent.Stage.AFTER_PARTICLES && Minecraft.getInstance().getEntityRenderDispatcher().shouldRenderHitBoxes())
+            for (ParticleEmitter value : LOADER.emitters.values()) {
+                if (!value.isInitialized()) continue;
+                PoseStack poseStack = event.getPoseStack();
+                MultiBufferSource.BufferSource bufferSource = Minecraft.getInstance().renderBuffers().bufferSource();
+                double x = value.getX();
+                double y = value.getY();
+                double z = value.getZ();
+                DebugRenderer.renderFloatingText(poseStack, bufferSource, "id: " + value.id, x, y - 0.3, z, 0xFFFFFF);
+                DebugRenderer.renderFloatingText(poseStack, bufferSource, value.getDetail().option.getId().toString(), x, y - 0.1, z, 0xFFFFFF);
+                Camera camera = event.getCamera();
+                double d0 = camera.getPosition().x;
+                double d1 = camera.getPosition().y;
+                double d2 = camera.getPosition().z;
+                poseStack.pushPose();
+                poseStack.translate(x - d0,  y - d1 + 0.07F,  z - d2);
+                LevelRenderer.renderLineBox(poseStack, bufferSource.getBuffer(RenderType.lines()), -0.5, -0.5, -0.5, +0.5, +0.5, +0.5, 0, 1, 0, 1);
+                poseStack.popPose();
+            }
     }
 
     @SubscribeEvent

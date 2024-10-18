@@ -29,6 +29,8 @@ public class ParticleDetail {
     public final boolean environmentLighting;
     public ParticleLifeTimeEvents lifeTimeEvents;
     public List<ParticleMotionCollision.Event> collisionEvents = List.of();
+    public final float invTextureWidth;
+    public final float invTextureHeight;
 
     public final VariableTable variableTable;
     public final ArrayList<VariableAssignment> assignments;
@@ -48,6 +50,8 @@ public class ParticleDetail {
         ParticleAppearanceBillboard particleAppearanceBillboard = (ParticleAppearanceBillboard) component1;
         this.facingCameraMode = FaceCameraMode.valueOf(particleAppearanceBillboard.faceCameraMode().name());
         this.minSpeedThresholdSqr = particleAppearanceBillboard.direction().minSpeedThreshold() * particleAppearanceBillboard.direction().minSpeedThreshold();
+        this.invTextureWidth = 1.0F / particleAppearanceBillboard.uv().texturewidth();
+        this.invTextureHeight = 1.0F / particleAppearanceBillboard.uv().textureheight();
         this.environmentLighting = effect.components.containsValue(ParticleAppearanceLighting.INSTANCE);
         this.lifeTimeEvents = (ParticleLifeTimeEvents) effect.components.get(ParticleLifeTimeEvents.ID);
         ParticleMotionCollision motionCollision = (ParticleMotionCollision) effect.components.get(ParticleMotionCollision.ID);

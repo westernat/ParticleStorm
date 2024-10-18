@@ -37,8 +37,8 @@ public class MolangParticleInstance extends TextureSheetParticle implements Mola
     public final RandomSource random;
     public final ParticleDetail detail;
     private final VariableTable variableTable;
-    public final float originX;
-    public final float originY;
+    protected final float originX;
+    protected final float originY;
 
     public Vector3f initialSpeed = new Vector3f();
     public float xRot = 0.0F;
@@ -59,6 +59,8 @@ public class MolangParticleInstance extends TextureSheetParticle implements Mola
     public ParticleEmitter emitter;
     public boolean motionDynamic = false;
 
+    public final float scaleU;
+    public final float scaleV;
     public float[] billboardSize = new float[2];
     public float[] uvSize;
     public float[] uvStep;
@@ -79,6 +81,8 @@ public class MolangParticleInstance extends TextureSheetParticle implements Mola
         setSprite(sprites.get(detail.effect.description.parameters().getTextureIndex()));
         this.originX = ((ITextureAtlasSprite) sprite).particlestorm$getOriginX();
         this.originY = ((ITextureAtlasSprite) sprite).particlestorm$getOriginY();
+        this.scaleU = sprite.contents().width() * detail.invTextureWidth;
+        this.scaleV = sprite.contents().height() * detail.invTextureHeight;
 
         this.particleRandom1 = random.nextDouble();
         this.particleRandom2 = random.nextDouble();
