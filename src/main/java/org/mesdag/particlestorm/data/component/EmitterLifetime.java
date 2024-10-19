@@ -61,6 +61,7 @@ public abstract class EmitterLifetime implements IEmitterComponent {
                 emitter.remove();
             }
             emitter.active = activationExpression.calculate(emitter) != 0.0;
+            emitter.lifetime = emitter.age;
         }
 
         @Override
@@ -125,6 +126,7 @@ public abstract class EmitterLifetime implements IEmitterComponent {
         public void update(ParticleEmitter emitter) {
             emitter.activeTime = (int) (activeTime.calculate(emitter) * 20);
             emitter.fullLoopTime = emitter.activeTime + (int) (sleepTime.calculate(emitter) * 20);
+            emitter.lifetime = emitter.fullLoopTime;
             if (emitter.loopingTime < emitter.fullLoopTime) {
                 emitter.active = emitter.loopingTime <= emitter.activeTime;
                 emitter.loopingTime++;

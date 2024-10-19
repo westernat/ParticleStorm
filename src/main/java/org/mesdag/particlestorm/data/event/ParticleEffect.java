@@ -27,7 +27,11 @@ public record ParticleEffect(ResourceLocation effect, Type type, MolangExp preEf
 
     @Override
     public void execute(MolangInstance instance) {
-        GameClient.LOADER.addEmitter(new ParticleEmitter(instance.getLevel(), instance.getPosition(), effect, type, preEffectExpression), false);
+        ParticleEmitter emitter = new ParticleEmitter(instance.getLevel(), instance.getPosition(), effect, type, preEffectExpression);
+        ParticleEmitter parent = instance.getEmitter();
+        parent.children.add(emitter);
+        emitter.parent = parent;
+        GameClient.LOADER.addEmitter(emitter, false);
     }
 
     @Override

@@ -25,7 +25,7 @@ import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import org.jetbrains.annotations.NotNull;
 import org.mesdag.particlestorm.integration.geckolib.TestBlock;
-import org.mesdag.particlestorm.network.EmitterCreationPacketC2S;
+import org.mesdag.particlestorm.network.EmitterCreationPacketS2C;
 import org.mesdag.particlestorm.network.EmitterRemovalPacket;
 import org.mesdag.particlestorm.network.EmitterSynchronizePacket;
 import org.mesdag.particlestorm.particle.MolangParticleCommand;
@@ -64,7 +64,7 @@ public final class ParticleStorm {
     public static DeferredRegister<Block> BLOCK;
     public static DeferredRegister<BlockEntityType<?>> ENTITY;
     public static DeferredHolder<Block, Block> TEST;
-    public static DeferredHolder<BlockEntityType<?>, BlockEntityType<TestBlock.ExampleBlockEntity>> TEST_ENTITY;
+    public static DeferredHolder<BlockEntityType<?>, BlockEntityType<TestBlock.Entity>> TEST_ENTITY;
 
     public ParticleStorm(IEventBus bus, ModContainer container) {
         PARTICLE.register(bus);
@@ -77,9 +77,9 @@ public final class ParticleStorm {
     private static void registerPayloadHandlers(RegisterPayloadHandlersEvent event) {
         PayloadRegistrar registrar = event.registrar("1");
         registrar.playToClient(
-                EmitterCreationPacketC2S.TYPE,
-                EmitterCreationPacketC2S.STREAM_CODEC,
-                EmitterCreationPacketC2S::handle
+                EmitterCreationPacketS2C.TYPE,
+                EmitterCreationPacketS2C.STREAM_CODEC,
+                EmitterCreationPacketS2C::handle
         );
         registrar.playBidirectional(
                 EmitterRemovalPacket.TYPE,
@@ -114,7 +114,7 @@ public final class ParticleStorm {
             BLOCK = DeferredRegister.create(BuiltInRegistries.BLOCK, MODID);
             ENTITY = DeferredRegister.create(BuiltInRegistries.BLOCK_ENTITY_TYPE, MODID);
             TEST = BLOCK.register("test_block", TestBlock::new);
-            TEST_ENTITY = ENTITY.register("test_entity", () -> BlockEntityType.Builder.of(TestBlock.ExampleBlockEntity::new, TEST.get()).build(null));
+            TEST_ENTITY = ENTITY.register("test_entity", () -> BlockEntityType.Builder.of(TestBlock.Entity::new, TEST.get()).build(null));
             BLOCK.register(bus);
             ENTITY.register(bus);
         }

@@ -239,7 +239,7 @@ public class MolangParticleInstance extends TextureSheetParticle implements Mola
         this.xRotO = xRot;
         this.yRotO = yRot;
         this.oRoll = roll;
-        this.roll = roll + rolld * Mth.TWO_PI;
+        this.roll = roll + rolld;
         for (IParticleComponent component : components) {
             component.update(this);
         }

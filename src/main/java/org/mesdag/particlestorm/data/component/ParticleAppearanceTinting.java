@@ -74,7 +74,12 @@ public record ParticleAppearanceTinting(Color color, ColorField colorField) impl
             instance.setColor(calculated[0], calculated[1], calculated[2], calculated[3]);
         } else {
             float[] color = colorField.calculate(instance);
-            instance.setColor(color[0], color[1], color[2], color[3]);
+            instance.setColor(
+                    Mth.clamp(color[0], 0.0F, 1.0F),
+                    Mth.clamp(color[1], 0.0F, 1.0F),
+                    Mth.clamp(color[2], 0.0F, 1.0F),
+                    Mth.clamp(color[3], 0.0F, 1.0F)
+            );
         }
     }
 

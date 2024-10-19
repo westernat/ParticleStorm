@@ -22,6 +22,7 @@ import org.mesdag.particlestorm.data.molang.MolangInstance;
 import org.mesdag.particlestorm.data.molang.VariableTable;
 import org.mesdag.particlestorm.data.molang.compiler.MolangParser;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class ParticleEmitter implements MolangInstance {
@@ -38,6 +39,8 @@ public class ParticleEmitter implements MolangInstance {
     protected transient VariableTable variableTable;
     public transient VariableTable subTable;
     protected transient List<IEmitterComponent> components;
+    public transient ParticleEmitter parent;
+    public transient final List<ParticleEmitter> children = new ArrayList<>();
 
     protected double emitterRandom1;
     protected double emitterRandom2;
@@ -127,6 +130,9 @@ public class ParticleEmitter implements MolangInstance {
                 Vector3f rotated = offsetPos.toVector3f().rotateZ(rot.z).rotateY(rot.y).rotateX(rot.x);
                 BlockPos pos1 = attachedBlock.getBlockPos();
                 this.pos = new Vec3(pos1.getX() + 0.5 + rotated.x, pos1.getY() + 0.5 + rotated.y, pos1.getZ() + 0.5 + rotated.z);
+            }
+            if (parent != null && parent.isRemoved()) {
+                remove();
             }
         } else if (particleId != null) {
             this.detail = GameClient.LOADER.ID_2_EMITTER.get(particleId);

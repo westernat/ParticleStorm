@@ -21,7 +21,6 @@ import software.bernie.geckolib.animation.RawAnimation;
 import software.bernie.geckolib.util.GeckoLibUtil;
 
 public class TestBlock extends Block implements EntityBlock {
-
     public static final VoxelShape BOX = Shapes.box(0.1, 0.1, 0.1, 0.9, 0.9, 0.9);
 
     public TestBlock() {
@@ -30,7 +29,7 @@ public class TestBlock extends Block implements EntityBlock {
 
     @Override
     public @Nullable BlockEntity newBlockEntity(@NotNull BlockPos pos, @NotNull BlockState state) {
-        return new ExampleBlockEntity(pos, state);
+        return new Entity(pos, state);
     }
 
     @Override
@@ -43,12 +42,12 @@ public class TestBlock extends Block implements EntityBlock {
         return BOX;
     }
 
-    public static class ExampleBlockEntity extends BlockEntity implements GeoBlockEntity {
+    public static class Entity extends BlockEntity implements GeoBlockEntity {
         protected static final RawAnimation DEPLOY_ANIM = RawAnimation.begin().thenLoop("animation.test_block.new");
 
         private final AnimatableInstanceCache cache = GeckoLibUtil.createInstanceCache(this);
 
-        public ExampleBlockEntity(BlockPos pos, BlockState state) {
+        public Entity(BlockPos pos, BlockState state) {
             super(ParticleStorm.TEST_ENTITY.get(), pos, state);
         }
 
@@ -59,7 +58,7 @@ public class TestBlock extends Block implements EntityBlock {
 
         @Override
         public AnimatableInstanceCache getAnimatableInstanceCache() {
-            return this.cache;
+            return cache;
         }
     }
 }

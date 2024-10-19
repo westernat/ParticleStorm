@@ -564,10 +564,9 @@ public abstract class EmitterShape implements IEmitterComponent {
 
         public void apply(MolangInstance instance, EmitterShape shape, Vector3f position, Vector3f speed) {
             // todo inherited_particle_speed
-            float invTickRate = instance.getInvTickRate();
             if (this == INWARDS || this == OUTWARDS) {
                 if (shape instanceof Point) {
-                    applyEuler(getRandomEuler(instance.getLevel().random), speed.set(invTickRate, 0, 0));
+                    applyEuler(getRandomEuler(instance.getLevel().random), speed.set(1, 0, 0));
                 } else {
                     speed.set(position).normalize();
                     if (this == INWARDS) speed.negate();
@@ -575,9 +574,6 @@ public abstract class EmitterShape implements IEmitterComponent {
             } else {
                 speed.set(direct.calculate(instance)).normalize();
             }
-            speed.x *= invTickRate;
-            speed.y *= invTickRate;
-            speed.z *= invTickRate;
         }
 
         @Override

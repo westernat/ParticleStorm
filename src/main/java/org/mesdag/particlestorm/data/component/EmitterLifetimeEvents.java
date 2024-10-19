@@ -76,37 +76,37 @@ public final class EmitterLifetimeEvents implements IEmitterComponent {
     }
 
     @Override
-    public void update(ParticleEmitter entity) {
-        for (int i = entity.lastTimeline; i < sortedTimeline.size(); i++) {
+    public void update(ParticleEmitter emitter) {
+        for (int i = emitter.lastTimeline; i < sortedTimeline.size(); i++) {
             Tuple<Function<Integer, Boolean>, List<String>> tuple = sortedTimeline.get(i);
-            if (tuple.getA().apply(entity.lifetime)) {
-                entity.lastTimeline = i + 1;
-                Map<String, Map<String, IEventNode>> events = entity.getDetail().events;
+            if (tuple.getA().apply(emitter.lifetime)) {
+                emitter.lastTimeline = i + 1;
+                Map<String, Map<String, IEventNode>> events = emitter.getDetail().events;
                 for (String event : tuple.getB()) {
-                    events.get(event).forEach((name, node) -> node.execute(entity));
+                    events.get(event).forEach((name, node) -> node.execute(emitter));
                 }
                 break;
             }
         }
-        if (entity.moveDist == entity.moveDistO) return;
-        for (int i = entity.lastTravelDist; i < sortedTravelDistance.size(); i++) {
+        if (emitter.moveDist == emitter.moveDistO) return;
+        for (int i = emitter.lastTravelDist; i < sortedTravelDistance.size(); i++) {
             Tuple<Function<Float, Boolean>, List<String>> tuple = sortedTravelDistance.get(i);
-            if (tuple.getA().apply(entity.moveDist)) {
-                entity.lastTravelDist = i + 1;
-                Map<String, Map<String, IEventNode>> events = entity.getDetail().events;
+            if (tuple.getA().apply(emitter.moveDist)) {
+                emitter.lastTravelDist = i + 1;
+                Map<String, Map<String, IEventNode>> events = emitter.getDetail().events;
                 for (String event : tuple.getB()) {
-                    events.get(event).forEach((name, node) -> node.execute(entity));
+                    events.get(event).forEach((name, node) -> node.execute(emitter));
                 }
                 break;
             }
         }
         for (int i = 0; i < loopingTravelDistanceEvents.size(); i++) {
             LoopingTravelDistanceEvent loopingEvent = loopingTravelDistanceEvents.get(i);
-            if (entity.moveDist - entity.cachedLooping[i] >= loopingEvent.distance) {
-                entity.cachedLooping[i] = entity.moveDist;
-                Map<String, Map<String, IEventNode>> events = entity.getDetail().events;
+            if (emitter.moveDist - emitter.cachedLooping[i] >= loopingEvent.distance) {
+                emitter.cachedLooping[i] = emitter.moveDist;
+                Map<String, Map<String, IEventNode>> events = emitter.getDetail().events;
                 for (String event : loopingEvent.effects) {
-                    events.get(event).forEach((name, node) -> node.execute(entity));
+                    events.get(event).forEach((name, node) -> node.execute(emitter));
                 }
                 break;
             }
@@ -114,12 +114,17 @@ public final class EmitterLifetimeEvents implements IEmitterComponent {
     }
 
     @Override
-    public void apply(ParticleEmitter entity) {
-        Map<String, Map<String, IEventNode>> events = entity.getDetail().events;
+    public void apply(ParticleEmitter emitter) {
+        emitter.children.removeIf(child -> {
+            child.parent = null;
+            child.remove();
+            return true;
+        });
+        Map<String, Map<String, IEventNode>> events = emitter.getDetail().events;
         for (String event : creationEvent) {
-            events.get(event).forEach((name, node) -> node.execute(entity));
+            events.get(event).forEach((name, node) -> node.execute(emitter));
         }
-        entity.cachedLooping = new float[loopingTravelDistanceEvents.size()];
+        emitter.cachedLooping = new float[loopingTravelDistanceEvents.size()];
     }
 
     @Override
@@ -127,10 +132,10 @@ public final class EmitterLifetimeEvents implements IEmitterComponent {
         return true;
     }
 
-    public void onExpiration(ParticleEmitter entity) {
-        Map<String, Map<String, IEventNode>> events = entity.getDetail().events;
+    public void onExpiration(ParticleEmitter emitter) {
+        Map<String, Map<String, IEventNode>> events = emitter.getDetail().events;
         for (String event : expirationEvent) {
-            events.get(event).forEach((name, node) -> node.execute(entity));
+            events.get(event).forEach((name, node) -> node.execute(emitter));
         }
     }
 

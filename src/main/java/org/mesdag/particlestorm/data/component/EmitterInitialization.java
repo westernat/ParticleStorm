@@ -35,6 +35,11 @@ public record EmitterInitialization(MolangExp creationExpression, MolangExp perU
     }
 
     @Override
+    public void apply(ParticleEmitter entity) {
+        creationExpression.calculate(entity);
+    }
+
+    @Override
     public boolean requireUpdate() {
         return true;
     }
