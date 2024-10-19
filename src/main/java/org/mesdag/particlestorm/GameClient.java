@@ -30,8 +30,10 @@ public final class GameClient {
 
     @SubscribeEvent
     public static void registerRenderers(final EntityRenderersEvent.RegisterRenderers event) {
-        event.registerBlockEntityRenderer(ParticleStorm.TEST_ENTITY.get(), ExampleBlockEntityRenderer::new);
-        event.registerEntityRenderer(EntityType.CREEPER, ReplacedCreeperRenderer::new);
+        if (ParticleStorm.DEBUG) {
+            event.registerBlockEntityRenderer(ParticleStorm.TEST_ENTITY.get(), ExampleBlockEntityRenderer::new);
+            event.registerEntityRenderer(EntityType.CREEPER, ReplacedCreeperRenderer::new);
+        }
     }
 
     @SubscribeEvent

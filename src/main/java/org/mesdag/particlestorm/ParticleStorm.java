@@ -43,6 +43,7 @@ import static org.mesdag.particlestorm.network.EmitterSynchronizePacket.KEY;
 public final class ParticleStorm {
     public static final String MODID = "particlestorm";
     public static final Logger LOGGER = LoggerFactory.getLogger("ParticleStorm");
+    public static final boolean DEBUG = Boolean.getBoolean("particlestorm.debug");
 
     public static final DeferredRegister<ParticleType<?>> PARTICLE = DeferredRegister.create(BuiltInRegistries.PARTICLE_TYPE, MODID);
     public static final DeferredHolder<ParticleType<?>, ParticleType<MolangParticleOption>> MOLANG = PARTICLE.register("molang", () -> new ParticleType<MolangParticleOption>(false) {
@@ -60,15 +61,14 @@ public final class ParticleStorm {
             either -> either.map(Collections::singletonList, Function.identity()),
             l -> l.size() == 1 ? Either.left(l.getFirst()) : Either.right(l)
     );
-    public static final DeferredRegister<Block> BLOCK = DeferredRegister.create(BuiltInRegistries.BLOCK, MODID);
-    public static final DeferredRegister<BlockEntityType<?>> ENTITY = DeferredRegister.create(BuiltInRegistries.BLOCK_ENTITY_TYPE, MODID);
-    public static final DeferredHolder<Block, Block> TEST = BLOCK.register("test_block", TestBlock::new);
-    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<TestBlock.ExampleBlockEntity>> TEST_ENTITY = ENTITY.register("test_entity", ()->BlockEntityType.Builder.of(TestBlock.ExampleBlockEntity::new, TEST.get()).build(null));
+    public static DeferredRegister<Block> BLOCK;
+    public static DeferredRegister<BlockEntityType<?>> ENTITY;
+    public static DeferredHolder<Block, Block> TEST;
+    public static DeferredHolder<BlockEntityType<?>, BlockEntityType<TestBlock.ExampleBlockEntity>> TEST_ENTITY;
 
     public ParticleStorm(IEventBus bus, ModContainer container) {
         PARTICLE.register(bus);
-        BLOCK.register(bus);
-        ENTITY.register(bus);
+        registerGeoTest(bus);
         bus.addListener(ParticleStorm::registerPayloadHandlers);
         NeoForge.EVENT_BUS.addListener(ParticleStorm::registerCommands);
         NeoForge.EVENT_BUS.addListener(ParticleStorm::playerLoggedIn);
@@ -106,6 +106,17 @@ public final class ParticleStorm {
                     PacketDistributor.sendToPlayer(player, new EmitterSynchronizePacket(Integer.parseInt(id), emitters.getCompound(id)));
                 }
             }
+        }
+    }
+
+    private static void registerGeoTest(IEventBus bus) {
+        if (DEBUG) {
+            BLOCK = DeferredRegister.create(BuiltInRegistries.BLOCK, MODID);
+            ENTITY = DeferredRegister.create(BuiltInRegistries.BLOCK_ENTITY_TYPE, MODID);
+            TEST = BLOCK.register("test_block", TestBlock::new);
+            TEST_ENTITY = ENTITY.register("test_entity", () -> BlockEntityType.Builder.of(TestBlock.ExampleBlockEntity::new, TEST.get()).build(null));
+            BLOCK.register(bus);
+            ENTITY.register(bus);
         }
     }
 
