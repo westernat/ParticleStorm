@@ -135,6 +135,7 @@ public record ParticleAppearanceBillboard(FloatMolangExp2 size, FaceCameraMode f
         DIRECTION_X,
         DIRECTION_Y,
         DIRECTION_Z,
+        LOOKAT_DIRECTION,
         EMITTER_TRANSFORM_XY,
         EMITTER_TRANSFORM_XZ,
         EMITTER_TRANSFORM_YZ;
@@ -147,7 +148,7 @@ public record ParticleAppearanceBillboard(FloatMolangExp2 size, FaceCameraMode f
         }
 
         public boolean isDirection() {
-            return this == DIRECTION_X || this == DIRECTION_Y || this == DIRECTION_Z;
+            return this == LOOKAT_DIRECTION || this == DIRECTION_X || this == DIRECTION_Y || this == DIRECTION_Z;
         }
 
         @Override
@@ -162,7 +163,7 @@ public record ParticleAppearanceBillboard(FloatMolangExp2 size, FaceCameraMode f
                 mode -> mode == Mode.CUSTOM_DIRECTION ? RecordCodecBuilder.mapCodec(instance -> instance.group(
                         FloatMolangExp3.CODEC.fieldOf("custom_direction").orElse(FloatMolangExp3.ZERO).forGetter(Direction::customDirection)
                 ).apply(instance, l -> new Direction(mode, 0, l))) : RecordCodecBuilder.mapCodec(instance -> instance.group(
-                        Codec.FLOAT.fieldOf("min_speed_threshold").forGetter(Direction::minSpeedThreshold)
+                        Codec.FLOAT.fieldOf("min_speed_threshold").orElse(0.01F).forGetter(Direction::minSpeedThreshold)
                 ).apply(instance, f -> new Direction(mode, f, FloatMolangExp3.ZERO)))
         ).codec();
 
