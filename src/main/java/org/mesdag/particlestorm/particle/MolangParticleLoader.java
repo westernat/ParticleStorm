@@ -65,6 +65,7 @@ public class MolangParticleLoader implements PreparableReloadListener {
             while (iterator.hasNext()) {
                 ParticleEmitter emitter = iterator.next().getValue();
                 if (emitter.isRemoved()) {
+                    emitter.onRemove();
                     allocator.remove(emitter.id);
                     iterator.remove();
                 } else if (emitter.pos.distanceToSqr(player.position()) < renderDistSqr) {
@@ -95,6 +96,7 @@ public class MolangParticleLoader implements PreparableReloadListener {
 
     public ParticleEmitter removeEmitter(int id, boolean sync) {
         ParticleEmitter removed = emitters.remove(id);
+        removed.onRemove();
         allocator.remove(id);
         if (sync) EmitterRemovalPacket.sendToServer(id);
         return removed;

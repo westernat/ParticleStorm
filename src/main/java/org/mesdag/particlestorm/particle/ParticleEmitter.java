@@ -172,10 +172,18 @@ public class ParticleEmitter implements MolangInstance {
     }
 
     public void remove() {
+        this.removed = true;
+    }
+
+    public void onRemove() {
+        children.removeIf(child -> {
+            child.parent = null;
+            child.remove();
+            return true;
+        });
         if (detail != null && detail.lifetimeEvents != null) {
             detail.lifetimeEvents.onExpiration(this);
         }
-        this.removed = true;
     }
 
     public boolean isRemoved() {
