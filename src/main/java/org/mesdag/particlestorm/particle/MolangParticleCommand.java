@@ -47,11 +47,9 @@ public class MolangParticleCommand {
                         )
                 ))
                 .then(Commands.literal("remove").then(Commands.argument("id", IntegerArgumentType.integer(0)).executes(context -> removeParticle(
-                                context.getSource(),
                                 IntegerArgumentType.getInteger(context, "id"),
                                 context.getSource().getServer().getPlayerList().getPlayers()
                         )).then(Commands.argument("viewers", EntityArgument.players()).executes(context -> removeParticle(
-                                        context.getSource(),
                                         IntegerArgumentType.getInteger(context, "id"),
                                         EntityArgument.getPlayers(context, "viewers")
                                 )
@@ -60,7 +58,7 @@ public class MolangParticleCommand {
         );
     }
 
-    private static int removeParticle(CommandSourceStack source, int id, Collection<ServerPlayer> viewers) throws CommandSyntaxException {
+    private static int removeParticle(int id, Collection<ServerPlayer> viewers) throws CommandSyntaxException {
         int i = 0;
         for (ServerPlayer serverplayer : viewers) {
             EmitterRemovalPacket.sendToClient(serverplayer, id);
@@ -69,7 +67,6 @@ public class MolangParticleCommand {
         if (i == 0) {
             throw ERROR_FAILED.create();
         } else {
-            source.sendSuccess(() -> Component.translatable("commands.particlestorm.remove", id), true);
             return i;
         }
     }

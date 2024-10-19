@@ -13,6 +13,7 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
 import org.jetbrains.annotations.NotNull;
 import org.mesdag.particlestorm.GameClient;
 import org.mesdag.particlestorm.ParticleStorm;
+import org.mesdag.particlestorm.particle.ParticleEmitter;
 
 import static org.mesdag.particlestorm.network.EmitterSynchronizePacket.KEY;
 
@@ -33,7 +34,12 @@ public record EmitterRemovalPacket(int id) implements CustomPacketPayload {
         context.enqueueWork(() -> {
             Player player = context.player();
             if (player.isLocalPlayer()) {
-                GameClient.LOADER.removeEmitter(id, false);
+                ParticleEmitter emitter = GameClient.LOADER.removeEmitter(id, false);
+                if (emitter == null) {
+                    player.sendSystemMessage(Component.translatable("particle.notFound", id));
+                } else {
+                    player.sendSystemMessage(Component.translatable("commands.particlestorm.remove", emitter.particleId == null ? id : emitter.particleId.toString()));
+                }
             } else {
                 CompoundTag data = player.getPersistentData();
                 if (data.contains(KEY)) {

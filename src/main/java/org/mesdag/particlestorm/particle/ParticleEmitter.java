@@ -1,8 +1,10 @@
 package org.mesdag.particlestorm.particle;
 
+import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleGroup;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
@@ -128,6 +130,13 @@ public class ParticleEmitter implements MolangInstance {
             }
         } else if (particleId != null) {
             this.detail = GameClient.LOADER.ID_2_EMITTER.get(particleId);
+            if (detail == null) {
+                if (Minecraft.getInstance().player != null) {
+                    Minecraft.getInstance().player.sendSystemMessage(Component.translatable("particle.notFound", particleId.toString()));
+                }
+                remove();
+                return;
+            }
             this.variableTable = new VariableTable(detail.variableTable);
             if (subTable != null && variableTable.subTable == null) {
                 variableTable.subTable = subTable;
@@ -157,7 +166,7 @@ public class ParticleEmitter implements MolangInstance {
     }
 
     public void remove() {
-        if (detail.lifetimeEvents != null) {
+        if (detail != null && detail.lifetimeEvents != null) {
             detail.lifetimeEvents.onExpiration(this);
         }
         this.removed = true;

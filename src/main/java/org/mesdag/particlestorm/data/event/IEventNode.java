@@ -8,7 +8,7 @@ import java.util.Map;
 
 public interface IEventNode {
     Codec<Map<String, IEventNode>> CODEC = Codec.dispatchedMap(Codec.STRING, IEventNode::getCodec);
-    Hashtable<String, Codec<IEventNode>> MAP = new Hashtable<>();
+    Map<String, Codec<IEventNode>> MAP = new Hashtable<>();
 
     void execute(MolangInstance instance);
 

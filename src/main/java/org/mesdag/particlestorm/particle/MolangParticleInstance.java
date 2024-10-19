@@ -72,7 +72,7 @@ public class MolangParticleInstance extends TextureSheetParticle implements Mola
     public ParticleGroup particleGroup;
     public int lastTimeline = 0;
 
-    public MolangParticleInstance(ParticleDetail detail, ClientLevel level, double x, double y, double z, double xSpeed, double ySpeed, double zSpeed, ExtendMutableSpriteSet sprites) {
+    public MolangParticleInstance(ParticleDetail detail, ClientLevel level, double x, double y, double z, ExtendMutableSpriteSet sprites) {
         super(level, x, y, z);
         this.friction = 1.0F;
         this.random = level.getRandom();
@@ -372,7 +372,7 @@ public class MolangParticleInstance extends TextureSheetParticle implements Mola
 
         @Override
         public TextureSheetParticle createParticle(@NotNull MolangParticleOption option, @NotNull ClientLevel level, double x, double y, double z, double xSpeed, double ySpeed, double zSpeed) {
-            return new MolangParticleInstance(GameClient.LOADER.ID_2_PARTICLE.get(option.getId()), level, x, y, z, xSpeed, ySpeed, zSpeed, sprites);
+            return new MolangParticleInstance(GameClient.LOADER.ID_2_PARTICLE.get(option.getId()), level, x, y, z, sprites);
         }
     }
 }

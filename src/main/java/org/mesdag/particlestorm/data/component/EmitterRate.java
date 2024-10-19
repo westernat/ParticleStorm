@@ -10,6 +10,11 @@ import org.mesdag.particlestorm.particle.ParticleEmitter;
 import java.util.List;
 
 public abstract class EmitterRate implements IEmitterComponent {
+    @Override
+    public int order() {
+        return 500;
+    }
+
     public enum Type {
         INSTANT,
         STEADY,
@@ -97,9 +102,10 @@ public abstract class EmitterRate implements IEmitterComponent {
         @Override
         public void apply(ParticleEmitter entity) {
             float calculated = spawnRate.calculate(entity);
-            entity.spawnDuration = Math.max((int) (20.0F / calculated), 1);
+            float tickrate = entity.level.tickRateManager().tickrate();
+            entity.spawnDuration = Math.max((int) (tickrate / calculated), 1);
             if (entity.spawnRate != calculated) {
-                entity.spawnRate = entity.spawnDuration == 1 ? (int) (calculated / 20.0F) : 1;
+                entity.spawnRate = entity.spawnDuration == 1 ? (int) (calculated / tickrate) : 1;
                 entity.particleGroup = new ParticleGroup((int) maxParticles.calculate(entity));
             }
         }

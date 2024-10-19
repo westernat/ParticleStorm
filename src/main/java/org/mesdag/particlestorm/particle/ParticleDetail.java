@@ -17,6 +17,7 @@ import org.mesdag.particlestorm.data.molang.compiler.value.VariableAssignment;
 import java.util.ArrayList;
 import java.util.Hashtable;
 import java.util.List;
+import java.util.Map;
 
 import static org.mesdag.particlestorm.data.molang.compiler.MolangQueries.applyPrefixAliases;
 
@@ -31,9 +32,10 @@ public class ParticleDetail {
     public List<ParticleMotionCollision.Event> collisionEvents = List.of();
     public final float invTextureWidth;
     public final float invTextureHeight;
+    public boolean motionDynamic = false;
 
     public final VariableTable variableTable;
-    public final ArrayList<VariableAssignment> assignments;
+    public final List<VariableAssignment> assignments;
 
     public ParticleDetail(DefinedParticleEffect effect) {
         this.effect = effect;
@@ -56,6 +58,7 @@ public class ParticleDetail {
         this.lifeTimeEvents = (ParticleLifeTimeEvents) effect.components.get(ParticleLifeTimeEvents.ID);
         ParticleMotionCollision motionCollision = (ParticleMotionCollision) effect.components.get(ParticleMotionCollision.ID);
         if (motionCollision != null) this.collisionEvents = motionCollision.events();
+        this.motionDynamic = effect.components.get(ParticleMotionDynamic.ID) != null;
 
         VariableTable table = new VariableTable(addDefaultVariables(), null);
         MolangParser parser = new MolangParser(table);
@@ -67,9 +70,8 @@ public class ParticleDetail {
             table.table.put(name, new Variable(name, p -> value.calculate(p, name)));
         });
 
-        ArrayList<VariableAssignment> toInit = new ArrayList<>();
-        for (IComponent component : effect.components.values()) {
-            if (!(component instanceof IParticleComponent)) continue;
+        List<VariableAssignment> toInit = new ArrayList<>();
+        for (IParticleComponent component : effect.orderedParticleComponents) {
             component.getAllMolangExp().forEach(exp -> {
                 exp.compile(parser);
                 MathValue variable = exp.getVariable();
@@ -93,7 +95,7 @@ public class ParticleDetail {
         return table;
     }
 
-    private static boolean forAssignment(Hashtable<String, Variable> table, ArrayList<VariableAssignment> toInit, MathValue value) {
+    private static boolean forAssignment(Map<String, Variable> table, List<VariableAssignment> toInit, MathValue value) {
         if (value instanceof VariableAssignment assignment) {
             Variable variable = assignment.variable();
             table.put(variable.name(), variable);
@@ -103,7 +105,7 @@ public class ParticleDetail {
         return false;
     }
 
-    private static void forCompound(Hashtable<String, Variable> table, ArrayList<VariableAssignment> toInit, MathValue variable) {
+    private static void forCompound(Map<String, Variable> table, List<VariableAssignment> toInit, MathValue variable) {
         if (variable instanceof CompoundValue compoundValue) {
             for (MathValue value : compoundValue.subValues()) {
                 forAssignment(table, toInit, value);

@@ -17,8 +17,7 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * Particles expire when in a block of the type in the list.
- * <p>
+ * Particles expire when in a block of the type in the list.<p>
  * Note: this component can exist alongside particle_lifetime_expression.
  */
 public final class ParticleExpireIfInBlocks implements IParticleComponent {

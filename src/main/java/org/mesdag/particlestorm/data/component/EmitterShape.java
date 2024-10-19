@@ -21,9 +21,9 @@ import org.mesdag.particlestorm.data.molang.MolangInstance;
 import org.mesdag.particlestorm.data.molang.compiler.value.Variable;
 import org.mesdag.particlestorm.mixin.ParticleEngineAccessor;
 import org.mesdag.particlestorm.particle.MolangParticleInstance;
+import org.mesdag.particlestorm.particle.ParticleDetail;
 import org.mesdag.particlestorm.particle.ParticleEmitter;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -133,22 +133,17 @@ public abstract class EmitterShape implements IEmitterComponent {
             instance.setPos(position.x, position.y, position.z);
             instance.setPosO(position.x, position.y, position.z);
             instance.particleGroup = emitter.particleGroup;
-            instance.detail.assignments.forEach(assignment -> {
+            ParticleDetail detail = instance.detail;
+            detail.assignments.forEach(assignment -> {
                 // 重定向，防止污染变量表
                 String name = assignment.variable().name();
                 instance.getVariableTable().setValue(name, new Variable(name, assignment.value()));
             });
-            ArrayList<IParticleComponent> particleComponents = new ArrayList<>();
-            for (IParticleComponent component : instance.detail.effect.orderedParticleComponents) {
-                if (component instanceof ParticleMotionDynamic) {
-                    instance.motionDynamic = true;
-                }
+            for (IParticleComponent component : detail.effect.orderedParticleComponents) {
                 component.apply(instance);
-                if (component.requireUpdate()) {
-                    particleComponents.add(component);
-                }
             }
-            instance.components = particleComponents;
+            instance.components = detail.effect.orderedParticleComponentsWhichRequireUpdate;
+            instance.motionDynamic = detail.motionDynamic;
             if (!instance.motionDynamic) instance.setParticleSpeed(0.0, 0.0, 0.0);
         }
         Minecraft.getInstance().particleEngine.add(particle);
@@ -577,7 +572,7 @@ public abstract class EmitterShape implements IEmitterComponent {
                     speed.set(position).normalize();
                     if (this == INWARDS) speed.negate();
                 }
-            } else { // custom
+            } else {
                 speed.set(direct.calculate(instance)).normalize();
             }
             speed.x *= invTickRate;

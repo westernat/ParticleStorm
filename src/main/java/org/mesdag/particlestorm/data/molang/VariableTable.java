@@ -4,15 +4,16 @@ import org.jetbrains.annotations.Nullable;
 import org.mesdag.particlestorm.data.molang.compiler.value.Variable;
 
 import java.util.Hashtable;
+import java.util.Map;
 import java.util.function.Function;
 import java.util.function.ToDoubleFunction;
 
 public class VariableTable {
-    public final Hashtable<String, Variable> table;
+    public final Map<String, Variable> table;
     public @Nullable VariableTable previous;
     public @Nullable VariableTable subTable;
 
-    public VariableTable(Hashtable<String, Variable> table, @Nullable VariableTable previous) {
+    public VariableTable(Map<String, Variable> table, @Nullable VariableTable previous) {
         this.table = table;
         this.previous = previous;
     }

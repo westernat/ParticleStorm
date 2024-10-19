@@ -12,6 +12,7 @@ import org.mesdag.particlestorm.data.event.IEventNode;
 
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.List;
 import java.util.Map;
 
 public class DefinedParticleEffect {
@@ -26,9 +27,10 @@ public class DefinedParticleEffect {
     public final Map<ResourceLocation, IComponent> components;
     public final Map<String, Map<String, IEventNode>> events;
 
-    public final ArrayList<IComponent> orderedComponents;
-    public final ArrayList<IParticleComponent> orderedParticleComponents;
-    public final ArrayList<IEmitterComponent> orderedEmitterComponents;
+    public final List<IComponent> orderedComponents;
+    public final List<IParticleComponent> orderedParticleComponents;
+    public final List<IParticleComponent> orderedParticleComponentsWhichRequireUpdate;
+    public final List<IEmitterComponent> orderedEmitterComponents;
 
     public DefinedParticleEffect(ParticleDescription description, Map<String, ParticleCurve> curves, Map<ResourceLocation, IComponent> components, Map<String, Map<String, IEventNode>> events) {
         this.description = description;
@@ -38,11 +40,15 @@ public class DefinedParticleEffect {
 
         this.orderedComponents = new ArrayList<>();
         this.orderedParticleComponents = new ArrayList<>();
+        this.orderedParticleComponentsWhichRequireUpdate = new ArrayList<>();
         this.orderedEmitterComponents = new ArrayList<>();
         components.values().stream().sorted(Comparator.comparing(IComponent::order)).forEachOrdered(orderedComponents::add);
         for (IComponent component : orderedComponents) {
             if (component instanceof IParticleComponent particleComponent) {
                 orderedParticleComponents.add(particleComponent);
+                if (particleComponent.requireUpdate()) {
+                    orderedParticleComponentsWhichRequireUpdate.add(particleComponent);
+                }
             } else if (component instanceof IEmitterComponent emitterComponent) {
                 orderedEmitterComponents.add(emitterComponent);
             }

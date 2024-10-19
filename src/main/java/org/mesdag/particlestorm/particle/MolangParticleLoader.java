@@ -29,19 +29,17 @@ import org.mesdag.particlestorm.network.EmitterSynchronizePacket;
 
 import java.io.IOException;
 import java.io.Reader;
-import java.util.ArrayList;
-import java.util.Hashtable;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 
 @OnlyIn(Dist.CLIENT)
 public class MolangParticleLoader implements PreparableReloadListener {
     private static final FileToIdConverter PARTICLE_LISTER = FileToIdConverter.json("particle_definitions");
-    public final Hashtable<ResourceLocation, DefinedParticleEffect> ID_2_EFFECT = new Hashtable<>();
-    public final Hashtable<ResourceLocation, ParticleDetail> ID_2_PARTICLE = new Hashtable<>();
-    public final Hashtable<ResourceLocation, EmitterDetail> ID_2_EMITTER = new Hashtable<>();
-    public final Int2ObjectOpenHashMap<ParticleEmitter> emitters = new Int2ObjectOpenHashMap<>();
+    public final Map<ResourceLocation, DefinedParticleEffect> ID_2_EFFECT = new Hashtable<>();
+    public final Map<ResourceLocation, ParticleDetail> ID_2_PARTICLE = new Hashtable<>();
+    public final Map<ResourceLocation, EmitterDetail> ID_2_EMITTER = new Hashtable<>();
+    public final Int2ObjectMap<ParticleEmitter> emitters = new Int2ObjectOpenHashMap<>();
     private final IntAllocator allocator = new IntAllocator();
 
     private Player player;
@@ -95,10 +93,11 @@ public class MolangParticleLoader implements PreparableReloadListener {
         if (sync) EmitterSynchronizePacket.syncToServer(emitter);
     }
 
-    public void removeEmitter(int id, boolean sync) {
-        emitters.remove(id);
+    public ParticleEmitter removeEmitter(int id, boolean sync) {
+        ParticleEmitter removed = emitters.remove(id);
         allocator.remove(id);
         if (sync) EmitterRemovalPacket.sendToServer(id);
+        return removed;
     }
 
     public void removeAll() {
@@ -144,7 +143,7 @@ public class MolangParticleLoader implements PreparableReloadListener {
     }
 
     public static class IntAllocator {
-        private final IntArraySet table;
+        private final Collection<Integer> table;
 
         public IntAllocator() {
             this.table = new IntArraySet();

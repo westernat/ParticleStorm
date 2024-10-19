@@ -46,13 +46,13 @@ public enum FaceCameraMode implements SingleQuadParticle.FacingCameraMode {
     ROTATE_XYZ {
         @Override
         public void setRotation(Quaternionf quaternion, Camera camera, float partialTick) {
-            quaternion.premul(camera.rotation());
+            quaternion.set(camera.rotation());
         }
     },
     ROTATE_Y {
         @Override
         public void setRotation(Quaternionf quaternion, Camera camera, float partialTick) {
-            quaternion.premul(0.0F, camera.rotation().y, 0.0F, camera.rotation().w);
+            quaternion.set(0.0F, camera.rotation().y, 0.0F, camera.rotation().w);
         }
     },
     DIRECTION_X {

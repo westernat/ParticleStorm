@@ -47,6 +47,8 @@ public record ParticleAppearanceTinting(Color color, ColorField colorField) impl
             Tuple<Float, ColorField> tuple = list.get(index);
             if (tuple.getA() <= ratio) {
                 n = index;
+            } else {
+                break;
             }
         }
         Tuple<Float, ColorField> tuple = list.get(n);
@@ -56,11 +58,11 @@ public record ParticleAppearanceTinting(Color color, ColorField colorField) impl
         Tuple<Float, ColorField> next = list.get(n + 1);
         float[] color = tuple.getB().calculate(instance);
         float[] another = next.getB().calculate(instance);
-        float percent = (ratio - tuple.getA()) / (next.getA() - tuple.getA());
-        float r = Mth.clamp(color[0] - (color[0] - another[0]) * percent, 0.0F, 1.0F);
-        float g = Mth.clamp(color[1] - (color[1] - another[1]) * percent, 0.0F, 1.0F);
-        float b = Mth.clamp(color[2] - (color[2] - another[2]) * percent, 0.0F, 1.0F);
-        float a = Mth.clamp(color[3] - (color[3] - another[3]) * percent, 0.0F, 1.0F);
+        float factor = 1.0F - (ratio - tuple.getA()) / (next.getA() - tuple.getA());
+        float r = Mth.clamp(color[0] * factor + another[0], 0.0F, 1.0F);
+        float g = Mth.clamp(color[1] * factor + another[1], 0.0F, 1.0F);
+        float b = Mth.clamp(color[2] * factor + another[2], 0.0F, 1.0F);
+        float a = Mth.clamp(color[3] * factor + another[3], 0.0F, 1.0F);
         return new float[]{r, g, b, a};
     }
 

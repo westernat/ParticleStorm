@@ -20,7 +20,7 @@ public class EmitterDetail {
     public final List<IEmitterComponent> components;
     public final Map<String, Map<String, IEventNode>> events;
     public final VariableTable variableTable;
-    public final ArrayList<VariableAssignment> assignments;
+    public final List<VariableAssignment> assignments;
     public EmitterRate.Type emitterRateType = EmitterRate.Type.MANUAL;
     public boolean localPosition = false;
     public boolean localRotation = false;
@@ -33,7 +33,7 @@ public class EmitterDetail {
         this.events = events;
         VariableTable table = new VariableTable(addDefaultVariables(), null);
         MolangParser parser = new MolangParser(table);
-        ArrayList<VariableAssignment> toInit = new ArrayList<>();
+        List<VariableAssignment> toInit = new ArrayList<>();
         boolean lifeTime = false;
         boolean rate = false;
         boolean shape = false;
@@ -86,7 +86,7 @@ public class EmitterDetail {
         return table;
     }
 
-    private static boolean forAssignment(Hashtable<String, Variable> table, ArrayList<VariableAssignment> toInit, MathValue value) {
+    private static boolean forAssignment(Map<String, Variable> table, List<VariableAssignment> toInit, MathValue value) {
         if (value instanceof VariableAssignment assignment) {
             Variable variable = assignment.variable();
             table.put(variable.name(), variable);
@@ -96,7 +96,7 @@ public class EmitterDetail {
         return false;
     }
 
-    private static void forCompound(Hashtable<String, Variable> table, ArrayList<VariableAssignment> toInit, MathValue variable) {
+    private static void forCompound(Map<String, Variable> table, List<VariableAssignment> toInit, MathValue variable) {
         if (variable instanceof CompoundValue compoundValue) {
             for (MathValue value : compoundValue.subValues()) {
                 forAssignment(table, toInit, value);

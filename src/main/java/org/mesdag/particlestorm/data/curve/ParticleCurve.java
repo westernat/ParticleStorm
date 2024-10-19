@@ -11,6 +11,7 @@ import org.mesdag.particlestorm.data.molang.MolangInstance;
 import java.util.ArrayList;
 import java.util.Hashtable;
 import java.util.List;
+import java.util.Map;
 
 public final class ParticleCurve {
     public static final Codec<ParticleCurve> CODEC = RecordCodecBuilder.create(instance -> instance.group(
@@ -31,7 +32,7 @@ public final class ParticleCurve {
     public final FloatMolangExp horizontalRange;
     public final CurveNodes nodes;
 
-    private final Hashtable<String, SplineCurve> cachedCurves;
+    private final Map<String, SplineCurve> cachedCurves;
 
     public ParticleCurve(CurveType type, FloatMolangExp input, FloatMolangExp horizontalRange, CurveNodes nodes) {
         this.type = type;
