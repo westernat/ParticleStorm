@@ -16,6 +16,7 @@ import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.util.GsonHelper;
 import net.minecraft.util.profiling.ProfilerFiller;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.Level;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 import org.jetbrains.annotations.NotNull;
@@ -28,7 +29,9 @@ import org.mesdag.particlestorm.network.EmitterSynchronizePacket;
 
 import java.io.IOException;
 import java.io.Reader;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Hashtable;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 
@@ -39,7 +42,6 @@ public class MolangParticleLoader implements PreparableReloadListener {
     public final Hashtable<ResourceLocation, ParticleDetail> ID_2_PARTICLE = new Hashtable<>();
     public final Hashtable<ResourceLocation, EmitterDetail> ID_2_EMITTER = new Hashtable<>();
     public final Int2ObjectOpenHashMap<ParticleEmitter> emitters = new Int2ObjectOpenHashMap<>();
-    private final Queue<Integer> emittersAboutToRemove = new ArrayDeque<>();
     private final IntAllocator allocator = new IntAllocator();
 
     private Player player;
@@ -60,7 +62,7 @@ public class MolangParticleLoader implements PreparableReloadListener {
             Integer i = Minecraft.getInstance().options.renderDistance().get() * 16;
             this.renderDistSqr = i * i;
             this.initialized = true;
-        } else if (emittersAboutToRemove.isEmpty()) {
+        } else {
             ObjectIterator<Int2ObjectMap.Entry<ParticleEmitter>> iterator = emitters.int2ObjectEntrySet().iterator();
             while (iterator.hasNext()) {
                 ParticleEmitter emitter = iterator.next().getValue();
@@ -71,12 +73,6 @@ public class MolangParticleLoader implements PreparableReloadListener {
                     emitter.tick();
                 }
             }
-        } else {
-            while (!emittersAboutToRemove.isEmpty()) {
-                int removed = emittersAboutToRemove.remove();
-                emitters.remove(removed);
-                allocator.remove(removed);
-            }
         }
     }
 
@@ -84,12 +80,8 @@ public class MolangParticleLoader implements PreparableReloadListener {
         return emitters.size();
     }
 
-    public ParticleEmitter getEmitter(int id) {
-        return emitters.get(id);
-    }
-
-    public void loadEmitter(Player player, int id, CompoundTag tag) {
-        ParticleEmitter emitter = new ParticleEmitter(player.level(), tag);
+    public void loadEmitter(Level level, int id, CompoundTag tag) {
+        ParticleEmitter emitter = new ParticleEmitter(level, tag);
         emitter.id = id;
         emitters.put(id, emitter);
         if (allocator.forceAdd(id)) {
@@ -104,13 +96,13 @@ public class MolangParticleLoader implements PreparableReloadListener {
     }
 
     public void removeEmitter(int id, boolean sync) {
-        emittersAboutToRemove.add(id);
+        emitters.remove(id);
+        allocator.remove(id);
         if (sync) EmitterRemovalPacket.sendToServer(id);
     }
 
     public void removeAll() {
         emitters.clear();
-        emittersAboutToRemove.clear();
         allocator.clear();
         this.initialized = false;
     }
@@ -151,7 +143,7 @@ public class MolangParticleLoader implements PreparableReloadListener {
         }, gameExecutor);
     }
 
-    private static class IntAllocator {
+    public static class IntAllocator {
         private final IntArraySet table;
 
         public IntAllocator() {

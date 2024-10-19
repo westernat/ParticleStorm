@@ -1,5 +1,6 @@
 package org.mesdag.particlestorm.particle;
 
+import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleGroup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
@@ -7,8 +8,8 @@ import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.phys.Vec3;
-import org.joml.Matrix4f;
 import org.joml.Vector3f;
 import org.mesdag.particlestorm.GameClient;
 import org.mesdag.particlestorm.data.component.EmitterRate;
@@ -30,7 +31,7 @@ public class ParticleEmitter implements MolangInstance {
     public transient ParentMode parentMode = ParentMode.WORLD;
     public transient Vec3 offsetPos = Vec3.ZERO;
     public transient Vector3f offsetRot = new Vector3f();
-    public transient Matrix4f modelSpace;
+    public transient Vector3f parentRotation;
     protected transient EmitterDetail detail;
     protected transient VariableTable variableTable;
     public transient VariableTable subTable;
@@ -54,6 +55,7 @@ public class ParticleEmitter implements MolangInstance {
     public transient int spawnRate = 0;
     public transient boolean spawned = false;
     public transient Entity attached;
+    public transient BlockEntity attachedBlock;
     public transient int lastTimeline = 0;
     public transient float moveDist = 0.0F;
     public transient float moveDistO = 0.0F;
@@ -107,15 +109,22 @@ public class ParticleEmitter implements MolangInstance {
                     remove();
                     return;
                 }
-                if (modelSpace != null) {
-                    modelSpace.getEulerAnglesXYZ(rot).add(
-                            0.0F,
-                            -getAttachedYRot() * Mth.DEG_TO_RAD,
-                            0.0F
-                    ).add(offsetRot);
+                if (parentRotation != null) {
+                    rot.set(parentRotation).add(offsetRot.x, offsetRot.y - getAttachedYRot() * Mth.DEG_TO_RAD, offsetRot.z);
                 }
                 Vector3f rotated = offsetPos.toVector3f().rotateZ(rot.z).rotateY(rot.y).rotateX(rot.x);
                 this.pos = new Vec3(attached.getX() + rotated.x, attached.getY() + rotated.y, attached.getZ() + rotated.z);
+            } else if (attachedBlock != null) {
+                if (attachedBlock.isRemoved()) {
+                    remove();
+                    return;
+                }
+                if (parentRotation != null) {
+                    rot.set(parentRotation).add(offsetRot);
+                }
+                Vector3f rotated = offsetPos.toVector3f().rotateZ(rot.z).rotateY(rot.y).rotateX(rot.x);
+                BlockPos pos1 = attachedBlock.getBlockPos();
+                this.pos = new Vec3(pos1.getX() + 0.5 + rotated.x, pos1.getY() + 0.5 + rotated.y, pos1.getZ() + 0.5 + rotated.z);
             }
         } else if (particleId != null) {
             this.detail = GameClient.LOADER.ID_2_EMITTER.get(particleId);

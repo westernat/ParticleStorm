@@ -64,6 +64,7 @@ public final class GeckoLibHelper {
             ParticleKeyframeData keyframeData = event.getKeyframeData();
             IParticleKeyframeData iData = (IParticleKeyframeData) keyframeData;
             Entity entity = null;
+            BlockEntity blockEntity = null;
             VariableTable variableTable;
             Level level;
             switch (event.getAnimatable()) {
@@ -77,7 +78,8 @@ public final class GeckoLibHelper {
                     variableTable = ((IEntity) entity).particlestorm$getVariableTable();
                     level = entity.level();
                 }
-                case BlockEntity blockEntity when blockEntity.getLevel() != null -> {
+                case BlockEntity entity1 when entity1.getLevel() != null -> {
+                    blockEntity = entity1;
                     variableTable = ((IBlockEntity) blockEntity).particlestorm$getVariableTable();
                     level = blockEntity.getLevel();
                 }
@@ -93,20 +95,27 @@ public final class GeckoLibHelper {
 
                 GeoBone bone = bones.get(i);
                 LocatorValue locator = ((IGeoBone) bone).particlestorm$getLocators().get(keyframeData.getLocator());
-                ParticleEmitter emitter = new ParticleEmitter(level, Vec3.ZERO, particle, ParticleEffect.Type.EMITTER, expression);
+                Vec3 pos;
+                if (entity == null) {
+                    pos = blockEntity.getBlockPos().getCenter();
+                } else {
+                    pos = entity.position();
+                }
+                ParticleEmitter emitter = new ParticleEmitter(level, pos, particle, ParticleEffect.Type.EMITTER, expression);
                 emitter.subTable = variableTable;
                 GameClient.LOADER.addEmitter(emitter, false);
                 cachedId[i] = emitter.id;
-                emitter.attached = entity;
                 if (locator == null) {
                     emitter.offsetPos = Vec3.ZERO;
                     emitter.offsetRot = new Vector3f();
                 } else {
+                    emitter.attached = entity;
+                    emitter.attachedBlock = blockEntity;
                     double[] offset = getLocatorOffset(locator);
                     double[] rotation = getLocatorRotation(locator);
                     emitter.offsetPos = new Vec3(offset[0] * 0.0625, offset[1] * 0.0625, -offset[2] * 0.0625);
                     emitter.offsetRot = new Vector3f((float) Math.toRadians(rotation[0]), (float) Math.toRadians(rotation[1]), (float) Math.toRadians(rotation[2]));
-                    emitter.modelSpace = bone.getModelSpaceMatrix();
+                    emitter.parentRotation = ((IGeoBone) bone).particlestorm$getRotation();
                     emitter.parentMode = ParticleEmitter.ParentMode.LOCATOR;
                 }
             }

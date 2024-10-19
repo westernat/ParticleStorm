@@ -10,6 +10,8 @@ import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.Mod;
@@ -22,6 +24,7 @@ import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import org.jetbrains.annotations.NotNull;
+import org.mesdag.particlestorm.integration.geckolib.TestBlock;
 import org.mesdag.particlestorm.network.EmitterCreationPacketC2S;
 import org.mesdag.particlestorm.network.EmitterRemovalPacket;
 import org.mesdag.particlestorm.network.EmitterSynchronizePacket;
@@ -57,9 +60,15 @@ public final class ParticleStorm {
             either -> either.map(Collections::singletonList, Function.identity()),
             l -> l.size() == 1 ? Either.left(l.getFirst()) : Either.right(l)
     );
+    public static final DeferredRegister<Block> BLOCK = DeferredRegister.create(BuiltInRegistries.BLOCK, MODID);
+    public static final DeferredRegister<BlockEntityType<?>> ENTITY = DeferredRegister.create(BuiltInRegistries.BLOCK_ENTITY_TYPE, MODID);
+    public static final DeferredHolder<Block, Block> TEST = BLOCK.register("test_block", TestBlock::new);
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<TestBlock.ExampleBlockEntity>> TEST_ENTITY = ENTITY.register("test_entity", ()->BlockEntityType.Builder.of(TestBlock.ExampleBlockEntity::new, TEST.get()).build(null));
 
     public ParticleStorm(IEventBus bus, ModContainer container) {
         PARTICLE.register(bus);
+        BLOCK.register(bus);
+        ENTITY.register(bus);
         bus.addListener(ParticleStorm::registerPayloadHandlers);
         NeoForge.EVENT_BUS.addListener(ParticleStorm::registerCommands);
         NeoForge.EVENT_BUS.addListener(ParticleStorm::playerLoggedIn);

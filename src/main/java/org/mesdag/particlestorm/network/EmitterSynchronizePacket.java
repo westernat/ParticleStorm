@@ -34,7 +34,7 @@ public record EmitterSynchronizePacket(int id, CompoundTag tag) implements Custo
         context.enqueueWork(() -> {
             Player player = context.player();
             if (player.isLocalPlayer()) {
-                GameClient.LOADER.loadEmitter(player, id, tag);
+                GameClient.LOADER.loadEmitter(player.level(), id, tag);
             } else {
                 CompoundTag data = player.getPersistentData();
                 if (data.contains(KEY)) {
