@@ -8,6 +8,7 @@ import net.neoforged.api.distmarker.OnlyIn;
 import org.joml.Matrix4f;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
+import org.mesdag.particlestorm.data.component.EmitterShape;
 
 @OnlyIn(Dist.CLIENT)
 public enum FaceCameraMode implements SingleQuadParticle.FacingCameraMode {
@@ -20,8 +21,12 @@ public enum FaceCameraMode implements SingleQuadParticle.FacingCameraMode {
         public void setRotation(Quaternionf quaternion, Camera camera, float partialTick) {}
 
         @Override
-        public void setRotation(float x, float y, float z, Quaternionf quaternion, Camera camera, float partialTick) {
-            Vector3f xd = camera.getPosition().toVector3f().sub(x, y, z).normalize();
+        public void setRotation(MolangParticleInstance instance, Quaternionf quaternion, Camera camera, float partialTick) {
+            Vector3f xd = camera.getPosition().toVector3f().sub(
+                    (float) instance.getX(),
+                    (float) instance.getY(),
+                    (float) instance.getZ()
+            ).normalize();
             up.cross(xd, wd).normalize();
             xd.cross(wd, qd);
             quaternion.setFromNormalized(new Matrix4f(
@@ -37,8 +42,8 @@ public enum FaceCameraMode implements SingleQuadParticle.FacingCameraMode {
         public void setRotation(Quaternionf quaternion, Camera camera, float partialTick) {}
 
         @Override
-        public void setRotation(float x, float y, float z, Quaternionf quaternion, Camera camera, float partialTick) {
-            LOOKAT_XYZ.setRotation(x, y, z, quaternion, camera, partialTick);
+        public void setRotation(MolangParticleInstance instance, Quaternionf quaternion, Camera camera, float partialTick) {
+            LOOKAT_XYZ.setRotation(instance, quaternion, camera, partialTick);
             quaternion.x = 0.0F;
             quaternion.z = 0.0F;
         }
@@ -73,6 +78,21 @@ public enum FaceCameraMode implements SingleQuadParticle.FacingCameraMode {
             quaternion.rotationXYZ(0.0F, 0.0F, 0.0F);
         }
     },
+    LOOKAT_DIRECTION {
+        private final Vector3f X = new Vector3f(1.0F, 0.0F, 0.0F);
+        private final Vector3f vec = new Vector3f();
+        private final Quaternionf dest = new Quaternionf();
+
+        @Override
+        public void setRotation(Quaternionf quaternion, Camera camera, float partialTick) {}
+
+        @Override
+        public void setRotation(MolangParticleInstance instance, Quaternionf quaternion, Camera camera, float partialTick) {
+            vec.set(instance.xRot, instance.yRot, instance.getRoll()).normalize();
+            Quaternionf quaternion1 = EmitterShape.setFromUnitVectors(X, vec, dest);
+            quaternion.premul(quaternion1);
+        }
+    },
     EMITTER_TRANSFORM_XY {
         @Override
         public void setRotation(Quaternionf quaternion, Camera camera, float partialTick) {
@@ -92,7 +112,7 @@ public enum FaceCameraMode implements SingleQuadParticle.FacingCameraMode {
         }
     };
 
-    public void setRotation(float x, float y, float z, Quaternionf quaternion, Camera camera, float partialTick) {
+    public void setRotation(MolangParticleInstance instance, Quaternionf quaternion, Camera camera, float partialTick) {
         setRotation(quaternion, camera, partialTick);
     }
 }

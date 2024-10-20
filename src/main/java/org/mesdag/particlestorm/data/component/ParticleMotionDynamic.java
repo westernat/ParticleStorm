@@ -3,7 +3,6 @@ package org.mesdag.particlestorm.data.component;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.resources.ResourceLocation;
-import org.joml.Vector3f;
 import org.mesdag.particlestorm.data.molang.FloatMolangExp;
 import org.mesdag.particlestorm.data.molang.FloatMolangExp3;
 import org.mesdag.particlestorm.data.molang.MolangExp;
@@ -65,25 +64,17 @@ public record ParticleMotionDynamic(FloatMolangExp3 linerAcceleration, FloatMola
     @Override
     public void apply(MolangParticleInstance instance) {
         float invTickRate = instance.emitter.invTickRate;
-        if (linerAcceleration != FloatMolangExp3.ZERO) {
-            float i = -linearDragCoefficient.calculate(instance);
-            float[] linearAcceleration = linerAcceleration.calculate(instance);
-            float x = (linearAcceleration[0] + (float) (instance.getXd() * i)) * invTickRate;
-            float y = (linearAcceleration[1] + (float) (instance.getYd() * i)) * invTickRate;
-            float z = (linearAcceleration[2] + (float) (instance.getZd() * i)) * invTickRate;
-            Vector3f initialSpeed = instance.initialSpeed;
-            if (initialSpeed.x != 0 || initialSpeed.y != 0 || initialSpeed.z != 0) {
-                instance.setParticleSpeed(x * initialSpeed.x, y * initialSpeed.y, z * initialSpeed.z);
-            } else {
-                instance.setParticleSpeed(x, y, z);
-            }
-        }
-        if (rotationAcceleration != FloatMolangExp.ZERO) {
-            float c = -rotationDragCoefficient.calculate(instance);
-            float u = rotationAcceleration.calculate(instance);
-            u += c * instance.rolld;
-            instance.rolld += u * invTickRate;
-        }
+
+        float drag = linearDragCoefficient.calculate(instance);
+        instance.acceleration.set(linerAcceleration.calculate(instance));
+        instance.acceleration.mulAdd(-drag, instance.readOnlySpeed);
+        instance.acceleration.mul(invTickRate);
+        instance.addAcceleration();
+
+        float c = -rotationDragCoefficient.calculate(instance);
+        float u = rotationAcceleration.calculate(instance);
+        u += c * instance.rolld;
+        instance.rolld += u * invTickRate;
     }
 
     @Override

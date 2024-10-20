@@ -41,6 +41,8 @@ public class MolangParticleInstance extends TextureSheetParticle implements Mola
     protected final float originY;
 
     public Vector3f initialSpeed = new Vector3f();
+    public Vector3f acceleration = new Vector3f();
+    public Vector3f readOnlySpeed = new Vector3f(); // read-only
     public float xRot = 0.0F;
     public float yRot = 0.0F;
     protected float xRotO = 0.0F;
@@ -102,6 +104,12 @@ public class MolangParticleInstance extends TextureSheetParticle implements Mola
         return zd;
     }
 
+    public void addAcceleration() {
+        this.xd += acceleration.x;
+        this.yd += acceleration.y;
+        this.zd += acceleration.z;
+    }
+
     public double getX() {
         return x;
     }
@@ -122,6 +130,10 @@ public class MolangParticleInstance extends TextureSheetParticle implements Mola
 
     public void setRoll(float roll) {
         this.roll = roll;
+    }
+
+    public float getRoll() {
+        return roll;
     }
 
     public void setColor(float red, float green, float blue, float alpha) {
@@ -240,6 +252,7 @@ public class MolangParticleInstance extends TextureSheetParticle implements Mola
         this.yRotO = yRot;
         this.oRoll = roll;
         this.roll = roll + rolld;
+        this.readOnlySpeed.set(xd, yd, zd);
         for (IParticleComponent component : components) {
             component.update(this);
         }
@@ -248,7 +261,7 @@ public class MolangParticleInstance extends TextureSheetParticle implements Mola
     @Override
     public void render(@NotNull VertexConsumer buffer, @NotNull Camera renderInfo, float partialTicks) {
         Quaternionf quaternionf = new Quaternionf();
-        getFacingCameraMode().setRotation((float) x, (float) y, (float) z, quaternionf, renderInfo, partialTicks);
+        getFacingCameraMode().setRotation(this, quaternionf, renderInfo, partialTicks);
         if (this.roll != 0.0F) {
             quaternionf.rotateZ(Mth.lerp(partialTicks, this.oRoll, this.roll));
         }

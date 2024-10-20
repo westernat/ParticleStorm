@@ -14,7 +14,7 @@ repositories {
 }
 
 base {
-    archivesName = mod_id
+    archivesName = "Particle Storm"
 }
 
 java.toolchain.languageVersion = JavaLanguageVersion.of(21)
@@ -164,4 +164,9 @@ idea {
         downloadSources = true
         downloadJavadoc = true
     }
+}
+
+task sourcesJar(type: Jar) {
+    from sourceSets.main.allJava
+    archiveClassifier = 'sources'
 }

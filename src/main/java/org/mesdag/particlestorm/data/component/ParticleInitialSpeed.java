@@ -5,7 +5,7 @@ import com.mojang.serialization.Codec;
 import org.mesdag.particlestorm.data.molang.FloatMolangExp;
 import org.mesdag.particlestorm.data.molang.FloatMolangExp3;
 import org.mesdag.particlestorm.data.molang.MolangExp;
-import org.mesdag.particlestorm.particle.MolangParticleInstance;
+import org.mesdag.particlestorm.particle.ParticleEmitter;
 
 import java.util.List;
 
@@ -15,7 +15,7 @@ import java.util.List;
  * @param exp  Evaluated once
  * @param exp3 Evaluated once
  */
-public record ParticleInitialSpeed(FloatMolangExp exp, FloatMolangExp3 exp3) implements IParticleComponent {
+public record ParticleInitialSpeed(FloatMolangExp exp, FloatMolangExp3 exp3) implements IEmitterComponent {
     public static final Codec<ParticleInitialSpeed> CODEC = Codec.either(FloatMolangExp.CODEC, FloatMolangExp3.CODEC).xmap(
             either -> either.map(f -> new ParticleInitialSpeed(f, FloatMolangExp3.ZERO), l -> new ParticleInitialSpeed(FloatMolangExp.ZERO, l)),
             speed -> speed.exp3 == FloatMolangExp3.ZERO ? Either.left(speed.exp) : Either.right(speed.exp3)
@@ -32,13 +32,13 @@ public record ParticleInitialSpeed(FloatMolangExp exp, FloatMolangExp3 exp3) imp
     }
 
     @Override
-    public void apply(MolangParticleInstance instance) {
+    public void apply(ParticleEmitter entity) {
         if (exp3 == FloatMolangExp3.ZERO) {
-            float value = exp.calculate(instance);
-            instance.initialSpeed.set(value);
+            float value = exp.calculate(entity);
+            entity.particleInitialSpeed.set(value);
         } else {
-            float[] mul = exp3.calculate(instance);
-            instance.initialSpeed.set(mul[0], mul[1], mul[2]);
+            float[] mul = exp3.calculate(entity);
+            entity.particleInitialSpeed.set(mul);
         }
     }
 

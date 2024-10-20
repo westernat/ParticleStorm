@@ -106,6 +106,7 @@ public abstract class EmitterShape implements IEmitterComponent {
             Vector3f position = new Vector3f();
             Vector3f speed = new Vector3f();
             initializeParticle(instance, position, speed);
+            speed.mul(emitter.particleInitialSpeed);
             if (emitter.parentMode == ParticleEmitter.ParentMode.LOCATOR) {
                 position.x *= -1;
                 position.y *= -1;
@@ -181,7 +182,7 @@ public abstract class EmitterShape implements IEmitterComponent {
                 FloatMolangExp3.CODEC.fieldOf("offset").orElseGet(() -> FloatMolangExp3.ZERO).forGetter(disc -> disc.offset),
                 FloatMolangExp.CODEC.fieldOf("radius").orElse(FloatMolangExp.ONE).forGetter(disc -> disc.radius),
                 PlaneNormal.CODEC.fieldOf("plane_normal").orElse(PlaneNormal.Y).forGetter(disc -> disc.planeNormal),
-                Direction.CODEC.fieldOf("direction").orElse(Direction.NONE).forGetter(disc -> disc.direction),
+                Direction.CODEC.fieldOf("direction").orElse(Direction.OUTWARDS).forGetter(disc -> disc.direction),
                 Codec.BOOL.fieldOf("surface_only").orElse(false).forGetter(EmitterShape::isSurfaceOnly)
         ).apply(instance, Disc::new));
         /**
@@ -306,7 +307,7 @@ public abstract class EmitterShape implements IEmitterComponent {
         public static final Codec<Box> CODEC = RecordCodecBuilder.create(instance -> instance.group(
                 FloatMolangExp3.CODEC.fieldOf("offset").orElse(FloatMolangExp3.ZERO).forGetter(box -> box.offset),
                 FloatMolangExp3.CODEC.fieldOf("half_dimensions").orElse(FloatMolangExp3.ZERO).forGetter(box -> box.halfDimensions),
-                Direction.CODEC.fieldOf("direction").orElse(Direction.NONE).forGetter(box -> box.direction),
+                Direction.CODEC.fieldOf("direction").orElse(Direction.OUTWARDS).forGetter(box -> box.direction),
                 Codec.BOOL.fieldOf("surface_only").orElse(false).forGetter(EmitterShape::isSurfaceOnly)
         ).apply(instance, Box::new));
         /**
@@ -369,7 +370,7 @@ public abstract class EmitterShape implements IEmitterComponent {
      */
     public static final class EntityAABB extends EmitterShape {
         public static final Codec<EntityAABB> CODEC = RecordCodecBuilder.create(instance -> instance.group(
-                Direction.CODEC.fieldOf("direction").orElse(Direction.NONE).forGetter(entityAABB -> entityAABB.direction),
+                Direction.CODEC.fieldOf("direction").orElse(Direction.OUTWARDS).forGetter(entityAABB -> entityAABB.direction),
                 Codec.BOOL.fieldOf("surface_only").orElse(false).forGetter(EmitterShape::isSurfaceOnly)
         ).apply(instance, EntityAABB::new));
         public final Direction direction;
@@ -420,7 +421,7 @@ public abstract class EmitterShape implements IEmitterComponent {
     public static final class Point extends EmitterShape {
         public static final Codec<Point> CODEC = RecordCodecBuilder.create(instance -> instance.group(
                 FloatMolangExp3.CODEC.fieldOf("offset").orElse(FloatMolangExp3.ZERO).forGetter(point -> point.offset),
-                Direction.CODEC.fieldOf("direction").orElse(Direction.NONE).forGetter(point -> point.direction)
+                Direction.CODEC.fieldOf("direction").orElse(Direction.OUTWARDS).forGetter(point -> point.direction)
         ).apply(instance, Point::new));
         /**
          * Specifies the offset from the emitter to emit the particles
@@ -472,7 +473,7 @@ public abstract class EmitterShape implements IEmitterComponent {
         public static final Codec<Sphere> CODEC = RecordCodecBuilder.create(instance -> instance.group(
                 FloatMolangExp3.CODEC.fieldOf("offset").orElse(FloatMolangExp3.ZERO).forGetter(sphere -> sphere.offset),
                 FloatMolangExp.CODEC.fieldOf("radius").orElse(FloatMolangExp.ONE).forGetter(sphere -> sphere.radius),
-                Direction.CODEC.fieldOf("direction").orElse(Direction.NONE).forGetter(sphere -> sphere.direction),
+                Direction.CODEC.fieldOf("direction").orElse(Direction.OUTWARDS).forGetter(sphere -> sphere.direction),
                 Codec.BOOL.fieldOf("surface_only").orElse(false).forGetter(EmitterShape::isSurfaceOnly)
         ).apply(instance, Sphere::new));
         /**
@@ -565,7 +566,6 @@ public abstract class EmitterShape implements IEmitterComponent {
 
         public void apply(MolangInstance instance, EmitterShape shape, Vector3f position, Vector3f speed) {
             // todo inherited_particle_speed
-            if (this == NONE) return;
             if (this == INWARDS || this == OUTWARDS) {
                 if (shape instanceof Point) {
                     applyEuler(getRandomEuler(instance.getLevel().random), speed.set(1, 0, 0));

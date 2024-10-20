@@ -49,6 +49,7 @@ public class ParticleEmitter implements MolangInstance {
     public int id;
 
     public transient float invTickRate;
+    public transient Vector3f particleInitialSpeed = new Vector3f();
     public transient int age = 0;
     public transient int lifetime = 0;
     public transient boolean active = false;
