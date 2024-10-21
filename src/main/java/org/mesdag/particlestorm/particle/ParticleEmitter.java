@@ -248,14 +248,6 @@ public class ParticleEmitter implements MolangInstance {
         return pos.z;
     }
 
-    public float getXRot() {
-        return rot.x;
-    }
-
-    public float getYRot() {
-        return rot.y;
-    }
-
     @Override
     public VariableTable getVariableTable() {
         return variableTable;

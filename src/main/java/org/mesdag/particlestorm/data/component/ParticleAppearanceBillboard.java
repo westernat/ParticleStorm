@@ -47,10 +47,8 @@ public record ParticleAppearanceBillboard(FloatMolangExp2 size, FaceCameraMode f
                 instance.yRot = values[1];
                 instance.setRoll(values[2]);
             } else {
-                double xdSqr = instance.getXd() * instance.getXd();
-                double zdSqr = instance.getZd() * instance.getZd();
-                if (direction.minSpeedThreshold > 0.0F && xdSqr + instance.getYd() * instance.getYd() + zdSqr > instance.detail.minSpeedThresholdSqr) {
-                    instance.updateBillboardRotation(xdSqr, zdSqr);
+                if (direction.minSpeedThreshold > 0.0F && instance.readOnlySpeed.lengthSquared() > instance.detail.minSpeedThresholdSqr) {
+                    instance.facingDirection.set(instance.readOnlySpeed).normalize();
                 }
             }
         }
@@ -77,6 +75,20 @@ public record ParticleAppearanceBillboard(FloatMolangExp2 size, FaceCameraMode f
 
     @Override
     public void apply(MolangParticleInstance instance) {
+        if (faceCameraMode.isDirection()) {
+            if (direction.mode == ParticleAppearanceBillboard.Direction.Mode.CUSTOM_DIRECTION) {
+                float[] values = direction.customDirection.calculate(instance);
+                instance.xRot = values[0];
+                instance.yRot = values[1];
+                instance.setRoll(values[2]);
+            } else {
+                double xdSqr = instance.getXd() * instance.getXd();
+                double zdSqr = instance.getZd() * instance.getZd();
+                if (direction.minSpeedThreshold > 0.0F && xdSqr + instance.getYd() * instance.getYd() + zdSqr > instance.detail.minSpeedThresholdSqr) {
+                    instance.facingDirection.set(instance.readOnlySpeed).normalize();
+                }
+            }
+        }
         if (size.initialized()) {
             instance.billboardSize = size.calculate(instance);
         }

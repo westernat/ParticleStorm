@@ -8,7 +8,7 @@ import net.neoforged.api.distmarker.OnlyIn;
 import org.joml.Matrix4f;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
-import org.mesdag.particlestorm.data.component.EmitterShape;
+import org.mesdag.particlestorm.data.MathHelper;
 
 @OnlyIn(Dist.CLIENT)
 public enum FaceCameraMode implements SingleQuadParticle.FacingCameraMode {
@@ -80,7 +80,6 @@ public enum FaceCameraMode implements SingleQuadParticle.FacingCameraMode {
     },
     LOOKAT_DIRECTION {
         private final Vector3f X = new Vector3f(1.0F, 0.0F, 0.0F);
-        private final Vector3f vec = new Vector3f();
         private final Quaternionf dest = new Quaternionf();
 
         @Override
@@ -88,9 +87,8 @@ public enum FaceCameraMode implements SingleQuadParticle.FacingCameraMode {
 
         @Override
         public void setRotation(MolangParticleInstance instance, Quaternionf quaternion, Camera camera, float partialTick) {
-            vec.set(instance.xRot, instance.yRot, instance.getRoll()).normalize();
-            Quaternionf quaternion1 = EmitterShape.setFromUnitVectors(X, vec, dest);
-            quaternion.premul(quaternion1);
+            quaternion.premul(MathHelper.setFromUnitVectors(X, instance.facingDirection, dest));
+            // todo instance.xRot旋转到玩家方向
         }
     },
     EMITTER_TRANSFORM_XY {

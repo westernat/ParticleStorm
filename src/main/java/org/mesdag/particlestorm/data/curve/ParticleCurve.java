@@ -2,9 +2,9 @@ package org.mesdag.particlestorm.data.curve;
 
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
+import it.unimi.dsi.fastutil.floats.FloatArrayList;
 import net.minecraft.util.Mth;
 import net.minecraft.util.Tuple;
-import org.joml.Vector2f;
 import org.mesdag.particlestorm.data.molang.FloatMolangExp;
 import org.mesdag.particlestorm.data.molang.MolangInstance;
 
@@ -26,7 +26,6 @@ public final class ParticleCurve {
     public static final Tuple<Float, CurveNode> FIRST = new Tuple<>(0.0F, new CurveNode(0.0F, 0.0F));
     public static final Tuple<Float, CurveNode> LAST = new Tuple<>(1.0F, new CurveNode(0.0F, 0.0F));
     public static final float ONE_THREE = 1.0F / 3.0F;
-    public static final float TWO_THREE = 2.0F / 3.0F;
     public final CurveType type;
     public final FloatMolangExp input;
     public final FloatMolangExp horizontalRange;
@@ -53,18 +52,16 @@ public final class ParticleCurve {
             case CATMULL_ROM -> {
                 SplineCurve curve = cachedCurves.get(name);
                 if (curve == null) {
-                    ArrayList<Vector2f> points = new ArrayList<>();
-                    List<FloatMolangExp> floatMolangExps = nodes.either.right().get();
-                    for (int index = 0; index < floatMolangExps.size(); index++) {
-                        FloatMolangExp exp = floatMolangExps.get(index);
-                        points.add(new Vector2f(index - 1, exp.calculate(instance)));
+                    FloatArrayList points = new FloatArrayList();
+                    for (FloatMolangExp exp : nodes.either.right().get()) {
+                        points.add(exp.calculate(instance));
                     }
-                    curve = new SplineCurve.CatMullRom(points);
+                    curve = new SplineCurve.CatMullRom(points.toFloatArray());
                     cachedCurves.put(name, curve);
                 }
                 int c = nodes.length() - 3;
                 float u = (1 + i * c) / (c + 2);
-                return curve.getPoint(u).y;
+                return curve.getPoint(u);
             }
             case LINEAR -> {
                 int c = nodes.length() - 1;
@@ -79,26 +76,14 @@ public final class ParticleCurve {
             case BEZIER -> {
                 SplineCurve curve = cachedCurves.get(name);
                 if (curve == null) {
-                    ArrayList<Vector2f> points = new ArrayList<>();
-                    List<FloatMolangExp> floatMolangExps = nodes.either.right().get();
-                    for (int index = 0; index < floatMolangExps.size(); index++) {
-                        FloatMolangExp exp = floatMolangExps.get(index);
-                        points.add(new Vector2f(index / 3.0F, exp.calculate(instance)));
+                    FloatArrayList points = new FloatArrayList();
+                    for (FloatMolangExp exp : nodes.either.right().get()) {
+                        points.add(exp.calculate(instance));
                     }
-                    if (points.isEmpty()) {
-                        curve = new SplineCurve.Bezier(new Vector2f(), new Vector2f(), new Vector2f(), new Vector2f());
-                    } else if (points.size() == 1) {
-                        curve = new SplineCurve.Bezier(points.getFirst(), new Vector2f(), new Vector2f(), new Vector2f());
-                    } else if (points.size() == 2) {
-                        curve = new SplineCurve.Bezier(points.getFirst(), points.get(1), new Vector2f(), new Vector2f());
-                    } else if (points.size() == 3) {
-                        curve = new SplineCurve.Bezier(points.getFirst(), points.get(1), points.get(2), new Vector2f());
-                    } else {
-                        curve = new SplineCurve.Bezier(points.get(0), points.get(1), points.get(2), points.get(3));
-                    }
+                    curve = new SplineCurve.Bezier(points.toFloatArray());
                     cachedCurves.put(name, curve);
                 }
-                return curve.getPoint(i).y;
+                return curve.getPoint(i);
             }
             case BEZIER_CHAIN -> {
                 ArrayList<Tuple<Float, CurveNode>> e = nodes.nodeList;
@@ -110,11 +95,11 @@ public final class ParticleCurve {
                 float o = s.getA() - rTime;
                 CurveNode rNode = r.getB();
                 CurveNode sNode = s.getB();
-                Vector2f v0 = new Vector2f(rTime, rNode.value());
-                Vector2f v1 = new Vector2f(rTime + o * ONE_THREE, rNode.value() + rNode.slope() * ONE_THREE);
-                Vector2f v2 = new Vector2f(rTime + o * TWO_THREE, sNode.value() - sNode.slope() * ONE_THREE);
-                Vector2f v3 = new Vector2f(rTime + o, sNode.value());
-                return new SplineCurve.Bezier(v0, v1, v2, v3).getPoint((i - rTime) / o).y;
+                float v0 = rNode.value();
+                float v1 = rNode.value() + rNode.slope() * ONE_THREE;
+                float v2 = sNode.value() - sNode.slope() * ONE_THREE;
+                float v3 = sNode.value();
+                return SplineCurve.Bezier.getDirectPoint((i - rTime) / o, v0, v1, v2, v3);
             }
         }
         return 0.0F;

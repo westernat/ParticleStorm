@@ -14,6 +14,7 @@ import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.NotNull;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
+import org.mesdag.particlestorm.data.MathHelper;
 import org.mesdag.particlestorm.data.molang.FloatMolangExp;
 import org.mesdag.particlestorm.data.molang.FloatMolangExp3;
 import org.mesdag.particlestorm.data.molang.MolangExp;
@@ -32,40 +33,6 @@ public abstract class EmitterShape implements IEmitterComponent {
 
     protected EmitterShape(boolean surfaceOnly) {
         this.surfaceOnly = surfaceOnly;
-    }
-
-    public static Quaternionf setFromUnitVectors(Vector3f e, Vector3f t, Quaternionf dest) {
-        float n = e.dot(t) + 1.0F;
-        if (n < Mth.EPSILON) {
-            if (Math.abs(e.x) > Math.abs(e.z)) {
-                dest.x = -e.y;
-                dest.y = e.x;
-                dest.z = 0.0F;
-            } else {
-                dest.x = 0.0F;
-                dest.y = -e.z;
-                dest.z = e.y;
-            }
-            dest.w = 0.0F;
-        } else {
-            dest.x = e.y * t.z - e.z * t.y;
-            dest.y = e.z * t.x - e.x * t.z;
-            dest.z = e.x * t.y - e.y * t.x;
-            dest.w = n;
-        }
-        return dest.normalize();
-    }
-
-    public static void applyQuaternion(Quaternionf e, Vector3f dest) {
-        float t = dest.x, n = dest.y, r = dest.z;
-        float i = e.x, a = e.y, o = e.z, s = e.w;
-        float l = s * t + a * r - o * n;
-        float c = s * n + o * t - i * r;
-        float u = s * r + i * n - a * t;
-        float h = -i * t - a * n - o * r;
-        dest.x = l * s + h * -i + c * -o - u * -a;
-        dest.y = c * s + h * -a + u * -i - l * -o;
-        dest.z = u * s + h * -o + l * -a - c * -i;
     }
 
     /**
@@ -118,7 +85,7 @@ public abstract class EmitterShape implements IEmitterComponent {
                 speed.z *= -1;
             }
             if (emitter.getDetail().localRotation) {
-                applyEuler(emitter.getXRot(), emitter.getYRot(), 0.0F, position);
+                MathHelper.applyEuler(emitter.rot.x, emitter.rot.y, 0.0F, position);
             }
             if (emitter.getDetail().localPosition) {
                 Vec3 emitterPos = emitter.getPosition();
@@ -153,25 +120,6 @@ public abstract class EmitterShape implements IEmitterComponent {
     private static boolean hasSpaceInParticleLimit(ParticleEmitter emitter) {
         ParticleGroup particleGroup = emitter.particleGroup;
         return ((ParticleEngineAccessor) Minecraft.getInstance().particleEngine).trackedParticleCounts().getInt(particleGroup) < particleGroup.getLimit();
-    }
-
-    protected float randomab(RandomSource random, float a, float b) {
-        return a + (b - a) * random.nextFloat();
-    }
-
-    private static Vector3f getRandomEuler(RandomSource random) {
-        float x = random.nextFloat() * (random.nextBoolean() ? Mth.PI : -Mth.PI);
-        float y = random.nextFloat() * (random.nextBoolean() ? Mth.PI : -Mth.PI);
-        float z = random.nextFloat() * (random.nextBoolean() ? Mth.PI : -Mth.PI);
-        return new Vector3f(x, y, z);
-    }
-
-    private static void applyEuler(Vector3f euler, Vector3f dest) {
-        new Quaternionf().rotateXYZ(euler.x, euler.y, euler.z).transform(dest);
-    }
-
-    private static void applyEuler(float x, float y, float z, Vector3f dest) {
-        new Quaternionf().rotateXYZ(x, y, z).transform(dest);
     }
 
     /**
@@ -238,8 +186,8 @@ public abstract class EmitterShape implements IEmitterComponent {
             position.z += sp * Mth.sin(op);
             float[] lp = planeNormal.plane.calculate(instance);
             if (!Arrays.equals(lp, PlaneNormal.FN)) {
-                Quaternionf quaternion = setFromUnitVectors(PlaneNormal.VY, new Vector3f(lp), new Quaternionf());
-                applyQuaternion(quaternion, position);
+                Quaternionf quaternion = MathHelper.setFromUnitVectors(PlaneNormal.VY, new Vector3f(lp), new Quaternionf());
+                MathHelper.applyQuaternion(quaternion, position);
             }
             direction.apply(instance, this, position, speed);
         }
@@ -263,13 +211,7 @@ public abstract class EmitterShape implements IEmitterComponent {
             public static final PlaneNormal Y = new PlaneNormal("y", FloatMolangExp3.Y);
             public static final PlaneNormal Z = new PlaneNormal("z", FloatMolangExp3.Z);
             public static final float[] FN = new float[]{0.0F, 0.0F, 0.0F};
-            public static final float[] FX = new float[]{1.0F, 0.0F, 0.0F};
-            public static final float[] FY = new float[]{0.0F, 1.0F, 0.0F};
-            public static final float[] FZ = new float[]{0.0F, 0.0F, 1.0F};
-            public static final Vector3f VN = new Vector3f(0.0F, 0.0F, 0.0F);
-            public static final Vector3f VX = new Vector3f(1.0F, 0.0F, 0.0F);
             public static final Vector3f VY = new Vector3f(0.0F, 1.0F, 0.0F);
-            public static final Vector3f VZ = new Vector3f(0.0F, 0.0F, 1.0F);
             public static final Codec<PlaneNormal> CODEC = Codec.either(Codec.STRING, FloatMolangExp3.CODEC).xmap(
                     either -> either.map(d -> switch (d) {
                         case "x" -> X;
@@ -343,9 +285,9 @@ public abstract class EmitterShape implements IEmitterComponent {
             position.set(offset.calculate(instance));
             float[] n = halfDimensions.calculate(instance);
             RandomSource random = instance.getLevel().random;
-            position.x += randomab(random, -n[0], n[0]);
-            position.y += randomab(random, -n[1], n[1]);
-            position.z += randomab(random, -n[2], n[2]);
+            position.x += MathHelper.nextFloat(random, -n[0], n[0]);
+            position.y += MathHelper.nextFloat(random, -n[1], n[1]);
+            position.z += MathHelper.nextFloat(random, -n[2], n[2]);
             if (surfaceOnly) {
                 int r = random.nextInt(0, 3);
                 boolean i = random.nextBoolean();
@@ -395,9 +337,9 @@ public abstract class EmitterShape implements IEmitterComponent {
             EntityDimensions dimensions = instance.getAttachedEntity().getDimensions(instance.getAttachedEntity().getPose());
             Vector3f n = new Vector3f(dimensions.width(), dimensions.height(), dimensions.width());
             RandomSource random = instance.getLevel().random;
-            position.x = randomab(random, -n.x, n.x);
-            position.y = randomab(random, -n.y, n.y);
-            position.z = randomab(random, -n.z, n.z);
+            position.x = MathHelper.nextFloat(random, -n.x, n.x);
+            position.y = MathHelper.nextFloat(random, -n.y, n.y);
+            position.z = MathHelper.nextFloat(random, -n.z, n.z);
             if (surfaceOnly) {
                 int r = random.nextInt(0, 3);
                 boolean i = random.nextBoolean();
@@ -518,7 +460,7 @@ public abstract class EmitterShape implements IEmitterComponent {
             position.set(offset.calculate(invTickRate));
             float a = radius.calculate(invTickRate);
             position.x = surfaceOnly ? a : a * invTickRate.getLevel().random.nextFloat();
-            applyEuler(getRandomEuler(invTickRate.getLevel().random), position);
+            MathHelper.applyEuler(MathHelper.getRandomEuler(invTickRate.getLevel().random), position);
             direction.apply(invTickRate, this, position, speed);
         }
 
@@ -545,7 +487,6 @@ public abstract class EmitterShape implements IEmitterComponent {
          * Particle direction away from center of shape
          */
         public static final Direction OUTWARDS = new Direction("outwards", FloatMolangExp3.ZERO);
-        public static final Direction NONE = new Direction("custom", FloatMolangExp3.ZERO);
         public static final Codec<Direction> DIRECTION_CODEC = StringRepresentable.fromValues(() -> new Direction[]{INWARDS, OUTWARDS});
         public static final Codec<Direction> CODEC = Codec.either(DIRECTION_CODEC, FloatMolangExp3.CODEC).xmap(
                 either -> either.map(dir -> dir, list -> new Direction("custom", list)),
@@ -568,7 +509,7 @@ public abstract class EmitterShape implements IEmitterComponent {
             // todo inherited_particle_speed
             if (this == INWARDS || this == OUTWARDS) {
                 if (shape instanceof Point) {
-                    applyEuler(getRandomEuler(instance.getLevel().random), speed.set(1, 0, 0));
+                    MathHelper.applyEuler(MathHelper.getRandomEuler(instance.getLevel().random), speed.set(1, 0, 0));
                 } else {
                     speed.set(position);
                     if (speed.lengthSquared() != 0.0F) {

@@ -40,9 +40,9 @@ public class MolangParticleInstance extends TextureSheetParticle implements Mola
     protected final float originX;
     protected final float originY;
 
-    public Vector3f initialSpeed = new Vector3f();
     public Vector3f acceleration = new Vector3f();
-    public Vector3f readOnlySpeed = new Vector3f(); // read-only
+    public Vector3f readOnlySpeed = new Vector3f();
+    public Vector3f facingDirection = new Vector3f();
     public float xRot = 0.0F;
     public float yRot = 0.0F;
     protected float xRotO = 0.0F;
@@ -262,29 +262,16 @@ public class MolangParticleInstance extends TextureSheetParticle implements Mola
     public void render(@NotNull VertexConsumer buffer, @NotNull Camera renderInfo, float partialTicks) {
         Quaternionf quaternionf = new Quaternionf();
         getFacingCameraMode().setRotation(this, quaternionf, renderInfo, partialTicks);
-        if (this.roll != 0.0F) {
-            quaternionf.rotateZ(Mth.lerp(partialTicks, this.oRoll, this.roll));
-        }
+        if (xRot != 0.0F) quaternionf.rotateX(Mth.lerp(partialTicks, xRotO, xRot));
+        if (yRot != 0.0F) quaternionf.rotateY(Mth.lerp(partialTicks, yRotO, yRot));
+        if (roll != 0.0F) quaternionf.rotateZ(Mth.lerp(partialTicks, oRoll, roll));
         renderRotatedQuad(buffer, renderInfo, quaternionf, partialTicks);
-    }
-
-    @Override
-    protected void renderRotatedQuad(@NotNull VertexConsumer buffer, @NotNull Camera camera, @NotNull Quaternionf quaternion, float partialTicks) {
-        if (xRot != 0.0F) quaternion.rotateX(Mth.lerp(partialTicks, xRotO, xRot));
-        if (yRot != 0.0F) quaternion.rotateY(Mth.lerp(partialTicks, yRotO, yRot));
-        super.renderRotatedQuad(buffer, camera, quaternion, partialTicks);
     }
 
     @Override
     protected void renderVertex(@NotNull VertexConsumer buffer, @NotNull Quaternionf quaternion, float x, float y, float z, float xOffset, float yOffset, float quadSize, float u, float v, int packedLight) {
         Vector3f vector3f = new Vector3f(xOffset * billboardSize[0], yOffset * billboardSize[1], 0.0F).rotate(quaternion).add(x, y, z);
         buffer.addVertex(vector3f.x(), vector3f.y(), vector3f.z()).setUv(u, v).setColor(rCol, gCol, bCol, alpha).setLight(packedLight);
-    }
-
-    public void updateBillboardRotation(double xdSqr, double zdSqr) {
-        double d0 = Math.sqrt(xdSqr + zdSqr);
-        this.xRot = (float) (Mth.atan2(yd, d0) * Mth.RAD_TO_DEG);
-        this.yRot = (float) (Mth.atan2(xd, zd) * Mth.RAD_TO_DEG);
     }
 
     public void moveDirectly(double x, double y, double z) {
