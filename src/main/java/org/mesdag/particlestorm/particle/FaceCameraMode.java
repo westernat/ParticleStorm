@@ -87,8 +87,14 @@ public enum FaceCameraMode implements SingleQuadParticle.FacingCameraMode {
 
         @Override
         public void setRotation(MolangParticleInstance instance, Quaternionf quaternion, Camera camera, float partialTick) {
-            quaternion.premul(MathHelper.setFromUnitVectors(X, instance.facingDirection, dest));
-            // todo instance.xRot旋转到玩家方向
+            quaternion.set(MathHelper.setFromUnitVectors(X, instance.facingDirection, dest));
+            Vector3f vec = camera.getPosition().toVector3f().sub(
+                    (float) instance.getX(),
+                    (float) instance.getY(),
+                    (float) instance.getZ()
+            ).normalize();
+            quaternion.rotateX((float) Mth.atan2(-vec.y, vec.z));
+            // todo 修复朝向不对问题
         }
     },
     EMITTER_TRANSFORM_XY {
