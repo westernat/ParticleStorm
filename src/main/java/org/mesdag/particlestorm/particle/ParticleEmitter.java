@@ -6,6 +6,7 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
+import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.level.Level;
@@ -79,10 +80,7 @@ public class ParticleEmitter implements MolangInstance {
         this.particleId = particleId;
         this.effectType = type;
         this.expression = expression;
-        this.emitterRandom1 = level.random.nextDouble();
-        this.emitterRandom2 = level.random.nextDouble();
-        this.emitterRandom3 = level.random.nextDouble();
-        this.emitterRandom4 = level.random.nextDouble();
+        updateRandoms(level.random);
         this.invTickRate = 1.0F / level.tickRateManager().tickrate();
     }
 
@@ -94,6 +92,13 @@ public class ParticleEmitter implements MolangInstance {
         this.level = level;
         deserialize(tag);
         this.invTickRate = 1.0F / level.tickRateManager().tickrate();
+    }
+
+    public void updateRandoms(RandomSource random) {
+        this.emitterRandom1 = random.nextDouble();
+        this.emitterRandom2 = random.nextDouble();
+        this.emitterRandom3 = random.nextDouble();
+        this.emitterRandom4 = random.nextDouble();
     }
 
     public void tick() {

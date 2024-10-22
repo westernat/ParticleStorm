@@ -137,6 +137,7 @@ public abstract class EmitterLifetime implements IEmitterComponent {
                 for (IEmitterComponent e : emitter.getDetail().components) {
                     e.apply(emitter);
                 }
+                emitter.updateRandoms(emitter.level.random);
             }
         }
 
