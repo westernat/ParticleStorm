@@ -2,9 +2,9 @@ package org.mesdag.particlestorm.data.component;
 
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
-import net.minecraft.core.particles.ParticleGroup;
 import org.mesdag.particlestorm.data.molang.FloatMolangExp;
 import org.mesdag.particlestorm.data.molang.MolangExp;
+import org.mesdag.particlestorm.particle.MutableParticleGroup;
 import org.mesdag.particlestorm.particle.ParticleEmitter;
 
 import java.util.List;
@@ -49,11 +49,15 @@ public abstract class EmitterRate implements IEmitterComponent {
         }
 
         @Override
-        public void apply(ParticleEmitter entity) {
-            int calculate = (int) numParticles.calculate(entity);
-            if (entity.spawnRate != calculate) {
-                entity.spawnRate = calculate;
-                entity.particleGroup = new ParticleGroup(calculate);
+        public void apply(ParticleEmitter emitter) {
+            int limit = (int) numParticles.calculate(emitter);
+            if (emitter.spawnRate != limit) {
+                emitter.spawnRate = limit;
+                if (emitter.particleGroup == null) {
+                    emitter.particleGroup = new MutableParticleGroup(limit);
+                } else {
+                    emitter.particleGroup.setLimit(limit);
+                }
             }
         }
 
@@ -100,13 +104,18 @@ public abstract class EmitterRate implements IEmitterComponent {
         }
 
         @Override
-        public void apply(ParticleEmitter entity) {
-            float calculated = spawnRate.calculate(entity);
-            float tickrate = entity.level.tickRateManager().tickrate();
-            entity.spawnDuration = Math.max((int) (tickrate / calculated), 1);
-            if (entity.spawnRate != calculated) {
-                entity.spawnRate = entity.spawnDuration == 1 ? (int) (calculated / tickrate) : 1;
-                entity.particleGroup = new ParticleGroup((int) maxParticles.calculate(entity));
+        public void apply(ParticleEmitter emitter) {
+            float calculated = spawnRate.calculate(emitter);
+            float tickrate = emitter.level.tickRateManager().tickrate();
+            emitter.spawnDuration = Math.max((int) (tickrate / calculated), 1);
+            if (emitter.spawnRate != calculated) {
+                emitter.spawnRate = emitter.spawnDuration == 1 ? (int) (calculated / tickrate) : 1;
+                int limit = (int) maxParticles.calculate(emitter);
+                if (emitter.particleGroup == null) {
+                    emitter.particleGroup = new MutableParticleGroup(limit);
+                } else {
+                    emitter.particleGroup.setLimit(limit);
+                }
             }
         }
 
@@ -148,7 +157,12 @@ public abstract class EmitterRate implements IEmitterComponent {
 
         @Override
         public void apply(ParticleEmitter emitter) {
-            emitter.particleGroup = new ParticleGroup((int) maxParticles.calculate(emitter));
+            int limit = (int) maxParticles.calculate(emitter);
+            if (emitter.particleGroup == null) {
+                emitter.particleGroup = new MutableParticleGroup(limit);
+            } else {
+                emitter.particleGroup.setLimit(limit);
+            }
         }
 
         @Override

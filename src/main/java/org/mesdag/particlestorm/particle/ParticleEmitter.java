@@ -2,7 +2,6 @@ package org.mesdag.particlestorm.particle;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.particles.ParticleGroup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
@@ -56,7 +55,7 @@ public class ParticleEmitter implements MolangInstance {
     public transient int loopingTime = 0;
     public transient int activeTime = 0;
     public transient int fullLoopTime = 0;
-    public transient ParticleGroup particleGroup;
+    public transient MutableParticleGroup particleGroup;
     public transient int spawnDuration = 1;
     public transient int spawnRate = 0;
     public transient boolean spawned = false;
