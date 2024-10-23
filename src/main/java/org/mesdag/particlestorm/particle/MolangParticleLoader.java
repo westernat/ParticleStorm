@@ -22,7 +22,6 @@ import net.neoforged.api.distmarker.OnlyIn;
 import org.jetbrains.annotations.NotNull;
 import org.mesdag.particlestorm.ParticleStorm;
 import org.mesdag.particlestorm.data.DefinedParticleEffect;
-import org.mesdag.particlestorm.data.component.IComponent;
 import org.mesdag.particlestorm.data.component.IParticleComponent;
 import org.mesdag.particlestorm.network.EmitterRemovalPacket;
 import org.mesdag.particlestorm.network.EmitterSynchronizePacket;
@@ -47,20 +46,7 @@ public class MolangParticleLoader implements PreparableReloadListener {
     private boolean initialized = false;
 
     public void tick() {
-        if (!initialized) {
-            this.player = Minecraft.getInstance().player;
-            if (player == null) return;
-            for (ParticleDetail detail : ID_2_PARTICLE.values()) {
-                for (IComponent component : detail.effect.components.values()) {
-                    if (component instanceof IParticleComponent particleComponent) {
-                        particleComponent.initialize(player.level());
-                    }
-                }
-            }
-            Integer i = Minecraft.getInstance().options.renderDistance().get() * 16;
-            this.renderDistSqr = i * i;
-            this.initialized = true;
-        } else {
+        if (initialized) {
             ObjectIterator<Int2ObjectMap.Entry<ParticleEmitter>> iterator = emitters.int2ObjectEntrySet().iterator();
             while (iterator.hasNext()) {
                 ParticleEmitter emitter = iterator.next().getValue();
@@ -72,6 +58,17 @@ public class MolangParticleLoader implements PreparableReloadListener {
                     emitter.tick();
                 }
             }
+        } else {
+            this.player = Minecraft.getInstance().player;
+            if (player == null) return;
+            for (ParticleDetail detail : ID_2_PARTICLE.values()) {
+                for (IParticleComponent component : detail.effect.orderedParticleComponents) {
+                    component.initialize(player.level());
+                }
+            }
+            Integer i = Minecraft.getInstance().options.renderDistance().get() * 16;
+            this.renderDistSqr = i * i;
+            this.initialized = true;
         }
     }
 
