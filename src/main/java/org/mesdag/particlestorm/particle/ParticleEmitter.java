@@ -120,7 +120,7 @@ public class ParticleEmitter implements MolangInstance {
                     return;
                 }
                 if (parentRotation != null) {
-                    rot.set(parentRotation).add(offsetRot.x, offsetRot.y - getAttachedYRot() * Mth.DEG_TO_RAD, offsetRot.z);
+                    rot.set(parentRotation).add(offsetRot.x, offsetRot.y + getAttachedYRot() * Mth.DEG_TO_RAD, offsetRot.z);
                 }
                 Vector3f rotated = offsetPos.toVector3f().rotateZ(rot.z).rotateY(rot.y).rotateX(rot.x);
                 this.pos = new Vec3(attached.getX() + rotated.x, attached.getY() + rotated.y, attached.getZ() + rotated.z);
@@ -173,7 +173,7 @@ public class ParticleEmitter implements MolangInstance {
     }
 
     private float getAttachedYRot() {
-        return attached instanceof LivingEntity living ? living.yBodyRot : attached.getYRot();
+        return attached instanceof LivingEntity living ? -living.yBodyRot : attached.getYRot();
     }
 
     public void remove() {
