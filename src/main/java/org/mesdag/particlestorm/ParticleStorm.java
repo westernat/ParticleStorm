@@ -61,9 +61,6 @@ public final class ParticleStorm {
             either -> either.map(Collections::singletonList, Function.identity()),
             l -> l.size() == 1 ? Either.left(l.getFirst()) : Either.right(l)
     );
-    public static DeferredRegister<Block> BLOCK;
-    public static DeferredRegister<BlockEntityType<?>> ENTITY;
-    public static DeferredHolder<Block, Block> TEST;
     public static DeferredHolder<BlockEntityType<?>, BlockEntityType<TestBlock.Entity>> TEST_ENTITY;
 
     public ParticleStorm(IEventBus bus, ModContainer container) {
@@ -111,9 +108,9 @@ public final class ParticleStorm {
 
     private static void registerGeoTest(IEventBus bus) {
         if (DEBUG) {
-            BLOCK = DeferredRegister.create(BuiltInRegistries.BLOCK, MODID);
-            ENTITY = DeferredRegister.create(BuiltInRegistries.BLOCK_ENTITY_TYPE, MODID);
-            TEST = BLOCK.register("test_block", TestBlock::new);
+            DeferredRegister<Block> BLOCK = DeferredRegister.create(BuiltInRegistries.BLOCK, MODID);
+            DeferredRegister<BlockEntityType<?>> ENTITY = DeferredRegister.create(BuiltInRegistries.BLOCK_ENTITY_TYPE, MODID);
+            DeferredHolder<Block, Block> TEST = BLOCK.register("test_block", TestBlock::new);
             TEST_ENTITY = ENTITY.register("test_entity", () -> BlockEntityType.Builder.of(TestBlock.Entity::new, TEST.get()).build(null));
             BLOCK.register(bus);
             ENTITY.register(bus);

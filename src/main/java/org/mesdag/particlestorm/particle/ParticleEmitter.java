@@ -70,8 +70,8 @@ public class ParticleEmitter implements MolangInstance {
 
     public transient final Level level;
     public Vec3 pos;
+    public Vec3 posO = Vec3.ZERO;
     public Vector3f rot = new Vector3f();
-    public Vec3 deltaMovement = Vec3.ZERO;
     private transient boolean removed = false;
 
     public ParticleEmitter(Level level, Vec3 pos, ResourceLocation particleId, ParticleEffect.Type type, MolangExp expression) {
@@ -105,11 +105,14 @@ public class ParticleEmitter implements MolangInstance {
         if (initialized) {
             this.invTickRate = 1.0F / level.tickRateManager().tickrate();
             this.moveDistO = moveDist;
+            this.posO = pos;
             for (IEmitterComponent component : components) {
                 component.update(this);
             }
             this.age++;
-            move(deltaMovement);
+            if (!posO.equals(pos)) {
+                this.moveDist += (float) pos.subtract(posO).length();
+            }
             if (detail.emitterRateType == EmitterRate.Type.MANUAL) {
                 remove();
                 return;
@@ -195,11 +198,6 @@ public class ParticleEmitter implements MolangInstance {
         return removed;
     }
 
-    public void move(Vec3 delta) {
-        this.moveDist += (float) delta.length();
-        pos.add((float) delta.x, (float) delta.y, (float) delta.z);
-    }
-
     public void setPos(Vec3 pos) {
         this.pos = pos;
     }
@@ -218,7 +216,7 @@ public class ParticleEmitter implements MolangInstance {
         this.emitterRandom4 = compound.getDouble("emitterRandom4");
         this.pos = new Vec3(compound.getDouble("posX"), compound.getDouble("posY"), compound.getDouble("posZ"));
         this.rot.set(compound.getFloat("rotX"), compound.getFloat("rotY"), compound.getFloat("rotZ"));
-        this.deltaMovement = new Vec3(compound.getDouble("movX"), compound.getDouble("movY"), compound.getDouble("movZ"));
+        this.posO = new Vec3(compound.getDouble("movX"), compound.getDouble("movY"), compound.getDouble("movZ"));
     }
 
     public void serialize(CompoundTag compound) {
@@ -235,9 +233,9 @@ public class ParticleEmitter implements MolangInstance {
         compound.putFloat("rotX", rot.x);
         compound.putFloat("rotY", rot.y);
         compound.putFloat("rotZ", rot.z);
-        compound.putDouble("movX", deltaMovement.x);
-        compound.putDouble("movY", deltaMovement.y);
-        compound.putDouble("movZ", deltaMovement.z);
+        compound.putDouble("movX", posO.x);
+        compound.putDouble("movY", posO.y);
+        compound.putDouble("movZ", posO.z);
     }
 
     public double getX() {

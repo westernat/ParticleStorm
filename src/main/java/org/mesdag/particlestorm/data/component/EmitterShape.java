@@ -92,7 +92,7 @@ public abstract class EmitterShape implements IEmitterComponent {
                 position.add((float) emitterPos.x, (float) emitterPos.y, (float) emitterPos.z);
             }
             if (emitter.getDetail().localVelocity) {
-                Vec3 emitterVec = emitter.deltaMovement;
+                Vec3 emitterVec = emitter.posO;
                 speed.add((float) emitterVec.x, (float) emitterVec.y, (float) emitterVec.z);
             }
             speed.mul(emitter.invTickRate);
