@@ -1,5 +1,6 @@
 package org.mesdag.particlestorm.data;
 
+import com.google.common.collect.Sets;
 import com.mojang.serialization.*;
 import com.mojang.serialization.codecs.FieldEncoder;
 
@@ -17,10 +18,9 @@ public class DuplicateFieldDecoder<A> extends MapDecoder.Implementation<A> {
     }
 
     public static <T> MapCodec<T> fieldOf(String defaultName, Set<String> names, Codec<T> codec) {
-        if (!names.contains(defaultName)) {
-            throw new IllegalArgumentException("Argument 'names' must contains 'defaultName'!");
-        }
-        return MapCodec.of(new FieldEncoder<>(defaultName, codec), new DuplicateFieldDecoder<>(names, codec));
+        Set<String> set = Sets.newHashSet(names);
+        set.add(defaultName);
+        return MapCodec.of(new FieldEncoder<>(defaultName, codec), new DuplicateFieldDecoder<>(set, codec));
     }
 
     public static <T> MapCodec<T> fieldOf(String defaultName, String another, Codec<T> codec) {
