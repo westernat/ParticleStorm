@@ -25,7 +25,7 @@ import org.mesdag.particlestorm.data.component.ParticleMotionCollision;
 import org.mesdag.particlestorm.data.event.IEventNode;
 import org.mesdag.particlestorm.data.molang.MolangInstance;
 import org.mesdag.particlestorm.data.molang.VariableTable;
-import org.mesdag.particlestorm.mixinauxi.ITextureAtlasSprite;
+import org.mesdag.particlestorm.mixed.ITextureAtlasSprite;
 
 import java.util.List;
 import java.util.Map;

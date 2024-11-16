@@ -1,4 +1,4 @@
-package org.mesdag.particlestorm.mixinauxi;
+package org.mesdag.particlestorm.mixed;
 
 import org.mesdag.particlestorm.data.molang.VariableTable;
 

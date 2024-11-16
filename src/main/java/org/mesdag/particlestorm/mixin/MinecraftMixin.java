@@ -9,7 +9,7 @@ import net.minecraft.resources.ResourceLocation;
 import org.mesdag.particlestorm.GameClient;
 import org.mesdag.particlestorm.ParticleStorm;
 import org.mesdag.particlestorm.data.DefinedParticleEffect;
-import org.mesdag.particlestorm.mixinauxi.ITextureAtlas;
+import org.mesdag.particlestorm.mixed.ITextureAtlas;
 import org.mesdag.particlestorm.particle.ExtendMutableSpriteSet;
 import org.mesdag.particlestorm.particle.MolangParticleInstance;
 import org.spongepowered.asm.mixin.Final;

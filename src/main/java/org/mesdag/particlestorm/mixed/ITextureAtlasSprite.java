@@ -1,4 +1,4 @@
-package org.mesdag.particlestorm.mixinauxi;
+package org.mesdag.particlestorm.mixed;
 
 public interface ITextureAtlasSprite {
     int particlestorm$getOriginX();

@@ -4,7 +4,7 @@ import net.minecraft.resources.ResourceLocation;
 import org.mesdag.particlestorm.data.molang.MolangExp;
 import org.mesdag.particlestorm.data.molang.VariableTable;
 import org.mesdag.particlestorm.data.molang.compiler.MolangParser;
-import org.mesdag.particlestorm.mixinauxi.IParticleKeyframeData;
+import org.mesdag.particlestorm.mixed.IParticleKeyframeData;
 import org.spongepowered.asm.mixin.*;
 
 import java.util.Arrays;

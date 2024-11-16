@@ -11,7 +11,7 @@ import org.mesdag.particlestorm.GameClient;
 import org.mesdag.particlestorm.data.event.ParticleEffect;
 import org.mesdag.particlestorm.data.molang.MolangExp;
 import org.mesdag.particlestorm.data.molang.VariableTable;
-import org.mesdag.particlestorm.mixinauxi.*;
+import org.mesdag.particlestorm.mixed.*;
 import org.mesdag.particlestorm.particle.ParticleEmitter;
 import software.bernie.geckolib.animation.AnimationController;
 import software.bernie.geckolib.animation.keyframe.event.ParticleKeyframeEvent;

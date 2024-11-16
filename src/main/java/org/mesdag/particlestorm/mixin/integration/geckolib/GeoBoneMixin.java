@@ -1,7 +1,7 @@
 package org.mesdag.particlestorm.mixin.integration.geckolib;
 
 import org.joml.Vector3f;
-import org.mesdag.particlestorm.mixinauxi.IGeoBone;
+import org.mesdag.particlestorm.mixed.IGeoBone;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Pseudo;
 import org.spongepowered.asm.mixin.Unique;

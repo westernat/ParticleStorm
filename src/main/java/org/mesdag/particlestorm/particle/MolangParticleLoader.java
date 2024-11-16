@@ -144,7 +144,7 @@ public class MolangParticleLoader implements PreparableReloadListener {
     }
 
     public static class IntAllocator {
-        private final Collection<Integer> table;
+        private final Set<Integer> table;
 
         public IntAllocator() {
             this.table = new IntArraySet();

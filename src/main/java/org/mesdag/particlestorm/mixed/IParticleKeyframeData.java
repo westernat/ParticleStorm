@@ -1,4 +1,4 @@
-package org.mesdag.particlestorm.mixinauxi;
+package org.mesdag.particlestorm.mixed;
 
 import net.minecraft.resources.ResourceLocation;
 import org.mesdag.particlestorm.data.molang.MolangExp;
