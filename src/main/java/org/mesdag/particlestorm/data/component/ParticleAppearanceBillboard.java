@@ -326,7 +326,7 @@ public record ParticleAppearanceBillboard(FloatMolangExp2 size, FaceCameraMode f
             }
 
             public float getFramesPerTick(MolangParticleInstance instance) {
-                return stretchToLifetime ? (float) instance.getAge() / instance.maxFrame : framesPerTick;
+                return stretchToLifetime ? 20.0F / ((float) instance.maxFrame / instance.getLifetime()) : framesPerTick;
             }
 
             @Override
