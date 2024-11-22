@@ -56,14 +56,19 @@ public record ParticleAppearanceBillboard(FloatMolangExp2 size, FaceCameraMode f
             instance.billboardSize = size.calculate(instance);
         }
         if (uv != UV.EMPTY) {
-            if (uv.flipbook == UV.Flipbook.EMPTY) {
+            UV.Flipbook flipbook = uv.flipbook;
+            if (flipbook == UV.Flipbook.EMPTY) {
                 updateSimpleUV(instance);
-            } else if (instance.getLevel().getGameTime() % uv.flipbook.getFramesPerTick(instance) < 1.0F) {
+            } else if (flipbook.stretchToLifetime) {
                 updateFlipbookUV(instance);
-                instance.maxFrame = (int) uv.flipbook.maxFrame.calculate(instance);
+                instance.maxFrame = (int) flipbook.maxFrame.calculate(instance);
+                instance.currentFrame = instance.maxFrame * instance.getAge() / instance.getLifetime();
+            } else if (instance.getLevel().getGameTime() % flipbook.framesPerTick < 1.0F) {
+                updateFlipbookUV(instance);
+                instance.maxFrame = (int) flipbook.maxFrame.calculate(instance);
                 if (instance.currentFrame < instance.maxFrame) {
                     instance.currentFrame++;
-                    if (uv.flipbook.loop && instance.currentFrame == instance.maxFrame) {
+                    if (flipbook.loop && instance.currentFrame == instance.maxFrame) {
                         instance.currentFrame = 0;
                     }
                 } else {
@@ -323,10 +328,6 @@ public record ParticleAppearanceBillboard(FloatMolangExp2 size, FaceCameraMode f
 
             public boolean loop() {
                 return loop;
-            }
-
-            public float getFramesPerTick(MolangParticleInstance instance) {
-                return stretchToLifetime ? 20.0F / ((float) instance.maxFrame / instance.getLifetime()) : framesPerTick;
             }
 
             @Override
