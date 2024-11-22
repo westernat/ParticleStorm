@@ -11,7 +11,7 @@ import net.minecraft.world.entity.player.Player;
 import net.neoforged.neoforge.network.PacketDistributor;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 import org.jetbrains.annotations.NotNull;
-import org.mesdag.particlestorm.GameClient;
+import org.mesdag.particlestorm.PSGameClient;
 import org.mesdag.particlestorm.ParticleStorm;
 import org.mesdag.particlestorm.particle.ParticleEmitter;
 
@@ -34,7 +34,7 @@ public record EmitterRemovalPacket(int id) implements CustomPacketPayload {
         context.enqueueWork(() -> {
             Player player = context.player();
             if (player.isLocalPlayer()) {
-                ParticleEmitter emitter = GameClient.LOADER.removeEmitter(id, false);
+                ParticleEmitter emitter = PSGameClient.LOADER.removeEmitter(id, false);
                 if (emitter == null) {
                     player.sendSystemMessage(Component.translatable("particle.notFound", id));
                 } else {

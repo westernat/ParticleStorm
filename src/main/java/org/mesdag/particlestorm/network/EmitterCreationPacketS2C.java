@@ -11,7 +11,7 @@ import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 import org.jetbrains.annotations.NotNull;
 import org.joml.Vector3f;
-import org.mesdag.particlestorm.GameClient;
+import org.mesdag.particlestorm.PSGameClient;
 import org.mesdag.particlestorm.ParticleStorm;
 import org.mesdag.particlestorm.data.event.ParticleEffect;
 import org.mesdag.particlestorm.data.molang.MolangExp;
@@ -38,7 +38,7 @@ public record EmitterCreationPacketS2C(ResourceLocation id, Vector3f pos, Partic
             Player player = context.player();
             if (player.isLocalPlayer()) {
                 ParticleEmitter emitter = new ParticleEmitter(player.level(), new Vec3(pos.x, pos.y, pos.z), id, effectType, expression);
-                GameClient.LOADER.addEmitter(emitter, true);
+                PSGameClient.LOADER.addEmitter(emitter, true);
             }
         }).exceptionally(e -> {
             context.disconnect(Component.translatable("neoforge.network.invalid_flow", e.getMessage()));

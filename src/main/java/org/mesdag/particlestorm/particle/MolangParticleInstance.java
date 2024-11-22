@@ -19,7 +19,7 @@ import net.neoforged.api.distmarker.OnlyIn;
 import org.jetbrains.annotations.NotNull;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
-import org.mesdag.particlestorm.GameClient;
+import org.mesdag.particlestorm.PSGameClient;
 import org.mesdag.particlestorm.data.component.IParticleComponent;
 import org.mesdag.particlestorm.data.component.ParticleMotionCollision;
 import org.mesdag.particlestorm.data.event.IEventNode;
@@ -372,7 +372,7 @@ public class MolangParticleInstance extends TextureSheetParticle implements Mola
 
         @Override
         public TextureSheetParticle createParticle(@NotNull MolangParticleOption option, @NotNull ClientLevel level, double x, double y, double z, double xSpeed, double ySpeed, double zSpeed) {
-            return new MolangParticleInstance(GameClient.LOADER.ID_2_PARTICLE.get(option.getId()), level, x, y, z, sprites);
+            return new MolangParticleInstance(PSGameClient.LOADER.ID_2_PARTICLE.get(option.getId()), level, x, y, z, sprites);
         }
     }
 }

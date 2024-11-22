@@ -27,7 +27,7 @@ import org.mesdag.particlestorm.particle.MolangParticleLoader;
 import org.mesdag.particlestorm.particle.ParticleEmitter;
 
 @EventBusSubscriber(modid = ParticleStorm.MODID, bus = EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
-public final class GameClient {
+public final class PSGameClient {
     public static final MolangParticleLoader LOADER = new MolangParticleLoader();
 
     @SubscribeEvent
@@ -41,8 +41,8 @@ public final class GameClient {
     @SubscribeEvent
     public static void clientSetup(FMLClientSetupEvent event) {
         event.enqueueWork(() -> {
-            NeoForge.EVENT_BUS.addListener(GameClient::tick);
-            NeoForge.EVENT_BUS.addListener(GameClient::renderLevelStage);
+            NeoForge.EVENT_BUS.addListener(PSGameClient::tick);
+            NeoForge.EVENT_BUS.addListener(PSGameClient::renderLevelStage);
         });
     }
 
@@ -58,17 +58,18 @@ public final class GameClient {
     }
 
     private static void renderLevelStage(RenderLevelStageEvent event) {
-        if (event.getStage() == RenderLevelStageEvent.Stage.AFTER_PARTICLES && Minecraft.getInstance().getEntityRenderDispatcher().shouldRenderHitBoxes())
+        Minecraft minecraft = Minecraft.getInstance();
+        if (event.getStage() == RenderLevelStageEvent.Stage.AFTER_PARTICLES && minecraft.getEntityRenderDispatcher().shouldRenderHitBoxes())
             for (ParticleEmitter value : LOADER.emitters.values()) {
-                if (!value.isInitialized()) continue;
+                if (!value.isInitialized() || value.attached == minecraft.player) continue;
                 PoseStack poseStack = event.getPoseStack();
-                MultiBufferSource.BufferSource bufferSource = Minecraft.getInstance().renderBuffers().bufferSource();
+                MultiBufferSource.BufferSource bufferSource = minecraft.renderBuffers().bufferSource();
                 double x = value.getX();
                 double y = value.getY();
                 double z = value.getZ();
                 DebugRenderer.renderFloatingText(poseStack, bufferSource, value.getDetail().option.getId().toString(), x, y + 0.5, z, 0xFFFFFF);
                 DebugRenderer.renderFloatingText(poseStack, bufferSource, "id: " + value.id, x, y + 0.3, z, 0xFFFFFF);
-                int maxNum = ((ParticleEngineAccessor) Minecraft.getInstance().particleEngine).trackedParticleCounts().getInt(value.particleGroup);
+                int maxNum = ((ParticleEngineAccessor) minecraft.particleEngine).trackedParticleCounts().getInt(value.particleGroup);
                 DebugRenderer.renderFloatingText(poseStack, bufferSource, "particles: " + maxNum, x, y + 0.1, z, maxNum == value.particleGroup.getLimit() ? 0xFF0000 : 0xFFFFFF);
                 Camera camera = event.getCamera();
                 double d0 = camera.getPosition().x;

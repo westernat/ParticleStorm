@@ -7,7 +7,7 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.fml.ModList;
 import org.joml.Vector3f;
-import org.mesdag.particlestorm.GameClient;
+import org.mesdag.particlestorm.PSGameClient;
 import org.mesdag.particlestorm.data.event.ParticleEffect;
 import org.mesdag.particlestorm.data.molang.MolangExp;
 import org.mesdag.particlestorm.data.molang.VariableTable;
@@ -91,7 +91,7 @@ public final class GeckoLibHelper {
             MolangExp expression = iData.particlestorm$getExpression(variableTable);
             int[] cachedId = iData.particlestorm$getCachedId(bones.size());
             for (int i = 0; i < cachedId.length; i++) {
-                if (GameClient.LOADER.contains(cachedId[i])) continue;
+                if (PSGameClient.LOADER.contains(cachedId[i])) continue;
 
                 GeoBone bone = bones.get(i);
                 LocatorValue locator = ((IGeoBone) bone).particlestorm$getLocators().get(keyframeData.getLocator());
@@ -103,7 +103,7 @@ public final class GeckoLibHelper {
                 }
                 ParticleEmitter emitter = new ParticleEmitter(level, pos, particle, ParticleEffect.Type.EMITTER, expression);
                 emitter.subTable = variableTable;
-                GameClient.LOADER.addEmitter(emitter, false);
+                PSGameClient.LOADER.addEmitter(emitter, false);
                 cachedId[i] = emitter.id;
                 if (locator == null) {
                     emitter.offsetPos = Vec3.ZERO;
@@ -137,7 +137,7 @@ public final class GeckoLibHelper {
                     int[] cachedId = ((IParticleKeyframeData) particleKeyframeData).particlestorm$getCachedId(size);
                     for (int id : cachedId) {
                         if (id != -1) {
-                            GameClient.LOADER.removeEmitter(id, false);
+                            PSGameClient.LOADER.removeEmitter(id, false);
                         }
                     }
                 }

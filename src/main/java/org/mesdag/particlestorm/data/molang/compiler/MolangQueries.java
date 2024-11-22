@@ -2,7 +2,7 @@ package org.mesdag.particlestorm.data.molang.compiler;
 
 import net.minecraft.client.CameraType;
 import net.minecraft.client.Minecraft;
-import org.mesdag.particlestorm.GameClient;
+import org.mesdag.particlestorm.PSGameClient;
 import org.mesdag.particlestorm.data.molang.compiler.value.Variable;
 import org.mesdag.particlestorm.mixin.ParticleEngineAccessor;
 
@@ -55,7 +55,7 @@ public final class MolangQueries {
         getQueryFor("query.player_level").set(p -> Minecraft.getInstance().player == null ? 0.0 : Minecraft.getInstance().player.experienceLevel);
         getQueryFor("query.time_of_day").set(p -> p.getLevel().getDayTime() / 24000f);
         getQueryFor("query.time_stamp").set(p -> p.getLevel().getGameTime());
-        getQueryFor("query.total_emitter_count").set(p -> GameClient.LOADER.totalEmitterCount());
+        getQueryFor("query.total_emitter_count").set(p -> PSGameClient.LOADER.totalEmitterCount());
         getQueryFor("query.total_particle_count").set(p -> {
             int sum = 0;
             for (Integer value : ((ParticleEngineAccessor) Minecraft.getInstance().particleEngine).trackedParticleCounts().values()) {

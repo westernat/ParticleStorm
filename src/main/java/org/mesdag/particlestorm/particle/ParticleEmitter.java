@@ -13,7 +13,7 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Vector3f;
-import org.mesdag.particlestorm.GameClient;
+import org.mesdag.particlestorm.PSGameClient;
 import org.mesdag.particlestorm.data.component.EmitterRate;
 import org.mesdag.particlestorm.data.component.IEmitterComponent;
 import org.mesdag.particlestorm.data.event.ParticleEffect;
@@ -52,7 +52,7 @@ public class ParticleEmitter implements MolangInstance {
     public transient Vector3f particleInitialSpeed = new Vector3f();
     public transient int age = 0;
     public transient int lifetime = 0;
-    public transient boolean active = false;
+    public transient boolean active = true;
     public transient int loopingTime = 0;
     public transient int activeTime = 0;
     public transient int fullLoopTime = 0;
@@ -106,8 +106,10 @@ public class ParticleEmitter implements MolangInstance {
             this.invTickRate = 1.0F / level.tickRateManager().tickrate();
             this.moveDistO = moveDist;
             this.posO = pos;
-            for (IEmitterComponent component : components) {
-                component.update(this);
+            if (active) {
+                for (IEmitterComponent component : components) {
+                    component.update(this);
+                }
             }
             this.age++;
             if (!posO.equals(pos)) {
@@ -143,7 +145,7 @@ public class ParticleEmitter implements MolangInstance {
                 remove();
             }
         } else if (particleId != null) {
-            this.detail = GameClient.LOADER.ID_2_EMITTER.get(particleId);
+            this.detail = PSGameClient.LOADER.ID_2_EMITTER.get(particleId);
             if (detail == null) {
                 if (Minecraft.getInstance().player != null) {
                     Minecraft.getInstance().player.sendSystemMessage(Component.translatable("particle.notFound", particleId.toString()));

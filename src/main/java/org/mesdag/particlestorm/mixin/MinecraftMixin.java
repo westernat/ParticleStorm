@@ -6,7 +6,7 @@ import net.minecraft.client.particle.ParticleEngine;
 import net.minecraft.client.renderer.texture.TextureAtlas;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.resources.ResourceLocation;
-import org.mesdag.particlestorm.GameClient;
+import org.mesdag.particlestorm.PSGameClient;
 import org.mesdag.particlestorm.ParticleStorm;
 import org.mesdag.particlestorm.data.DefinedParticleEffect;
 import org.mesdag.particlestorm.mixed.ITextureAtlas;
@@ -42,7 +42,7 @@ public abstract class MinecraftMixin {
                 ((ITextureAtlas) textureAtlas).particlestorm$consume(preparations -> {
                     spriteSet.clear();
                     int i = 0;
-                    for (Map.Entry<ResourceLocation, DefinedParticleEffect> entry : GameClient.LOADER.ID_2_EFFECT.entrySet()) {
+                    for (Map.Entry<ResourceLocation, DefinedParticleEffect> entry : PSGameClient.LOADER.ID_2_EFFECT.entrySet()) {
                         TextureAtlasSprite missing = preparations.missing();
                         spriteSet.bindMissing(missing);
                         ResourceLocation texture = entry.getValue().description.parameters().bindTexture(i);
