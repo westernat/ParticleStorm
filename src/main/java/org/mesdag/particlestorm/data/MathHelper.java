@@ -41,10 +41,6 @@ public class MathHelper {
         dest.z = u * s + h * -o + l * -a - c * -i;
     }
 
-    public static float nextFloat(RandomSource random, float a, float b) {
-        return a + (b - a) * random.nextFloat();
-    }
-
     public static Vector3f getRandomEuler(RandomSource random) {
         float x = random.nextFloat() * (random.nextBoolean() ? Mth.PI : -Mth.PI);
         float y = random.nextFloat() * (random.nextBoolean() ? Mth.PI : -Mth.PI);

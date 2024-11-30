@@ -285,9 +285,9 @@ public abstract class EmitterShape implements IEmitterComponent {
             position.set(offset.calculate(instance));
             float[] n = halfDimensions.calculate(instance);
             RandomSource random = instance.getLevel().random;
-            position.x += MathHelper.nextFloat(random, -n[0], n[0]);
-            position.y += MathHelper.nextFloat(random, -n[1], n[1]);
-            position.z += MathHelper.nextFloat(random, -n[2], n[2]);
+            position.x += Mth.nextFloat(random, -n[0], n[0]);
+            position.y += Mth.nextFloat(random, -n[1], n[1]);
+            position.z += Mth.nextFloat(random, -n[2], n[2]);
             if (surfaceOnly) {
                 int r = random.nextInt(0, 3);
                 boolean i = random.nextBoolean();
@@ -337,9 +337,9 @@ public abstract class EmitterShape implements IEmitterComponent {
             EntityDimensions dimensions = instance.getAttachedEntity().getDimensions(instance.getAttachedEntity().getPose());
             Vector3f n = new Vector3f(dimensions.width(), dimensions.height(), dimensions.width());
             RandomSource random = instance.getLevel().random;
-            position.x = MathHelper.nextFloat(random, -n.x, n.x);
-            position.y = MathHelper.nextFloat(random, -n.y, n.y);
-            position.z = MathHelper.nextFloat(random, -n.z, n.z);
+            position.x = Mth.nextFloat(random, -n.x, n.x);
+            position.y = Mth.nextFloat(random, -n.y, n.y);
+            position.z = Mth.nextFloat(random, -n.z, n.z);
             if (surfaceOnly) {
                 int r = random.nextInt(0, 3);
                 boolean i = random.nextBoolean();
