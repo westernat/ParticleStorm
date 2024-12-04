@@ -12,11 +12,13 @@ import net.minecraft.commands.arguments.coordinates.Vec3Argument;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.network.PacketDistributor;
 import org.joml.Vector3f;
 import org.mesdag.particlestorm.data.event.ParticleEffect;
 import org.mesdag.particlestorm.data.molang.MolangExp;
+import org.mesdag.particlestorm.network.EmitterAttachPacketS2C;
 import org.mesdag.particlestorm.network.EmitterCreationPacketS2C;
 import org.mesdag.particlestorm.network.EmitterRemovalPacket;
 
@@ -55,7 +57,31 @@ public class MolangParticleCommand {
                                 )
                         ))
                 ))
+                .then(Commands.literal("attach").then(Commands.argument("id", IntegerArgumentType.integer(0)).then(Commands.argument("entity", EntityArgument.entity()).executes(context -> attachEmitter2Entity(
+                                IntegerArgumentType.getInteger(context, "id"),
+                                EntityArgument.getEntity(context, "entity"),
+                                context.getSource().getServer().getPlayerList().getPlayers()
+                        )).then(Commands.argument("viewers", EntityArgument.players()).executes(context -> attachEmitter2Entity(
+                                        IntegerArgumentType.getInteger(context, "id"),
+                                        EntityArgument.getEntity(context, "entity"),
+                                        EntityArgument.getPlayers(context, "viewers")
+                                )
+                        ))
+                )))
         );
+    }
+
+    private static int attachEmitter2Entity(int id, Entity entity, Collection<ServerPlayer> viewers) throws CommandSyntaxException {
+        int i = 0;
+        for (ServerPlayer serverplayer : viewers) {
+            EmitterAttachPacketS2C.sendToClient(serverplayer, id, entity);
+            i++;
+        }
+        if (i == 0) {
+            throw ERROR_FAILED.create();
+        } else {
+            return i;
+        }
     }
 
     private static int removeParticle(int id, Collection<ServerPlayer> viewers) throws CommandSyntaxException {
