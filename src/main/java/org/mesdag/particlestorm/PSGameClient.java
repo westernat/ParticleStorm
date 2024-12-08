@@ -1,13 +1,18 @@
 package org.mesdag.particlestorm;
 
-import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.platform.GlStateManager;
+import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.blaze3d.vertex.*;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.client.particle.ParticleRenderType;
 import net.minecraft.client.renderer.LevelRenderer;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.debug.DebugRenderer;
+import net.minecraft.client.renderer.texture.TextureAtlas;
+import net.minecraft.client.renderer.texture.TextureManager;
 import net.minecraft.world.entity.EntityType;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -29,6 +34,22 @@ import org.mesdag.particlestorm.particle.ParticleEmitter;
 @EventBusSubscriber(modid = ParticleStorm.MODID, bus = EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
 public final class PSGameClient {
     public static final MolangParticleLoader LOADER = new MolangParticleLoader();
+    public static final ParticleRenderType PARTICLE_ADD = new ParticleRenderType() {
+        @Override
+        public BufferBuilder begin(Tesselator tesselator, TextureManager textureManager) {
+            RenderSystem.enableDepthTest();
+            Minecraft.getInstance().gameRenderer.lightTexture().turnOnLightLayer();
+            RenderSystem.depthMask(false);
+            RenderSystem.setShaderTexture(0, TextureAtlas.LOCATION_PARTICLES);
+            RenderSystem.enableBlend();
+            RenderSystem.blendFunc(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE);
+            return tesselator.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.PARTICLE);
+        }
+
+        public String toString() {
+            return "PARTICLE_ADD";
+        }
+    };
 
     @SubscribeEvent
     public static void registerRenderers(final EntityRenderersEvent.RegisterRenderers event) {

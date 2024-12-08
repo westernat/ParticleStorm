@@ -4,6 +4,7 @@ import net.minecraft.client.particle.ParticleRenderType;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 import org.jetbrains.annotations.NotNull;
+import org.mesdag.particlestorm.PSGameClient;
 import org.mesdag.particlestorm.data.DefinedParticleEffect;
 import org.mesdag.particlestorm.data.component.*;
 import org.mesdag.particlestorm.data.molang.MolangInstance;
@@ -39,10 +40,11 @@ public class ParticleDetail {
 
     public ParticleDetail(DefinedParticleEffect effect) {
         this.effect = effect;
-        this.renderType = switch (effect.description.parameters().material()) { // todo particles_add
+        this.renderType = switch (effect.description.parameters().material()) {
             case TERRAIN_SHEET -> ParticleRenderType.TERRAIN_SHEET;
             case particles_opaque, PARTICLE_SHEET_OPAQUE -> ParticleRenderType.PARTICLE_SHEET_OPAQUE;
-            case particles_blend, particles_add, PARTICLE_SHEET_TRANSLUCENT -> ParticleRenderType.PARTICLE_SHEET_TRANSLUCENT;
+            case particles_add -> PSGameClient.PARTICLE_ADD;
+            case particles_blend, PARTICLE_SHEET_TRANSLUCENT -> ParticleRenderType.PARTICLE_SHEET_TRANSLUCENT;
             case particles_alpha, PARTICLE_SHEET_LIT -> ParticleRenderType.PARTICLE_SHEET_LIT;
             case CUSTOM -> ParticleRenderType.CUSTOM;
             default -> ParticleRenderType.NO_RENDER;
