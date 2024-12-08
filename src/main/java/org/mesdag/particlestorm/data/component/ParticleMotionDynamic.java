@@ -65,9 +65,9 @@ public record ParticleMotionDynamic(FloatMolangExp3 linerAcceleration, FloatMola
     public void apply(MolangParticleInstance instance) {
         float invTickRate = instance.emitter.invTickRate;
 
-        float drag = -linearDragCoefficient.calculate(instance);
+        float drag = -linearDragCoefficient.calculate(instance) * invTickRate;
         instance.acceleration.set(linerAcceleration.calculate(instance));
-        instance.acceleration.mul(invTickRate * invTickRate);
+        instance.acceleration.mul(invTickRate);
         instance.acceleration.add(
                 instance.readOnlySpeed.x * drag,
                 instance.readOnlySpeed.y * drag,

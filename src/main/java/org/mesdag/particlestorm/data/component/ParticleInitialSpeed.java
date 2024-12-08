@@ -32,13 +32,13 @@ public record ParticleInitialSpeed(FloatMolangExp exp, FloatMolangExp3 exp3) imp
     }
 
     @Override
-    public void apply(ParticleEmitter entity) {
+    public void apply(ParticleEmitter emitter) {
         if (exp3 == FloatMolangExp3.ZERO) {
-            float value = exp.calculate(entity);
-            entity.particleInitialSpeed.set(value);
+            float value = exp.calculate(emitter);
+            emitter.particleInitialSpeed.set(value);
         } else {
-            float[] mul = exp3.calculate(entity);
-            entity.particleInitialSpeed.set(mul);
+            float[] mul = exp3.calculate(emitter);
+            emitter.particleInitialSpeed.set(mul);
         }
     }
 

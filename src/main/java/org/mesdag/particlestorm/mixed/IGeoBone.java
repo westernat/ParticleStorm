@@ -1,4 +1,4 @@
-package org.mesdag.particlestorm.mixinauxi;
+package org.mesdag.particlestorm.mixed;
 
 import org.joml.Vector3f;
 import software.bernie.geckolib.loading.json.raw.LocatorValue;

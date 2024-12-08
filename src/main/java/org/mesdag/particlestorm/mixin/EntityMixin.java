@@ -2,7 +2,7 @@ package org.mesdag.particlestorm.mixin;
 
 import net.minecraft.world.entity.Entity;
 import org.mesdag.particlestorm.data.molang.VariableTable;
-import org.mesdag.particlestorm.mixinauxi.IEntity;
+import org.mesdag.particlestorm.mixed.IEntity;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 

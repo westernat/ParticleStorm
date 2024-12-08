@@ -20,6 +20,7 @@ import net.minecraft.world.level.Level;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.mesdag.particlestorm.ParticleStorm;
 import org.mesdag.particlestorm.data.DefinedParticleEffect;
 import org.mesdag.particlestorm.data.component.IParticleComponent;
@@ -111,6 +112,10 @@ public class MolangParticleLoader implements PreparableReloadListener {
         return allocator.table.contains(id);
     }
 
+    public @Nullable ParticleEmitter getEmitter(int id) {
+        return emitters.get(id);
+    }
+
     @Override
     public @NotNull CompletableFuture<Void> reload(PreparationBarrier preparationBarrier, @NotNull ResourceManager resourceManager, @NotNull ProfilerFiller preparationsProfiler, @NotNull ProfilerFiller reloadProfiler, @NotNull Executor backgroundExecutor, @NotNull Executor gameExecutor) {
         return CompletableFuture.supplyAsync(() -> PARTICLE_LISTER.listMatchingResources(resourceManager), backgroundExecutor).thenCompose(map -> {
@@ -144,7 +149,7 @@ public class MolangParticleLoader implements PreparableReloadListener {
     }
 
     public static class IntAllocator {
-        private final Collection<Integer> table;
+        private final Set<Integer> table;
 
         public IntAllocator() {
             this.table = new IntArraySet();

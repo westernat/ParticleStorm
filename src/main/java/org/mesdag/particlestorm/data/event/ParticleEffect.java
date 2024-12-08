@@ -10,7 +10,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.ByIdMap;
 import net.minecraft.util.StringRepresentable;
 import org.jetbrains.annotations.NotNull;
-import org.mesdag.particlestorm.GameClient;
+import org.mesdag.particlestorm.PSGameClient;
 import org.mesdag.particlestorm.data.molang.MolangExp;
 import org.mesdag.particlestorm.data.molang.MolangInstance;
 import org.mesdag.particlestorm.particle.ParticleEmitter;
@@ -31,7 +31,7 @@ public record ParticleEffect(ResourceLocation effect, Type type, MolangExp preEf
         ParticleEmitter parent = instance.getEmitter();
         parent.children.add(emitter);
         emitter.parent = parent;
-        GameClient.LOADER.addEmitter(emitter, false);
+        PSGameClient.LOADER.addEmitter(emitter, false);
     }
 
     @Override
