@@ -65,6 +65,7 @@ public final class ParticleStorm {
     public static DeferredHolder<BlockEntityType<?>, BlockEntityType<TestBlock.Entity>> TEST_ENTITY;
 
     public ParticleStorm(IEventBus bus, ModContainer container) {
+        PSClientConfigs.register(container);
         PARTICLE.register(bus);
         registerGeoTest(bus);
         bus.addListener(ParticleStorm::registerPayloadHandlers);

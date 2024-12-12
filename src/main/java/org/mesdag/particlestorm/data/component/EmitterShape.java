@@ -73,7 +73,17 @@ public abstract class EmitterShape implements IEmitterComponent {
             Vector3f position = new Vector3f();
             Vector3f speed = new Vector3f();
             initializeParticle(instance, position, speed);
-            speed.mul(emitter.particleInitialSpeed);
+
+            ParticleDetail detail = instance.detail;
+            detail.assignments.forEach(assignment -> {
+                // 重定向，防止污染变量表
+                String name = assignment.variable().name();
+                instance.getVariableTable().setValue(name, new Variable(name, assignment.value()));
+            });
+            for (IParticleComponent component : detail.effect.orderedParticleEarlyComponents) {
+                component.apply(instance);
+            }
+            speed.mul(instance.initialSpeed);
             if (emitter.parentMode == ParticleEmitter.ParentMode.LOCATOR) {
                 position.x *= -1;
                 position.y *= -1;
@@ -91,22 +101,17 @@ public abstract class EmitterShape implements IEmitterComponent {
                 Vec3 emitterPos = emitter.getPosition();
                 position.add((float) emitterPos.x, (float) emitterPos.y, (float) emitterPos.z);
             }
-            if (emitter.getDetail().localVelocity) {
-                Vec3 emitterVec = emitter.posO;
+            speed.mul(emitter.invTickRate);
+            if (emitter.attached != null && emitter.getDetail().localVelocity) {
+                Vec3 emitterVec = emitter.attached.getDeltaMovement();
                 speed.add((float) emitterVec.x, (float) emitterVec.y, (float) emitterVec.z);
             }
-            speed.mul(emitter.invTickRate);
 
             instance.setParticleSpeed(speed.x, speed.y, speed.z);
             instance.setPos(position.x, position.y, position.z);
             instance.setPosO(position.x, position.y, position.z);
             instance.particleGroup = emitter.particleGroup;
-            ParticleDetail detail = instance.detail;
-            detail.assignments.forEach(assignment -> {
-                // 重定向，防止污染变量表
-                String name = assignment.variable().name();
-                instance.getVariableTable().setValue(name, new Variable(name, assignment.value()));
-            });
+
             for (IParticleComponent component : detail.effect.orderedParticleComponents) {
                 component.apply(instance);
             }
@@ -186,7 +191,7 @@ public abstract class EmitterShape implements IEmitterComponent {
             position.z += sp * Mth.sin(op);
             float[] lp = planeNormal.plane.calculate(instance);
             if (!Arrays.equals(lp, PlaneNormal.FN)) {
-                Quaternionf quaternion = MathHelper.setFromUnitVectors(PlaneNormal.VY, new Vector3f(lp), new Quaternionf());
+                Quaternionf quaternion = MathHelper.setFromUnitVectors(Mth.Y_AXIS, new Vector3f(lp), new Quaternionf());
                 MathHelper.applyQuaternion(quaternion, position);
             }
             direction.apply(instance, this, position, speed);
@@ -211,7 +216,6 @@ public abstract class EmitterShape implements IEmitterComponent {
             public static final PlaneNormal Y = new PlaneNormal("y", FloatMolangExp3.Y);
             public static final PlaneNormal Z = new PlaneNormal("z", FloatMolangExp3.Z);
             public static final float[] FN = new float[]{0.0F, 0.0F, 0.0F};
-            public static final Vector3f VY = new Vector3f(0.0F, 1.0F, 0.0F);
             public static final Codec<PlaneNormal> CODEC = Codec.either(Codec.STRING, FloatMolangExp3.CODEC).xmap(
                     either -> either.map(d -> switch (d) {
                         case "x" -> X;

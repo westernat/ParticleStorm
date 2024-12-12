@@ -36,7 +36,7 @@ import java.util.function.Function;
 public record ParticleMotionCollision(BoolMolangExp enabled, float collisionDrag, float coefficientOfRestitution, float collisionRadius, boolean expireOnContact, List<Event> events) implements IParticleComponent {
     public static final ResourceLocation ID = ResourceLocation.withDefaultNamespace("particle_motion_collision");
     public static final Codec<ParticleMotionCollision> CODEC = RecordCodecBuilder.create(instance -> instance.group(
-            BoolMolangExp.CODEC.fieldOf("enabled").orElse(BoolMolangExp.FALSE).forGetter(ParticleMotionCollision::enabled),
+            BoolMolangExp.CODEC.fieldOf("enabled").orElse(BoolMolangExp.TRUE).forGetter(ParticleMotionCollision::enabled),
             Codec.FLOAT.fieldOf("collision_drag").orElse(0.0F).forGetter(ParticleMotionCollision::collisionDrag),
             Codec.FLOAT.fieldOf("coefficient_of_restitution").orElse(0.0F).forGetter(ParticleMotionCollision::coefficientOfRestitution),
             Codec.FLOAT.fieldOf("collision_radius").orElse(0.0F).forGetter(ParticleMotionCollision::collisionRadius),

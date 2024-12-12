@@ -43,6 +43,7 @@ public class MolangParticleInstance extends TextureSheetParticle implements Mola
     public Vector3f acceleration = new Vector3f();
     public Vector3f readOnlySpeed = new Vector3f();
     public Vector3f facingDirection = new Vector3f();
+    public Vector3f initialSpeed = new Vector3f();
     public float xRot = 0.0F;
     public float yRot = 0.0F;
     protected float xRotO = 0.0F;
@@ -289,10 +290,14 @@ public class MolangParticleInstance extends TextureSheetParticle implements Mola
                 Vec3 vec3 = Entity.collideBoundingBox(null, new Vec3(x, y, z), getBoundingBox(), level, List.of());
                 if (hasCollision) {
                     if (x != vec3.x) {
-                        this.xd = -Mth.sign(xd) * Mth.clamp(Math.abs(xd) - collisionDrag, 0.0, Double.MAX_VALUE);
+                        this.xd = -Mth.sign(xd) * (Math.abs(xd) - collisionDrag) * coefficientOfRestitution;
                     }
-                    if (y != vec3.y) this.yd *= -coefficientOfRestitution;
-                    if (z != vec3.z) this.zd = -Mth.sign(zd) * Mth.clamp(Math.abs(zd) - collisionDrag, 0.0, Double.MAX_VALUE);
+                    if (y != vec3.y) {
+                        this.yd *= -coefficientOfRestitution;
+                    }
+                    if (z != vec3.z) {
+                        this.zd = -Mth.sign(zd) * (Math.abs(zd) - collisionDrag) * coefficientOfRestitution;
+                    }
                 }
                 x = vec3.x;
                 y = vec3.y;

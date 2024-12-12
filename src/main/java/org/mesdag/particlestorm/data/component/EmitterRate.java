@@ -54,9 +54,7 @@ public abstract class EmitterRate implements IEmitterComponent {
             if (emitter.spawnRate != limit) {
                 emitter.spawnRate = limit;
                 if (emitter.particleGroup == null) {
-                    emitter.particleGroup = new MutableParticleGroup(limit);
-                } else {
-                    emitter.particleGroup.setLimit(limit);
+                    emitter.particleGroup = new MutableParticleGroup(16384);
                 }
             }
         }
