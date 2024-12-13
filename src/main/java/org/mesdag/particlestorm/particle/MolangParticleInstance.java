@@ -16,6 +16,7 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
+import net.neoforged.fml.ModList;
 import org.jetbrains.annotations.NotNull;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
@@ -34,6 +35,8 @@ import java.util.Optional;
 @OnlyIn(Dist.CLIENT)
 public class MolangParticleInstance extends TextureSheetParticle implements MolangInstance {
     public static final int FULL_LIGHT = 0xF000F0;
+    private static Boolean isSodiumLoaded;
+
     public final RandomSource random;
     public final ParticleDetail detail;
     private final VariableTable variableTable;
@@ -267,6 +270,23 @@ public class MolangParticleInstance extends TextureSheetParticle implements Mola
         if (yRot != 0.0F) quaternionf.rotateY(Mth.lerp(partialTicks, yRotO, yRot));
         if (roll != 0.0F) quaternionf.rotateZ(Mth.lerp(partialTicks, oRoll, roll));
         renderRotatedQuad(buffer, renderInfo, quaternionf, partialTicks);
+    }
+
+    @Override
+    protected void renderRotatedQuad(@NotNull VertexConsumer buffer, @NotNull Quaternionf quaternion, float x, float y, float z, float partialTicks) {
+        if (isSodiumLoaded == null ? (isSodiumLoaded = ModList.get().isLoaded("sodium")) : isSodiumLoaded) {
+            float f1 = getU0();
+            float f2 = getU1();
+            float f3 = getV0();
+            float f4 = getV1();
+            int i = getLightColor(partialTicks);
+            renderVertex(buffer, quaternion, x, y, z, 1.0F, -1.0F, 0.0F, f2, f4, i);
+            renderVertex(buffer, quaternion, x, y, z, 1.0F, 1.0F, 0.0F, f2, f3, i);
+            renderVertex(buffer, quaternion, x, y, z, -1.0F, 1.0F, 0.0F, f1, f3, i);
+            renderVertex(buffer, quaternion, x, y, z, -1.0F, -1.0F, 0.0F, f1, f4, i);
+        } else {
+            super.renderRotatedQuad(buffer, quaternion, x, y, z, partialTicks);
+        }
     }
 
     @Override
