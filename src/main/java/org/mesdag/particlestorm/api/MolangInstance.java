@@ -1,10 +1,11 @@
-package org.mesdag.particlestorm.data.molang;
+package org.mesdag.particlestorm.api;
 
 
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
+import org.mesdag.particlestorm.data.molang.VariableTable;
 import org.mesdag.particlestorm.particle.ParticleEmitter;
 
 public interface MolangInstance {

@@ -14,11 +14,11 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Vector3f;
 import org.mesdag.particlestorm.PSGameClient;
+import org.mesdag.particlestorm.api.IEmitterComponent;
+import org.mesdag.particlestorm.api.MolangInstance;
 import org.mesdag.particlestorm.data.component.EmitterRate;
-import org.mesdag.particlestorm.data.component.IEmitterComponent;
 import org.mesdag.particlestorm.data.event.ParticleEffect;
 import org.mesdag.particlestorm.data.molang.MolangExp;
-import org.mesdag.particlestorm.data.molang.MolangInstance;
 import org.mesdag.particlestorm.data.molang.VariableTable;
 import org.mesdag.particlestorm.data.molang.compiler.MolangParser;
 

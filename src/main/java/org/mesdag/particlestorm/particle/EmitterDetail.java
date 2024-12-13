@@ -1,8 +1,9 @@
 package org.mesdag.particlestorm.particle;
 
 import org.jetbrains.annotations.NotNull;
+import org.mesdag.particlestorm.api.IEmitterComponent;
+import org.mesdag.particlestorm.api.IEventNode;
 import org.mesdag.particlestorm.data.component.*;
-import org.mesdag.particlestorm.data.event.IEventNode;
 import org.mesdag.particlestorm.data.molang.VariableTable;
 import org.mesdag.particlestorm.data.molang.compiler.MathValue;
 import org.mesdag.particlestorm.data.molang.compiler.MolangParser;

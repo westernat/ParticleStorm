@@ -25,10 +25,12 @@ import net.neoforged.neoforge.client.event.RegisterClientReloadListenersEvent;
 import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
 import net.neoforged.neoforge.common.NeoForge;
 import org.jetbrains.annotations.NotNull;
+import org.mesdag.particlestorm.api.IComponent;
+import org.mesdag.particlestorm.api.IEventNode;
+import org.mesdag.particlestorm.api.geckolib.ExampleBlockEntityRenderer;
+import org.mesdag.particlestorm.api.geckolib.ReplacedCreeperRenderer;
 import org.mesdag.particlestorm.data.component.*;
 import org.mesdag.particlestorm.data.event.*;
-import org.mesdag.particlestorm.integration.geckolib.ExampleBlockEntityRenderer;
-import org.mesdag.particlestorm.integration.geckolib.ReplacedCreeperRenderer;
 import org.mesdag.particlestorm.mixin.ParticleEngineAccessor;
 import org.mesdag.particlestorm.particle.MolangParticleLoader;
 import org.mesdag.particlestorm.particle.ParticleEmitter;
@@ -93,7 +95,7 @@ public final class PSGameClient {
         Minecraft minecraft = Minecraft.getInstance();
         if (event.getStage() == RenderLevelStageEvent.Stage.AFTER_PARTICLES && minecraft.getEntityRenderDispatcher().shouldRenderHitBoxes())
             for (ParticleEmitter value : LOADER.emitters.values()) {
-                if (!value.isInitialized() || value.attached == minecraft.player) continue;
+                if (!value.isInitialized() || value.attached != null) continue;
                 PoseStack poseStack = event.getPoseStack();
                 MultiBufferSource.BufferSource bufferSource = minecraft.renderBuffers().bufferSource();
                 double x = value.getX();

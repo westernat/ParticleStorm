@@ -21,10 +21,10 @@ import org.jetbrains.annotations.NotNull;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
 import org.mesdag.particlestorm.PSGameClient;
-import org.mesdag.particlestorm.data.component.IParticleComponent;
+import org.mesdag.particlestorm.api.IEventNode;
+import org.mesdag.particlestorm.api.IParticleComponent;
+import org.mesdag.particlestorm.api.MolangInstance;
 import org.mesdag.particlestorm.data.component.ParticleMotionCollision;
-import org.mesdag.particlestorm.data.event.IEventNode;
-import org.mesdag.particlestorm.data.molang.MolangInstance;
 import org.mesdag.particlestorm.data.molang.VariableTable;
 import org.mesdag.particlestorm.mixed.ITextureAtlasSprite;
 

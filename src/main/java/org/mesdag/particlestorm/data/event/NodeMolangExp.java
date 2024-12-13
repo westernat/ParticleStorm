@@ -1,8 +1,9 @@
 package org.mesdag.particlestorm.data.event;
 
 import com.mojang.serialization.Codec;
+import org.mesdag.particlestorm.api.IEventNode;
+import org.mesdag.particlestorm.api.MolangInstance;
 import org.mesdag.particlestorm.data.molang.MolangExp;
-import org.mesdag.particlestorm.data.molang.MolangInstance;
 import org.mesdag.particlestorm.data.molang.compiler.MolangParser;
 
 public final class NodeMolangExp extends MolangExp implements IEventNode {

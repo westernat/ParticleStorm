@@ -2,6 +2,7 @@ package org.mesdag.particlestorm.data.molang;
 
 import com.mojang.datafixers.util.Either;
 import com.mojang.serialization.Codec;
+import org.mesdag.particlestorm.api.MolangInstance;
 
 public class FloatMolangExp extends MolangExp {
     public static final FloatMolangExp ZERO = FloatMolangExp.ofConstant(0);

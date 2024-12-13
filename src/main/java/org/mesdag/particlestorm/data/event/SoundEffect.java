@@ -11,7 +11,8 @@ import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.phys.Vec3;
-import org.mesdag.particlestorm.data.molang.MolangInstance;
+import org.mesdag.particlestorm.api.IEventNode;
+import org.mesdag.particlestorm.api.MolangInstance;
 
 public record SoundEffect(Holder<SoundEvent> soundEffect) implements IEventNode {
     public static final Codec<Holder<SoundEvent>> SOUND_EFFECT_CODEC = RegistryFileCodec.create(Registries.SOUND_EVENT, RecordCodecBuilder.create(instance -> instance.group(

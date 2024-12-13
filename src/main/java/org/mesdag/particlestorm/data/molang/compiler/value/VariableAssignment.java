@@ -1,6 +1,6 @@
 package org.mesdag.particlestorm.data.molang.compiler.value;
 
-import org.mesdag.particlestorm.data.molang.MolangInstance;
+import org.mesdag.particlestorm.api.MolangInstance;
 import org.mesdag.particlestorm.data.molang.compiler.MathValue;
 
 /**

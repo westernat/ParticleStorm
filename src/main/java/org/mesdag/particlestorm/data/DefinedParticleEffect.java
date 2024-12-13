@@ -3,12 +3,12 @@ package org.mesdag.particlestorm.data;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.resources.ResourceLocation;
-import org.mesdag.particlestorm.data.component.IComponent;
-import org.mesdag.particlestorm.data.component.IEmitterComponent;
-import org.mesdag.particlestorm.data.component.IParticleComponent;
+import org.mesdag.particlestorm.api.IComponent;
+import org.mesdag.particlestorm.api.IEmitterComponent;
+import org.mesdag.particlestorm.api.IEventNode;
+import org.mesdag.particlestorm.api.IParticleComponent;
 import org.mesdag.particlestorm.data.curve.ParticleCurve;
 import org.mesdag.particlestorm.data.description.ParticleDescription;
-import org.mesdag.particlestorm.data.event.IEventNode;
 
 import java.util.ArrayList;
 import java.util.Comparator;

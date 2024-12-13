@@ -1,6 +1,7 @@
 package org.mesdag.particlestorm.data.molang;
 
 import org.jetbrains.annotations.Nullable;
+import org.mesdag.particlestorm.api.MolangInstance;
 import org.mesdag.particlestorm.data.molang.compiler.value.Variable;
 
 import java.util.Hashtable;

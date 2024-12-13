@@ -6,9 +6,10 @@ import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.util.Mth;
 import net.minecraft.util.Tuple;
+import org.mesdag.particlestorm.api.IParticleComponent;
+import org.mesdag.particlestorm.api.MolangInstance;
 import org.mesdag.particlestorm.data.molang.FloatMolangExp;
 import org.mesdag.particlestorm.data.molang.MolangExp;
-import org.mesdag.particlestorm.data.molang.MolangInstance;
 import org.mesdag.particlestorm.particle.MolangParticleInstance;
 
 import java.util.*;

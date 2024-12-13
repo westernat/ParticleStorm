@@ -5,7 +5,8 @@ import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Tuple;
 import org.mesdag.particlestorm.ParticleStorm;
-import org.mesdag.particlestorm.data.event.IEventNode;
+import org.mesdag.particlestorm.api.IEventNode;
+import org.mesdag.particlestorm.api.IParticleComponent;
 import org.mesdag.particlestorm.data.molang.MolangExp;
 import org.mesdag.particlestorm.particle.MolangParticleInstance;
 

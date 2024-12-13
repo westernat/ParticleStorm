@@ -1,7 +1,8 @@
 package org.mesdag.particlestorm.data.event;
 
 import com.mojang.serialization.Codec;
-import org.mesdag.particlestorm.data.molang.MolangInstance;
+import org.mesdag.particlestorm.api.IEventNode;
+import org.mesdag.particlestorm.api.MolangInstance;
 
 import java.util.List;
 import java.util.Map;

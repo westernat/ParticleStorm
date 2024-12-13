@@ -2,6 +2,7 @@ package org.mesdag.particlestorm.data.component;
 
 import com.mojang.datafixers.util.Either;
 import com.mojang.serialization.Codec;
+import org.mesdag.particlestorm.api.IParticleComponent;
 import org.mesdag.particlestorm.data.molang.FloatMolangExp;
 import org.mesdag.particlestorm.data.molang.FloatMolangExp3;
 import org.mesdag.particlestorm.data.molang.MolangExp;

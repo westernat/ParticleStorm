@@ -1,4 +1,4 @@
-package org.mesdag.particlestorm.integration.geckolib;
+package org.mesdag.particlestorm.api.geckolib;
 
 import net.minecraft.client.renderer.blockentity.BlockEntityRendererProvider;
 import org.mesdag.particlestorm.ParticleStorm;
