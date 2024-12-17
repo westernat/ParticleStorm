@@ -8,7 +8,7 @@ public abstract class SplineCurve {
     public static class CatMullRom extends SplineCurve {
         private final float[] points;
 
-        public CatMullRom(float[] points) {
+        public CatMullRom(float... points) {
             this.points = points;
         }
 
