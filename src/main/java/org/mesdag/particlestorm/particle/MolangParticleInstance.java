@@ -35,7 +35,7 @@ import java.util.Optional;
 @OnlyIn(Dist.CLIENT)
 public class MolangParticleInstance extends TextureSheetParticle implements MolangInstance {
     public static final int FULL_LIGHT = 0xF000F0;
-    private static Boolean isSodiumLoaded;
+    private static final boolean isSodiumLoaded = ModList.get().isLoaded("sodium");
 
     public final RandomSource random;
     public final ParticleDetail detail;
@@ -274,7 +274,7 @@ public class MolangParticleInstance extends TextureSheetParticle implements Mola
 
     @Override
     protected void renderRotatedQuad(@NotNull VertexConsumer buffer, @NotNull Quaternionf quaternion, float x, float y, float z, float partialTicks) {
-        if (isSodiumLoaded == null ? (isSodiumLoaded = ModList.get().isLoaded("sodium")) : isSodiumLoaded) {
+        if (isSodiumLoaded) {
             float f1 = getU0();
             float f2 = getU1();
             float f3 = getV0();
