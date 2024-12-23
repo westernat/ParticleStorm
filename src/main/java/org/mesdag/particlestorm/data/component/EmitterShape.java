@@ -30,7 +30,7 @@ import org.mesdag.particlestorm.particle.ParticleEmitter;
 import java.util.Arrays;
 import java.util.List;
 
-public abstract class EmitterShape implements IEmitterComponent {
+public abstract sealed class EmitterShape implements IEmitterComponent permits EmitterShape.Disc, EmitterShape.Box, EmitterShape.EntityAABB, EmitterShape.Point, EmitterShape.Sphere {
     protected final boolean surfaceOnly;
 
     protected EmitterShape(boolean surfaceOnly) {
@@ -341,7 +341,7 @@ public abstract class EmitterShape implements IEmitterComponent {
         @Override
         protected void initializeParticle(MolangInstance instance, Vector3f position, Vector3f speed) {
             EntityDimensions dimensions = instance.getAttachedEntity().getDimensions(instance.getAttachedEntity().getPose());
-            Vector3f n = new Vector3f(dimensions.width(), dimensions.height(), dimensions.width());
+            Vector3f n = new Vector3f(dimensions.width(), dimensions.height(), dimensions.width()).mul(0.5F);
             RandomSource random = instance.getLevel().random;
             position.x = Mth.nextFloat(random, -n.x, n.x);
             position.y = Mth.nextFloat(random, -n.y, n.y);
@@ -351,7 +351,7 @@ public abstract class EmitterShape implements IEmitterComponent {
                 boolean i = random.nextBoolean();
                 position.setComponent(r, n.get(r) * (i ? 1 : -1));
             }
-            direction.apply(instance, this, position, speed);
+            direction.apply(instance, this, position.add(0.0F, 1.0F, 0.0F), speed);
         }
 
         @Override
@@ -514,7 +514,7 @@ public abstract class EmitterShape implements IEmitterComponent {
         public void apply(MolangInstance instance, EmitterShape shape, Vector3f position, Vector3f speed) {
             // todo inherited_particle_speed
             if (this == INWARDS || this == OUTWARDS) {
-                if (shape instanceof Point) {
+                if (shape.getClass() == Point.class) {
                     MathHelper.applyEuler(MathHelper.getRandomEuler(instance.getLevel().random), speed.set(1, 0, 0));
                 } else {
                     speed.set(position);

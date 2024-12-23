@@ -1,11 +1,13 @@
 package org.mesdag.particlestorm.particle;
 
+import com.google.common.collect.EvictingQueue;
 import com.google.gson.JsonParseException;
 import com.mojang.serialization.JsonOps;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.ints.IntArraySet;
-import it.unimi.dsi.fastutil.objects.ObjectIterator;
+import it.unimi.dsi.fastutil.objects.Object2ObjectMap;
+import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
 import net.minecraft.nbt.CompoundTag;
@@ -15,6 +17,7 @@ import net.minecraft.server.packs.resources.PreparableReloadListener;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.util.GsonHelper;
 import net.minecraft.util.profiling.ProfilerFiller;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.neoforged.api.distmarker.Dist;
@@ -40,6 +43,7 @@ public class MolangParticleLoader implements PreparableReloadListener {
     public final Map<ResourceLocation, ParticleDetail> ID_2_PARTICLE = new Hashtable<>();
     public final Map<ResourceLocation, EmitterDetail> ID_2_EMITTER = new Hashtable<>();
     public final Int2ObjectMap<ParticleEmitter> emitters = new Int2ObjectOpenHashMap<>();
+    private final Object2ObjectMap<Entity, EvictingQueue<ParticleEmitter>> tracker = new Object2ObjectOpenHashMap<>();
     private final IntAllocator allocator = new IntAllocator();
 
     private Player player;
@@ -48,7 +52,7 @@ public class MolangParticleLoader implements PreparableReloadListener {
 
     public void tick() {
         if (initialized) {
-            ObjectIterator<Int2ObjectMap.Entry<ParticleEmitter>> iterator = emitters.int2ObjectEntrySet().iterator();
+            var iterator = emitters.int2ObjectEntrySet().iterator();
             while (iterator.hasNext()) {
                 ParticleEmitter emitter = iterator.next().getValue();
                 if (emitter.isRemoved()) {
@@ -57,6 +61,15 @@ public class MolangParticleLoader implements PreparableReloadListener {
                     iterator.remove();
                 } else if (emitter.pos.distanceToSqr(player.position()) < renderDistSqr) {
                     emitter.tick();
+                }
+            }
+            var iterator1 = tracker.entrySet().iterator();
+            while (iterator1.hasNext()) {
+                var entry = iterator1.next();
+                if (entry.getKey().isRemoved() || entry.getValue().isEmpty()) {
+                    iterator1.remove();
+                } else {
+                    entry.getValue().removeIf(ParticleEmitter::isRemoved);
                 }
             }
         } else {
@@ -90,6 +103,11 @@ public class MolangParticleLoader implements PreparableReloadListener {
         emitter.id = allocator.insert();
         emitters.put(emitter.id, emitter);
         if (sync) EmitterSynchronizePacket.syncToServer(emitter);
+    }
+
+    public void addTrackedEmitter(Entity entity, ParticleEmitter emitter) {
+        addEmitter(emitter, false);
+        tracker.computeIfAbsent(entity, e -> EvictingQueue.create(16)).add(emitter);
     }
 
     public ParticleEmitter removeEmitter(int id, boolean sync) {

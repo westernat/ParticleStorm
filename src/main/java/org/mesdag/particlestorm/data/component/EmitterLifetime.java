@@ -9,13 +9,13 @@ import org.mesdag.particlestorm.particle.ParticleEmitter;
 
 import java.util.List;
 
-public abstract class EmitterLifetime implements IEmitterComponent {
+public abstract sealed class EmitterLifetime implements IEmitterComponent permits EmitterLifetime.Expression, EmitterLifetime.Looping, EmitterLifetime.Once {
     /**
      * Emitter will turn 'on' when the activation expression is non-zero, and will turn 'off' when it's zero.
      * <p>
      * This is useful for situations like driving an entity-attached emitter from an entity variable.
      */
-    public static class Expression extends EmitterLifetime {
+    public static final class Expression extends EmitterLifetime {
         public static final Codec<Expression> CODEC = RecordCodecBuilder.create(instance -> instance.group(
                 FloatMolangExp.CODEC.fieldOf("activation_expression").orElse(FloatMolangExp.ONE).forGetter(Expression::getActivationExpression),
                 FloatMolangExp.CODEC.fieldOf("expiration_expression").orElse(FloatMolangExp.ZERO).forGetter(Expression::getExpirationExpression)
@@ -82,7 +82,7 @@ public abstract class EmitterLifetime implements IEmitterComponent {
     /**
      * Emitter will loop until it is removed.
      */
-    public static class Looping extends EmitterLifetime {
+    public static final class Looping extends EmitterLifetime {
         public static final Codec<Looping> CODEC = RecordCodecBuilder.create(instance -> instance.group(
                 FloatMolangExp.CODEC.fieldOf("active_time").orElseGet(() -> FloatMolangExp.ofConstant(10)).forGetter(Looping::getActiveTime),
                 FloatMolangExp.CODEC.fieldOf("sleep_time").orElse(FloatMolangExp.ZERO).forGetter(Looping::getSleepTime)
@@ -156,7 +156,7 @@ public abstract class EmitterLifetime implements IEmitterComponent {
         }
     }
 
-    public static class Once extends EmitterLifetime {
+    public static final class Once extends EmitterLifetime {
         public static final Codec<Once> CODEC = RecordCodecBuilder.create(instance -> instance.group(
                 FloatMolangExp.CODEC.fieldOf("active_time").orElseGet(() -> FloatMolangExp.ofConstant(10)).forGetter(Once::getActiveTime)
         ).apply(instance, Once::new));

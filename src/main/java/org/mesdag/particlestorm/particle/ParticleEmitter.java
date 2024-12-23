@@ -93,7 +93,7 @@ public class ParticleEmitter implements MolangInstance {
         this.invTickRate = 1.0F / level.tickRateManager().tickrate();
     }
 
-    public void updateRandoms(RandomSource random) {
+    public synchronized void updateRandoms(RandomSource random) {
         this.emitterRandom1 = random.nextDouble();
         this.emitterRandom2 = random.nextDouble();
         this.emitterRandom3 = random.nextDouble();

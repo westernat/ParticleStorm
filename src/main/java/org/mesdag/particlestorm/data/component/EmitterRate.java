@@ -10,7 +10,7 @@ import org.mesdag.particlestorm.particle.ParticleEmitter;
 
 import java.util.List;
 
-public abstract class EmitterRate implements IEmitterComponent {
+public abstract sealed class EmitterRate implements IEmitterComponent permits EmitterRate.Instant, EmitterRate.Steady, EmitterRate.Manual {
     @Override
     public int order() {
         return 500;
