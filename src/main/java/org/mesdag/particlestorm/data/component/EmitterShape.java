@@ -192,7 +192,7 @@ public abstract sealed class EmitterShape implements IEmitterComponent permits E
             position.x += sp * Mth.cos(op);
             position.z += sp * Mth.sin(op);
             float[] lp = planeNormal.plane.calculate(instance);
-            if (!Arrays.equals(lp, PlaneNormal.FN)) {
+            if (!Arrays.equals(lp, PlaneNormal.YN)) {
                 Quaternionf quaternion = MathHelper.setFromUnitVectors(Mth.Y_AXIS, new Vector3f(lp), new Quaternionf());
                 MathHelper.applyQuaternion(quaternion, position);
             }
@@ -217,7 +217,7 @@ public abstract sealed class EmitterShape implements IEmitterComponent permits E
             public static final PlaneNormal X = new PlaneNormal("x", FloatMolangExp3.X);
             public static final PlaneNormal Y = new PlaneNormal("y", FloatMolangExp3.Y);
             public static final PlaneNormal Z = new PlaneNormal("z", FloatMolangExp3.Z);
-            public static final float[] FN = new float[]{0.0F, 0.0F, 0.0F};
+            public static final float[] YN = new float[]{0.0F, 1.0F, 0.0F};
             public static final Codec<PlaneNormal> CODEC = Codec.either(Codec.STRING, FloatMolangExp3.CODEC).xmap(
                     either -> either.map(d -> switch (d) {
                         case "x" -> X;
