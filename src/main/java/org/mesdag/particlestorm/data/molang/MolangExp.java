@@ -8,6 +8,8 @@ import org.mesdag.particlestorm.api.MolangInstance;
 import org.mesdag.particlestorm.data.molang.compiler.MathValue;
 import org.mesdag.particlestorm.data.molang.compiler.MolangParser;
 
+import java.util.Map;
+
 public class MolangExp {
     public static final MolangExp EMPTY = new MolangExp("");
     public static final Codec<MolangExp> CODEC = Codec.STRING.xmap(MolangExp::new, e -> e.expStr);
@@ -20,6 +22,14 @@ public class MolangExp {
 
     public MolangExp(String expStr) {
         this.expStr = expStr;
+    }
+
+    public MolangExp(Map<String, String> exps) {
+        StringBuilder builder = new StringBuilder();
+        for (Map.Entry<String, String> entry : exps.entrySet()) {
+            builder.append(entry.getKey()).append('=').append(entry.getValue()).append(';');
+        }
+        this.expStr = builder.toString();
     }
 
     public String getExpStr() {
