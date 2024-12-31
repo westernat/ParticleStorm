@@ -99,17 +99,18 @@ public record ParticleAppearanceBillboard(FloatMolangExp2 size, FaceCameraMode f
         if (size.initialized()) {
             instance.billboardSize = size.calculate(instance);
         }
-        instance.UV = new float[4];
-        if (uv.flipbook == UV.Flipbook.EMPTY) {
-            updateSimpleUV(instance);
-        } else {
-            instance.uvSize = uv.flipbook.getSizeUV(instance);
-            instance.uvSize[0] *= instance.scaleU;
-            instance.uvSize[1] *= instance.scaleV;
-            instance.uvStep = uv.flipbook.getStepUV(instance);
-            instance.uvStep[0] *= instance.scaleU;
-            instance.uvStep[1] *= instance.scaleV;
-            updateFlipbookUV(instance);
+        if (uv != UV.EMPTY) {
+            if (uv.flipbook == UV.Flipbook.EMPTY) {
+                updateSimpleUV(instance);
+            } else {
+                instance.uvSize = uv.flipbook.getSizeUV(instance);
+                instance.uvSize[0] *= instance.scaleU;
+                instance.uvSize[1] *= instance.scaleV;
+                instance.uvStep = uv.flipbook.getStepUV(instance);
+                instance.uvStep[0] *= instance.scaleU;
+                instance.uvStep[1] *= instance.scaleV;
+                updateFlipbookUV(instance);
+            }
         }
     }
 
