@@ -33,6 +33,11 @@ public record ParticleInitialization(FloatMolangExp perRenderExpression) impleme
     }
 
     @Override
+    public void apply(MolangParticleInstance instance) {
+        perRenderExpression.calculate(instance);
+    }
+
+    @Override
     public boolean requireUpdate() {
         return true;
     }
