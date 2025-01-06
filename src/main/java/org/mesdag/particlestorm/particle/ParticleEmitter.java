@@ -16,11 +16,14 @@ import org.joml.Vector3f;
 import org.mesdag.particlestorm.PSGameClient;
 import org.mesdag.particlestorm.api.IEmitterComponent;
 import org.mesdag.particlestorm.api.MolangInstance;
+import org.mesdag.particlestorm.data.MathHelper;
 import org.mesdag.particlestorm.data.component.EmitterRate;
 import org.mesdag.particlestorm.data.event.ParticleEffect;
 import org.mesdag.particlestorm.data.molang.MolangExp;
 import org.mesdag.particlestorm.data.molang.VariableTable;
+import org.mesdag.particlestorm.data.molang.compiler.MathValue;
 import org.mesdag.particlestorm.data.molang.compiler.MolangParser;
+import org.mesdag.particlestorm.data.molang.compiler.value.VariableAssignment;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -158,12 +161,15 @@ public class ParticleEmitter implements MolangInstance {
             }
             if (expression != null && !expression.initialized()) {
                 expression.compile(new MolangParser(variableTable));
+                MathValue variable = expression.getVariable();
+                List<VariableAssignment> toInit = new ArrayList<>();
+                if (variable != null && !MathHelper.forAssignment(variableTable.table, toInit, variable)) {
+                    MathHelper.forCompound(variableTable.table, toInit, variable);
+                }
+                MathHelper.redirect(toInit, variableTable);
             }
             // todo effect type
-            detail.assignments.forEach(assignment -> {
-                // 重定向，防止污染变量表
-                variableTable.setValue(assignment.variable().name(), assignment.value());
-            });
+            MathHelper.redirect(detail.assignments, variableTable);
             this.components = detail.components.stream().filter(e -> {
                 e.apply(this);
                 return e.requireUpdate();

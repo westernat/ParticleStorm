@@ -5,6 +5,14 @@ import net.minecraft.util.RandomSource;
 import org.joml.Math;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
+import org.mesdag.particlestorm.data.molang.VariableTable;
+import org.mesdag.particlestorm.data.molang.compiler.MathValue;
+import org.mesdag.particlestorm.data.molang.compiler.value.CompoundValue;
+import org.mesdag.particlestorm.data.molang.compiler.value.Variable;
+import org.mesdag.particlestorm.data.molang.compiler.value.VariableAssignment;
+
+import java.util.List;
+import java.util.Map;
 
 public class MathHelper {
     public static Quaternionf setFromUnitVectors(Vector3f e, Vector3f t, Quaternionf dest) {
@@ -78,5 +86,30 @@ public class MathHelper {
         dest.set(Math.fma((xx - yy - zz + ww) * k, x, Math.fma(2 * (xy - zw) * k, y, (2 * (xz + yw) * k) * z)),
                 Math.fma(2 * (xy + zw) * k, x, Math.fma((yy - xx - zz + ww) * k, y, (2 * (yz - xw) * k) * z)),
                 Math.fma(2 * (xz - yw) * k, x, Math.fma(2 * (yz + xw) * k, y, ((zz - xx - yy + ww) * k) * z)));
+    }
+
+    public static boolean forAssignment(Map<String, Variable> table, List<VariableAssignment> toInit, MathValue value) {
+        if (value instanceof VariableAssignment assignment) {
+            Variable variable = assignment.variable();
+            table.put(variable.name(), variable);
+            toInit.add(assignment);
+            return true;
+        }
+        return false;
+    }
+
+    public static void forCompound(Map<String, Variable> table, List<VariableAssignment> toInit, MathValue variable) {
+        if (variable instanceof CompoundValue compoundValue) {
+            for (MathValue value : compoundValue.subValues()) {
+                forAssignment(table, toInit, value);
+            }
+        }
+    }
+
+    public static void redirect(List<VariableAssignment> toInit, VariableTable variableTable) {
+        toInit.forEach(assignment -> {
+            // 重定向，防止污染变量表
+            variableTable.setValue(assignment.variable().name(), assignment.value());
+        });
     }
 }
