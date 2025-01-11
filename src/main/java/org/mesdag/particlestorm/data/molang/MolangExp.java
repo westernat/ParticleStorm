@@ -24,6 +24,11 @@ public class MolangExp {
         this.expStr = expStr;
     }
 
+    public MolangExp(String key, double value) {
+        if (!key.startsWith("variable.")) key = "variable." + key;
+        this.expStr = key + "=" + value + ";";
+    }
+
     public MolangExp(Map<String, String> exps) {
         StringBuilder builder = new StringBuilder();
         for (Map.Entry<String, String> entry : exps.entrySet()) {
