@@ -10,6 +10,7 @@ import it.unimi.dsi.fastutil.objects.Object2ObjectMap;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.FileToIdConverter;
 import net.minecraft.resources.ResourceLocation;
@@ -18,7 +19,6 @@ import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.util.GsonHelper;
 import net.minecraft.util.profiling.ProfilerFiller;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
@@ -46,11 +46,10 @@ public class MolangParticleLoader implements PreparableReloadListener {
     private final Object2ObjectMap<Entity, EvictingQueue<ParticleEmitter>> tracker = new Object2ObjectOpenHashMap<>();
     private final IntAllocator allocator = new IntAllocator();
 
-    private Player player;
     private int renderDistSqr = 1024;
     private boolean initialized = false;
 
-    public void tick() {
+    public void tick(LocalPlayer localPlayer) {
         if (initialized) {
             var iterator = emitters.int2ObjectEntrySet().iterator();
             while (iterator.hasNext()) {
@@ -59,7 +58,7 @@ public class MolangParticleLoader implements PreparableReloadListener {
                     emitter.onRemove();
                     allocator.remove(emitter.id);
                     iterator.remove();
-                } else if (emitter.pos.distanceToSqr(player.position()) < renderDistSqr) {
+                } else if (emitter.pos.distanceToSqr(localPlayer.position()) < renderDistSqr) {
                     emitter.tick();
                 }
             }
@@ -73,11 +72,9 @@ public class MolangParticleLoader implements PreparableReloadListener {
                 }
             }
         } else {
-            this.player = Minecraft.getInstance().player;
-            if (player == null) return;
             for (ParticleDetail detail : ID_2_PARTICLE.values()) {
                 for (IParticleComponent component : detail.effect.orderedParticleComponents) {
-                    component.initialize(player.level());
+                    component.initialize(localPlayer.level());
                 }
             }
             Integer i = Minecraft.getInstance().options.renderDistance().get() * 16;

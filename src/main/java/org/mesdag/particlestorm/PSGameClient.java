@@ -5,8 +5,8 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.*;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.particle.ParticleRenderType;
+import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.renderer.LevelRenderer;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
@@ -81,13 +81,12 @@ public final class PSGameClient {
 
     private static void tick(ClientTickEvent.Pre event) {
         Minecraft minecraft = Minecraft.getInstance();
-        ClientLevel level = minecraft.level;
-        if (level == null) {
+        LocalPlayer localPlayer = minecraft.player;
+        if (localPlayer == null) {
             LOADER.removeAll();
-        } else if (minecraft.isPaused() || level.tickRateManager().isFrozen()) {
-            return;
+        } else if (!minecraft.isPaused() && !localPlayer.level().tickRateManager().isFrozen()) {
+            LOADER.tick(localPlayer);
         }
-        LOADER.tick();
     }
 
     private static void renderLevelStage(RenderLevelStageEvent event) {
