@@ -8,6 +8,7 @@ import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.ints.IntArraySet;
 import it.unimi.dsi.fastutil.objects.Object2ObjectMap;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
+import it.unimi.dsi.fastutil.objects.ObjectIterator;
 import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
@@ -17,6 +18,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.PreparableReloadListener;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.util.GsonHelper;
+import net.minecraft.util.Mth;
 import net.minecraft.util.profiling.ProfilerFiller;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.Level;
@@ -46,12 +48,12 @@ public class MolangParticleLoader implements PreparableReloadListener {
     private final Object2ObjectMap<Entity, EvictingQueue<ParticleEmitter>> tracker = new Object2ObjectOpenHashMap<>();
     private final IntAllocator allocator = new IntAllocator();
 
-    private int renderDistSqr = 1024;
     private boolean initialized = false;
 
     public void tick(LocalPlayer localPlayer) {
         if (initialized) {
-            var iterator = emitters.int2ObjectEntrySet().iterator();
+            int renderDistSqr = Mth.square(Minecraft.getInstance().options.renderDistance().get() * 16);
+            ObjectIterator<Int2ObjectMap.Entry<ParticleEmitter>> iterator = emitters.int2ObjectEntrySet().iterator();
             while (iterator.hasNext()) {
                 ParticleEmitter emitter = iterator.next().getValue();
                 if (emitter.isRemoved()) {
@@ -62,7 +64,7 @@ public class MolangParticleLoader implements PreparableReloadListener {
                     emitter.tick();
                 }
             }
-            var iterator1 = tracker.entrySet().iterator();
+            ObjectIterator<Map.Entry<Entity, EvictingQueue<ParticleEmitter>>> iterator1 = tracker.entrySet().iterator();
             while (iterator1.hasNext()) {
                 var entry = iterator1.next();
                 if (entry.getKey().isRemoved() || entry.getValue().isEmpty()) {
@@ -77,8 +79,6 @@ public class MolangParticleLoader implements PreparableReloadListener {
                     component.initialize(localPlayer.level());
                 }
             }
-            Integer i = Minecraft.getInstance().options.renderDistance().get() * 16;
-            this.renderDistSqr = i * i;
             this.initialized = true;
         }
     }
@@ -120,7 +120,6 @@ public class MolangParticleLoader implements PreparableReloadListener {
     public void removeAll() {
         emitters.clear();
         allocator.clear();
-        this.initialized = false;
     }
 
     public boolean contains(int id) {
