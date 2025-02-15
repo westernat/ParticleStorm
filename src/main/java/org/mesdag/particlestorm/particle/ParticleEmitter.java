@@ -105,47 +105,7 @@ public class ParticleEmitter implements MolangInstance {
 
     public void tick() {
         if (initialized) {
-            this.invTickRate = 1.0F / level.tickRateManager().tickrate();
-            this.moveDistO = moveDist;
-            this.posO = pos;
-            if (active) {
-                for (IEmitterComponent component : components) {
-                    component.update(this);
-                }
-            }
-            this.age++;
-            if (!posO.equals(pos)) {
-                this.moveDist += (float) pos.subtract(posO).length();
-            }
-            if (detail.emitterRateType == EmitterRate.Type.MANUAL) {
-                remove();
-                return;
-            }
-            if (attached != null) {
-                if (attached.isRemoved()) {
-                    remove();
-                    return;
-                }
-                if (parentRotation != null) {
-                    rot.set(parentRotation).add(offsetRot.x, offsetRot.y + getAttachedYRot() * Mth.DEG_TO_RAD, offsetRot.z);
-                }
-                Vector3f rotated = offsetPos.toVector3f().rotateZ(rot.z).rotateY(rot.y).rotateX(rot.x);
-                this.pos = new Vec3(attached.getX() + rotated.x, attached.getY() + rotated.y, attached.getZ() + rotated.z);
-            } else if (attachedBlock != null) {
-                if (attachedBlock.isRemoved()) {
-                    remove();
-                    return;
-                }
-                if (parentRotation != null) {
-                    rot.set(parentRotation).add(offsetRot);
-                }
-                Vector3f rotated = offsetPos.toVector3f().rotateZ(rot.z).rotateY(rot.y).rotateX(rot.x);
-                BlockPos pos1 = attachedBlock.getBlockPos();
-                this.pos = new Vec3(pos1.getX() + 0.5 + rotated.x, pos1.getY() + 0.5 + rotated.y, pos1.getZ() + 0.5 + rotated.z);
-            }
-            if (parent != null && parent.isRemoved()) {
-                remove();
-            }
+            baseTick();
         } else if (particleId != null) {
             this.detail = PSGameClient.LOADER.ID_2_EMITTER.get(particleId);
             if (detail == null) {
@@ -175,6 +135,51 @@ public class ParticleEmitter implements MolangInstance {
                 return e.requireUpdate();
             }).toList();
             this.initialized = true;
+            baseTick();
+        }
+    }
+
+    protected void baseTick() {
+        this.invTickRate = 1.0F / level.tickRateManager().tickrate();
+        this.moveDistO = moveDist;
+        this.posO = pos;
+        if (active) {
+            for (IEmitterComponent component : components) {
+                component.update(this);
+            }
+        }
+        this.age++;
+        if (!posO.equals(pos)) {
+            this.moveDist += (float) pos.subtract(posO).length();
+        }
+        if (detail.emitterRateType == EmitterRate.Type.MANUAL) {
+            remove();
+            return;
+        }
+        if (attached != null) {
+            if (attached.isRemoved()) {
+                remove();
+                return;
+            }
+            if (parentRotation != null) {
+                rot.set(parentRotation).add(offsetRot.x, offsetRot.y + getAttachedYRot() * Mth.DEG_TO_RAD, offsetRot.z);
+            }
+            Vector3f rotated = offsetPos.toVector3f().rotateZ(rot.z).rotateY(rot.y).rotateX(rot.x);
+            this.pos = new Vec3(attached.getX() + rotated.x, attached.getY() + rotated.y, attached.getZ() + rotated.z);
+        } else if (attachedBlock != null) {
+            if (attachedBlock.isRemoved()) {
+                remove();
+                return;
+            }
+            if (parentRotation != null) {
+                rot.set(parentRotation).add(offsetRot);
+            }
+            Vector3f rotated = offsetPos.toVector3f().rotateZ(rot.z).rotateY(rot.y).rotateX(rot.x);
+            BlockPos pos1 = attachedBlock.getBlockPos();
+            this.pos = new Vec3(pos1.getX() + 0.5 + rotated.x, pos1.getY() + 0.5 + rotated.y, pos1.getZ() + 0.5 + rotated.z);
+        }
+        if (parent != null && parent.isRemoved()) {
+            remove();
         }
     }
 
