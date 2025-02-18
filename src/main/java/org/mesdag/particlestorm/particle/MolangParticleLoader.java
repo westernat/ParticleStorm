@@ -52,25 +52,29 @@ public class MolangParticleLoader implements PreparableReloadListener {
 
     public void tick(LocalPlayer localPlayer) {
         if (initialized) {
-            int renderDistSqr = Mth.square(Minecraft.getInstance().options.renderDistance().get() * 16);
-            ObjectIterator<Int2ObjectMap.Entry<ParticleEmitter>> iterator = emitters.int2ObjectEntrySet().iterator();
-            while (iterator.hasNext()) {
-                ParticleEmitter emitter = iterator.next().getValue();
-                if (emitter.isRemoved()) {
-                    emitter.onRemove();
-                    allocator.remove(emitter.id);
-                    iterator.remove();
-                } else if (emitter.pos.distanceToSqr(localPlayer.position()) < renderDistSqr) {
-                    emitter.tick();
+            if (!emitters.isEmpty()) {
+                int renderDistSqr = Mth.square(Minecraft.getInstance().options.renderDistance().get() * 16);
+                ObjectIterator<Int2ObjectMap.Entry<ParticleEmitter>> iterator = emitters.int2ObjectEntrySet().iterator();
+                while (iterator.hasNext()) {
+                    ParticleEmitter emitter = iterator.next().getValue();
+                    if (emitter.isRemoved()) {
+                        emitter.onRemove();
+                        allocator.remove(emitter.id);
+                        iterator.remove();
+                    } else if (emitter.pos.distanceToSqr(localPlayer.position()) < renderDistSqr) {
+                        emitter.tick();
+                    }
                 }
             }
-            ObjectIterator<Map.Entry<Entity, EvictingQueue<ParticleEmitter>>> iterator1 = tracker.entrySet().iterator();
-            while (iterator1.hasNext()) {
-                var entry = iterator1.next();
-                if (entry.getKey().isRemoved() || entry.getValue().isEmpty()) {
-                    iterator1.remove();
-                } else {
-                    entry.getValue().removeIf(ParticleEmitter::isRemoved);
+            if (!tracker.isEmpty()) {
+                ObjectIterator<Map.Entry<Entity, EvictingQueue<ParticleEmitter>>> iterator1 = tracker.entrySet().iterator();
+                while (iterator1.hasNext()) {
+                    var entry = iterator1.next();
+                    if (entry.getKey().isRemoved() || entry.getValue().isEmpty()) {
+                        iterator1.remove();
+                    } else {
+                        entry.getValue().removeIf(ParticleEmitter::isRemoved);
+                    }
                 }
             }
         } else {

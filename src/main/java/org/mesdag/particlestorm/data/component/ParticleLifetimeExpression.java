@@ -17,7 +17,8 @@ import java.util.List;
  *                             Evaluated every frame
  * @param maxLifetime          Alternate way to express lifetime<p>
  *                             Particle will expire after this much time<p>
- *                             Evaluated once
+ *                             Evaluated once<p>
+ *                             Available value is [0.05, infinite)
  */
 public record ParticleLifetimeExpression(FloatMolangExp expirationExpression, FloatMolangExp maxLifetime) implements IParticleComponent {
     public static final Codec<ParticleLifetimeExpression> CODEC = RecordCodecBuilder.create(instance -> instance.group(
@@ -45,7 +46,7 @@ public record ParticleLifetimeExpression(FloatMolangExp expirationExpression, Fl
     @Override
     public void apply(MolangParticleInstance instance) {
         if (maxLifetime.initialized()) {
-            instance.setLifetime((int) (maxLifetime.calculate(instance) * 20));
+            instance.setLifetime(Math.max((int) (maxLifetime.calculate(instance) * 20), 1));
         }
     }
 
