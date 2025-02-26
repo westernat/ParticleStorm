@@ -50,9 +50,9 @@ public class MathHelper {
     }
 
     public static Vector3f getRandomEuler(RandomSource random) {
-        float x = random.nextFloat() * (random.nextBoolean() ? Mth.PI : -Mth.PI);
-        float y = random.nextFloat() * (random.nextBoolean() ? Mth.PI : -Mth.PI);
-        float z = random.nextFloat() * (random.nextBoolean() ? Mth.PI : -Mth.PI);
+        float x = random.nextFloat() * Mth.TWO_PI - Mth.PI;
+        float y = random.nextFloat() * Mth.TWO_PI - Mth.PI;
+        float z = random.nextFloat() * Mth.TWO_PI - Mth.PI;
         return new Vector3f(x, y, z);
     }
 
@@ -99,8 +99,8 @@ public class MathHelper {
     }
 
     public static void forCompound(Map<String, Variable> table, List<VariableAssignment> toInit, MathValue variable) {
-        if (variable instanceof CompoundValue compoundValue) {
-            for (MathValue value : compoundValue.subValues()) {
+        if (variable instanceof CompoundValue(MathValue[] subValues)) {
+            for (MathValue value : subValues) {
                 forAssignment(table, toInit, value);
             }
         }
