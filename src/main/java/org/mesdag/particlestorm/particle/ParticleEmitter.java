@@ -207,7 +207,7 @@ public class ParticleEmitter implements MolangInstance {
     }
 
     public boolean isRemoved() {
-        return removed;
+        return removed || (attached != null && attached.isRemoved());
     }
 
     public void setPos(Vec3 pos) {
