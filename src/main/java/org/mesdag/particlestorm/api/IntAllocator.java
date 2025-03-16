@@ -1,5 +1,7 @@
 package org.mesdag.particlestorm.api;
 
+import org.mesdag.particlestorm.ParticleStorm;
+
 import java.util.HashSet;
 import java.util.PriorityQueue;
 import java.util.Set;
@@ -31,7 +33,7 @@ public class IntAllocator {
             usedIds.remove(id);
             availableIds.offer(id);
         } else {
-            throw new IllegalArgumentException("ID " + id + " is not currently allocated.");
+            ParticleStorm.LOGGER.warn("ID {} is not currently allocated.", id);
         }
     }
 

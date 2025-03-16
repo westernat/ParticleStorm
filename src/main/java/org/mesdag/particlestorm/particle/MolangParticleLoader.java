@@ -114,6 +114,10 @@ public class MolangParticleLoader implements PreparableReloadListener {
         tracker.computeIfAbsent(entity, e -> EvictingQueue.create(16)).add(emitter);
     }
 
+    public void removeEmitter(ParticleEmitter emitter, boolean sync) {
+        removeEmitter(emitter.id, sync);
+    }
+
     public ParticleEmitter removeEmitter(int id, boolean sync) {
         ParticleEmitter removed = emitters.remove(id);
         if (removed != null) {
