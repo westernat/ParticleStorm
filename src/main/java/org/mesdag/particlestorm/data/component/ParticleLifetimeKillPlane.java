@@ -1,6 +1,7 @@
 package org.mesdag.particlestorm.data.component;
 
 import com.mojang.serialization.Codec;
+import org.mesdag.particlestorm.api.IParticleComponent;
 import org.mesdag.particlestorm.data.molang.MolangExp;
 import org.mesdag.particlestorm.particle.MolangParticleInstance;
 

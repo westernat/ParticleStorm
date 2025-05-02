@@ -6,6 +6,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.ExtraCodecs;
 import net.minecraft.util.StringRepresentable;
 import org.jetbrains.annotations.NotNull;
+import org.mesdag.particlestorm.api.IParticleComponent;
 import org.mesdag.particlestorm.data.DuplicateFieldDecoder;
 import org.mesdag.particlestorm.data.molang.FloatMolangExp;
 import org.mesdag.particlestorm.data.molang.FloatMolangExp2;
@@ -34,7 +35,8 @@ public record ParticleAppearanceBillboard(FloatMolangExp2 size, FaceCameraMode f
     public List<MolangExp> getAllMolangExp() {
         return List.of(
                 size.exp1(), size.exp2(), direction.customDirection.exp1(), direction.customDirection.exp2(), direction.customDirection.exp3(),
-                uv.uv.exp1(), uv.uv.exp2(), uv.uvSize.exp1(), uv.uvSize.exp2(), uv.flipbook.baseUV.exp1(), uv.flipbook.baseUV.exp2(), uv.flipbook.maxFrame
+                uv.uv.exp1(), uv.uv.exp2(), uv.uvSize.exp1(), uv.uvSize.exp2(), uv.flipbook.baseUV.exp1(), uv.flipbook.baseUV.exp2(),
+                uv.flipbook.sizeUV.exp1(), uv.flipbook.sizeUV.exp2(), uv.flipbook.stepUV.exp1(), uv.flipbook.stepUV.exp2(), uv.flipbook.maxFrame
         );
     }
 
@@ -97,17 +99,18 @@ public record ParticleAppearanceBillboard(FloatMolangExp2 size, FaceCameraMode f
         if (size.initialized()) {
             instance.billboardSize = size.calculate(instance);
         }
-        instance.UV = new float[4];
-        if (uv.flipbook == UV.Flipbook.EMPTY) {
-            updateSimpleUV(instance);
-        } else {
-            instance.uvSize = uv.flipbook.getSizeUV();
-            instance.uvSize[0] *= instance.scaleU;
-            instance.uvSize[1] *= instance.scaleV;
-            instance.uvStep = uv.flipbook.getStepUV();
-            instance.uvStep[0] *= instance.scaleU;
-            instance.uvStep[1] *= instance.scaleV;
-            updateFlipbookUV(instance);
+        if (uv != UV.EMPTY) {
+            if (uv.flipbook == UV.Flipbook.EMPTY) {
+                updateSimpleUV(instance);
+            } else {
+                instance.uvSize = uv.flipbook.getSizeUV(instance);
+                instance.uvSize[0] *= instance.scaleU;
+                instance.uvSize[1] *= instance.scaleV;
+                instance.uvStep = uv.flipbook.getStepUV(instance);
+                instance.uvStep[0] *= instance.scaleU;
+                instance.uvStep[1] *= instance.scaleV;
+                updateFlipbookUV(instance);
+            }
         }
     }
 
@@ -251,19 +254,19 @@ public record ParticleAppearanceBillboard(FloatMolangExp2 size, FaceCameraMode f
          * A flipbook animation uses pieces of the texture to animate, by stepping over time from one <code>frame</code> to another
          */
         public static class Flipbook {
-            public static final Flipbook EMPTY = new Flipbook(FloatMolangExp2.ZERO, List.of(), List.of(), 0, FloatMolangExp.ZERO, false, false);
+            public static final Flipbook EMPTY = new Flipbook(FloatMolangExp2.ZERO, FloatMolangExp2.ZERO, FloatMolangExp2.ZERO, 0, FloatMolangExp.ZERO, false, false);
             public static final Codec<Flipbook> CODEC = RecordCodecBuilder.create(instance -> instance.group(
-                    FloatMolangExp2.CODEC.fieldOf("base_UV").orElse(FloatMolangExp2.ZERO).forGetter(Flipbook::baseUV),
-                    Codec.list(Codec.FLOAT, 2, 2).fieldOf("size_UV").forGetter(Flipbook::sizeUV),
-                    Codec.list(Codec.FLOAT, 2, 2).fieldOf("step_UV").forGetter(Flipbook::stepUV),
-                    Codec.FLOAT.fieldOf("frames_per_second").orElse(1.0F).forGetter(Flipbook::framesPerSecond),
-                    FloatMolangExp.CODEC.fieldOf("max_frame").orElse(FloatMolangExp.ZERO).forGetter(Flipbook::maxFrame),
-                    Codec.BOOL.fieldOf("stretch_to_lifetime").orElse(false).forGetter(Flipbook::stretchToLifetime),
-                    Codec.BOOL.fieldOf("loop").orElse(false).forGetter(Flipbook::loop)
+                    FloatMolangExp2.CODEC.lenientOptionalFieldOf("base_UV", FloatMolangExp2.ZERO).forGetter(Flipbook::baseUV),
+                    FloatMolangExp2.CODEC.lenientOptionalFieldOf("size_UV", FloatMolangExp2.ZERO).forGetter(Flipbook::sizeUV),
+                    FloatMolangExp2.CODEC.lenientOptionalFieldOf("step_UV", FloatMolangExp2.ZERO).forGetter(Flipbook::stepUV),
+                    Codec.FLOAT.lenientOptionalFieldOf("frames_per_second", 1.0F).forGetter(Flipbook::framesPerSecond),
+                    FloatMolangExp.CODEC.lenientOptionalFieldOf("max_frame", FloatMolangExp.ZERO).forGetter(Flipbook::maxFrame),
+                    Codec.BOOL.lenientOptionalFieldOf("stretch_to_lifetime", false).forGetter(Flipbook::stretchToLifetime),
+                    Codec.BOOL.lenientOptionalFieldOf("loop", false).forGetter(Flipbook::loop)
             ).apply(instance, Flipbook::new));
             private final FloatMolangExp2 baseUV;
-            private final List<Float> sizeUV;
-            private final List<Float> stepUV;
+            private final FloatMolangExp2 sizeUV;
+            private final FloatMolangExp2 stepUV;
             private final float framesPerSecond;
             private final FloatMolangExp maxFrame;
             private final boolean stretchToLifetime;
@@ -280,7 +283,7 @@ public record ParticleAppearanceBillboard(FloatMolangExp2 size, FaceCameraMode f
              * @param stretchToLifetime Optional, adjust fps to match lifetime of particle. Default=false
              * @param loop              Optional, makes the animation loop when it reaches the end? Default=false
              */
-            public Flipbook(FloatMolangExp2 baseUV, List<Float> sizeUV, List<Float> stepUV, float framesPerSecond, FloatMolangExp maxFrame, boolean stretchToLifetime, boolean loop) {
+            public Flipbook(FloatMolangExp2 baseUV, FloatMolangExp2 sizeUV, FloatMolangExp2 stepUV, float framesPerSecond, FloatMolangExp maxFrame, boolean stretchToLifetime, boolean loop) {
                 this.baseUV = baseUV;
                 this.sizeUV = sizeUV;
                 this.stepUV = stepUV;
@@ -294,23 +297,23 @@ public record ParticleAppearanceBillboard(FloatMolangExp2 size, FaceCameraMode f
                 }
             }
 
-            public float[] getSizeUV() {
-                return new float[]{sizeUV.getFirst(), sizeUV.getLast()};
+            public float[] getSizeUV(MolangParticleInstance instance) {
+                return sizeUV.calculate(instance);
             }
 
-            public float[] getStepUV() {
-                return new float[]{stepUV.getFirst(), stepUV.getLast()};
+            public float[] getStepUV(MolangParticleInstance instance) {
+                return stepUV.calculate(instance);
             }
 
             public FloatMolangExp2 baseUV() {
                 return baseUV;
             }
 
-            public List<Float> sizeUV() {
+            public FloatMolangExp2 sizeUV() {
                 return sizeUV;
             }
 
-            public List<Float> stepUV() {
+            public FloatMolangExp2 stepUV() {
                 return stepUV;
             }
 

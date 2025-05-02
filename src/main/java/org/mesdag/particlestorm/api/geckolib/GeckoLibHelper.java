@@ -1,4 +1,4 @@
-package org.mesdag.particlestorm.integration.geckolib;
+package org.mesdag.particlestorm.api.geckolib;
 
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.Entity;
@@ -23,18 +23,11 @@ import java.util.List;
 import java.util.Set;
 
 public final class GeckoLibHelper {
+    public static final boolean LOADED = ModList.get().isLoaded("geckolib");
     private static final double[] ZERO = new double[3];
-    private static Boolean isLoaded;
-
-    public static boolean isLoaded() {
-        if (isLoaded == null) {
-            isLoaded = ModList.get().isLoaded("geckolib");
-        }
-        return isLoaded;
-    }
 
     public static double[] getLocatorOffset(Object locatorValue) {
-        if (isLoaded() && locatorValue instanceof LocatorValue value) {
+        if (LOADED && locatorValue instanceof LocatorValue value) {
             if (value.locatorClass() == null) {
                 return value.values();
             }
@@ -44,7 +37,7 @@ public final class GeckoLibHelper {
     }
 
     public static double[] getLocatorRotation(Object locatorValue) {
-        if (isLoaded() && locatorValue instanceof LocatorValue value) {
+        if (LOADED && locatorValue instanceof LocatorValue value) {
             if (value.locatorClass() == null) {
                 return ZERO;
             }
@@ -57,7 +50,7 @@ public final class GeckoLibHelper {
      * @return true means failed to add emitter
      */
     public static boolean processParticleEffect(Object particleKeyframeEvent) {
-        if (isLoaded() && particleKeyframeEvent instanceof ParticleKeyframeEvent<?> event) {
+        if (LOADED && particleKeyframeEvent instanceof ParticleKeyframeEvent<?> event) {
             List<GeoBone> bones = ((IAnimationController) event.getController()).particlestorm$getBonesWhichHasLocators();
             if (bones.isEmpty()) return true;
 
@@ -125,13 +118,13 @@ public final class GeckoLibHelper {
     }
 
     public static void setCurrentEntity(Object animatable, Entity entity) {
-        if (isLoaded() && animatable instanceof GeoWithCurrentEntity withCurrentEntity) {
+        if (LOADED && animatable instanceof GeoWithCurrentEntity withCurrentEntity) {
             withCurrentEntity.setCurrentEntity(entity);
         }
     }
 
     public static void removeEmittersWhenAnimationChange(int size, Object animationState, Set<?> executedKeyFrames) {
-        if (isLoaded() && size > 0 && animationState == AnimationController.State.TRANSITIONING) {
+        if (LOADED && size > 0 && animationState == AnimationController.State.TRANSITIONING) {
             for (Object executedKeyFrame : executedKeyFrames) {
                 if (executedKeyFrame instanceof ParticleKeyframeData particleKeyframeData) {
                     int[] cachedId = ((IParticleKeyframeData) particleKeyframeData).particlestorm$getCachedId(size);

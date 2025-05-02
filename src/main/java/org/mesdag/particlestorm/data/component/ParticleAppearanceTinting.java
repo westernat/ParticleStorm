@@ -6,9 +6,10 @@ import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.util.Mth;
 import net.minecraft.util.Tuple;
+import org.mesdag.particlestorm.api.IParticleComponent;
+import org.mesdag.particlestorm.api.MolangInstance;
 import org.mesdag.particlestorm.data.molang.FloatMolangExp;
 import org.mesdag.particlestorm.data.molang.MolangExp;
-import org.mesdag.particlestorm.data.molang.MolangInstance;
 import org.mesdag.particlestorm.particle.MolangParticleInstance;
 
 import java.util.*;
@@ -59,11 +60,15 @@ public record ParticleAppearanceTinting(Color color, ColorField colorField) impl
         float[] color = tuple.getB().calculate(instance);
         float[] another = next.getB().calculate(instance);
         float factor = 1.0F - (ratio - tuple.getA()) / (next.getA() - tuple.getA());
-        float r = Mth.clamp(color[0] * factor + another[0], 0.0F, 1.0F);
-        float g = Mth.clamp(color[1] * factor + another[1], 0.0F, 1.0F);
-        float b = Mth.clamp(color[2] * factor + another[2], 0.0F, 1.0F);
-        float a = Mth.clamp(color[3] * factor + another[3], 0.0F, 1.0F);
+        float r = mix(color[0], another[0], factor);
+        float g = mix(color[1], another[1], factor);
+        float b = mix(color[2], another[2], factor);
+        float a = mix(color[3], another[3], factor);
         return new float[]{r, g, b, a};
+    }
+
+    private float mix(float first, float second, float ratio) {
+        return Mth.clamp((first - second) * ratio + second, 0.0F, 1.0F);
     }
 
     @Override

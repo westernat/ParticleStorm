@@ -11,8 +11,9 @@ import net.minecraft.util.ByIdMap;
 import net.minecraft.util.StringRepresentable;
 import org.jetbrains.annotations.NotNull;
 import org.mesdag.particlestorm.PSGameClient;
+import org.mesdag.particlestorm.api.IEventNode;
+import org.mesdag.particlestorm.api.MolangInstance;
 import org.mesdag.particlestorm.data.molang.MolangExp;
-import org.mesdag.particlestorm.data.molang.MolangInstance;
 import org.mesdag.particlestorm.particle.ParticleEmitter;
 
 import java.util.Locale;

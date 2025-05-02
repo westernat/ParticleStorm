@@ -2,6 +2,7 @@ package org.mesdag.particlestorm.data.component;
 
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
+import org.mesdag.particlestorm.api.IEmitterComponent;
 import org.mesdag.particlestorm.data.molang.FloatMolangExp;
 import org.mesdag.particlestorm.data.molang.MolangExp;
 import org.mesdag.particlestorm.particle.MutableParticleGroup;
@@ -9,7 +10,7 @@ import org.mesdag.particlestorm.particle.ParticleEmitter;
 
 import java.util.List;
 
-public abstract class EmitterRate implements IEmitterComponent {
+public abstract sealed class EmitterRate implements IEmitterComponent permits EmitterRate.Instant, EmitterRate.Steady, EmitterRate.Manual {
     @Override
     public int order() {
         return 500;
@@ -54,9 +55,7 @@ public abstract class EmitterRate implements IEmitterComponent {
             if (emitter.spawnRate != limit) {
                 emitter.spawnRate = limit;
                 if (emitter.particleGroup == null) {
-                    emitter.particleGroup = new MutableParticleGroup(limit);
-                } else {
-                    emitter.particleGroup.setLimit(limit);
+                    emitter.particleGroup = new MutableParticleGroup(16384);
                 }
             }
         }

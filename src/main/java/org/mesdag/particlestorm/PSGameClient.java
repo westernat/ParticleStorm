@@ -5,8 +5,8 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.*;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.particle.ParticleRenderType;
+import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.renderer.LevelRenderer;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
@@ -17,16 +17,20 @@ import net.minecraft.world.entity.EntityType;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.fml.event.config.ModConfigEvent;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.event.EntityRenderersEvent;
 import net.neoforged.neoforge.client.event.RegisterClientReloadListenersEvent;
 import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
 import net.neoforged.neoforge.common.NeoForge;
+import org.jetbrains.annotations.NotNull;
+import org.mesdag.particlestorm.api.IComponent;
+import org.mesdag.particlestorm.api.IEventNode;
+import org.mesdag.particlestorm.api.geckolib.ExampleBlockEntityRenderer;
+import org.mesdag.particlestorm.api.geckolib.ReplacedCreeperRenderer;
 import org.mesdag.particlestorm.data.component.*;
 import org.mesdag.particlestorm.data.event.*;
-import org.mesdag.particlestorm.integration.geckolib.ExampleBlockEntityRenderer;
-import org.mesdag.particlestorm.integration.geckolib.ReplacedCreeperRenderer;
 import org.mesdag.particlestorm.mixin.ParticleEngineAccessor;
 import org.mesdag.particlestorm.particle.MolangParticleLoader;
 import org.mesdag.particlestorm.particle.ParticleEmitter;
@@ -36,7 +40,7 @@ public final class PSGameClient {
     public static final MolangParticleLoader LOADER = new MolangParticleLoader();
     public static final ParticleRenderType PARTICLE_ADD = new ParticleRenderType() {
         @Override
-        public BufferBuilder begin(Tesselator tesselator, TextureManager textureManager) {
+        public BufferBuilder begin(Tesselator tesselator, @NotNull TextureManager textureManager) {
             RenderSystem.enableDepthTest();
             Minecraft.getInstance().gameRenderer.lightTexture().turnOnLightLayer();
             RenderSystem.depthMask(false);
@@ -62,27 +66,35 @@ public final class PSGameClient {
     @SubscribeEvent
     public static void clientSetup(FMLClientSetupEvent event) {
         event.enqueueWork(() -> {
+            PSClientConfigs.onLoad();
             NeoForge.EVENT_BUS.addListener(PSGameClient::tick);
             NeoForge.EVENT_BUS.addListener(PSGameClient::renderLevelStage);
         });
     }
 
+    @SubscribeEvent
+    public static void modConfig$Reloading(ModConfigEvent.Reloading event) {
+        if (event.getConfig().getModId().equals(ParticleStorm.MODID)) {
+            PSClientConfigs.onLoad();
+        }
+    }
+
     private static void tick(ClientTickEvent.Pre event) {
         Minecraft minecraft = Minecraft.getInstance();
-        ClientLevel level = minecraft.level;
-        if (level == null) {
+        LocalPlayer localPlayer = minecraft.player;
+        if (localPlayer == null) {
             LOADER.removeAll();
-        } else if (minecraft.isPaused() || level.tickRateManager().isFrozen()) {
-            return;
+        } else if (!minecraft.isPaused() && !localPlayer.level().tickRateManager().isFrozen()) {
+            LOADER.tick(localPlayer);
         }
-        LOADER.tick();
     }
 
     private static void renderLevelStage(RenderLevelStageEvent event) {
+        if (!PSClientConfigs.showEmitterOutline) return;
         Minecraft minecraft = Minecraft.getInstance();
         if (event.getStage() == RenderLevelStageEvent.Stage.AFTER_PARTICLES && minecraft.getEntityRenderDispatcher().shouldRenderHitBoxes())
             for (ParticleEmitter value : LOADER.emitters.values()) {
-                if (!value.isInitialized() || value.attached == minecraft.player) continue;
+                if (!value.isInitialized() || value.attached != null) continue;
                 PoseStack poseStack = event.getPoseStack();
                 MultiBufferSource.BufferSource bufferSource = minecraft.renderBuffers().bufferSource();
                 double x = value.getX();

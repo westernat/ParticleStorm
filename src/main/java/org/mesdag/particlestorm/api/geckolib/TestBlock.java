@@ -1,4 +1,4 @@
-package org.mesdag.particlestorm.integration.geckolib;
+package org.mesdag.particlestorm.api.geckolib;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.BlockGetter;

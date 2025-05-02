@@ -2,7 +2,7 @@ package org.mesdag.particlestorm.data.molang.compiler.function.random;
 
 import net.minecraft.util.Mth;
 import org.jetbrains.annotations.Nullable;
-import org.mesdag.particlestorm.data.molang.MolangInstance;
+import org.mesdag.particlestorm.api.MolangInstance;
 import org.mesdag.particlestorm.data.molang.compiler.MathValue;
 import org.mesdag.particlestorm.data.molang.compiler.function.MathFunction;
 

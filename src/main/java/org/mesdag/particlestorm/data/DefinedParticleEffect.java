@@ -3,12 +3,12 @@ package org.mesdag.particlestorm.data;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.resources.ResourceLocation;
-import org.mesdag.particlestorm.data.component.IComponent;
-import org.mesdag.particlestorm.data.component.IEmitterComponent;
-import org.mesdag.particlestorm.data.component.IParticleComponent;
+import org.mesdag.particlestorm.api.IComponent;
+import org.mesdag.particlestorm.api.IEmitterComponent;
+import org.mesdag.particlestorm.api.IEventNode;
+import org.mesdag.particlestorm.api.IParticleComponent;
 import org.mesdag.particlestorm.data.curve.ParticleCurve;
 import org.mesdag.particlestorm.data.description.ParticleDescription;
-import org.mesdag.particlestorm.data.event.IEventNode;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -30,6 +30,7 @@ public class DefinedParticleEffect {
     public final List<IComponent> orderedComponents;
     public final List<IParticleComponent> orderedParticleComponents;
     public final List<IParticleComponent> orderedParticleComponentsWhichRequireUpdate;
+    public final List<IParticleComponent> orderedParticleEarlyComponents;
     public final List<IEmitterComponent> orderedEmitterComponents;
 
     public DefinedParticleEffect(ParticleDescription description, Map<String, ParticleCurve> curves, Map<ResourceLocation, IComponent> components, Map<String, Map<String, IEventNode>> events) {
@@ -41,11 +42,16 @@ public class DefinedParticleEffect {
         this.orderedComponents = new ArrayList<>();
         this.orderedParticleComponents = new ArrayList<>();
         this.orderedParticleComponentsWhichRequireUpdate = new ArrayList<>();
+        this.orderedParticleEarlyComponents = new ArrayList<>();
         this.orderedEmitterComponents = new ArrayList<>();
         components.values().stream().sorted(Comparator.comparing(IComponent::order)).forEachOrdered(orderedComponents::add);
         for (IComponent component : orderedComponents) {
             if (component instanceof IParticleComponent particleComponent) {
                 orderedParticleComponents.add(particleComponent);
+                if (component.order() < 0) {
+                    orderedParticleEarlyComponents.add(particleComponent);
+                    continue;
+                }
                 if (particleComponent.requireUpdate()) {
                     orderedParticleComponentsWhichRequireUpdate.add(particleComponent);
                 }

@@ -1,4 +1,4 @@
-package org.mesdag.particlestorm.data.component;
+package org.mesdag.particlestorm.api;
 
 import org.mesdag.particlestorm.particle.ParticleEmitter;
 

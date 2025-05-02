@@ -1,4 +1,4 @@
-package org.mesdag.particlestorm.integration.geckolib;
+package org.mesdag.particlestorm.api.geckolib;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;

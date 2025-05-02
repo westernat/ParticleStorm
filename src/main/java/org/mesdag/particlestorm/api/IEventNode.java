@@ -1,7 +1,7 @@
-package org.mesdag.particlestorm.data.event;
+package org.mesdag.particlestorm.api;
 
 import com.mojang.serialization.Codec;
-import org.mesdag.particlestorm.data.molang.MolangInstance;
+import org.mesdag.particlestorm.data.event.EventLog;
 
 import java.util.Hashtable;
 import java.util.Map;

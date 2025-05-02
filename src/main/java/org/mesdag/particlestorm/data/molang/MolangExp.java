@@ -4,8 +4,11 @@ import com.mojang.serialization.Codec;
 import io.netty.buffer.ByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
+import org.mesdag.particlestorm.api.MolangInstance;
 import org.mesdag.particlestorm.data.molang.compiler.MathValue;
 import org.mesdag.particlestorm.data.molang.compiler.MolangParser;
+
+import java.util.Map;
 
 public class MolangExp {
     public static final MolangExp EMPTY = new MolangExp("");
@@ -19,6 +22,19 @@ public class MolangExp {
 
     public MolangExp(String expStr) {
         this.expStr = expStr;
+    }
+
+    public MolangExp(String key, double value) {
+        if (!key.startsWith("variable.")) key = "variable." + key;
+        this.expStr = key + "=" + value + ";";
+    }
+
+    public MolangExp(Map<String, String> exps) {
+        StringBuilder builder = new StringBuilder();
+        for (Map.Entry<String, String> entry : exps.entrySet()) {
+            builder.append(entry.getKey()).append('=').append(entry.getValue()).append(';');
+        }
+        this.expStr = builder.toString();
     }
 
     public String getExpStr() {

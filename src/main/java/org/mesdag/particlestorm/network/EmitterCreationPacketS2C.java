@@ -8,7 +8,9 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.Vec3;
+import net.neoforged.neoforge.network.PacketDistributor;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
+import net.neoforged.neoforge.server.ServerLifecycleHooks;
 import org.jetbrains.annotations.NotNull;
 import org.joml.Vector3f;
 import org.mesdag.particlestorm.PSGameClient;
@@ -44,5 +46,11 @@ public record EmitterCreationPacketS2C(ResourceLocation id, Vector3f pos, Partic
             context.disconnect(Component.translatable("neoforge.network.invalid_flow", e.getMessage()));
             return null;
         });
+    }
+
+    public static void sendToAll(ResourceLocation id, Vector3f pos, ParticleEffect.Type effectType, MolangExp expression) {
+        if (ServerLifecycleHooks.getCurrentServer() != null) {
+            PacketDistributor.sendToAllPlayers(new EmitterCreationPacketS2C(id, pos, effectType, expression));
+        }
     }
 }

@@ -1,6 +1,7 @@
 package org.mesdag.particlestorm.data.molang;
 
 import com.mojang.serialization.Codec;
+import org.mesdag.particlestorm.api.MolangInstance;
 
 import java.util.List;
 

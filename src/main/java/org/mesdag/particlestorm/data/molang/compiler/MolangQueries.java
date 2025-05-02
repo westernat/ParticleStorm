@@ -63,5 +63,11 @@ public final class MolangQueries {
             }
             return sum;
         });
+        getQueryFor("query.attached_x").set(p -> p.getAttachedEntity() == null ? 0.0 : p.getAttachedEntity().getX());
+        getQueryFor("query.attached_y").set(p -> p.getAttachedEntity() == null ? 0.0 : p.getAttachedEntity().getY());
+        getQueryFor("query.attached_z").set(p -> p.getAttachedEntity() == null ? 0.0 : p.getAttachedEntity().getZ());
+        getQueryFor("query.attached_xo").set(p -> p.getAttachedEntity() == null ? 0.0 : p.getAttachedEntity().xo);
+        getQueryFor("query.attached_yo").set(p -> p.getAttachedEntity() == null ? 0.0 : p.getAttachedEntity().yo);
+        getQueryFor("query.attached_zo").set(p -> p.getAttachedEntity() == null ? 0.0 : p.getAttachedEntity().zo);
     }
 }

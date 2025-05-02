@@ -4,7 +4,7 @@ import com.llamalad7.mixinextras.injector.v2.WrapWithCondition;
 import com.llamalad7.mixinextras.sugar.Local;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.Logger;
-import org.mesdag.particlestorm.integration.geckolib.GeckoLibHelper;
+import org.mesdag.particlestorm.api.geckolib.GeckoLibHelper;
 import org.mesdag.particlestorm.mixed.IAnimationController;
 import org.spongepowered.asm.mixin.*;
 import org.spongepowered.asm.mixin.injection.At;

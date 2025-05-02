@@ -14,13 +14,17 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Vector3f;
 import org.mesdag.particlestorm.PSGameClient;
+import org.mesdag.particlestorm.api.IEmitterComponent;
+import org.mesdag.particlestorm.api.MolangInstance;
+import org.mesdag.particlestorm.data.MathHelper;
+import org.mesdag.particlestorm.data.component.EmitterLifetime;
 import org.mesdag.particlestorm.data.component.EmitterRate;
-import org.mesdag.particlestorm.data.component.IEmitterComponent;
 import org.mesdag.particlestorm.data.event.ParticleEffect;
 import org.mesdag.particlestorm.data.molang.MolangExp;
-import org.mesdag.particlestorm.data.molang.MolangInstance;
 import org.mesdag.particlestorm.data.molang.VariableTable;
+import org.mesdag.particlestorm.data.molang.compiler.MathValue;
 import org.mesdag.particlestorm.data.molang.compiler.MolangParser;
+import org.mesdag.particlestorm.data.molang.compiler.value.VariableAssignment;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -49,7 +53,6 @@ public class ParticleEmitter implements MolangInstance {
     public int id;
 
     public transient float invTickRate;
-    public transient Vector3f particleInitialSpeed = new Vector3f();
     public transient int age = 0;
     public transient int lifetime = 0;
     public transient boolean active = true;
@@ -94,7 +97,7 @@ public class ParticleEmitter implements MolangInstance {
         this.invTickRate = 1.0F / level.tickRateManager().tickrate();
     }
 
-    public void updateRandoms(RandomSource random) {
+    public synchronized void updateRandoms(RandomSource random) {
         this.emitterRandom1 = random.nextDouble();
         this.emitterRandom2 = random.nextDouble();
         this.emitterRandom3 = random.nextDouble();
@@ -103,47 +106,7 @@ public class ParticleEmitter implements MolangInstance {
 
     public void tick() {
         if (initialized) {
-            this.invTickRate = 1.0F / level.tickRateManager().tickrate();
-            this.moveDistO = moveDist;
-            this.posO = pos;
-            if (active) {
-                for (IEmitterComponent component : components) {
-                    component.update(this);
-                }
-            }
-            this.age++;
-            if (!posO.equals(pos)) {
-                this.moveDist += (float) pos.subtract(posO).length();
-            }
-            if (detail.emitterRateType == EmitterRate.Type.MANUAL) {
-                remove();
-                return;
-            }
-            if (attached != null) {
-                if (attached.isRemoved()) {
-                    remove();
-                    return;
-                }
-                if (parentRotation != null) {
-                    rot.set(parentRotation).add(offsetRot.x, offsetRot.y + getAttachedYRot() * Mth.DEG_TO_RAD, offsetRot.z);
-                }
-                Vector3f rotated = offsetPos.toVector3f().rotateZ(rot.z).rotateY(rot.y).rotateX(rot.x);
-                this.pos = new Vec3(attached.getX() + rotated.x, attached.getY() + rotated.y, attached.getZ() + rotated.z);
-            } else if (attachedBlock != null) {
-                if (attachedBlock.isRemoved()) {
-                    remove();
-                    return;
-                }
-                if (parentRotation != null) {
-                    rot.set(parentRotation).add(offsetRot);
-                }
-                Vector3f rotated = offsetPos.toVector3f().rotateZ(rot.z).rotateY(rot.y).rotateX(rot.x);
-                BlockPos pos1 = attachedBlock.getBlockPos();
-                this.pos = new Vec3(pos1.getX() + 0.5 + rotated.x, pos1.getY() + 0.5 + rotated.y, pos1.getZ() + 0.5 + rotated.z);
-            }
-            if (parent != null && parent.isRemoved()) {
-                remove();
-            }
+            baseTick();
         } else if (particleId != null) {
             this.detail = PSGameClient.LOADER.ID_2_EMITTER.get(particleId);
             if (detail == null) {
@@ -159,17 +122,65 @@ public class ParticleEmitter implements MolangInstance {
             }
             if (expression != null && !expression.initialized()) {
                 expression.compile(new MolangParser(variableTable));
+                MathValue variable = expression.getVariable();
+                List<VariableAssignment> toInit = new ArrayList<>();
+                if (variable != null && !MathHelper.forAssignment(variableTable.table, toInit, variable)) {
+                    MathHelper.forCompound(variableTable.table, toInit, variable);
+                }
+                MathHelper.redirect(toInit, variableTable);
             }
             // todo effect type
-            detail.assignments.forEach(assignment -> {
-                // 重定向，防止污染变量表
-                variableTable.setValue(assignment.variable().name(), assignment.value());
-            });
+            MathHelper.redirect(detail.assignments, variableTable);
             this.components = detail.components.stream().filter(e -> {
                 e.apply(this);
                 return e.requireUpdate();
             }).toList();
             this.initialized = true;
+            baseTick();
+        }
+    }
+
+    protected void baseTick() {
+        this.invTickRate = 1.0F / level.tickRateManager().tickrate();
+        this.moveDistO = moveDist;
+        this.posO = pos;
+        for (IEmitterComponent component : components) {
+            if (active || component instanceof EmitterLifetime.Looping) {
+                component.update(this);
+            }
+        }
+        this.age++;
+        if (!posO.equals(pos)) {
+            this.moveDist += (float) pos.subtract(posO).length();
+        }
+        if (detail.emitterRateType == EmitterRate.Type.MANUAL) {
+            remove();
+            return;
+        }
+        if (attached != null) {
+            if (attached.isRemoved()) {
+                remove();
+                return;
+            }
+            if (parentRotation != null) {
+                rot.set(parentRotation).add(offsetRot.x, offsetRot.y + getAttachedYRot() * Mth.DEG_TO_RAD, offsetRot.z);
+            }
+            Vector3f rotated = offsetPos.toVector3f().rotateZ(rot.z).rotateY(rot.y).rotateX(rot.x);
+            this.pos = new Vec3(attached.getX() + rotated.x, attached.getY() + rotated.y, attached.getZ() + rotated.z);
+        } else if (attachedBlock != null) {
+            if (attachedBlock.isRemoved()) {
+                remove();
+                return;
+            }
+            if (parentRotation != null) {
+                rot.set(parentRotation).add(offsetRot);
+            }
+            Vector3f rotated = offsetPos.toVector3f().rotateZ(rot.z).rotateY(rot.y).rotateX(rot.x);
+            BlockPos pos1 = attachedBlock.getBlockPos();
+            this.pos = new Vec3(pos1.getX() + 0.5 + rotated.x, pos1.getY() + 0.5 + rotated.y, pos1.getZ() + 0.5 + rotated.z);
+        }
+        if (parent != null && parent.isRemoved()) {
+            remove();
         }
     }
 
@@ -197,7 +208,7 @@ public class ParticleEmitter implements MolangInstance {
     }
 
     public boolean isRemoved() {
-        return removed;
+        return removed || (attached != null && attached.isRemoved());
     }
 
     public void setPos(Vec3 pos) {

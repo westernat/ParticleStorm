@@ -5,20 +5,21 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 import org.jetbrains.annotations.NotNull;
 import org.mesdag.particlestorm.PSGameClient;
+import org.mesdag.particlestorm.api.IComponent;
+import org.mesdag.particlestorm.api.IParticleComponent;
+import org.mesdag.particlestorm.api.MolangInstance;
 import org.mesdag.particlestorm.data.DefinedParticleEffect;
+import org.mesdag.particlestorm.data.MathHelper;
 import org.mesdag.particlestorm.data.component.*;
-import org.mesdag.particlestorm.data.molang.MolangInstance;
 import org.mesdag.particlestorm.data.molang.VariableTable;
 import org.mesdag.particlestorm.data.molang.compiler.MathValue;
 import org.mesdag.particlestorm.data.molang.compiler.MolangParser;
-import org.mesdag.particlestorm.data.molang.compiler.value.CompoundValue;
 import org.mesdag.particlestorm.data.molang.compiler.value.Variable;
 import org.mesdag.particlestorm.data.molang.compiler.value.VariableAssignment;
 
 import java.util.ArrayList;
 import java.util.Hashtable;
 import java.util.List;
-import java.util.Map;
 
 import static org.mesdag.particlestorm.data.molang.compiler.MolangQueries.applyPrefixAliases;
 
@@ -77,8 +78,8 @@ public class ParticleDetail {
             component.getAllMolangExp().forEach(exp -> {
                 exp.compile(parser);
                 MathValue variable = exp.getVariable();
-                if (variable != null && !forAssignment(table.table, toInit, variable)) {
-                    forCompound(table.table, toInit, variable);
+                if (variable != null && !MathHelper.forAssignment(table.table, toInit, variable)) {
+                    MathHelper.forCompound(table.table, toInit, variable);
                 }
             });
         }
@@ -95,23 +96,5 @@ public class ParticleDetail {
         table.computeIfAbsent("variable.particle_random_3", s -> new Variable(s, MolangInstance::getRandom3));
         table.computeIfAbsent("variable.particle_random_4", s -> new Variable(s, MolangInstance::getRandom4));
         return table;
-    }
-
-    private static boolean forAssignment(Map<String, Variable> table, List<VariableAssignment> toInit, MathValue value) {
-        if (value instanceof VariableAssignment assignment) {
-            Variable variable = assignment.variable();
-            table.put(variable.name(), variable);
-            toInit.add(assignment);
-            return true;
-        }
-        return false;
-    }
-
-    private static void forCompound(Map<String, Variable> table, List<VariableAssignment> toInit, MathValue variable) {
-        if (variable instanceof CompoundValue compoundValue) {
-            for (MathValue value : compoundValue.subValues()) {
-                forAssignment(table, toInit, value);
-            }
-        }
     }
 }

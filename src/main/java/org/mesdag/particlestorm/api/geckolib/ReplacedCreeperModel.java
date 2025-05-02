@@ -1,4 +1,4 @@
-package org.mesdag.particlestorm.integration.geckolib;
+package org.mesdag.particlestorm.api.geckolib;
 
 import org.mesdag.particlestorm.ParticleStorm;
 import software.bernie.geckolib.model.DefaultedEntityGeoModel;

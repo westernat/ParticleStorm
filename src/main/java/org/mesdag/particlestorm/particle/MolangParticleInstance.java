@@ -16,14 +16,15 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
+import net.neoforged.fml.ModList;
 import org.jetbrains.annotations.NotNull;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
 import org.mesdag.particlestorm.PSGameClient;
-import org.mesdag.particlestorm.data.component.IParticleComponent;
+import org.mesdag.particlestorm.api.IEventNode;
+import org.mesdag.particlestorm.api.IParticleComponent;
+import org.mesdag.particlestorm.api.MolangInstance;
 import org.mesdag.particlestorm.data.component.ParticleMotionCollision;
-import org.mesdag.particlestorm.data.event.IEventNode;
-import org.mesdag.particlestorm.data.molang.MolangInstance;
 import org.mesdag.particlestorm.data.molang.VariableTable;
 import org.mesdag.particlestorm.mixed.ITextureAtlasSprite;
 
@@ -34,6 +35,8 @@ import java.util.Optional;
 @OnlyIn(Dist.CLIENT)
 public class MolangParticleInstance extends TextureSheetParticle implements MolangInstance {
     public static final int FULL_LIGHT = 0xF000F0;
+    private static final boolean isSodiumLoaded = ModList.get().isLoaded("sodium");
+
     public final RandomSource random;
     public final ParticleDetail detail;
     private final VariableTable variableTable;
@@ -43,6 +46,7 @@ public class MolangParticleInstance extends TextureSheetParticle implements Mola
     public Vector3f acceleration = new Vector3f();
     public Vector3f readOnlySpeed = new Vector3f();
     public Vector3f facingDirection = new Vector3f();
+    public Vector3f initialSpeed = new Vector3f();
     public float xRot = 0.0F;
     public float yRot = 0.0F;
     protected float xRotO = 0.0F;
@@ -269,6 +273,23 @@ public class MolangParticleInstance extends TextureSheetParticle implements Mola
     }
 
     @Override
+    protected void renderRotatedQuad(@NotNull VertexConsumer buffer, @NotNull Quaternionf quaternion, float x, float y, float z, float partialTicks) {
+        if (isSodiumLoaded) {
+            float f1 = getU0();
+            float f2 = getU1();
+            float f3 = getV0();
+            float f4 = getV1();
+            int i = getLightColor(partialTicks);
+            renderVertex(buffer, quaternion, x, y, z, 1.0F, -1.0F, 0.0F, f2, f4, i);
+            renderVertex(buffer, quaternion, x, y, z, 1.0F, 1.0F, 0.0F, f2, f3, i);
+            renderVertex(buffer, quaternion, x, y, z, -1.0F, 1.0F, 0.0F, f1, f3, i);
+            renderVertex(buffer, quaternion, x, y, z, -1.0F, -1.0F, 0.0F, f1, f4, i);
+        } else {
+            super.renderRotatedQuad(buffer, quaternion, x, y, z, partialTicks);
+        }
+    }
+
+    @Override
     protected void renderVertex(@NotNull VertexConsumer buffer, @NotNull Quaternionf quaternion, float x, float y, float z, float xOffset, float yOffset, float quadSize, float u, float v, int packedLight) {
         Vector3f vector3f = new Vector3f(xOffset * billboardSize[0], yOffset * billboardSize[1], 0.0F).rotate(quaternion).add(x, y, z);
         buffer.addVertex(vector3f.x(), vector3f.y(), vector3f.z()).setUv(u, v).setColor(rCol, gCol, bCol, alpha).setLight(packedLight);
@@ -289,10 +310,14 @@ public class MolangParticleInstance extends TextureSheetParticle implements Mola
                 Vec3 vec3 = Entity.collideBoundingBox(null, new Vec3(x, y, z), getBoundingBox(), level, List.of());
                 if (hasCollision) {
                     if (x != vec3.x) {
-                        this.xd = -Mth.sign(xd) * Mth.clamp(Math.abs(xd) - collisionDrag, 0.0, Double.MAX_VALUE);
+                        this.xd = -Mth.sign(xd) * (Math.abs(xd) - collisionDrag) * coefficientOfRestitution;
                     }
-                    if (y != vec3.y) this.yd *= -coefficientOfRestitution;
-                    if (z != vec3.z) this.zd = -Mth.sign(zd) * Mth.clamp(Math.abs(zd) - collisionDrag, 0.0, Double.MAX_VALUE);
+                    if (y != vec3.y) {
+                        this.yd *= -coefficientOfRestitution;
+                    }
+                    if (z != vec3.z) {
+                        this.zd = -Mth.sign(zd) * (Math.abs(zd) - collisionDrag) * coefficientOfRestitution;
+                    }
                 }
                 x = vec3.x;
                 y = vec3.y;
