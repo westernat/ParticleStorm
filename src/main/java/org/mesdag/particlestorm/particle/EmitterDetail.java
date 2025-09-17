@@ -56,10 +56,10 @@ public class EmitterDetail {
             } else if (component instanceof EmitterShape) {
                 if (shape) throw new IllegalArgumentException("Duplicate emitter shape component");
                 else shape = true;
-            } else if (component instanceof EmitterLocalSpace localSpace) {
-                this.localPosition = localSpace.position();
-                this.localRotation = localSpace.rotation();
-                this.localVelocity = localSpace.velocity();
+            } else if (component instanceof EmitterLocalSpace(boolean position, boolean rotation, boolean velocity)) {
+                this.localPosition = position;
+                this.localRotation = rotation;
+                this.localVelocity = velocity;
             } else if (component instanceof EmitterLifetimeEvents e) {
                 this.lifetimeEvents = e;
             }
