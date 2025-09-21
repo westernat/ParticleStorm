@@ -35,7 +35,7 @@ public record EmitterAttachPacketS2C(int particleId, int entityId) implements Cu
                 ParticleEmitter emitter = PSGameClient.LOADER.getEmitter(particleId);
                 Entity entity;
                 if (emitter != null && (entity = player.level().getEntity(entityId)) != null) {
-                    emitter.attached = entity;
+                    emitter.attachEntity(entity);
                 }
             }
         }).exceptionally(e -> {

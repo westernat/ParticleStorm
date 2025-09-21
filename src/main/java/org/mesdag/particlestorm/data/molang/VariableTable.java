@@ -11,30 +11,22 @@ import java.util.function.ToDoubleFunction;
 
 public class VariableTable {
     public final Map<String, Variable> table;
-    public @Nullable VariableTable previous;
-    public @Nullable VariableTable subTable;
+    protected VariableTable parent;
 
-    public VariableTable(Map<String, Variable> table, @Nullable VariableTable previous) {
+    public VariableTable(Map<String, Variable> table, @Nullable VariableTable parent) {
         this.table = table;
-        this.previous = previous;
+        this.parent = parent;
     }
 
-    public VariableTable(@Nullable VariableTable previous) {
-        this(new Hashtable<>(), previous);
+    public VariableTable(@Nullable VariableTable parent) {
+        this(new Hashtable<>(), parent);
     }
 
     public double getValue(String name, MolangInstance instance) {
         Variable variable = table.get(name);
         if (variable == null) {
-            if (previous == null) {
-                if (subTable == null) return 0.0;
-                return subTable.getValue(name, instance);
-            }
-            double value = previous.getValue(name, instance);
-            if (value == 0.0 && subTable != null) {
-                return subTable.getValue(name, instance);
-            }
-            return value;
+            if (parent == null) return 0.0;
+            return parent.getValue(name, instance);
         }
         return variable.get(instance);
     }
@@ -53,19 +45,24 @@ public class VariableTable {
         if (variable == null) {
             table.put(name, value);
         } else {
-            variable.set(value.value().get());
+            variable.set(value.value());
         }
     }
 
     public Variable computeIfAbsent(String name, Function<String, Variable> function) {
         Variable variable = table.get(name);
         if (variable == null) {
-            if (subTable == null) {
-                if (previous == null) return function.apply(name);
-                return previous.computeIfAbsent(name, function);
-            }
-            return subTable.computeIfAbsent(name, function);
+            if (parent == null) return function.apply(name);
+            return parent.computeIfAbsent(name, function);
         }
         return variable;
+    }
+
+    public void setParent(@Nullable VariableTable parent) {
+        this.parent = parent;
+    }
+
+    public @Nullable VariableTable getParent() {
+        return parent;
     }
 }

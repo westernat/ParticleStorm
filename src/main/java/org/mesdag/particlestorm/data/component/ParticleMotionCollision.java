@@ -65,7 +65,7 @@ public record ParticleMotionCollision(BoolMolangExp enabled, float collisionDrag
 
     @Override
     public void apply(MolangParticleInstance instance) {
-        instance.collisionDrag = collisionDrag * instance.emitter.invTickRate;
+        instance.collisionDrag = collisionDrag * instance.getInvTickRate();
         instance.coefficientOfRestitution = coefficientOfRestitution;
         float radius = Math.max(collisionRadius, Mth.EPSILON);
         instance.setBoundingBox(instance.getBoundingBox().inflate(radius, 0.0, radius));

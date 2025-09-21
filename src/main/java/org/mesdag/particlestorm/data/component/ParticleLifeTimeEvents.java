@@ -66,7 +66,7 @@ public final class ParticleLifeTimeEvents implements IParticleComponent {
             Tuple<Function<Integer, Boolean>, List<String>> tuple = sortedTimeline.get(i);
             if (tuple.getA().apply(instance.getLifetime())) {
                 instance.lastTimeline = i + 1;
-                Map<String, Map<String, IEventNode>> events = instance.detail.effect.events;
+                Map<String, Map<String, IEventNode>> events = instance.preset.effect.events;
                 for (String event : tuple.getB()) {
                     events.get(event).forEach((name, node) -> node.execute(instance));
                 }
@@ -77,7 +77,7 @@ public final class ParticleLifeTimeEvents implements IParticleComponent {
 
     @Override
     public void apply(MolangParticleInstance instance) {
-        Map<String, Map<String, IEventNode>> events = instance.detail.effect.events;
+        Map<String, Map<String, IEventNode>> events = instance.preset.effect.events;
         for (String event : creationEvent) {
             events.get(event).forEach((name, node) -> node.execute(instance));
         }
@@ -89,7 +89,7 @@ public final class ParticleLifeTimeEvents implements IParticleComponent {
     }
 
     public void onExpiration(MolangParticleInstance instance) {
-        Map<String, Map<String, IEventNode>> events = instance.detail.effect.events;
+        Map<String, Map<String, IEventNode>> events = instance.preset.effect.events;
         for (String event : expirationEvent) {
             events.get(event).forEach((name, node) -> node.execute(instance));
         }

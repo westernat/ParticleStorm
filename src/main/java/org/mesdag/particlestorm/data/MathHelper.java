@@ -103,10 +103,10 @@ public class MathHelper {
         }
     }
 
-    public static void redirect(List<VariableAssignment> toInit, VariableTable variableTable) {
+    public static void redirect(List<VariableAssignment> toInit, VariableTable vars) {
         for (VariableAssignment assignment : toInit) {
-            // 重定向，防止污染变量表
-            variableTable.setValue(assignment.variable().name(), assignment.value());
+            // 重定向，防止因找不到变量而爆栈
+            vars.setValue(assignment.variable().name(), assignment.value());
         }
     }
 }

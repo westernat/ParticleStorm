@@ -4,6 +4,7 @@ import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.ExtraCodecs;
+import net.minecraft.util.Mth;
 import net.minecraft.util.StringRepresentable;
 import org.jetbrains.annotations.NotNull;
 import org.mesdag.particlestorm.api.IParticleComponent;
@@ -49,8 +50,8 @@ public record ParticleAppearanceBillboard(FloatMolangExp2 size, FaceCameraMode f
                 instance.yRot = values[1];
                 instance.setRoll(values[2]);
             } else {
-                if (direction.minSpeedThreshold > 0.0F && instance.readOnlySpeed.lengthSquared() > instance.detail.minSpeedThresholdSqr) {
-                    instance.facingDirection.set(instance.readOnlySpeed).normalize();
+                if (direction.minSpeedThreshold > 0.0F && Mth.lengthSquared(instance.getXd(), instance.getYd(), instance.getZd()) > instance.preset.minSpeedThresholdSqr) {
+                    instance.facingDirection.set(instance.getXd(), instance.getYd(), instance.getZd()).normalize();
                 }
             }
         }
@@ -91,8 +92,8 @@ public record ParticleAppearanceBillboard(FloatMolangExp2 size, FaceCameraMode f
             } else {
                 double xdSqr = instance.getXd() * instance.getXd();
                 double zdSqr = instance.getZd() * instance.getZd();
-                if (direction.minSpeedThreshold > 0.0F && xdSqr + instance.getYd() * instance.getYd() + zdSqr > instance.detail.minSpeedThresholdSqr) {
-                    instance.facingDirection.set(instance.readOnlySpeed).normalize();
+                if (direction.minSpeedThreshold > 0.0F && xdSqr + instance.getYd() * instance.getYd() + zdSqr > instance.preset.minSpeedThresholdSqr) {
+                    instance.facingDirection.set(instance.getXd(), instance.getYd(), instance.getZd()).normalize();
                 }
             }
         }

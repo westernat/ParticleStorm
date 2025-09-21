@@ -18,6 +18,7 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 import net.neoforged.fml.ModList;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
 import org.mesdag.particlestorm.PSGameClient;
@@ -38,13 +39,12 @@ public class MolangParticleInstance extends TextureSheetParticle implements Mola
     private static final boolean isSodiumLoaded = ModList.get().isLoaded("sodium");
 
     public final RandomSource random;
-    public final ParticleDetail detail;
-    private final VariableTable variableTable;
+    public final ParticlePreset preset;
+    protected ParticleVariableTable vars;
     protected final float originX;
     protected final float originY;
 
     public Vector3f acceleration = new Vector3f();
-    public Vector3f readOnlySpeed = new Vector3f();
     public Vector3f facingDirection = new Vector3f();
     public Vector3f initialSpeed = new Vector3f();
     public float xRot = 0.0F;
@@ -62,7 +62,7 @@ public class MolangParticleInstance extends TextureSheetParticle implements Mola
     protected final double particleRandom3;
     protected final double particleRandom4;
     public List<IParticleComponent> components;
-    public ParticleEmitter emitter;
+    protected ParticleEmitter emitter;
     public boolean motionDynamic = false;
 
     public final float scaleU;
@@ -78,22 +78,26 @@ public class MolangParticleInstance extends TextureSheetParticle implements Mola
     public ParticleGroup particleGroup;
     public int lastTimeline = 0;
 
-    public MolangParticleInstance(ParticleDetail detail, ClientLevel level, double x, double y, double z, ExtendMutableSpriteSet sprites) {
+    public MolangParticleInstance(ParticlePreset preset, ClientLevel level, double x, double y, double z, ExtendMutableSpriteSet sprites) {
         super(level, x, y, z);
         this.friction = 1.0F;
         this.random = level.getRandom();
-        this.detail = detail;
-        this.variableTable = new VariableTable(detail.variableTable);
-        setSprite(sprites.get(detail.effect.description.parameters().getTextureIndex()));
+        this.preset = preset;
+        setSprite(sprites.get(preset.effect.description.parameters().getTextureIndex()));
         this.originX = ((ITextureAtlasSprite) sprite).particlestorm$getOriginX();
         this.originY = ((ITextureAtlasSprite) sprite).particlestorm$getOriginY();
-        this.scaleU = sprite.contents().width() * detail.invTextureWidth;
-        this.scaleV = sprite.contents().height() * detail.invTextureHeight;
+        this.scaleU = sprite.contents().width() * preset.invTextureWidth;
+        this.scaleV = sprite.contents().height() * preset.invTextureHeight;
 
         this.particleRandom1 = random.nextDouble();
         this.particleRandom2 = random.nextDouble();
         this.particleRandom3 = random.nextDouble();
         this.particleRandom4 = random.nextDouble();
+    }
+
+    public void setEmitter(ParticleEmitter emitter) {
+        this.emitter = emitter;
+        this.vars = new ParticleVariableTable(preset.vars, emitter.vars);
     }
 
     public double getXd() {
@@ -106,12 +110,6 @@ public class MolangParticleInstance extends TextureSheetParticle implements Mola
 
     public double getZd() {
         return zd;
-    }
-
-    public void addAcceleration() {
-        this.xd += acceleration.x;
-        this.yd += acceleration.y;
-        this.zd += acceleration.z;
     }
 
     public double getX() {
@@ -158,8 +156,8 @@ public class MolangParticleInstance extends TextureSheetParticle implements Mola
     }
 
     @Override
-    public VariableTable getVariableTable() {
-        return variableTable;
+    public VariableTable getVars() {
+        return vars;
     }
 
     @Override
@@ -198,7 +196,7 @@ public class MolangParticleInstance extends TextureSheetParticle implements Mola
 
     @Override
     public ResourceLocation getIdentity() {
-        return detail.effect.description.identifier();
+        return preset.effect.description.identifier();
     }
 
     @Override
@@ -207,8 +205,8 @@ public class MolangParticleInstance extends TextureSheetParticle implements Mola
     }
 
     @Override
-    public Entity getAttachedEntity() {
-        return emitter.attached;
+    public @Nullable Entity getAttachedEntity() {
+        return emitter.getAttachedEntity();
     }
 
     @Override
@@ -256,7 +254,6 @@ public class MolangParticleInstance extends TextureSheetParticle implements Mola
         this.yRotO = yRot;
         this.oRoll = roll;
         this.roll = roll + rolld;
-        this.readOnlySpeed.set(xd, yd, zd);
         for (IParticleComponent component : components) {
             component.update(this);
         }
@@ -344,9 +341,9 @@ public class MolangParticleInstance extends TextureSheetParticle implements Mola
             }
 
             if (onGround || collided) {
-                if (!detail.collisionEvents.isEmpty()) {
-                    Map<String, Map<String, IEventNode>> events = detail.effect.events;
-                    for (ParticleMotionCollision.Event event : detail.collisionEvents) {
+                if (!preset.collisionEvents.isEmpty()) {
+                    Map<String, Map<String, IEventNode>> events = preset.effect.events;
+                    for (ParticleMotionCollision.Event event : preset.collisionEvents) {
                         float tickSpeed = event.minSpeed() * getInvTickRate();
                         if (tickSpeed * tickSpeed < xd * xd + yd * yd + zd * zd) {
                             events.get(event.event()).forEach((name, node) -> node.execute(this));
@@ -362,25 +359,25 @@ public class MolangParticleInstance extends TextureSheetParticle implements Mola
 
     @Override
     public void remove() {
-        if (detail.lifeTimeEvents != null) {
-            detail.lifeTimeEvents.onExpiration(this);
+        if (preset.lifeTimeEvents != null) {
+            preset.lifeTimeEvents.onExpiration(this);
         }
         super.remove();
     }
 
     @Override
     public @NotNull ParticleRenderType getRenderType() {
-        return detail.renderType;
+        return preset.renderType;
     }
 
     @Override
     public @NotNull FaceCameraMode getFacingCameraMode() {
-        return detail.facingCameraMode;
+        return preset.facingCameraMode;
     }
 
     @Override
     protected int getLightColor(float partialTick) {
-        return detail.environmentLighting ? super.getLightColor(partialTick) : FULL_LIGHT;
+        return preset.environmentLighting ? super.getLightColor(partialTick) : FULL_LIGHT;
     }
 
     @Override

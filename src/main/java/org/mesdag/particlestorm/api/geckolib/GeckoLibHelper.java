@@ -95,14 +95,13 @@ public final class GeckoLibHelper {
                     pos = entity.position();
                 }
                 ParticleEmitter emitter = new ParticleEmitter(level, pos, particle, ParticleEffect.Type.EMITTER, expression);
-                emitter.subTable = variableTable;
                 PSGameClient.LOADER.addEmitter(emitter, false);
                 cachedId[i] = emitter.id;
                 if (locator == null) {
                     emitter.offsetPos = Vec3.ZERO;
                     emitter.offsetRot = new Vector3f();
                 } else {
-                    emitter.attached = entity;
+                    emitter.attachEntity(entity);
                     emitter.attachedBlock = blockEntity;
                     double[] offset = getLocatorOffset(locator);
                     double[] rotation = getLocatorRotation(locator);
