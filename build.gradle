@@ -118,6 +118,11 @@ tasks.withType(ProcessResources).configureEach {
     }
 }
 
+java.withSourcesJar()
+ext {
+    releasesUrl = "https://maven.confluence.ink/releases"
+    snapshotsUrl = "https://maven.confluence.ink/snapshots"
+}
 publishing {
     publications {
         register('mavenJava', MavenPublication) {
@@ -126,7 +131,12 @@ publishing {
     }
     repositories {
         maven {
-            url "file://${project.projectDir}/repo"
+            name = "Confluence"
+            url = version.toString().endsWith("SNAPSHOT") ? snapshotsUrl : releasesUrl
+            credentials {
+                username = System.getenv("MAGIC_TEAM_USERNAME")
+                password = System.getenv("MAGIC_TEAM_TOKEN")
+            }
         }
     }
 }
