@@ -47,11 +47,11 @@ public class DefinedParticleEffect {
         components.values().stream().sorted(Comparator.comparing(IComponent::order)).forEachOrdered(orderedComponents::add);
         for (IComponent component : orderedComponents) {
             if (component instanceof IParticleComponent particleComponent) {
-                orderedParticleComponents.add(particleComponent);
                 if (component.order() < 0) {
                     orderedParticleEarlyComponents.add(particleComponent);
                     continue;
                 }
+                orderedParticleComponents.add(particleComponent);
                 if (particleComponent.requireUpdate()) {
                     orderedParticleComponentsWhichRequireUpdate.add(particleComponent);
                 }

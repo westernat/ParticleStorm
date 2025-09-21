@@ -31,7 +31,7 @@ public record ParticleEffect(ResourceLocation effect, Type type, MolangExp preEf
         ParticleEmitter emitter = new ParticleEmitter(instance.getLevel(), instance.getPosition(), effect, type, preEffectExpression);
         ParticleEmitter parent = instance.getEmitter();
         parent.children.add(emitter);
-        emitter.parent = parent;
+        emitter.parent = parent; // todo
         PSGameClient.LOADER.addEmitter(emitter, false);
     }
 

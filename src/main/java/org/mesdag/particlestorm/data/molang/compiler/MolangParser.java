@@ -91,7 +91,7 @@ public class MolangParser {
             return MolangQueries.getQueryFor(name);
         }
         String n = applyPrefixAliases(name, "variable.", "v.");
-        return table.computeIfAbsent(n, s -> new Variable(s, p -> p.getVariableTable().getValue(s, p)));
+        return table.computeIfAbsent(n, s -> new Variable(s, p -> p.getVars().getValue(s, p)));
     }
 
     public MathValue compileMolang(String expression) {

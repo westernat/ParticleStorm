@@ -16,7 +16,7 @@ public final class NodeMolangExp extends MolangExp implements IEventNode {
     @Override
     public void execute(MolangInstance instance) {
         if (variable == null && !expStr.isEmpty() && !expStr.isBlank()) {
-            MolangParser parser = new MolangParser(instance.getVariableTable());
+            MolangParser parser = new MolangParser(instance.getVars());
             this.variable = parser.compileMolang(expStr);
         }
         if (variable != null) {

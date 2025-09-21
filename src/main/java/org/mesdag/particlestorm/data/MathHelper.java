@@ -61,31 +61,28 @@ public class MathHelper {
     }
 
     public static void applyEuler(float ex, float ey, float ez, Vector3f dest) {
-        float exh = ex * 0.5F;
-        float sx = Math.sin(exh);
-        float cx = Math.cosFromSin(sx, exh);
-        float eyh = ey * 0.5F;
-        float sy = Math.sin(eyh);
-        float cy = Math.cosFromSin(sy, eyh);
-        float ezh = ez * 0.5F;
-        float sz = Math.sin(ezh);
-        float cz = Math.cosFromSin(sz, ezh);
+        float sx = Math.sin(ex * 0.5f);
+        float cx = Math.cosFromSin(sx, ex * 0.5f);
+        float sy = Math.sin(ey * 0.5f);
+        float cy = Math.cosFromSin(sy, ey * 0.5f);
+        float sz = Math.sin(ez * 0.5f);
+        float cz = Math.cosFromSin(sz, ez * 0.5f);
 
-        float cycz = cy * cz;
-        float sysz = sy * sz;
-        float sycz = sy * cz;
-        float cysz = cy * sz;
-        float w = cx * cycz - sx * sysz;
-        float x = sx * cycz + cx * sysz;
-        float y = cx * sycz - sx * cysz;
-        float z = cx * cysz + sx * sycz;
+        float x = cy * sx;
+        float y = sy * cx;
+        float z = sy * sx;
+        float w = cy * cx;
+        float qx = x * cz + y * sz;
+        float qy = y * cz - x * sz;
+        float qz = w * sz - z * cz;
+        float qw = w * cz + z * sz;
 
-        float xx = x * x, yy = y * y, zz = z * z, ww = w * w;
-        float xy = x * y, xz = x * z, yz = y * z, xw = x * w;
-        float zw = z * w, yw = y * w, k = 1 / (xx + yy + zz + ww);
-        dest.set(Math.fma((xx - yy - zz + ww) * k, x, Math.fma(2 * (xy - zw) * k, y, (2 * (xz + yw) * k) * z)),
-                Math.fma(2 * (xy + zw) * k, x, Math.fma((yy - xx - zz + ww) * k, y, (2 * (yz - xw) * k) * z)),
-                Math.fma(2 * (xz - yw) * k, x, Math.fma(2 * (yz + xw) * k, y, ((zz - xx - yy + ww) * k) * z)));
+        float xx = qx * qx, yy = qy * qy, zz = qz * qz, ww = qw * qw;
+        float xy = qx * qy, xz = qx * qz, yz = qy * qz, xw = qx * qw;
+        float zw = qz * qw, yw = qy * qw, k = 1 / (xx + yy + zz + ww);
+        dest.set(Math.fma((xx - yy - zz + ww) * k, dest.x, Math.fma(2 * (xy - zw) * k, dest.y, (2 * (xz + yw) * k) * dest.z)),
+                Math.fma(2 * (xy + zw) * k, dest.x, Math.fma((yy - xx - zz + ww) * k, dest.y, (2 * (yz - xw) * k) * dest.z)),
+                Math.fma(2 * (xz - yw) * k, dest.x, Math.fma(2 * (yz + xw) * k, dest.y, ((zz - xx - yy + ww) * k) * dest.z)));
     }
 
     public static boolean forAssignment(Map<String, Variable> table, List<VariableAssignment> toInit, MathValue value) {
@@ -106,10 +103,10 @@ public class MathHelper {
         }
     }
 
-    public static void redirect(List<VariableAssignment> toInit, VariableTable variableTable) {
-        toInit.forEach(assignment -> {
-            // 重定向，防止污染变量表
-            variableTable.setValue(assignment.variable().name(), assignment.value());
-        });
+    public static void redirect(List<VariableAssignment> toInit, VariableTable vars) {
+        for (VariableAssignment assignment : toInit) {
+            // 重定向，防止因找不到变量而爆栈
+            vars.setValue(assignment.variable().name(), assignment.value());
+        }
     }
 }

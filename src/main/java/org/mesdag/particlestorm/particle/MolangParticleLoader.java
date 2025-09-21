@@ -45,8 +45,8 @@ import java.util.concurrent.Executor;
 public class MolangParticleLoader implements PreparableReloadListener {
     private static final FileToIdConverter PARTICLE_LISTER = FileToIdConverter.json("particle_definitions");
     public final Map<ResourceLocation, DefinedParticleEffect> ID_2_EFFECT = new Hashtable<>();
-    public final Map<ResourceLocation, ParticleDetail> ID_2_PARTICLE = new Hashtable<>();
-    public final Map<ResourceLocation, EmitterDetail> ID_2_EMITTER = new Hashtable<>();
+    public final Map<ResourceLocation, ParticlePreset> ID_2_PARTICLE = new Hashtable<>();
+    public final Map<ResourceLocation, EmitterPreset> ID_2_EMITTER = new Hashtable<>();
     public final Int2ObjectMap<ParticleEmitter> emitters = new Int2ObjectOpenHashMap<>();
     private final Object2ObjectMap<Entity, EvictingQueue<ParticleEmitter>> tracker = new Object2ObjectOpenHashMap<>();
     private final IntAllocator allocator = new IntAllocator();
@@ -81,7 +81,7 @@ public class MolangParticleLoader implements PreparableReloadListener {
                 }
             }
         } else {
-            for (ParticleDetail detail : ID_2_PARTICLE.values()) {
+            for (ParticlePreset detail : ID_2_PARTICLE.values()) {
                 for (IParticleComponent component : detail.effect.orderedParticleComponents) {
                     component.initialize(localPlayer.level());
                 }
@@ -163,8 +163,8 @@ public class MolangParticleLoader implements PreparableReloadListener {
             effects.forEach(effect -> {
                 ResourceLocation id = effect.description.identifier();
                 ID_2_EFFECT.put(id, effect);
-                ID_2_PARTICLE.put(id, new ParticleDetail(effect));
-                ID_2_EMITTER.put(id, new EmitterDetail(
+                ID_2_PARTICLE.put(id, new ParticlePreset(effect));
+                ID_2_EMITTER.put(id, new EmitterPreset(
                         new MolangParticleOption(effect.description.identifier()),
                         effect.orderedEmitterComponents,
                         effect.events

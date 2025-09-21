@@ -17,7 +17,7 @@ public abstract class LivingEntityMixin {
         if (particleData instanceof MolangParticleOption molang) {
             LivingEntity self = (LivingEntity) (Object) this;
             ParticleEmitter emitter = new ParticleEmitter(instance, self.position(), molang.getId());
-            emitter.attached = self;
+            emitter.attachEntity(self);
             PSGameClient.LOADER.addTrackedEmitter(self, emitter);
             return false;
         }

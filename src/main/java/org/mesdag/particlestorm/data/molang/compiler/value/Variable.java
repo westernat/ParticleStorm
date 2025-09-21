@@ -4,7 +4,6 @@ import org.mesdag.particlestorm.ParticleStorm;
 import org.mesdag.particlestorm.api.MolangInstance;
 import org.mesdag.particlestorm.data.molang.compiler.MathValue;
 
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.ToDoubleFunction;
 
 /**
@@ -15,36 +14,46 @@ import java.util.function.ToDoubleFunction;
  * <br>
  * Returns the currently stored value, which may be modified at any given time via {@link #set}. Values may be lazily evaluated to eliminate wasteful usage
  */
-public record Variable(String name, AtomicReference<ToDoubleFunction<MolangInstance>> value) implements MathValue {
-    public Variable(String name, double value) {
-        this(name, instance -> value);
-    }
+public final class Variable implements MathValue {
+    private final String name;
+    private ToDoubleFunction<MolangInstance> value;
+    private Double constant;
 
     public Variable(String name, ToDoubleFunction<MolangInstance> value) {
-        this(name, new AtomicReference<>(value));
+        this.name = name;
+        this.value = value;
+    }
+
+    public Variable(String name, double value) {
+        this.name = name;
+        this.constant = value;
     }
 
     @Override
     public double get(MolangInstance instance) {
         try {
-            return this.value.get().applyAsDouble(instance);
+            if (constant != null) return constant;
+            return value.applyAsDouble(instance);
         } catch (Exception ex) {
             ParticleStorm.LOGGER.error("Attempted to use Molang variable for incompatible animatable type ({}). An animation json needs to be fixed", this.name);
             return 0;
         }
     }
 
-    public void set(final double value) {
-        this.value.set(instance -> value);
+    public void set(Double value) {
+        this.constant = value;
     }
 
     @Override
-    public void set(final ToDoubleFunction<MolangInstance> value) {
-        this.value.set(value);
+    public void set(ToDoubleFunction<MolangInstance> value) {
+        this.value = value;
     }
 
-    @Override
-    public String toString() {
-        return this.name + "(" + this.value.get() + ")";
+    public String name() {
+        return name;
+    }
+
+    public ToDoubleFunction<MolangInstance> value() {
+        return value;
     }
 }

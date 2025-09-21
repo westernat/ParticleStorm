@@ -5,6 +5,7 @@ import org.mesdag.particlestorm.api.IEmitterComponent;
 import org.mesdag.particlestorm.api.IEventNode;
 import org.mesdag.particlestorm.data.MathHelper;
 import org.mesdag.particlestorm.data.component.*;
+import org.mesdag.particlestorm.data.molang.MolangExp;
 import org.mesdag.particlestorm.data.molang.VariableTable;
 import org.mesdag.particlestorm.data.molang.compiler.MathValue;
 import org.mesdag.particlestorm.data.molang.compiler.MolangParser;
@@ -16,11 +17,11 @@ import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
 
-public class EmitterDetail {
+public class EmitterPreset {
     public final MolangParticleOption option;
     public final List<IEmitterComponent> components;
     public final Map<String, Map<String, IEventNode>> events;
-    public final VariableTable variableTable;
+    public final VariableTable vars;
     public final List<VariableAssignment> assignments;
     public EmitterRate.Type emitterRateType = EmitterRate.Type.MANUAL;
     public boolean localPosition = false;
@@ -28,7 +29,7 @@ public class EmitterDetail {
     public boolean localVelocity = false;
     public EmitterLifetimeEvents lifetimeEvents;
 
-    public EmitterDetail(MolangParticleOption option, List<IEmitterComponent> components, Map<String, Map<String, IEventNode>> events) {
+    public EmitterPreset(MolangParticleOption option, List<IEmitterComponent> components, Map<String, Map<String, IEventNode>> events) {
         this.option = option;
         this.components = components;
         this.events = events;
@@ -56,23 +57,23 @@ public class EmitterDetail {
             } else if (component instanceof EmitterShape) {
                 if (shape) throw new IllegalArgumentException("Duplicate emitter shape component");
                 else shape = true;
-            } else if (component instanceof EmitterLocalSpace localSpace) {
-                this.localPosition = localSpace.position();
-                this.localRotation = localSpace.rotation();
-                this.localVelocity = localSpace.velocity();
+            } else if (component instanceof EmitterLocalSpace(boolean position, boolean rotation, boolean velocity)) {
+                this.localPosition = position;
+                this.localRotation = rotation;
+                this.localVelocity = velocity;
             } else if (component instanceof EmitterLifetimeEvents e) {
                 this.lifetimeEvents = e;
             }
-            component.getAllMolangExp().forEach(exp -> {
+            for (MolangExp exp : component.getAllMolangExp()) {
                 exp.compile(parser);
                 MathValue variable = exp.getVariable();
                 if (variable != null && !MathHelper.forAssignment(table.table, toInit, variable)) {
                     MathHelper.forCompound(table.table, toInit, variable);
                 }
-            });
+            }
         }
 
-        this.variableTable = table;
+        this.vars = table;
         this.assignments = toInit;
     }
 

@@ -94,13 +94,12 @@ public final class PSGameClient {
         Minecraft minecraft = Minecraft.getInstance();
         if (event.getStage() == RenderLevelStageEvent.Stage.AFTER_PARTICLES && minecraft.getEntityRenderDispatcher().shouldRenderHitBoxes())
             for (ParticleEmitter value : LOADER.emitters.values()) {
-                if (!value.isInitialized() || value.attached != null) continue;
                 PoseStack poseStack = event.getPoseStack();
                 MultiBufferSource.BufferSource bufferSource = minecraft.renderBuffers().bufferSource();
                 double x = value.getX();
                 double y = value.getY();
                 double z = value.getZ();
-                DebugRenderer.renderFloatingText(poseStack, bufferSource, value.getDetail().option.getId().toString(), x, y + 0.5, z, 0xFFFFFF);
+                DebugRenderer.renderFloatingText(poseStack, bufferSource, value.getPreset().option.getId().toString(), x, y + 0.5, z, 0xFFFFFF);
                 DebugRenderer.renderFloatingText(poseStack, bufferSource, "id: " + value.id, x, y + 0.3, z, 0xFFFFFF);
                 int maxNum = ((ParticleEngineAccessor) minecraft.particleEngine).trackedParticleCounts().getInt(value.particleGroup);
                 DebugRenderer.renderFloatingText(poseStack, bufferSource, "particles: " + maxNum, x, y + 0.1, z, maxNum == value.particleGroup.getLimit() ? 0xFF0000 : 0xFFFFFF);

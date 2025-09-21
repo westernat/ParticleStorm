@@ -135,7 +135,7 @@ public abstract sealed class EmitterLifetime implements IEmitterComponent permit
                 emitter.spawned = false;
                 emitter.loopingTime = 0;
                 emitter.age = 1;
-                for (IEmitterComponent e : emitter.getDetail().components) {
+                for (IEmitterComponent e : emitter.getPreset().components) {
                     e.apply(emitter);
                 }
                 emitter.updateRandoms(emitter.level.random);

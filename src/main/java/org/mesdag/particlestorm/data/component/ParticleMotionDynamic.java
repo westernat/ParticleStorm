@@ -64,22 +64,22 @@ public record ParticleMotionDynamic(FloatMolangExp3 linerAcceleration, FloatMola
 
     @Override
     public void apply(MolangParticleInstance instance) {
-        float invTickRate = instance.emitter.invTickRate;
+        float invTickRate = instance.getInvTickRate();
+        float tickRate = instance.getLevel().tickRateManager().tickrate();
 
-        float drag = -linearDragCoefficient.calculate(instance) * invTickRate;
         instance.acceleration.set(linerAcceleration.calculate(instance));
-        instance.acceleration.mul(invTickRate);
-        instance.acceleration.add(
-                instance.readOnlySpeed.x * drag,
-                instance.readOnlySpeed.y * drag,
-                instance.readOnlySpeed.z * drag
+        float c = -linearDragCoefficient.calculate(instance);
+        double xd = instance.getXd();
+        double yd = instance.getYd();
+        double zd = instance.getZd();
+        instance.acceleration.add(c * (float) xd * tickRate, c * (float) yd * tickRate, c * (float) zd * tickRate);
+        float v = invTickRate * invTickRate;
+        instance.setParticleSpeed(
+                xd + instance.acceleration.x * v,
+                yd + instance.acceleration.y * v,
+                zd + instance.acceleration.z * v
         );
-        instance.addAcceleration();
-
-        float c = -rotationDragCoefficient.calculate(instance);
-        float u = rotationAcceleration.calculate(instance);
-        u += c * instance.rolld;
-        instance.rolld += u * invTickRate;
+        instance.rolld = (rotationAcceleration.calculate(instance) - rotationDragCoefficient.calculate(instance) * instance.rolld * tickRate) * v;
     }
 
     @Override
