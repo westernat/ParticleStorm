@@ -148,11 +148,6 @@ idea {
     }
 }
 
-task sourcesJar(type: Jar) {
-    from sourceSets.main.allJava
-    archiveClassifier = 'sources'
-}
-
 tasks.withType(JavaCompile) {
     options.encoding = 'UTF-8'
 }
