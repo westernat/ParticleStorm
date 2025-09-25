@@ -28,7 +28,6 @@ import org.mesdag.particlestorm.data.molang.VariableTable;
 import org.mesdag.particlestorm.mixed.ITextureAtlasSprite;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
 public class MolangParticleInstance extends TextureSheetParticle implements MolangInstance {
@@ -339,11 +338,12 @@ public class MolangParticleInstance extends TextureSheetParticle implements Mola
 
             if (onGround || collided) {
                 if (!preset.collisionEvents.isEmpty()) {
-                    Map<String, Map<String, IEventNode>> events = preset.effect.events;
                     for (ParticleMotionCollision.Event event : preset.collisionEvents) {
                         float tickSpeed = event.minSpeed() * getInvTickRate();
                         if (tickSpeed * tickSpeed < xd * xd + yd * yd + zd * zd) {
-                            events.get(event.event()).forEach((name, node) -> node.execute(this));
+                            for (IEventNode node : preset.effect.events.get(event.event()).values()) {
+                                node.execute(this);
+                            }
                         }
                     }
                 }

@@ -12,19 +12,19 @@
 			"event": {
 				"particle_effect": {
 					"effect": "particlestorm:bomb_spark",
-					"type": "emitter_bound"
+					"type": "emitter"
 				}
 			},
 			"event1": {
 				"particle_effect": {
 					"effect": "particlestorm:bomb_glitter",
-					"type": "particle"
+					"type": "emitter"
 				}
 			},
 			"event2": {
 				"particle_effect": {
 					"effect": "particlestorm:bomb_round",
-					"type": "particle"
+					"type": "emitter"
 				}
 			}
 		},

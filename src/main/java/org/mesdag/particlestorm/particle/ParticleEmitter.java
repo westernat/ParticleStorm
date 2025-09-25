@@ -20,7 +20,6 @@ import org.mesdag.particlestorm.api.MolangInstance;
 import org.mesdag.particlestorm.data.MathHelper;
 import org.mesdag.particlestorm.data.component.EmitterLifetime;
 import org.mesdag.particlestorm.data.component.EmitterRate;
-import org.mesdag.particlestorm.data.event.ParticleEffect;
 import org.mesdag.particlestorm.data.molang.MolangExp;
 import org.mesdag.particlestorm.data.molang.VariableTable;
 import org.mesdag.particlestorm.data.molang.compiler.MathValue;
@@ -33,7 +32,6 @@ import java.util.List;
 
 public class ParticleEmitter implements MolangInstance {
     public ResourceLocation particleId;
-    public ParticleEffect.Type effectType;
     public MolangExp expression;
 
     public transient ParentMode parentMode = ParentMode.WORLD;
@@ -45,6 +43,8 @@ public class ParticleEmitter implements MolangInstance {
     protected transient List<IEmitterComponent> components;
     public transient ParticleEmitter parent;
     public transient final List<ParticleEmitter> children = new ArrayList<>();
+    public transient Vector3f inheritedParticleSpeed;
+    public transient boolean isManual;
 
     protected double emitterRandom1;
     protected double emitterRandom2;
@@ -77,11 +77,10 @@ public class ParticleEmitter implements MolangInstance {
     public Vector3f rot = new Vector3f();
     private transient boolean removed = false;
 
-    public ParticleEmitter(Level level, Vec3 pos, ResourceLocation particleId, ParticleEffect.Type type, MolangExp expression) {
+    public ParticleEmitter(Level level, Vec3 pos, ResourceLocation particleId, MolangExp expression) {
         this.level = level;
         setPos(pos);
         this.particleId = particleId;
-        this.effectType = type;
         this.expression = expression;
         updateRandoms(level.random);
         this.invTickRate = 1.0F / level.tickRateManager().tickrate();
@@ -89,7 +88,7 @@ public class ParticleEmitter implements MolangInstance {
     }
 
     public ParticleEmitter(Level level, Vec3 pos, ResourceLocation particleId) {
-        this(level, pos, particleId, ParticleEffect.Type.EMITTER, MolangExp.EMPTY);
+        this(level, pos, particleId, MolangExp.EMPTY);
     }
 
     public ParticleEmitter(Level level, CompoundTag tag) {
@@ -130,7 +129,6 @@ public class ParticleEmitter implements MolangInstance {
             }
             MathHelper.redirect(toInit, vars);
         }
-        // todo effect type
         MathHelper.redirect(preset.assignments, vars);
         this.components = preset.components.stream().filter(e -> {
             e.apply(this);
@@ -158,7 +156,7 @@ public class ParticleEmitter implements MolangInstance {
         if (!posO.equals(pos)) {
             this.moveDist += (float) pos.subtract(posO).length();
         }
-        if (preset.emitterRateType == EmitterRate.Type.MANUAL) {
+        if (isManual || preset.emitterRateType == EmitterRate.Type.MANUAL) {
             remove();
             return;
         }
@@ -208,6 +206,11 @@ public class ParticleEmitter implements MolangInstance {
         }
     }
 
+    public void addParent(ParticleEmitter parent) {
+        parent.children.add(this);
+        this.parent = parent;
+    }
+
     public boolean isRemoved() {
         return removed || (attached != null && attached.isRemoved());
     }
@@ -222,7 +225,6 @@ public class ParticleEmitter implements MolangInstance {
 
     public void deserialize(CompoundTag compound) {
         this.particleId = ResourceLocation.parse(compound.getString("particleId"));
-        this.effectType = ParticleEffect.Type.getById(compound.getInt("effectType"));
         this.expression = new MolangExp(compound.getString("expression"));
         this.emitterRandom1 = compound.getDouble("emitterRandom1");
         this.emitterRandom2 = compound.getDouble("emitterRandom2");
@@ -235,7 +237,6 @@ public class ParticleEmitter implements MolangInstance {
 
     public void serialize(CompoundTag compound) {
         compound.putString("particleId", particleId.toString());
-        compound.putInt("effectType", effectType.getId());
         compound.putString("expression", expression.getExpStr());
         compound.putDouble("emitterRandom1", emitterRandom1);
         compound.putDouble("emitterRandom2", emitterRandom2);

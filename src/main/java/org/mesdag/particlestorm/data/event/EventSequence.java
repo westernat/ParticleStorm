@@ -12,8 +12,10 @@ public record EventSequence(List<Map<String, IEventNode>> nodes) implements IEve
 
     @Override
     public void execute(MolangInstance instance) {
-        for (Map<String, IEventNode> node1 : nodes) {
-            node1.forEach((name, node) -> node.execute(instance));
+        for (Map<String, IEventNode> nodeMap : nodes) {
+            for (IEventNode node : nodeMap.values()) {
+                node.execute(instance);
+            }
         }
     }
 }

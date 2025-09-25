@@ -8,7 +8,6 @@ import net.minecraft.world.phys.Vec3;
 import net.neoforged.fml.ModList;
 import org.joml.Vector3f;
 import org.mesdag.particlestorm.PSGameClient;
-import org.mesdag.particlestorm.data.event.ParticleEffect;
 import org.mesdag.particlestorm.data.molang.MolangExp;
 import org.mesdag.particlestorm.data.molang.VariableTable;
 import org.mesdag.particlestorm.mixed.*;
@@ -94,7 +93,7 @@ public final class GeckoLibHelper {
                 } else {
                     pos = entity.position();
                 }
-                ParticleEmitter emitter = new ParticleEmitter(level, pos, particle, ParticleEffect.Type.EMITTER, expression);
+                ParticleEmitter emitter = new ParticleEmitter(level, pos, particle, expression);
                 PSGameClient.LOADER.addEmitter(emitter, false);
                 cachedId[i] = emitter.id;
                 if (locator == null) {

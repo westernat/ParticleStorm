@@ -2,7 +2,6 @@ package org.mesdag.particlestorm.data.component;
 
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
-import org.mesdag.particlestorm.api.IComponent;
 import org.mesdag.particlestorm.api.IEmitterComponent;
 import org.mesdag.particlestorm.data.molang.MolangExp;
 import org.mesdag.particlestorm.particle.ParticleEmitter;
@@ -22,7 +21,7 @@ public record EmitterInitialization(MolangExp creationExpression, MolangExp perU
     ).apply(instance, EmitterInitialization::new));
 
     @Override
-    public Codec<? extends IComponent> codec() {
+    public Codec<EmitterInitialization> codec() {
         return CODEC;
     }
 

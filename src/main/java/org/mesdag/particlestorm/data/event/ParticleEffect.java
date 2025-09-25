@@ -28,10 +28,27 @@ public record ParticleEffect(ResourceLocation effect, Type type, MolangExp preEf
 
     @Override
     public void execute(MolangInstance instance) {
-        ParticleEmitter emitter = new ParticleEmitter(instance.getLevel(), instance.getPosition(), effect, type, preEffectExpression);
+        ParticleEmitter emitter = new ParticleEmitter(instance.getLevel(), instance.getPosition(), effect, preEffectExpression);
         ParticleEmitter parent = instance.getEmitter();
-        parent.children.add(emitter);
-        emitter.parent = parent; // todo
+        switch (type) {
+            case EMITTER -> {}
+            case EMITTER_BOUND -> {
+                emitter.attachEntity(parent.getAttachedEntity());
+                emitter.attachedBlock = parent.attachedBlock;
+                emitter.parentMode = parent.parentMode;
+                emitter.offsetPos = parent.offsetPos;
+                emitter.offsetRot = parent.offsetRot;
+                emitter.parentRotation = parent.parentRotation;
+            }
+            case PARTICLE -> emitter.isManual = true;
+            case PARTICLE_WITH_VELOCITY -> {
+                emitter.isManual = true;
+                if (parent.getAttachedEntity() != null) {
+                    emitter.inheritedParticleSpeed = parent.getAttachedEntity().getDeltaMovement().toVector3f();
+                }
+            }
+        }
+        emitter.addParent(parent);
         PSGameClient.LOADER.addEmitter(emitter, false);
     }
 
@@ -45,9 +62,25 @@ public record ParticleEffect(ResourceLocation effect, Type type, MolangExp preEf
     }
 
     public enum Type implements StringRepresentable {
+        /**
+         * Create an emitter of the specified particle effect at the event's world location
+         */
         EMITTER,
+        /**
+         * Create an emitter of the specified particle effect at the event's location.
+         * <p>
+         * If the firing emitter is bound to an entity or locator, the new emitter will be bound to the same entity or locator.
+         */
         EMITTER_BOUND,
+        /**
+         * Manually emit a particle on an emitter of the specified type at the event location, creating the emitter if it doesn't already exist.
+         * <p>
+         * Make sure to use the Spawn Amount mode "Manual" on the child particle effect.
+         */
         PARTICLE,
+        /**
+         * The same as "Particle" except the new particle will inherit the spawning particle's velocity.
+         */
         PARTICLE_WITH_VELOCITY;
 
         public static final Codec<Type> CODEC = StringRepresentable.fromEnum(Type::values);

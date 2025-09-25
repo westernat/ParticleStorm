@@ -15,6 +15,7 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.FileToIdConverter;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.PreparableReloadListener;
+import net.minecraft.server.packs.resources.Resource;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.util.GsonHelper;
 import net.minecraft.util.Mth;
@@ -142,22 +143,22 @@ public class MolangParticleLoader implements PreparableReloadListener {
     public @NotNull CompletableFuture<Void> reload(PreparationBarrier preparationBarrier, @NotNull ResourceManager resourceManager, @NotNull ProfilerFiller preparationsProfiler, @NotNull ProfilerFiller reloadProfiler, @NotNull Executor backgroundExecutor, @NotNull Executor gameExecutor) {
         return CompletableFuture.supplyAsync(() -> PARTICLE_LISTER.listMatchingResources(resourceManager), backgroundExecutor).thenCompose(map -> {
             List<CompletableFuture<DefinedParticleEffect>> list = new ArrayList<>(map.size());
-            map.forEach((file, resource) -> {
-                ResourceLocation id = PARTICLE_LISTER.fileToId(file);
+            for (Map.Entry<ResourceLocation, Resource> entry : map.entrySet()) {
+                ResourceLocation id = PARTICLE_LISTER.fileToId(entry.getKey());
                 list.add(CompletableFuture.supplyAsync(() -> {
-                    try (Reader reader = resource.openAsReader()) {
+                    try (Reader reader = entry.getValue().openAsReader()) {
                         return DefinedParticleEffect.CODEC.parse(JsonOps.INSTANCE, GsonHelper.parse(reader).get("particle_effect")).getOrThrow(JsonParseException::new);
                     } catch (IOException exception) {
                         throw new IllegalStateException("Failed to load definition for particle " + id, exception);
                     }
                 }, backgroundExecutor));
-            });
+            }
             return Util.sequence(list);
         }).thenCompose(preparationBarrier::wait).thenAcceptAsync(effects -> {
             ID_2_EFFECT.clear();
             ID_2_PARTICLE.clear();
             ID_2_EMITTER.clear();
-            effects.forEach(effect -> {
+            for (DefinedParticleEffect effect : effects) {
                 ResourceLocation id = effect.description.identifier();
                 ID_2_EFFECT.put(id, effect);
                 ID_2_PARTICLE.put(id, new ParticlePreset(effect));
@@ -166,7 +167,7 @@ public class MolangParticleLoader implements PreparableReloadListener {
                         effect.orderedEmitterComponents,
                         effect.events
                 ));
-            });
+            }
         }, gameExecutor);
     }
 }

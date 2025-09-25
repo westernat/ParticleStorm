@@ -52,7 +52,7 @@ public final class ParticleLifetimeKillPlane implements IParticleComponent {
         return true;
     }
 
-    private float distanceSqr(double x, double y, double z) {
+    private static float distanceSqr(double x, double y, double z) {
         return (float) (x * x + y * y + z * z);
     }
 

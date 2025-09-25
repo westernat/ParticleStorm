@@ -64,6 +64,10 @@ public abstract sealed class EmitterShape implements IEmitterComponent permits E
 
     protected abstract void initializeParticle(MolangInstance instance, Vector3f position, Vector3f speed);
 
+    protected boolean isPoint() {
+        return false;
+    }
+
     private void emittingParticle(ParticleEmitter emitter) {
         MolangParticleInstance instance = (MolangParticleInstance) ((ParticleEngineAccessor) Minecraft.getInstance().particleEngine).callMakeParticle(emitter.getPreset().option, emitter.getX(), emitter.getY(), emitter.getZ(), 0.0, 0.0, 0.0);
         instance.setEmitter(emitter);
@@ -405,6 +409,11 @@ public abstract sealed class EmitterShape implements IEmitterComponent permits E
                     ", offset=" + offset +
                     '}';
         }
+
+        @Override
+        protected boolean isPoint() {
+            return true;
+        }
     }
 
     public static final class Sphere extends EmitterShape {
@@ -502,9 +511,10 @@ public abstract sealed class EmitterShape implements IEmitterComponent permits E
         }
 
         public void apply(MolangInstance instance, EmitterShape shape, Vector3f position, Vector3f speed) {
-            // todo inherited_particle_speed
-            if (this == INWARDS || this == OUTWARDS) {
-                if (shape.getClass() == Point.class) {
+            if (this == OUTWARDS && instance.getEmitter().inheritedParticleSpeed != null) {
+                speed.set(instance.getEmitter().inheritedParticleSpeed);
+            } else if (this == INWARDS || this == OUTWARDS) {
+                if (shape.isPoint()) {
                     MathHelper.applyEuler(MathHelper.getRandomEuler(instance.getLevel().random), speed.set(1, 0, 0));
                 } else {
                     speed.set(position);
@@ -515,7 +525,7 @@ public abstract sealed class EmitterShape implements IEmitterComponent permits E
                 }
             } else {
                 speed.set(direct.calculate(instance));
-                if (speed.lengthSquared() != 0.0F) {
+                if (speed.x != 0.0F || speed.y != 0.0F || speed.z != 0.0F) {
                     speed.normalize();
                 }
             }
