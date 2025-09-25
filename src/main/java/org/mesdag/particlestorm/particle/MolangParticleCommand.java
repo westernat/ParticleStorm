@@ -15,7 +15,6 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.network.PacketDistributor;
-import org.joml.Vector3f;
 import org.mesdag.particlestorm.data.event.ParticleEffect;
 import org.mesdag.particlestorm.data.molang.MolangExp;
 import org.mesdag.particlestorm.network.EmitterAttachPacketS2C;
@@ -100,7 +99,7 @@ public class MolangParticleCommand {
     private static int sendParticle(CommandSourceStack source, ResourceLocation particle, Vec3 pos, Collection<ServerPlayer> viewers) throws CommandSyntaxException {
         int i = 0;
         for (ServerPlayer serverplayer : viewers) {
-            PacketDistributor.sendToPlayer(serverplayer, new EmitterCreationPacketS2C(particle, new Vector3f((float) pos.x, (float) pos.y, (float) pos.z), ParticleEffect.Type.EMITTER, MolangExp.EMPTY));
+            PacketDistributor.sendToPlayer(serverplayer, new EmitterCreationPacketS2C(particle, pos.toVector3f(), ParticleEffect.Type.EMITTER, MolangExp.EMPTY));
             i++;
         }
         if (i == 0) {

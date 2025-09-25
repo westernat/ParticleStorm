@@ -184,8 +184,7 @@ public abstract sealed class EmitterShape implements IEmitterComponent permits E
             position.z += sp * Mth.sin(op);
             float[] lp = planeNormal.plane.calculate(instance);
             if (!Arrays.equals(lp, PlaneNormal.YN)) {
-                Quaternionf quaternion = MathHelper.setFromUnitVectors(Mth.Y_AXIS, new Vector3f(lp), new Quaternionf());
-                MathHelper.applyQuaternion(quaternion, position);
+                MathHelper.applyQuaternion(MathHelper.setFromUnitVectors(Mth.Y_AXIS, new Vector3f(lp), new Quaternionf()), position);
             }
             direction.apply(instance, this, position, speed);
         }

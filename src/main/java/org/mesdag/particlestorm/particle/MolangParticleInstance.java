@@ -14,8 +14,6 @@ import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.api.distmarker.OnlyIn;
 import net.neoforged.fml.ModList;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -33,7 +31,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-@OnlyIn(Dist.CLIENT)
 public class MolangParticleInstance extends TextureSheetParticle implements MolangInstance {
     public static final int FULL_LIGHT = 0xF000F0;
     private static final boolean isSodiumLoaded = ModList.get().isLoaded("sodium");

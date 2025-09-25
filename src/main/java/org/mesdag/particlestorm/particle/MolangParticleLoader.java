@@ -21,8 +21,6 @@ import net.minecraft.util.Mth;
 import net.minecraft.util.profiling.ProfilerFiller;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.Level;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.api.distmarker.OnlyIn;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.mesdag.particlestorm.ParticleStorm;
@@ -41,7 +39,6 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 
-@OnlyIn(Dist.CLIENT)
 public class MolangParticleLoader implements PreparableReloadListener {
     private static final FileToIdConverter PARTICLE_LISTER = FileToIdConverter.json("particle_definitions");
     public final Map<ResourceLocation, DefinedParticleEffect> ID_2_EFFECT = new Hashtable<>();
