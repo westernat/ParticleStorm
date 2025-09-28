@@ -295,46 +295,37 @@ public class MolangParticleInstance extends TextureSheetParticle implements Mola
 
     @Override
     public void move(double x, double y, double z) {
-        if (!stoppedByCollision) {
-            double d0 = x;
-            double d1 = y;
-            double d2 = z;
-            if (hasPhysics && (x != 0.0 || y != 0.0 || z != 0.0) && x * x + y * y + z * z < MAXIMUM_COLLISION_VELOCITY_SQUARED) {
-                Vec3 vec3 = Entity.collideBoundingBox(null, new Vec3(x, y, z), getBoundingBox(), level, List.of());
-                if (hasCollision) {
-                    if (x != vec3.x) {
-                        this.xd = -Mth.sign(xd) * (Math.abs(xd) - collisionDrag) * coefficientOfRestitution;
-                    }
-                    if (y != vec3.y) {
-                        this.yd *= -coefficientOfRestitution;
-                    }
-                    if (z != vec3.z) {
-                        this.zd = -Mth.sign(zd) * (Math.abs(zd) - collisionDrag) * coefficientOfRestitution;
-                    }
-                }
-                x = vec3.x;
-                y = vec3.y;
-                z = vec3.z;
+        if (stoppedByCollision) return;
+        double d0 = x;
+        double d1 = y;
+        double d2 = z;
+        if (hasPhysics && hasCollision && (x != 0.0 || y != 0.0 || z != 0.0) && x * x + y * y + z * z < MAXIMUM_COLLISION_VELOCITY_SQUARED) {
+            Vec3 vec3 = Entity.collideBoundingBox(null, new Vec3(x, y, z), getBoundingBox(), level, List.of());
+            if (x != vec3.x) {
+                this.xd = -Mth.sign(xd) * (Math.abs(xd) - collisionDrag) * coefficientOfRestitution;
             }
-
-            if (x != 0.0 || y != 0.0 || z != 0.0) {
-                moveDirectly(x, y, z);
+            if (y != vec3.y) {
+                this.yd *= -coefficientOfRestitution;
             }
-
-            if (Math.abs(d1) >= 1.0E-5F && Math.abs(y) < 1.0E-5F) {
-                this.stoppedByCollision = true;
+            if (z != vec3.z) {
+                this.zd = -Mth.sign(zd) * (Math.abs(zd) - collisionDrag) * coefficientOfRestitution;
             }
+            x = vec3.x;
+            y = vec3.y;
+            z = vec3.z;
+        }
 
+        if (x != 0.0 || y != 0.0 || z != 0.0) {
+            moveDirectly(x, y, z);
+        }
+
+        if (Math.abs(d1) >= Mth.EPSILON && Math.abs(y) < Mth.EPSILON) {
+            this.stoppedByCollision = true;
+        }
+
+        if (hasPhysics && hasCollision) {
             this.onGround = d1 != y && d1 < 0.0;
-            boolean collided = false;
-            if (d0 != x) {
-                collided = true;
-                if (!hasCollision) this.xd = 0.0;
-            }
-            if (d2 != z) {
-                collided = true;
-                if (!hasCollision) this.zd = 0.0;
-            }
+            boolean collided = d0 != x || d2 != z;
 
             if (onGround || collided) {
                 if (!preset.collisionEvents.isEmpty()) {

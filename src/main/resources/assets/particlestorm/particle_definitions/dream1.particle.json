@@ -39,7 +39,8 @@
 			},
 			"minecraft:particle_appearance_tinting": {
 				"color": ["math.lerp(1, 0.2, variable.k)", "math.lerp(variable.particle_random_2 * 0.4 + 0.2, 0.2, variable.k)", "math.lerp(0, 0.2, variable.k)", "math.clamp(1-variable.t,0.2,0.8)+0.2"]
-			}
+			},
+			"minecraft:particle_motion_collision": {}
 		}
 	}
 }

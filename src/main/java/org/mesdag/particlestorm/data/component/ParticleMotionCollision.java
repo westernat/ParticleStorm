@@ -37,11 +37,11 @@ import java.util.function.Function;
 public record ParticleMotionCollision(BoolMolangExp enabled, float collisionDrag, float coefficientOfRestitution, float collisionRadius, boolean expireOnContact, List<Event> events) implements IParticleComponent {
     public static final ResourceLocation ID = ResourceLocation.withDefaultNamespace("particle_motion_collision");
     public static final Codec<ParticleMotionCollision> CODEC = RecordCodecBuilder.create(instance -> instance.group(
-            BoolMolangExp.CODEC.fieldOf("enabled").orElse(BoolMolangExp.TRUE).forGetter(ParticleMotionCollision::enabled),
-            Codec.FLOAT.fieldOf("collision_drag").orElse(0.0F).forGetter(ParticleMotionCollision::collisionDrag),
-            Codec.FLOAT.fieldOf("coefficient_of_restitution").orElse(0.0F).forGetter(ParticleMotionCollision::coefficientOfRestitution),
-            Codec.FLOAT.fieldOf("collision_radius").orElse(0.0F).forGetter(ParticleMotionCollision::collisionRadius),
-            Codec.BOOL.fieldOf("expire_on_contact").orElse(false).forGetter(ParticleMotionCollision::expireOnContact),
+            BoolMolangExp.CODEC.lenientOptionalFieldOf("enabled", BoolMolangExp.TRUE).forGetter(ParticleMotionCollision::enabled),
+            Codec.FLOAT.lenientOptionalFieldOf("collision_drag", 0.0F).forGetter(ParticleMotionCollision::collisionDrag),
+            Codec.FLOAT.lenientOptionalFieldOf("coefficient_of_restitution", 0.0F).forGetter(ParticleMotionCollision::coefficientOfRestitution),
+            Codec.FLOAT.lenientOptionalFieldOf("collision_radius", 0.0F).forGetter(ParticleMotionCollision::collisionRadius),
+            Codec.BOOL.lenientOptionalFieldOf("expire_on_contact", false).forGetter(ParticleMotionCollision::expireOnContact),
             Codec.either(Event.CODEC, Codec.list(Event.CODEC)).xmap(
                     either -> either.map(Collections::singletonList, Function.identity()),
                     l -> l.size() == 1 ? Either.left(l.getFirst()) : Either.right(l)
