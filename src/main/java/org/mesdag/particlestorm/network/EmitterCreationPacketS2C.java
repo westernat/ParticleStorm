@@ -38,8 +38,8 @@ public record EmitterCreationPacketS2C(ResourceLocation id, Vector3f pos, Molang
         context.enqueueWork(() -> {
             Player player = context.player();
             if (player.isLocalPlayer()) {
-                ParticleEmitter emitter = new ParticleEmitter(player.level(), new Vec3(pos.x, pos.y, pos.z), id);
-                PSGameClient.LOADER.addEmitter(emitter, true);
+                ParticleEmitter emitter = new ParticleEmitter(player.level(), new Vec3(pos.x, pos.y, pos.z), id, expression);
+                PSGameClient.LOADER.addEmitter(emitter, false);
             }
         }).exceptionally(e -> {
             context.disconnect(Component.translatable("neoforge.network.invalid_flow", e.getMessage()));

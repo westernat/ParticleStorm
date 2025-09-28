@@ -1,5 +1,6 @@
 package org.mesdag.particlestorm.particle;
 
+import com.google.common.collect.Iterables;
 import net.minecraft.client.particle.ParticleRenderType;
 import org.jetbrains.annotations.NotNull;
 import org.mesdag.particlestorm.PSGameClient;
@@ -80,7 +81,7 @@ public class ParticlePreset {
         }
 
         List<VariableAssignment> toInit = new ArrayList<>();
-        for (IParticleComponent component : effect.orderedParticleComponents) {
+        for (IParticleComponent component : Iterables.concat(effect.orderedParticleEarlyComponents, effect.orderedParticleComponents)) {
             for (MolangExp exp : component.getAllMolangExp()) {
                 exp.compile(parser);
                 MathValue variable = exp.getVariable();
