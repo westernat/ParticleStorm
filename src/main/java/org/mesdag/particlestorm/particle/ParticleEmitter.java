@@ -100,12 +100,12 @@ public class ParticleEmitter implements MolangInstance {
 
     public void attachEntity(@Nullable Entity entity) {
         if (entity == null) {
-            this.vars = new VariableTable(preset.vars);
+            this.vars = new VariableTable(vars.table, preset.vars);
             this.attached = null;
         } else {
             VariableTable parent = IEntity.of(entity).particlestorm$getVariableTable();
             parent.setParent(preset.vars);
-            this.vars = new VariableTable(parent);
+            this.vars = new VariableTable(vars.table, parent);
             this.attached = entity;
         }
     }
