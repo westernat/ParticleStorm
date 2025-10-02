@@ -112,7 +112,7 @@ public class ParticleEmitter implements MolangInstance {
     }
 
     private void init() {
-        this.preset = PSGameClient.LOADER.ID_2_EMITTER.get(particleId);
+        this.preset = PSGameClient.LOADER.id2Emitter().get(particleId);
         if (preset == null) {
             if (Minecraft.getInstance().player != null) {
                 Minecraft.getInstance().player.sendSystemMessage(Component.translatable("particle.notFound", particleId.toString()));

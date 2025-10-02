@@ -382,7 +382,7 @@ public class MolangParticleInstance extends TextureSheetParticle implements Mola
 
         @Override
         public TextureSheetParticle createParticle(@NotNull MolangParticleOption option, @NotNull ClientLevel level, double x, double y, double z, double xSpeed, double ySpeed, double zSpeed) {
-            return new MolangParticleInstance(PSGameClient.LOADER.ID_2_PARTICLE.get(option.getId()), level, x, y, z, sprites);
+            return new MolangParticleInstance(PSGameClient.LOADER.id2Particle().get(option.getId()), level, x, y, z, sprites);
         }
     }
 }
