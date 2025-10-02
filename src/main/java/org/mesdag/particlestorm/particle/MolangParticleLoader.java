@@ -58,7 +58,7 @@ public class MolangParticleLoader implements PreparableReloadListener {
                 ObjectIterator<Int2ObjectMap.Entry<ParticleEmitter>> iterator = emitters.int2ObjectEntrySet().iterator();
                 while (iterator.hasNext()) {
                     ParticleEmitter emitter = iterator.next().getValue();
-                    if (emitter.isRemoved()) {
+                    if (emitter.isRemoved() || emitter.level.dimension() != localPlayer.level().dimension()) {
                         emitter.onRemove();
                         allocator.release(emitter.id);
                         iterator.remove();
@@ -70,7 +70,7 @@ public class MolangParticleLoader implements PreparableReloadListener {
             if (!tracker.isEmpty()) {
                 ObjectIterator<Map.Entry<Entity, EvictingQueue<ParticleEmitter>>> iterator1 = tracker.entrySet().iterator();
                 while (iterator1.hasNext()) {
-                    var entry = iterator1.next();
+                    Map.Entry<Entity, EvictingQueue<ParticleEmitter>> entry = iterator1.next();
                     if (entry.getKey().isRemoved() || entry.getValue().isEmpty()) {
                         iterator1.remove();
                     } else {

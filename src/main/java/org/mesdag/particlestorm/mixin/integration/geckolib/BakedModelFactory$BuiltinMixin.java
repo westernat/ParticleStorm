@@ -15,6 +15,6 @@ import software.bernie.geckolib.loading.object.BoneStructure;
 public abstract class BakedModelFactory$BuiltinMixin {
     @Inject(method = "constructBone", at = @At("RETURN"))
     private void addLocators(BoneStructure boneStructure, ModelProperties properties, GeoBone parent, CallbackInfoReturnable<GeoBone> cir) {
-        ((IGeoBone) cir.getReturnValue()).particlestorm$setLocators(boneStructure.self().locators());
+        IGeoBone.of(cir.getReturnValue()).particlestorm$setLocators(boneStructure.self().locators());
     }
 }

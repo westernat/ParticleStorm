@@ -5,12 +5,7 @@
     "compatibilityLevel": "JAVA_17",
     "refmap": "particlestorm.refmap.json",
     "mixins": [
-        "integration.geckolib.AnimationControllerMixin",
-        "integration.geckolib.AnimationProcessorMixin",
-        "integration.geckolib.BakedModelFactory$BuiltinMixin",
-        "integration.geckolib.GeoBoneMixin",
-        "integration.geckolib.MolangQueriesMixin",
-        "integration.geckolib.ParticleKeyframeDataMixin"
+        "MolangQueriesAccessor"
     ],
     "client": [
         "BlockEntityMixin",
@@ -20,9 +15,16 @@
         "ParticleEngineAccessor",
         "TextureAtlasMixin",
         "TextureAtlasSpriteMixin",
-        "integration.geckolib.GeoReplacedEntityRendererMixin"
+        "integration.geckolib.AnimatableInstanceCacheMixin",
+        "integration.geckolib.AnimationControllerMixin",
+        "integration.geckolib.AnimationProcessorMixin",
+        "integration.geckolib.BakedModelFactory$BuiltinMixin",
+        "integration.geckolib.GeoBoneMixin",
+        "integration.geckolib.GeoReplacedEntityRendererMixin",
+        "integration.geckolib.MolangQueriesMixin",
+        "integration.geckolib.ParticleKeyframeDataMixin"
     ],
     "injectors": {
         "defaultRequire": 1
-  }
+    }
 }

@@ -37,6 +37,7 @@ public class ParticleEmitter implements MolangInstance {
     public transient ParentMode parentMode = ParentMode.WORLD;
     public transient Vec3 offsetPos = Vec3.ZERO;
     public transient Vector3f offsetRot = new Vector3f();
+    public transient Vector3f parentPosition;
     public transient Vector3f parentRotation;
     protected transient EmitterPreset preset;
     protected transient VariableTable vars;
@@ -169,6 +170,9 @@ public class ParticleEmitter implements MolangInstance {
                 rot.set(parentRotation).add(offsetRot.x, offsetRot.y + getAttachedYRot() * Mth.DEG_TO_RAD, offsetRot.z);
             }
             Vector3f rotated = offsetPos.toVector3f().rotateZ(rot.z).rotateY(rot.y).rotateX(rot.x);
+            if (parentPosition != null) {
+                rotated.add(parentPosition);
+            }
             this.pos = new Vec3(attached.getX() + rotated.x, attached.getY() + rotated.y, attached.getZ() + rotated.z);
         } else if (attachedBlock != null) {
             if (attachedBlock.isRemoved()) {
@@ -179,8 +183,11 @@ public class ParticleEmitter implements MolangInstance {
                 rot.set(parentRotation).add(offsetRot);
             }
             Vector3f rotated = offsetPos.toVector3f().rotateZ(rot.z).rotateY(rot.y).rotateX(rot.x);
+            if (parentPosition != null) {
+                rotated.add(parentPosition);
+            }
             BlockPos pos1 = attachedBlock.getBlockPos();
-            this.pos = new Vec3(pos1.getX() + 0.5 + rotated.x, pos1.getY() + 0.5 + rotated.y, pos1.getZ() + 0.5 + rotated.z);
+            this.pos = new Vec3(pos1.getX() + 0.5 + rotated.x, pos1.getY() + rotated.y, pos1.getZ() + 0.5 + rotated.z);
         }
         if (parent != null && parent.isRemoved()) {
             remove();

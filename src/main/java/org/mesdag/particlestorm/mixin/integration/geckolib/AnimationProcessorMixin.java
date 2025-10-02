@@ -34,7 +34,7 @@ public abstract class AnimationProcessorMixin<T extends GeoAnimatable> {
     private void tickLocators(T animatable, GeoModel<T> model, AnimatableManager<T> animatableManager, double animTime, AnimationState<T> state, boolean crashWhenCantFindBone, CallbackInfo ci, @Local AnimationController<T> controller) {
         if (particlestorm$bonesWhichHasLocators == null) {
             this.particlestorm$bonesWhichHasLocators = getRegisteredBones().stream()
-                    .filter(bone -> ((IGeoBone) bone).particlestorm$getLocators() != null)
+                    .filter(bone -> IGeoBone.of(bone).particlestorm$getLocators() != null)
                     .collect(Collectors.toList());
         }
         ((IAnimationController) controller).particlestorm$setBonesWhichHasLocators(particlestorm$bonesWhichHasLocators);

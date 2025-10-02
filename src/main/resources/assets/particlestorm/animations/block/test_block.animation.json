@@ -7,7 +7,7 @@
 			"bones": {
 				"bone": {
 					"rotation": {
-						"vector": ["math.cos(query.anim_time * 90) * 180", "math.sin(query.anim_time * 90) * 180", "math.cos(query.anim_time * 90) * 180"]
+						"vector": [0, "math.sin(query.anim_time * 90) * 180", 0]
 					}
 				}
 			},
