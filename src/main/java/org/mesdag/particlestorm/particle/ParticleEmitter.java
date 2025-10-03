@@ -161,11 +161,6 @@ public class ParticleEmitter implements MolangInstance {
             this.moveDist += (float) pos.subtract(posO).length();
         }
 
-        if (isManual || preset.emitterRateType == EmitterRate.Type.MANUAL) {
-            remove();
-            return;
-        }
-
         if (attached != null) {
             if (attached.isRemoved()) {
                 remove();
@@ -201,6 +196,8 @@ public class ParticleEmitter implements MolangInstance {
         }
 
         if (parent != null && parent.isRemoved()) {
+            remove();
+        } else if (isManual || preset.emitterRateType == EmitterRate.Type.MANUAL) {
             remove();
         }
     }
