@@ -40,8 +40,6 @@ public final class GeckoLibHelper {
     }
 
     /**
-     * todo software.bernie.geckolib.loading.json.raw.LocatorValue#locatorClass
-     *
      * @return true means failed to add emitter
      */
     public static boolean processParticleEffect(Object particleKeyframeEvent) {

@@ -46,11 +46,11 @@ public class AnimatableInstanceCacheMixin implements IAnimatableInstanceCache {
         return particlestorm$rotation;
     }
 
-    @Override
-    public Vector3f particlestorm$getScale() {
-        if (particlestorm$scale == null) {
-            this.particlestorm$scale = new Vector3f();
-        }
-        return particlestorm$scale;
-    }
+//    @Override
+//    public Vector3f particlestorm$getScale() {
+//        if (particlestorm$scale == null) {
+//            this.particlestorm$scale = new Vector3f();
+//        }
+//        return particlestorm$scale;
+//    }
 }

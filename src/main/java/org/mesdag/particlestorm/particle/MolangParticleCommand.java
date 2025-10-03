@@ -15,6 +15,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.phys.Vec3;
+import org.jetbrains.annotations.Nullable;
 import org.mesdag.particlestorm.data.molang.MolangExp;
 import org.mesdag.particlestorm.network.EmitterAttachPacketS2C;
 import org.mesdag.particlestorm.network.EmitterCreationPacketS2C;
@@ -32,26 +33,39 @@ public class MolangParticleCommand {
                                 ResourceLocationArgument.getId(context, "particle"),
                                 context.getSource().getPosition(),
                                 MolangExp.EMPTY,
+                                null,
                                 context.getSource().getServer().getPlayerList().getPlayers()
                         )).then(Commands.argument("pos", Vec3Argument.vec3()).executes(context -> sendParticle(
                                         context.getSource(),
                                         ResourceLocationArgument.getId(context, "particle"),
                                         Vec3Argument.getVec3(context, "pos"),
                                         MolangExp.EMPTY,
+                                        null,
                                         context.getSource().getServer().getPlayerList().getPlayers()
                                 )).then(Commands.argument("expression", StringArgumentType.string()).executes(context -> sendParticle(
                                                 context.getSource(),
                                                 ResourceLocationArgument.getId(context, "particle"),
                                                 Vec3Argument.getVec3(context, "pos"),
                                                 new MolangExp(StringArgumentType.getString(context, "expression")),
+                                                null,
                                                 context.getSource().getServer().getPlayerList().getPlayers()
-                                        )).then(Commands.argument("viewers", EntityArgument.players()).executes(context -> sendParticle(
-                                                context.getSource(),
-                                                ResourceLocationArgument.getId(context, "particle"),
-                                                Vec3Argument.getVec3(context, "pos"),
-                                                new MolangExp(StringArgumentType.getString(context, "expression")),
-                                                EntityArgument.getPlayers(context, "viewers")
-                                        )))
+                                        )).then(Commands.argument("attach", EntityArgument.entity()).executes(context -> sendParticle(
+                                                        context.getSource(),
+                                                        ResourceLocationArgument.getId(context, "particle"),
+                                                        Vec3Argument.getVec3(context, "pos"),
+                                                        new MolangExp(StringArgumentType.getString(context, "expression")),
+                                                        EntityArgument.getEntity(context, "attach"),
+                                                        context.getSource().getServer().getPlayerList().getPlayers()
+                                                )).then(Commands.argument("viewers", EntityArgument.players()).executes(context -> sendParticle(
+                                                                context.getSource(),
+                                                                ResourceLocationArgument.getId(context, "particle"),
+                                                                Vec3Argument.getVec3(context, "pos"),
+                                                                new MolangExp(StringArgumentType.getString(context, "expression")),
+                                                                EntityArgument.getEntity(context, "attach"),
+                                                                EntityArgument.getPlayers(context, "viewers")
+                                                        ))
+                                                )
+                                        )
                                 )
                         )
                 ))
@@ -104,16 +118,16 @@ public class MolangParticleCommand {
         }
     }
 
-    private static int sendParticle(CommandSourceStack source, ResourceLocation id, Vec3 pos, MolangExp expression, Collection<ServerPlayer> viewers) throws CommandSyntaxException {
+    private static int sendParticle(CommandSourceStack source, ResourceLocation particle, Vec3 pos, MolangExp expression, @Nullable Entity entity, Collection<ServerPlayer> viewers) throws CommandSyntaxException {
         int i = 0;
         for (ServerPlayer player : viewers) {
-            EmitterCreationPacketS2C.sendToClient(player, id, pos.toVector3f(), expression);
+            EmitterCreationPacketS2C.sendToClient(player, particle, pos.toVector3f(), expression, entity);
             i++;
         }
         if (i == 0) {
             throw ERROR_FAILED.create();
         } else {
-            source.sendSuccess(() -> Component.translatable("commands.particle.success", id.toString()), true);
+            source.sendSuccess(() -> Component.translatable("commands.particle.success", particle.toString()), true);
             return i;
         }
     }

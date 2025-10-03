@@ -29,6 +29,7 @@ import org.mesdag.particlestorm.mixed.IEntity;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Consumer;
 
 public class ParticleEmitter implements MolangInstance {
     public ResourceLocation particleId;
@@ -43,6 +44,7 @@ public class ParticleEmitter implements MolangInstance {
     protected transient VariableTable vars;
     protected transient List<IEmitterComponent> components;
     public transient ParticleEmitter parent;
+    public transient @Nullable Consumer<ParticleEmitter> afterParentInit;
     public transient final List<ParticleEmitter> children = new ArrayList<>();
     public transient Vector3f inheritedParticleSpeed;
     public transient boolean isManual;
@@ -154,13 +156,16 @@ public class ParticleEmitter implements MolangInstance {
             }
         }
         this.age++;
+
         if (!posO.equals(pos)) {
             this.moveDist += (float) pos.subtract(posO).length();
         }
+
         if (isManual || preset.emitterRateType == EmitterRate.Type.MANUAL) {
             remove();
             return;
         }
+
         if (attached != null) {
             if (attached.isRemoved()) {
                 remove();
@@ -189,6 +194,12 @@ public class ParticleEmitter implements MolangInstance {
             BlockPos pos1 = attachedBlock.getBlockPos();
             this.pos = new Vec3(pos1.getX() + 0.5 + rotated.x, pos1.getY() + rotated.y, pos1.getZ() + 0.5 + rotated.z);
         }
+
+        if (afterParentInit != null && parent != null) {
+            afterParentInit.accept(parent);
+            this.afterParentInit = null;
+        }
+
         if (parent != null && parent.isRemoved()) {
             remove();
         }

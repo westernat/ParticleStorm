@@ -36,25 +36,28 @@ public record ParticleEffect(ResourceLocation effect, Type type, MolangExp preEf
     @Override
     public void execute(MolangInstance instance) {
         ParticleEmitter emitter = new ParticleEmitter(instance.getLevel(), instance.getPosition(), effect, preEffectExpression);
-        ParticleEmitter parent = instance.getEmitter();
-        switch (type) {
-            case EMITTER -> {}
-            case EMITTER_BOUND -> {
-                emitter.attachEntity(parent.getAttachedEntity());
-                emitter.attachedBlock = parent.attachedBlock;
-                emitter.parentMode = parent.parentMode;
-                emitter.offsetPos = parent.offsetPos;
-                emitter.offsetRot = parent.offsetRot;
-                emitter.parentRotation = parent.parentRotation;
-            }
-            case PARTICLE -> emitter.isManual = true;
-            case PARTICLE_WITH_VELOCITY -> {
-                emitter.isManual = true;
-                if (parent.getAttachedEntity() != null) {
-                    emitter.inheritedParticleSpeed = parent.getAttachedEntity().getDeltaMovement().toVector3f();
+        emitter.afterParentInit = parent -> {
+            switch (type) {
+                case EMITTER -> {}
+                case EMITTER_BOUND -> {
+                    emitter.attachEntity(parent.getAttachedEntity());
+                    emitter.attachedBlock = parent.attachedBlock;
+                    emitter.offsetPos = parent.offsetPos;
+                    emitter.offsetRot = parent.offsetRot;
+                    emitter.parentPosition = parent.parentPosition;
+                    emitter.parentRotation = parent.parentRotation;
+                    emitter.parentMode = parent.parentMode;
+                }
+                case PARTICLE -> emitter.isManual = true;
+                case PARTICLE_WITH_VELOCITY -> {
+                    emitter.isManual = true;
+                    if (parent.getAttachedEntity() != null) {
+                        emitter.inheritedParticleSpeed = parent.getAttachedEntity().getDeltaMovement().toVector3f();
+                    }
                 }
             }
-        }
+        };
+        ParticleEmitter parent = instance.getEmitter();
         emitter.addParent(parent);
         for (String name : sharedVars) {
             Variable variable = parent.getVars().table.get(name);

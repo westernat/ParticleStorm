@@ -12,7 +12,7 @@ public interface IAnimatableInstanceCache {
 
     Vector3f particlestorm$getRotation();
 
-    Vector3f particlestorm$getScale();
+//    Vector3f particlestorm$getScale();
 
     static IAnimatableInstanceCache of(AnimatableInstanceCache cache) {
         return (IAnimatableInstanceCache) cache;

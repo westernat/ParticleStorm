@@ -13,6 +13,7 @@ import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.debug.DebugRenderer;
 import net.minecraft.client.renderer.texture.TextureAtlas;
 import net.minecraft.client.renderer.texture.TextureManager;
+import net.minecraft.util.Mth;
 import net.minecraft.world.entity.EntityType;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -92,17 +93,18 @@ public final class PSGameClient {
     private static void renderLevelStage(RenderLevelStageEvent event) {
         if (!PSClientConfigs.showEmitterOutline) return;
         Minecraft minecraft = Minecraft.getInstance();
-        if (event.getStage() == RenderLevelStageEvent.Stage.AFTER_PARTICLES && minecraft.getEntityRenderDispatcher().shouldRenderHitBoxes())
-            for (ParticleEmitter value : LOADER.emitters.values()) {
-                PoseStack poseStack = event.getPoseStack();
-                MultiBufferSource.BufferSource bufferSource = minecraft.renderBuffers().bufferSource();
-                double x = value.getX();
-                double y = value.getY();
-                double z = value.getZ();
-                DebugRenderer.renderFloatingText(poseStack, bufferSource, value.getPreset().option.getId().toString(), x, y + 0.5, z, 0xFFFFFF);
-                DebugRenderer.renderFloatingText(poseStack, bufferSource, "id: " + value.id, x, y + 0.3, z, 0xFFFFFF);
-                int maxNum = ((ParticleEngineAccessor) minecraft.particleEngine).trackedParticleCounts().getInt(value.particleGroup);
-                DebugRenderer.renderFloatingText(poseStack, bufferSource, "particles: " + maxNum, x, y + 0.1, z, maxNum == value.particleGroup.getLimit() ? 0xFF0000 : 0xFFFFFF);
+        if (event.getStage() == RenderLevelStageEvent.Stage.AFTER_PARTICLES && minecraft.getEntityRenderDispatcher().shouldRenderHitBoxes()) {
+            float partialTicks = event.getPartialTick().getGameTimeDeltaPartialTick(true);
+            PoseStack poseStack = event.getPoseStack();
+            MultiBufferSource.BufferSource bufferSource = minecraft.renderBuffers().bufferSource();
+            for (ParticleEmitter emitter : LOADER.emitters.values()) {
+                double x = Mth.lerp(partialTicks, emitter.posO.x, emitter.pos.x);
+                double y = Mth.lerp(partialTicks, emitter.posO.y, emitter.pos.y);
+                double z = Mth.lerp(partialTicks, emitter.posO.z, emitter.pos.z);
+                DebugRenderer.renderFloatingText(poseStack, bufferSource, emitter.getPreset().option.getId().toString(), x, y + 0.5, z, 0xFFFFFF);
+                DebugRenderer.renderFloatingText(poseStack, bufferSource, "id: " + emitter.id, x, y + 0.3, z, 0xFFFFFF);
+                int maxNum = ((ParticleEngineAccessor) minecraft.particleEngine).trackedParticleCounts().getInt(emitter.particleGroup);
+                DebugRenderer.renderFloatingText(poseStack, bufferSource, "particles: " + maxNum, x, y + 0.1, z, maxNum == emitter.particleGroup.getLimit() ? 0xFF0000 : 0xFFFFFF);
                 Camera camera = event.getCamera();
                 double d0 = camera.getPosition().x;
                 double d1 = camera.getPosition().y;
@@ -112,6 +114,7 @@ public final class PSGameClient {
                 LevelRenderer.renderLineBox(poseStack, bufferSource.getBuffer(RenderType.lines()), -0.5, -0.5, -0.5, 0.5, 0.5, 0.5, 0, 1, 0, 1);
                 poseStack.popPose();
             }
+        }
     }
 
     @SubscribeEvent

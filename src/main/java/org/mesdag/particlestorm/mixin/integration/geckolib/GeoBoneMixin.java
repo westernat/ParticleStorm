@@ -31,12 +31,12 @@ public abstract class GeoBoneMixin implements IGeoBone {
     private float rotY;
     @Shadow
     private float rotZ;
-    @Shadow
-    private float scaleX;
-    @Shadow
-    private float scaleY;
-    @Shadow
-    private float scaleZ;
+//    @Shadow
+//    private float scaleX;
+//    @Shadow
+//    private float scaleY;
+//    @Shadow
+//    private float scaleZ;
     @Unique
     private Map<String, LocatorValue> particlestorm$locators;
 
@@ -58,7 +58,7 @@ public abstract class GeoBoneMixin implements IGeoBone {
             IAnimatableInstanceCache cache = IAnimatableInstanceCache.of(animatable.getAnimatableInstanceCache());
             cache.particlestorm$getPosition().set(positionX, positionY, positionZ);
             cache.particlestorm$getRotation().set(rotX, rotY, rotZ);
-            cache.particlestorm$getScale().set(scaleX, scaleY, scaleZ);
+            //cache.particlestorm$getScale().set(scaleX, scaleY, scaleZ); todo
         }
     }
 }
