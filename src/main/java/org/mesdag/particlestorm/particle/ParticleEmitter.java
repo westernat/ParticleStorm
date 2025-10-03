@@ -83,6 +83,7 @@ public class ParticleEmitter implements MolangInstance {
     public ParticleEmitter(Level level, Vec3 pos, ResourceLocation particleId, MolangExp expression) {
         this.level = level;
         setPos(pos);
+        this.posO = pos;
         this.particleId = particleId;
         this.expression = expression;
         updateRandoms(level.random);
@@ -227,7 +228,7 @@ public class ParticleEmitter implements MolangInstance {
     }
 
     public boolean isRemoved() {
-        return removed || (attached != null && attached.isRemoved());
+        return removed || (attached != null && attached.isRemoved()) || (attachedBlock != null && attachedBlock.isRemoved());
     }
 
     public void setPos(Vec3 pos) {
@@ -245,9 +246,8 @@ public class ParticleEmitter implements MolangInstance {
         this.emitterRandom2 = compound.getDouble("emitterRandom2");
         this.emitterRandom3 = compound.getDouble("emitterRandom3");
         this.emitterRandom4 = compound.getDouble("emitterRandom4");
-        this.pos = new Vec3(compound.getDouble("posX"), compound.getDouble("posY"), compound.getDouble("posZ"));
+        this.posO = this.pos = new Vec3(compound.getDouble("posX"), compound.getDouble("posY"), compound.getDouble("posZ"));
         this.rot.set(compound.getFloat("rotX"), compound.getFloat("rotY"), compound.getFloat("rotZ"));
-        this.posO = new Vec3(compound.getDouble("movX"), compound.getDouble("movY"), compound.getDouble("movZ"));
     }
 
     public void serialize(CompoundTag compound) {
@@ -263,9 +263,6 @@ public class ParticleEmitter implements MolangInstance {
         compound.putFloat("rotX", rot.x);
         compound.putFloat("rotY", rot.y);
         compound.putFloat("rotZ", rot.z);
-        compound.putDouble("movX", posO.x);
-        compound.putDouble("movY", posO.y);
-        compound.putDouble("movZ", posO.z);
     }
 
     public double getX() {

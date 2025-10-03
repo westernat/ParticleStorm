@@ -7,6 +7,7 @@ import net.minecraft.network.codec.StreamCodec;
 import org.mesdag.particlestorm.api.MolangInstance;
 import org.mesdag.particlestorm.data.molang.compiler.MathValue;
 import org.mesdag.particlestorm.data.molang.compiler.MolangParser;
+import org.mesdag.particlestorm.data.molang.compiler.value.Constant;
 
 import java.util.Map;
 
@@ -22,6 +23,9 @@ public class MolangExp {
 
     public MolangExp(String expStr) {
         this.expStr = expStr;
+        if (expStr.isBlank()) {
+            this.variable = new Constant(0.0);
+        }
     }
 
     public MolangExp(String key, double value) {

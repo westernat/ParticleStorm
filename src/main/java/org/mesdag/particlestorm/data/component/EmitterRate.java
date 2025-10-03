@@ -162,6 +162,7 @@ public abstract sealed class EmitterRate implements IEmitterComponent permits Em
             } else {
                 emitter.particleGroup.setLimit(limit);
             }
+            emitter.spawnRate = limit;
         }
 
         @Override
