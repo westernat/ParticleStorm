@@ -15,10 +15,12 @@ import software.bernie.geckolib.animation.AnimatableManager;
 import software.bernie.geckolib.animation.AnimationController;
 import software.bernie.geckolib.animation.AnimationState;
 import software.bernie.geckolib.cache.object.GeoBone;
+import software.bernie.geckolib.loading.json.raw.LocatorValue;
 import software.bernie.geckolib.model.GeoModel;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Pseudo
@@ -34,7 +36,10 @@ public abstract class AnimationProcessorMixin<T extends GeoAnimatable> {
     private void tickLocators(T animatable, GeoModel<T> model, AnimatableManager<T> animatableManager, double animTime, AnimationState<T> state, boolean crashWhenCantFindBone, CallbackInfo ci, @Local AnimationController<T> controller) {
         if (particlestorm$bonesWhichHasLocators == null) {
             this.particlestorm$bonesWhichHasLocators = getRegisteredBones().stream()
-                    .filter(bone -> IGeoBone.of(bone).particlestorm$getLocators() != null)
+                    .filter(bone -> {
+                        Map<String, LocatorValue> locators = IGeoBone.of(bone).particlestorm$getLocators();
+                        return locators != null && !locators.isEmpty();
+                    })
                     .collect(Collectors.toList());
         }
         ((IAnimationController) controller).particlestorm$setBonesWhichHasLocators(particlestorm$bonesWhichHasLocators);

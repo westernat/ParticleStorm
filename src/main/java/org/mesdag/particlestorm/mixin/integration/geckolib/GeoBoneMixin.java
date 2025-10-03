@@ -52,7 +52,7 @@ public abstract class GeoBoneMixin implements IGeoBone {
 
     @Inject(method = "resetStateChanges", at = @At("TAIL"))
     private void setData(CallbackInfo ci) {
-        if (particlestorm$locators == null) return;
+        if (particlestorm$locators == null || particlestorm$locators.isEmpty()) return;
         MolangQueries.Actor<?> actor = MolangQueriesAccessor.callGetActor();
         if (actor != null && actor.animatable() instanceof GeoAnimatable animatable) {
             IAnimatableInstanceCache cache = IAnimatableInstanceCache.of(animatable.getAnimatableInstanceCache());
