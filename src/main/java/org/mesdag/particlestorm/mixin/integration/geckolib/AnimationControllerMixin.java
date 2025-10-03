@@ -13,12 +13,10 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import software.bernie.geckolib.animatable.GeoAnimatable;
 import software.bernie.geckolib.animation.AnimationController;
 import software.bernie.geckolib.animation.keyframe.event.ParticleKeyframeEvent;
-import software.bernie.geckolib.animation.keyframe.event.data.KeyFrameData;
 import software.bernie.geckolib.animation.keyframe.event.data.ParticleKeyframeData;
 import software.bernie.geckolib.cache.object.GeoBone;
 
 import java.util.List;
-import java.util.Set;
 
 @Pseudo
 @Mixin(targets = "software.bernie.geckolib.animation.AnimationController", remap = false)
@@ -26,9 +24,6 @@ public abstract class AnimationControllerMixin<T extends GeoAnimatable> implemen
     @Shadow
     @Final
     protected T animatable;
-    @Shadow
-    @Final
-    private Set<KeyFrameData> executedKeyFrames;
     @Shadow
     protected AnimationController.State animationState;
 
@@ -53,7 +48,7 @@ public abstract class AnimationControllerMixin<T extends GeoAnimatable> implemen
     @Inject(method = "resetEventKeyFrames", at = @At("HEAD"))
     private void removeEmitters(CallbackInfo ci) {
         if (particlestorm$bonesWhichHasLocators != null) {
-            GeckoLibHelper.removeEmittersWhenAnimationChange(particlestorm$bonesWhichHasLocators.size(), animationState, executedKeyFrames);
+            GeckoLibHelper.removeEmittersWhenAnimationChange(particlestorm$bonesWhichHasLocators.size(), animationState, animatable.getAnimatableInstanceCache());
         }
     }
 }

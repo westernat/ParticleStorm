@@ -2,14 +2,11 @@ package org.mesdag.particlestorm.particle;
 
 import net.minecraft.client.particle.ParticleEngine;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.api.distmarker.OnlyIn;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.List;
 
-@OnlyIn(Dist.CLIENT)
 public class ExtendMutableSpriteSet extends ParticleEngine.MutableSpriteSet {
     private TextureAtlasSprite missing;
 

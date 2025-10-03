@@ -31,7 +31,7 @@ public final class ParticleLifeTimeEvents implements IParticleComponent {
     public final List<String> expirationEvent;
     public final Map<String, List<String>> timeline;
 
-    public final ArrayList<Tuple<Function<Integer, Boolean>, List<String>>> sortedTimeline;
+    public final List<Tuple<Function<Integer, Boolean>, List<String>>> sortedTimeline;
 
     /**
      * @param creationEvent   Fires when the particle is created
@@ -66,10 +66,7 @@ public final class ParticleLifeTimeEvents implements IParticleComponent {
             Tuple<Function<Integer, Boolean>, List<String>> tuple = sortedTimeline.get(i);
             if (tuple.getA().apply(instance.getLifetime())) {
                 instance.lastTimeline = i + 1;
-                Map<String, Map<String, IEventNode>> events = instance.preset.effect.events;
-                for (String event : tuple.getB()) {
-                    events.get(event).forEach((name, node) -> node.execute(instance));
-                }
+                executes(instance, tuple.getB());
                 break;
             }
         }
@@ -77,10 +74,7 @@ public final class ParticleLifeTimeEvents implements IParticleComponent {
 
     @Override
     public void apply(MolangParticleInstance instance) {
-        Map<String, Map<String, IEventNode>> events = instance.preset.effect.events;
-        for (String event : creationEvent) {
-            events.get(event).forEach((name, node) -> node.execute(instance));
-        }
+        executes(instance, creationEvent);
     }
 
     @Override
@@ -89,10 +83,7 @@ public final class ParticleLifeTimeEvents implements IParticleComponent {
     }
 
     public void onExpiration(MolangParticleInstance instance) {
-        Map<String, Map<String, IEventNode>> events = instance.preset.effect.events;
-        for (String event : expirationEvent) {
-            events.get(event).forEach((name, node) -> node.execute(instance));
-        }
+        executes(instance, expirationEvent);
     }
 
     @Override
@@ -103,4 +94,11 @@ public final class ParticleLifeTimeEvents implements IParticleComponent {
                 "timeline=" + timeline + ']';
     }
 
+    private static void executes(MolangParticleInstance instance, List<String> triggers) {
+        for (String event : triggers) {
+            for (IEventNode node : instance.preset.effect.events.get(event).values()) {
+                node.execute(instance);
+            }
+        }
+    }
 }

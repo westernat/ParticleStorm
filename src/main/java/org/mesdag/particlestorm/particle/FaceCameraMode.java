@@ -3,14 +3,15 @@ package org.mesdag.particlestorm.particle;
 import net.minecraft.client.Camera;
 import net.minecraft.client.particle.SingleQuadParticle;
 import net.minecraft.util.Mth;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.api.distmarker.OnlyIn;
+import org.joml.Math;
 import org.joml.Matrix4f;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
 import org.mesdag.particlestorm.data.MathHelper;
 
-@OnlyIn(Dist.CLIENT)
+import javax.annotation.ParametersAreNonnullByDefault;
+
+@ParametersAreNonnullByDefault
 public enum FaceCameraMode implements SingleQuadParticle.FacingCameraMode {
     LOOKAT_XYZ {
         private final Vector3f wd = new Vector3f();
@@ -80,21 +81,17 @@ public enum FaceCameraMode implements SingleQuadParticle.FacingCameraMode {
     },
     LOOKAT_DIRECTION {
         private final Vector3f X = new Vector3f(1.0F, 0.0F, 0.0F);
-        private final Quaternionf dest = new Quaternionf();
 
         @Override
         public void setRotation(Quaternionf quaternion, Camera camera, float partialTick) {}
 
         @Override
         public void setRotation(MolangParticleInstance instance, Quaternionf quaternion, Camera camera, float partialTick) {
-            quaternion.set(MathHelper.setFromUnitVectors(X, instance.facingDirection, dest));
-            Vector3f vec = camera.getPosition().toVector3f().sub(
-                    (float) instance.getX(),
-                    (float) instance.getY(),
-                    (float) instance.getZ()
-            ).normalize();
-            quaternion.rotateX((float) Mth.atan2(-vec.y, vec.z));
-            // todo 修复朝向不对问题
+            MathHelper.setFromUnitVectors(X, instance.facingDirection, quaternion);
+            instance.xRot = Math.atan2(
+                    (float) (instance.getX() - camera.getPosition().y),
+                    (float) (camera.getPosition().z - instance.getZ())
+            );
         }
     },
     EMITTER_TRANSFORM_XY {

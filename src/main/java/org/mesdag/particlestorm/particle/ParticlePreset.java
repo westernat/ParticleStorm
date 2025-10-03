@@ -1,5 +1,6 @@
 package org.mesdag.particlestorm.particle;
 
+import com.google.common.collect.Iterables;
 import net.minecraft.client.particle.ParticleRenderType;
 import org.jetbrains.annotations.NotNull;
 import org.mesdag.particlestorm.PSGameClient;
@@ -10,6 +11,7 @@ import org.mesdag.particlestorm.data.DefinedParticleEffect;
 import org.mesdag.particlestorm.data.MathHelper;
 import org.mesdag.particlestorm.data.component.*;
 import org.mesdag.particlestorm.data.curve.ParticleCurve;
+import org.mesdag.particlestorm.data.molang.FloatMolangExp;
 import org.mesdag.particlestorm.data.molang.MolangExp;
 import org.mesdag.particlestorm.data.molang.VariableTable;
 import org.mesdag.particlestorm.data.molang.compiler.MathValue;
@@ -69,13 +71,17 @@ public class ParticlePreset {
             ParticleCurve curve = entry.getValue();
             curve.input.compile(parser);
             curve.horizontalRange.compile(parser);
-            curve.nodes.either.ifRight(exps -> exps.forEach(exp -> exp.compile(parser)));
+            curve.nodes.either.ifRight(exps -> {
+                for (FloatMolangExp exp : exps) {
+                    exp.compile(parser);
+                }
+            });
             String name = applyPrefixAliases(entry.getKey(), "variable.", "v.");
             table.table.put(name, new Variable(name, p -> curve.calculate(p, name)));
         }
 
         List<VariableAssignment> toInit = new ArrayList<>();
-        for (IParticleComponent component : effect.orderedParticleComponents) {
+        for (IParticleComponent component : Iterables.concat(effect.orderedParticleEarlyComponents, effect.orderedParticleComponents)) {
             for (MolangExp exp : component.getAllMolangExp()) {
                 exp.compile(parser);
                 MathValue variable = exp.getVariable();

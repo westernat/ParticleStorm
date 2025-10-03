@@ -13,13 +13,12 @@ import java.util.List;
 /**
  * Starts the particle with a specified speed, using the direction specified by the emitter shape.
  *
- * @param exp  Evaluated once
- * @param exp3 Evaluated once
+ * @param speed Evaluated once
  */
-public record ParticleInitialSpeed(FloatMolangExp exp, FloatMolangExp3 exp3) implements IParticleComponent {
+public record ParticleInitialSpeed(Either<FloatMolangExp, FloatMolangExp3> speed) implements IParticleComponent {
     public static final Codec<ParticleInitialSpeed> CODEC = Codec.either(FloatMolangExp.CODEC, FloatMolangExp3.CODEC).xmap(
-            either -> either.map(f -> new ParticleInitialSpeed(f, FloatMolangExp3.ZERO), l -> new ParticleInitialSpeed(FloatMolangExp.ZERO, l)),
-            speed -> speed.exp3 == FloatMolangExp3.ZERO ? Either.left(speed.exp) : Either.right(speed.exp3)
+            either -> either.map(f -> new ParticleInitialSpeed(Either.left(f)), l -> new ParticleInitialSpeed(Either.right(l))),
+            ParticleInitialSpeed::speed
     );
 
     @Override
@@ -29,18 +28,18 @@ public record ParticleInitialSpeed(FloatMolangExp exp, FloatMolangExp3 exp3) imp
 
     @Override
     public List<MolangExp> getAllMolangExp() {
-        return List.of(exp, exp3.exp1(), exp3.exp2(), exp3.exp3());
+        return speed.map(List::of, exp3 -> List.of(exp3.exp1(), exp3.exp2(), exp3.exp3()));
     }
 
     @Override
     public void apply(MolangParticleInstance instance) {
-        if (exp3 == FloatMolangExp3.ZERO) {
+        speed.ifLeft(exp -> {
             float value = exp.calculate(instance);
             instance.initialSpeed.set(value);
-        } else {
+        }).ifRight(exp3 -> {
             float[] mul = exp3.calculate(instance);
             instance.initialSpeed.set(mul);
-        }
+        });
     }
 
     @Override
@@ -51,8 +50,7 @@ public record ParticleInitialSpeed(FloatMolangExp exp, FloatMolangExp3 exp3) imp
     @Override
     public String toString() {
         return "ParticleInitialSpeed{" +
-                "exp=" + exp +
-                ", exp3=" + exp3 +
+                "speed=" + speed +
                 '}';
     }
 }

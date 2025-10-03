@@ -16,7 +16,7 @@ public final class EventRandomize implements IEventNode {
     }).listOf().xmap(EventRandomize::new, eventRandomize -> eventRandomize.nodes);
     public final List<Map<String, IEventNode>> nodes;
 
-    public final ArrayList<Tuple<Float, Map<String, IEventNode>>> sortedNodes;
+    public final List<Tuple<Float, Map<String, IEventNode>>> sortedNodes;
 
     public EventRandomize(List<Map<String, IEventNode>> nodes) {
         this.nodes = nodes;
@@ -26,7 +26,7 @@ public final class EventRandomize implements IEventNode {
         float[] cachedWeight = new float[nodes.size()];
         Map[] cachedNode = new Map[nodes.size()];
         for (int i = 0; i < nodes.size(); i++) {
-            Hashtable<String, IEventNode> node = new Hashtable<>(nodes.get(i));
+            Map<String, IEventNode> node = new Hashtable<>(nodes.get(i));
             float weight = ((Weight) node.remove("weight")).value;
             cachedWeight[i] = weight;
             cachedNode[i] = node;
@@ -43,7 +43,9 @@ public final class EventRandomize implements IEventNode {
         float random = instance.getLevel().random.nextFloat();
         for (Tuple<Float, Map<String, IEventNode>> tuple : sortedNodes) {
             if (random < tuple.getA()) {
-                tuple.getB().forEach((name, node) -> node.execute(instance));
+                for (IEventNode node : tuple.getB().values()) {
+                    node.execute(instance);
+                }
                 break;
             }
         }

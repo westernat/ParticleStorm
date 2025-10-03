@@ -34,8 +34,8 @@ public final class EmitterLifetimeEvents implements IEmitterComponent {
     public final Map<String, List<String>> travelDistanceEvents;
     public final List<LoopingTravelDistanceEvent> loopingTravelDistanceEvents;
 
-    public final ArrayList<Tuple<Function<Integer, Boolean>, List<String>>> sortedTimeline;
-    public final ArrayList<Tuple<Function<Float, Boolean>, List<String>>> sortedTravelDistance;
+    public final List<Tuple<Function<Integer, Boolean>, List<String>>> sortedTimeline;
+    public final List<Tuple<Function<Float, Boolean>, List<String>>> sortedTravelDistance;
 
     /**
      * @param creationEvent               Fires when the emitter is created
@@ -82,10 +82,7 @@ public final class EmitterLifetimeEvents implements IEmitterComponent {
             Tuple<Function<Integer, Boolean>, List<String>> tuple = sortedTimeline.get(i);
             if (tuple.getA().apply(emitter.lifetime)) {
                 emitter.lastTimeline = i + 1;
-                Map<String, Map<String, IEventNode>> events = emitter.getPreset().events;
-                for (String event : tuple.getB()) {
-                    events.get(event).forEach((name, node) -> node.execute(emitter));
-                }
+                executes(emitter, tuple.getB());
                 break;
             }
         }
@@ -94,10 +91,7 @@ public final class EmitterLifetimeEvents implements IEmitterComponent {
             Tuple<Function<Float, Boolean>, List<String>> tuple = sortedTravelDistance.get(i);
             if (tuple.getA().apply(emitter.moveDist)) {
                 emitter.lastTravelDist = i + 1;
-                Map<String, Map<String, IEventNode>> events = emitter.getPreset().events;
-                for (String event : tuple.getB()) {
-                    events.get(event).forEach((name, node) -> node.execute(emitter));
-                }
+                executes(emitter, tuple.getB());
                 break;
             }
         }
@@ -105,10 +99,7 @@ public final class EmitterLifetimeEvents implements IEmitterComponent {
             LoopingTravelDistanceEvent loopingEvent = loopingTravelDistanceEvents.get(i);
             if (emitter.moveDist - emitter.cachedLooping[i] >= loopingEvent.distance) {
                 emitter.cachedLooping[i] = emitter.moveDist;
-                Map<String, Map<String, IEventNode>> events = emitter.getPreset().events;
-                for (String event : loopingEvent.effects) {
-                    events.get(event).forEach((name, node) -> node.execute(emitter));
-                }
+                executes(emitter, loopingEvent.effects);
                 break;
             }
         }
@@ -121,10 +112,7 @@ public final class EmitterLifetimeEvents implements IEmitterComponent {
             child.remove();
             return true;
         });
-        Map<String, Map<String, IEventNode>> events = emitter.getPreset().events;
-        for (String event : creationEvent) {
-            events.get(event).forEach((name, node) -> node.execute(emitter));
-        }
+        executes(emitter, creationEvent);
         emitter.cachedLooping = new float[loopingTravelDistanceEvents.size()];
     }
 
@@ -134,10 +122,7 @@ public final class EmitterLifetimeEvents implements IEmitterComponent {
     }
 
     public void onExpiration(ParticleEmitter emitter) {
-        Map<String, Map<String, IEventNode>> events = emitter.getPreset().events;
-        for (String event : expirationEvent) {
-            events.get(event).forEach((name, node) -> node.execute(emitter));
-        }
+        executes(emitter, expirationEvent);
     }
 
     @Override
@@ -148,6 +133,14 @@ public final class EmitterLifetimeEvents implements IEmitterComponent {
                 "timeline=" + timeline + ", " +
                 "travelDistanceEvents=" + travelDistanceEvents + ", " +
                 "loopingTravelDistanceEvents=" + loopingTravelDistanceEvents + ']';
+    }
+
+    private static void executes(ParticleEmitter emitter, List<String> triggers) {
+        for (String event : triggers) {
+            for (IEventNode node : emitter.getPreset().events.get(event).values()) {
+                node.execute(emitter);
+            }
+        }
     }
 
     public record LoopingTravelDistanceEvent(float distance, List<String> effects) {

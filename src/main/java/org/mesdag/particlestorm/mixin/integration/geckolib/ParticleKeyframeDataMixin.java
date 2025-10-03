@@ -7,8 +7,6 @@ import org.mesdag.particlestorm.data.molang.compiler.MolangParser;
 import org.mesdag.particlestorm.mixed.IParticleKeyframeData;
 import org.spongepowered.asm.mixin.*;
 
-import java.util.Arrays;
-
 @Pseudo
 @Mixin(targets = "software.bernie.geckolib.animation.keyframe.event.data.ParticleKeyframeData", remap = false)
 public abstract class ParticleKeyframeDataMixin implements IParticleKeyframeData {
@@ -23,8 +21,6 @@ public abstract class ParticleKeyframeDataMixin implements IParticleKeyframeData
     private ResourceLocation particlestorm$particle;
     @Unique
     private MolangExp particlestorm$expression;
-    @Unique
-    private int[] particlestorm$cachedId;
 
     @Override
     public ResourceLocation particlestorm$getParticle() {
@@ -41,14 +37,5 @@ public abstract class ParticleKeyframeDataMixin implements IParticleKeyframeData
             particlestorm$expression.compile(new MolangParser(variableTable));
         }
         return particlestorm$expression;
-    }
-
-    @Override
-    public int[] particlestorm$getCachedId(int size) {
-        if (particlestorm$cachedId == null) {
-            this.particlestorm$cachedId = new int[size];
-            Arrays.fill(particlestorm$cachedId, -1);
-        }
-        return particlestorm$cachedId;
     }
 }

@@ -14,8 +14,6 @@ import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.api.distmarker.OnlyIn;
 import net.neoforged.fml.ModList;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -30,10 +28,8 @@ import org.mesdag.particlestorm.data.molang.VariableTable;
 import org.mesdag.particlestorm.mixed.ITextureAtlasSprite;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
-@OnlyIn(Dist.CLIENT)
 public class MolangParticleInstance extends TextureSheetParticle implements MolangInstance {
     public static final int FULL_LIGHT = 0xF000F0;
     private static final boolean isSodiumLoaded = ModList.get().isLoaded("sodium");
@@ -299,54 +295,46 @@ public class MolangParticleInstance extends TextureSheetParticle implements Mola
 
     @Override
     public void move(double x, double y, double z) {
-        if (!stoppedByCollision) {
-            double d0 = x;
-            double d1 = y;
-            double d2 = z;
-            if (hasPhysics && (x != 0.0 || y != 0.0 || z != 0.0) && x * x + y * y + z * z < MAXIMUM_COLLISION_VELOCITY_SQUARED) {
-                Vec3 vec3 = Entity.collideBoundingBox(null, new Vec3(x, y, z), getBoundingBox(), level, List.of());
-                if (hasCollision) {
-                    if (x != vec3.x) {
-                        this.xd = -Mth.sign(xd) * (Math.abs(xd) - collisionDrag) * coefficientOfRestitution;
-                    }
-                    if (y != vec3.y) {
-                        this.yd *= -coefficientOfRestitution;
-                    }
-                    if (z != vec3.z) {
-                        this.zd = -Mth.sign(zd) * (Math.abs(zd) - collisionDrag) * coefficientOfRestitution;
-                    }
-                }
-                x = vec3.x;
-                y = vec3.y;
-                z = vec3.z;
+        if (stoppedByCollision) return;
+        double d0 = x;
+        double d1 = y;
+        double d2 = z;
+        if (hasPhysics && hasCollision && (x != 0.0 || y != 0.0 || z != 0.0) && x * x + y * y + z * z < MAXIMUM_COLLISION_VELOCITY_SQUARED) {
+            Vec3 vec3 = Entity.collideBoundingBox(null, new Vec3(x, y, z), getBoundingBox(), level, List.of());
+            if (x != vec3.x) {
+                this.xd = -Mth.sign(xd) * (Math.abs(xd) - collisionDrag) * coefficientOfRestitution;
             }
-
-            if (x != 0.0 || y != 0.0 || z != 0.0) {
-                moveDirectly(x, y, z);
+            if (y != vec3.y) {
+                this.yd *= -coefficientOfRestitution;
             }
-
-            if (Math.abs(d1) >= 1.0E-5F && Math.abs(y) < 1.0E-5F) {
-                this.stoppedByCollision = true;
+            if (z != vec3.z) {
+                this.zd = -Mth.sign(zd) * (Math.abs(zd) - collisionDrag) * coefficientOfRestitution;
             }
+            x = vec3.x;
+            y = vec3.y;
+            z = vec3.z;
+        }
 
+        if (x != 0.0 || y != 0.0 || z != 0.0) {
+            moveDirectly(x, y, z);
+        }
+
+        if (Math.abs(d1) >= Mth.EPSILON && Math.abs(y) < Mth.EPSILON) {
+            this.stoppedByCollision = true;
+        }
+
+        if (hasPhysics && hasCollision) {
             this.onGround = d1 != y && d1 < 0.0;
-            boolean collided = false;
-            if (d0 != x) {
-                collided = true;
-                if (!hasCollision) this.xd = 0.0;
-            }
-            if (d2 != z) {
-                collided = true;
-                if (!hasCollision) this.zd = 0.0;
-            }
+            boolean collided = d0 != x || d2 != z;
 
             if (onGround || collided) {
                 if (!preset.collisionEvents.isEmpty()) {
-                    Map<String, Map<String, IEventNode>> events = preset.effect.events;
                     for (ParticleMotionCollision.Event event : preset.collisionEvents) {
                         float tickSpeed = event.minSpeed() * getInvTickRate();
                         if (tickSpeed * tickSpeed < xd * xd + yd * yd + zd * zd) {
-                            events.get(event.event()).forEach((name, node) -> node.execute(this));
+                            for (IEventNode node : preset.effect.events.get(event.event()).values()) {
+                                node.execute(this);
+                            }
                         }
                     }
                 }
@@ -394,7 +382,7 @@ public class MolangParticleInstance extends TextureSheetParticle implements Mola
 
         @Override
         public TextureSheetParticle createParticle(@NotNull MolangParticleOption option, @NotNull ClientLevel level, double x, double y, double z, double xSpeed, double ySpeed, double zSpeed) {
-            return new MolangParticleInstance(PSGameClient.LOADER.ID_2_PARTICLE.get(option.getId()), level, x, y, z, sprites);
+            return new MolangParticleInstance(PSGameClient.LOADER.id2Particle().get(option.getId()), level, x, y, z, sprites);
         }
     }
 }

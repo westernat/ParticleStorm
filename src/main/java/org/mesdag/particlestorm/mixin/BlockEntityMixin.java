@@ -9,10 +9,13 @@ import org.spongepowered.asm.mixin.Unique;
 @Mixin(BlockEntity.class)
 public abstract class BlockEntityMixin implements IBlockEntity {
     @Unique
-    private final VariableTable particlestorm$variableTable = new VariableTable(null);
+    private VariableTable particlestorm$variableTable;
 
     @Override
     public VariableTable particlestorm$getVariableTable() {
+        if (particlestorm$variableTable == null) {
+            this.particlestorm$variableTable = new VariableTable(null);
+        }
         return particlestorm$variableTable;
     }
 }
