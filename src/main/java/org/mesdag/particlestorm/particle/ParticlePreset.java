@@ -2,7 +2,6 @@ package org.mesdag.particlestorm.particle;
 
 import com.google.common.collect.Iterables;
 import net.minecraft.client.particle.ParticleRenderType;
-import org.jetbrains.annotations.NotNull;
 import org.mesdag.particlestorm.PSGameClient;
 import org.mesdag.particlestorm.api.IComponent;
 import org.mesdag.particlestorm.api.IParticleComponent;
@@ -36,7 +35,7 @@ public class ParticlePreset {
     public List<ParticleMotionCollision.Event> collisionEvents = List.of();
     public final float invTextureWidth;
     public final float invTextureHeight;
-    public boolean motionDynamic;
+    public final boolean motionDynamic;
 
     public final VariableTable vars;
     public final List<VariableAssignment> assignments;
@@ -82,6 +81,7 @@ public class ParticlePreset {
 
         List<VariableAssignment> toInit = new ArrayList<>();
         for (IParticleComponent component : Iterables.concat(effect.orderedParticleEarlyComponents, effect.orderedParticleComponents)) {
+            assert component != null;
             for (MolangExp exp : component.getAllMolangExp()) {
                 exp.compile(parser);
                 MathValue variable = exp.getVariable();
@@ -94,7 +94,7 @@ public class ParticlePreset {
         this.assignments = toInit;
     }
 
-    private static @NotNull Hashtable<String, Variable> addDefaultVariables() {
+    private static Hashtable<String, Variable> addDefaultVariables() {
         Hashtable<String, Variable> table = new Hashtable<>();
         table.computeIfAbsent("variable.particle_age", s -> new Variable(s, MolangInstance::tickAge));
         table.computeIfAbsent("variable.particle_lifetime", s -> new Variable(s, MolangInstance::tickLifetime));

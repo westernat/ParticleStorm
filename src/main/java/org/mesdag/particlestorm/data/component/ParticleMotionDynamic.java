@@ -3,11 +3,12 @@ package org.mesdag.particlestorm.data.component;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.resources.ResourceLocation;
+import org.joml.Vector3f;
+import org.mesdag.particlestorm.api.IMolangParticleInstance;
 import org.mesdag.particlestorm.api.IParticleComponent;
 import org.mesdag.particlestorm.data.molang.FloatMolangExp;
 import org.mesdag.particlestorm.data.molang.FloatMolangExp3;
 import org.mesdag.particlestorm.data.molang.MolangExp;
-import org.mesdag.particlestorm.particle.MolangParticleInstance;
 
 import java.util.List;
 
@@ -58,28 +59,29 @@ public record ParticleMotionDynamic(FloatMolangExp3 linerAcceleration, FloatMola
     }
 
     @Override
-    public void update(MolangParticleInstance instance) {
+    public void update(IMolangParticleInstance instance) {
         apply(instance);
     }
 
     @Override
-    public void apply(MolangParticleInstance instance) {
+    public void apply(IMolangParticleInstance instance) {
         float invTickRate = instance.getInvTickRate();
         float tickRate = instance.getLevel().tickRateManager().tickrate();
 
-        instance.acceleration.set(linerAcceleration.calculate(instance));
+        Vector3f acceleration = instance.getAcceleration();
+        acceleration.set(linerAcceleration.calculate(instance));
         float c = -linearDragCoefficient.calculate(instance);
         double xd = instance.getXd();
         double yd = instance.getYd();
         double zd = instance.getZd();
-        instance.acceleration.add(c * (float) xd * tickRate, c * (float) yd * tickRate, c * (float) zd * tickRate);
+        acceleration.add(c * (float) xd * tickRate, c * (float) yd * tickRate, c * (float) zd * tickRate);
         float v = invTickRate * invTickRate;
         instance.setParticleSpeed(
-                xd + instance.acceleration.x * v,
-                yd + instance.acceleration.y * v,
-                zd + instance.acceleration.z * v
+                xd + acceleration.x * v,
+                yd + acceleration.y * v,
+                zd + acceleration.z * v
         );
-        instance.rolld = (rotationAcceleration.calculate(instance) - rotationDragCoefficient.calculate(instance) * instance.rolld * tickRate) * v;
+        instance.setZRotD((rotationAcceleration.calculate(instance) - rotationDragCoefficient.calculate(instance) * instance.getZRotD() * tickRate) * v);
     }
 
     @Override

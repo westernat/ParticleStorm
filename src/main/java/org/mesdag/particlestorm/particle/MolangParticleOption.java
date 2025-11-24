@@ -6,7 +6,6 @@ import net.minecraft.core.particles.ParticleOptions;
 import net.minecraft.core.particles.ParticleType;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.resources.ResourceLocation;
-import org.jetbrains.annotations.NotNull;
 import org.mesdag.particlestorm.ParticleStorm;
 
 import java.util.function.Supplier;
@@ -31,7 +30,7 @@ public class MolangParticleOption implements ParticleOptions {
     }
 
     @Override
-    public @NotNull ParticleType<MolangParticleOption> getType() {
+    public ParticleType<MolangParticleOption> getType() {
         return type.get();
     }
 }

@@ -10,7 +10,6 @@ import net.minecraft.util.RandomSource;
 import net.minecraft.util.StringRepresentable;
 import net.minecraft.world.entity.EntityDimensions;
 import net.minecraft.world.phys.Vec3;
-import org.jetbrains.annotations.NotNull;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
 import org.mesdag.particlestorm.api.IEmitterComponent;
@@ -74,7 +73,7 @@ public abstract sealed class EmitterShape implements IEmitterComponent permits E
         if (instance == null) throw new NullPointerException("Failed to create particle!");
         instance.setEmitter(emitter);
 
-        ParticlePreset preset = instance.preset;
+        ParticlePreset preset = instance.getPreset();
         MathHelper.redirect(preset.assignments, instance.getVars());
 
         Vector3f position = new Vector3f();
@@ -83,7 +82,7 @@ public abstract sealed class EmitterShape implements IEmitterComponent permits E
         for (IParticleComponent component : preset.effect.orderedParticleEarlyComponents) {
             component.apply(instance);
         }
-        speed.mul(instance.initialSpeed);
+        speed.mul(instance.getInitialSpeed());
         if (emitter.parentMode == ParticleEmitter.ParentMode.LOCATOR) {
             position.x *= -1;
             position.y *= -1;
@@ -110,14 +109,13 @@ public abstract sealed class EmitterShape implements IEmitterComponent permits E
         instance.setParticleSpeed(speed.x, speed.y, speed.z);
         instance.setPos(position.x, position.y, position.z);
         instance.setPosO(position.x, position.y, position.z);
-        instance.particleGroup = emitter.particleGroup;
+        instance.setParticleGroup(emitter.particleGroup);
 
         for (IParticleComponent component : preset.effect.orderedParticleComponents) {
             component.apply(instance);
         }
-        instance.components = preset.effect.orderedParticleComponentsWhichRequireUpdate;
-        instance.motionDynamic = preset.motionDynamic;
-        if (!instance.motionDynamic) instance.setParticleSpeed(0.0, 0.0, 0.0);
+        instance.setComponents(preset.effect.orderedParticleComponentsWhichRequireUpdate);
+        if (!preset.motionDynamic) instance.setParticleSpeed(0.0, 0.0, 0.0);
         Minecraft.getInstance().particleEngine.add(instance);
     }
 
@@ -508,7 +506,7 @@ public abstract sealed class EmitterShape implements IEmitterComponent permits E
         }
 
         @Override
-        public @NotNull String getSerializedName() {
+        public String getSerializedName() {
             return name;
         }
 

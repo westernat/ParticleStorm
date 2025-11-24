@@ -2,10 +2,10 @@ package org.mesdag.particlestorm.data.component;
 
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
+import org.mesdag.particlestorm.api.IMolangParticleInstance;
 import org.mesdag.particlestorm.api.IParticleComponent;
 import org.mesdag.particlestorm.data.molang.FloatMolangExp;
 import org.mesdag.particlestorm.data.molang.MolangExp;
-import org.mesdag.particlestorm.particle.MolangParticleInstance;
 
 import java.util.List;
 
@@ -37,14 +37,14 @@ public record ParticleLifetimeExpression(FloatMolangExp expirationExpression, Fl
     }
 
     @Override
-    public void update(MolangParticleInstance instance) {
+    public void update(IMolangParticleInstance instance) {
         if (expirationExpression.initialized() && expirationExpression.getVariable().get(instance) != 0.0) {
             instance.remove();
         }
     }
 
     @Override
-    public void apply(MolangParticleInstance instance) {
+    public void apply(IMolangParticleInstance instance) {
         if (maxLifetime.initialized()) {
             instance.setLifetime(Math.max((int) (maxLifetime.calculate(instance) * 20), 1));
         }

@@ -2,11 +2,11 @@ package org.mesdag.particlestorm.data.component;
 
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
+import org.mesdag.particlestorm.api.IMolangParticleInstance;
 import org.mesdag.particlestorm.api.IParticleComponent;
 import org.mesdag.particlestorm.data.molang.FloatMolangExp;
 import org.mesdag.particlestorm.data.molang.FloatMolangExp3;
 import org.mesdag.particlestorm.data.molang.MolangExp;
-import org.mesdag.particlestorm.particle.MolangParticleInstance;
 
 import java.util.List;
 
@@ -46,14 +46,14 @@ public record ParticleMotionParametric(FloatMolangExp3 relativePosition, FloatMo
     }
 
     @Override
-    public void update(MolangParticleInstance instance) {
+    public void update(IMolangParticleInstance instance) {
         float[] pos = relativePosition.calculate(instance);
         instance.moveDirectly(pos[0], pos[1], pos[2]);
         if (direction != FloatMolangExp3.ZERO) {
             float[] dir = direction.calculate(instance);
             instance.setParticleSpeed(dir[0], dir[1], dir[2]);
         }
-        instance.setRoll(rotation.calculate(instance));
+        instance.setZRot(rotation.calculate(instance));
     }
 
     @Override

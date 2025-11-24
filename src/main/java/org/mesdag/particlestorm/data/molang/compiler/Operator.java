@@ -4,7 +4,6 @@ import it.unimi.dsi.fastutil.chars.CharOpenHashSet;
 import it.unimi.dsi.fastutil.chars.CharSet;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import net.minecraft.Util;
-import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
 import java.util.Map;
@@ -103,7 +102,7 @@ public record Operator(String symbol, int precedence, Operation operation) imple
     }
 
     @Override
-    public int compareTo(@NotNull Operator operator) {
+    public int compareTo(Operator operator) {
         return Integer.compare(this.precedence, operator.precedence);
     }
 

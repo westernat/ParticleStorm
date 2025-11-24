@@ -6,9 +6,9 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Tuple;
 import org.mesdag.particlestorm.ParticleStorm;
 import org.mesdag.particlestorm.api.IEventNode;
+import org.mesdag.particlestorm.api.IMolangParticleInstance;
 import org.mesdag.particlestorm.api.IParticleComponent;
 import org.mesdag.particlestorm.data.molang.MolangExp;
-import org.mesdag.particlestorm.particle.MolangParticleInstance;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -61,11 +61,11 @@ public final class ParticleLifeTimeEvents implements IParticleComponent {
     }
 
     @Override
-    public void update(MolangParticleInstance instance) {
-        for (int i = instance.lastTimeline; i < sortedTimeline.size(); i++) {
+    public void update(IMolangParticleInstance instance) {
+        for (int i = instance.getLastTimeline(); i < sortedTimeline.size(); i++) {
             Tuple<Function<Integer, Boolean>, List<String>> tuple = sortedTimeline.get(i);
             if (tuple.getA().apply(instance.getLifetime())) {
-                instance.lastTimeline = i + 1;
+                instance.setLastTimeline(i + 1);
                 executes(instance, tuple.getB());
                 break;
             }
@@ -73,7 +73,7 @@ public final class ParticleLifeTimeEvents implements IParticleComponent {
     }
 
     @Override
-    public void apply(MolangParticleInstance instance) {
+    public void apply(IMolangParticleInstance instance) {
         executes(instance, creationEvent);
     }
 
@@ -82,7 +82,7 @@ public final class ParticleLifeTimeEvents implements IParticleComponent {
         return true;
     }
 
-    public void onExpiration(MolangParticleInstance instance) {
+    public void onExpiration(IMolangParticleInstance instance) {
         executes(instance, expirationEvent);
     }
 
@@ -94,9 +94,9 @@ public final class ParticleLifeTimeEvents implements IParticleComponent {
                 "timeline=" + timeline + ']';
     }
 
-    private static void executes(MolangParticleInstance instance, List<String> triggers) {
+    private static void executes(IMolangParticleInstance instance, List<String> triggers) {
         for (String event : triggers) {
-            for (IEventNode node : instance.preset.effect.events.get(event).values()) {
+            for (IEventNode node : instance.getPreset().effect.events.get(event).values()) {
                 node.execute(instance);
             }
         }

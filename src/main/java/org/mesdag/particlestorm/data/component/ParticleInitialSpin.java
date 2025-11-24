@@ -3,10 +3,10 @@ package org.mesdag.particlestorm.data.component;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.util.Mth;
+import org.mesdag.particlestorm.api.IMolangParticleInstance;
 import org.mesdag.particlestorm.api.IParticleComponent;
 import org.mesdag.particlestorm.data.molang.FloatMolangExp;
 import org.mesdag.particlestorm.data.molang.MolangExp;
-import org.mesdag.particlestorm.particle.MolangParticleInstance;
 
 import java.util.List;
 
@@ -33,9 +33,9 @@ public record ParticleInitialSpin(FloatMolangExp rotation, FloatMolangExp rotati
     }
 
     @Override
-    public void apply(MolangParticleInstance instance) {
-        instance.setRoll(rotation.calculate(instance) * Mth.DEG_TO_RAD);
-        instance.rolld = rotationRate.calculate(instance) * instance.getInvTickRate() * Mth.DEG_TO_RAD;
+    public void apply(IMolangParticleInstance instance) {
+        instance.setZRot(rotation.calculate(instance) * Mth.DEG_TO_RAD);
+        instance.setZRotD(rotationRate.calculate(instance) * instance.getInvTickRate() * Mth.DEG_TO_RAD);
     }
 
     @Override

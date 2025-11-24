@@ -1,6 +1,5 @@
 package org.mesdag.particlestorm.particle;
 
-import org.jetbrains.annotations.NotNull;
 import org.mesdag.particlestorm.api.IEmitterComponent;
 import org.mesdag.particlestorm.api.IEventNode;
 import org.mesdag.particlestorm.data.MathHelper;
@@ -77,7 +76,7 @@ public class EmitterPreset {
         this.assignments = toInit;
     }
 
-    private static @NotNull Hashtable<String, Variable> addDefaultVariables() {
+    private static Hashtable<String, Variable> addDefaultVariables() {
         Hashtable<String, Variable> table = new Hashtable<>();
         table.computeIfAbsent("variable.emitter_age", s -> new Variable(s, i -> i.getEmitter().tickAge()));
         table.computeIfAbsent("variable.emitter_lifetime", s -> new Variable(s, i -> i.getEmitter().tickLifetime()));

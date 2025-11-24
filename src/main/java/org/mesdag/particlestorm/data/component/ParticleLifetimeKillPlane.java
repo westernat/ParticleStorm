@@ -1,9 +1,9 @@
 package org.mesdag.particlestorm.data.component;
 
 import com.mojang.serialization.Codec;
+import org.mesdag.particlestorm.api.IMolangParticleInstance;
 import org.mesdag.particlestorm.api.IParticleComponent;
 import org.mesdag.particlestorm.data.molang.MolangExp;
-import org.mesdag.particlestorm.particle.MolangParticleInstance;
 
 import java.util.List;
 
@@ -35,16 +35,16 @@ public final class ParticleLifetimeKillPlane implements IParticleComponent {
     }
 
     @Override
-    public void update(MolangParticleInstance instance) {
-        if (instance.motionDynamic) return;
-        if (distanceSqr(instance.getX(), instance.getY(), instance.getZ()) > killDistanceSqr == instance.insideKillPlane) {
+    public void update(IMolangParticleInstance instance) {
+        if (instance.getPreset().motionDynamic) return;
+        if (distanceSqr(instance.getX(), instance.getY(), instance.getZ()) > killDistanceSqr == instance.isInsideKillPlane()) {
             instance.remove();
         }
     }
 
     @Override
-    public void apply(MolangParticleInstance instance) {
-        instance.insideKillPlane = distanceSqr(instance.getX(), instance.getY(), instance.getZ()) < killDistanceSqr;
+    public void apply(IMolangParticleInstance instance) {
+        instance.setInsideKillPlane(distanceSqr(instance.getX(), instance.getY(), instance.getZ()) < killDistanceSqr);
     }
 
     @Override

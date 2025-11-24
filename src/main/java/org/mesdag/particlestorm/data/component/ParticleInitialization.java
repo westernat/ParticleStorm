@@ -2,10 +2,10 @@ package org.mesdag.particlestorm.data.component;
 
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
+import org.mesdag.particlestorm.api.IMolangParticleInstance;
 import org.mesdag.particlestorm.api.IParticleComponent;
 import org.mesdag.particlestorm.data.molang.FloatMolangExp;
 import org.mesdag.particlestorm.data.molang.MolangExp;
-import org.mesdag.particlestorm.particle.MolangParticleInstance;
 
 import java.util.List;
 
@@ -28,12 +28,12 @@ public record ParticleInitialization(FloatMolangExp perRenderExpression) impleme
     }
 
     @Override
-    public void update(MolangParticleInstance instance) {
+    public void update(IMolangParticleInstance instance) {
         perRenderExpression.calculate(instance);
     }
 
     @Override
-    public void apply(MolangParticleInstance instance) {
+    public void apply(IMolangParticleInstance instance) {
         perRenderExpression.calculate(instance);
     }
 

@@ -23,7 +23,6 @@ import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
-import org.jetbrains.annotations.NotNull;
 import org.mesdag.particlestorm.api.geckolib.TestBlock;
 import org.mesdag.particlestorm.network.EmitterAttachPacketS2C;
 import org.mesdag.particlestorm.network.EmitterCreationPacketS2C;
@@ -49,12 +48,12 @@ public final class ParticleStorm {
     public static final DeferredRegister<ParticleType<?>> PARTICLE = DeferredRegister.create(BuiltInRegistries.PARTICLE_TYPE, MODID);
     public static final DeferredHolder<ParticleType<?>, ParticleType<MolangParticleOption>> MOLANG = PARTICLE.register("molang", () -> new ParticleType<>(false) {
         @Override
-        public @NotNull MapCodec<MolangParticleOption> codec() {
+        public MapCodec<MolangParticleOption> codec() {
             return MolangParticleOption.CODEC;
         }
 
         @Override
-        public @NotNull StreamCodec<ByteBuf, MolangParticleOption> streamCodec() {
+        public StreamCodec<ByteBuf, MolangParticleOption> streamCodec() {
             return MolangParticleOption.STREAM_CODEC;
         }
     });

@@ -6,11 +6,11 @@ import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.util.Mth;
 import net.minecraft.util.Tuple;
+import org.mesdag.particlestorm.api.IMolangParticleInstance;
 import org.mesdag.particlestorm.api.IParticleComponent;
 import org.mesdag.particlestorm.api.MolangInstance;
 import org.mesdag.particlestorm.data.molang.FloatMolangExp;
 import org.mesdag.particlestorm.data.molang.MolangExp;
-import org.mesdag.particlestorm.particle.MolangParticleInstance;
 
 import java.util.*;
 import java.util.stream.Stream;
@@ -38,11 +38,11 @@ public record ParticleAppearanceTinting(Color color, ColorField colorField) impl
     }
 
     @Override
-    public void update(MolangParticleInstance instance) {
+    public void update(IMolangParticleInstance instance) {
         apply(instance);
     }
 
-    private float[] getCalculatedColor(MolangParticleInstance instance, ArrayList<Tuple<Float, ColorField>> list, float ratio) {
+    private float[] getCalculatedColor(IMolangParticleInstance instance, ArrayList<Tuple<Float, ColorField>> list, float ratio) {
         int n = 0;
         for (int index = 0; index < list.size(); index++) {
             Tuple<Float, ColorField> tuple = list.get(index);
@@ -72,7 +72,7 @@ public record ParticleAppearanceTinting(Color color, ColorField colorField) impl
     }
 
     @Override
-    public void apply(MolangParticleInstance instance) {
+    public void apply(IMolangParticleInstance instance) {
         if (color.interpolant.initialized() && !color.gradient.map.isEmpty()) {
             float interpolant = color.interpolant.calculate(instance);
             float[] calculated = getCalculatedColor(instance, color.gradient.list, interpolant / color.gradient.range);

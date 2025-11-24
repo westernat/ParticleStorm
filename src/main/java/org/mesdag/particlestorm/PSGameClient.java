@@ -25,7 +25,6 @@ import net.neoforged.neoforge.client.event.EntityRenderersEvent;
 import net.neoforged.neoforge.client.event.RegisterClientReloadListenersEvent;
 import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
 import net.neoforged.neoforge.common.NeoForge;
-import org.jetbrains.annotations.NotNull;
 import org.mesdag.particlestorm.api.IComponent;
 import org.mesdag.particlestorm.api.IEventNode;
 import org.mesdag.particlestorm.api.geckolib.ExampleBlockEntityRenderer;
@@ -40,7 +39,7 @@ public final class PSGameClient {
     public static final MolangParticleLoader LOADER = new MolangParticleLoader();
     public static final ParticleRenderType PARTICLE_ADD = new ParticleRenderType() {
         @Override
-        public BufferBuilder begin(Tesselator tesselator, @NotNull TextureManager textureManager) {
+        public BufferBuilder begin(Tesselator tesselator, TextureManager textureManager) {
             RenderSystem.enableDepthTest();
             Minecraft.getInstance().gameRenderer.lightTexture().turnOnLightLayer();
             RenderSystem.depthMask(false);

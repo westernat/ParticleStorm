@@ -9,7 +9,6 @@ import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.ByIdMap;
 import net.minecraft.util.StringRepresentable;
-import org.jetbrains.annotations.NotNull;
 import org.mesdag.particlestorm.PSGameClient;
 import org.mesdag.particlestorm.api.IEventNode;
 import org.mesdag.particlestorm.api.MolangInstance;
@@ -111,7 +110,7 @@ public record ParticleEffect(ResourceLocation effect, Type type, MolangExp preEf
         }
 
         @Override
-        public @NotNull String getSerializedName() {
+        public String getSerializedName() {
             return name().toLowerCase(Locale.ROOT);
         }
 

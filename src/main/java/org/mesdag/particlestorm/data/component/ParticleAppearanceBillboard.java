@@ -6,14 +6,13 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.ExtraCodecs;
 import net.minecraft.util.Mth;
 import net.minecraft.util.StringRepresentable;
-import org.jetbrains.annotations.NotNull;
+import org.mesdag.particlestorm.api.IMolangParticleInstance;
 import org.mesdag.particlestorm.api.IParticleComponent;
 import org.mesdag.particlestorm.data.DuplicateFieldDecoder;
 import org.mesdag.particlestorm.data.molang.FloatMolangExp;
 import org.mesdag.particlestorm.data.molang.FloatMolangExp2;
 import org.mesdag.particlestorm.data.molang.FloatMolangExp3;
 import org.mesdag.particlestorm.data.molang.MolangExp;
-import org.mesdag.particlestorm.particle.MolangParticleInstance;
 
 import java.util.List;
 import java.util.Locale;
@@ -42,76 +41,69 @@ public record ParticleAppearanceBillboard(FloatMolangExp2 size, FaceCameraMode f
     }
 
     @Override
-    public void update(MolangParticleInstance instance) {
-        if (faceCameraMode.isDirection()) {
-            if (direction.mode == ParticleAppearanceBillboard.Direction.Mode.CUSTOM_DIRECTION) {
-                float[] values = direction.customDirection.calculate(instance);
-                instance.xRot = values[0];
-                instance.yRot = values[1];
-                instance.setRoll(values[2]);
-            } else {
-                if (direction.minSpeedThreshold > 0.0F && Mth.lengthSquared(instance.getXd(), instance.getYd(), instance.getZd()) > instance.preset.minSpeedThresholdSqr) {
-                    instance.facingDirection.set(instance.getXd(), instance.getYd(), instance.getZd()).normalize();
-                }
-            }
-        }
-        if (size.initialized()) {
-            instance.billboardSize = size.calculate(instance);
-        }
+    public void update(IMolangParticleInstance instance) {
+        doFacingCameraMode(instance);
+        doSize(instance);
         if (uv != UV.EMPTY) {
             UV.Flipbook flipbook = uv.flipbook;
             if (flipbook == UV.Flipbook.EMPTY) {
                 updateSimpleUV(instance);
             } else if (flipbook.stretchToLifetime) {
                 updateFlipbookUV(instance);
-                instance.maxFrame = (int) flipbook.maxFrame.calculate(instance);
-                instance.currentFrame = instance.maxFrame * instance.getAge() / instance.getLifetime();
+                instance.setMaxFrame((int) flipbook.maxFrame.calculate(instance));
+                instance.setCurrentFrame(instance.getMaxFrame() * instance.getAge() / instance.getLifetime());
             } else if (instance.getLevel().getGameTime() % flipbook.framesPerTick < 1.0F) {
                 updateFlipbookUV(instance);
-                instance.maxFrame = (int) flipbook.maxFrame.calculate(instance);
-                if (instance.currentFrame < instance.maxFrame) {
-                    instance.currentFrame++;
-                    if (flipbook.loop && instance.currentFrame == instance.maxFrame) {
-                        instance.currentFrame = 0;
+                instance.setMaxFrame((int) flipbook.maxFrame.calculate(instance));
+                if (instance.getCurrentFrame() < instance.getMaxFrame()) {
+                    instance.setCurrentFrame(instance.getCurrentFrame() + 1);
+                    if (flipbook.loop && instance.getCurrentFrame() == instance.getMaxFrame()) {
+                        instance.setCurrentFrame(0);
                     }
                 } else {
-                    instance.currentFrame = instance.maxFrame - 1;
+                    instance.setCurrentFrame(instance.getMaxFrame() - 1);
                 }
             }
         }
     }
 
     @Override
-    public void apply(MolangParticleInstance instance) {
-        if (faceCameraMode.isDirection()) {
-            if (direction.mode == ParticleAppearanceBillboard.Direction.Mode.CUSTOM_DIRECTION) {
-                float[] values = direction.customDirection.calculate(instance);
-                instance.xRot = values[0];
-                instance.yRot = values[1];
-                instance.setRoll(values[2]);
-            } else {
-                double xdSqr = instance.getXd() * instance.getXd();
-                double zdSqr = instance.getZd() * instance.getZd();
-                if (direction.minSpeedThreshold > 0.0F && xdSqr + instance.getYd() * instance.getYd() + zdSqr > instance.preset.minSpeedThresholdSqr) {
-                    instance.facingDirection.set(instance.getXd(), instance.getYd(), instance.getZd()).normalize();
-                }
-            }
-        }
-        if (size.initialized()) {
-            instance.billboardSize = size.calculate(instance);
-        }
+    public void apply(IMolangParticleInstance instance) {
+        doFacingCameraMode(instance);
+        doSize(instance);
         if (uv != UV.EMPTY) {
             if (uv.flipbook == UV.Flipbook.EMPTY) {
                 updateSimpleUV(instance);
             } else {
-                instance.uvSize = uv.flipbook.getSizeUV(instance);
-                instance.uvSize[0] *= instance.scaleU;
-                instance.uvSize[1] *= instance.scaleV;
-                instance.uvStep = uv.flipbook.getStepUV(instance);
-                instance.uvStep[0] *= instance.scaleU;
-                instance.uvStep[1] *= instance.scaleV;
+                instance.setUvSize(uv.flipbook.getSizeUV(instance));
+                instance.getUvSize()[0] *= instance.getScaleU();
+                instance.getUvSize()[1] *= instance.getScaleV();
+                instance.setUvStep(uv.flipbook.getStepUV(instance));
+                instance.getUvStep()[0] *= instance.getScaleU();
+                instance.getUvStep()[1] *= instance.getScaleV();
                 updateFlipbookUV(instance);
             }
+        }
+    }
+
+    private void doFacingCameraMode(IMolangParticleInstance instance) {
+        if (faceCameraMode.isDirection()) {
+            if (direction.mode == Direction.Mode.CUSTOM_DIRECTION) {
+                float[] values = direction.customDirection.calculate(instance);
+                instance.setXRot(values[0]);
+                instance.setYRot(values[1]);
+                instance.setZRot(values[2]);
+            } else {
+                if (direction.minSpeedThreshold > 0.0F && Mth.lengthSquared(instance.getXd(), instance.getYd(), instance.getZd()) > instance.getPreset().minSpeedThresholdSqr) {
+                    instance.getFacingDirection().set(instance.getXd(), instance.getYd(), instance.getZd()).normalize();
+                }
+            }
+        }
+    }
+
+    private void doSize(IMolangParticleInstance instance) {
+        if (size.initialized()) {
+            instance.setBillboardSize(size.calculate(instance));
         }
     }
 
@@ -120,22 +112,21 @@ public record ParticleAppearanceBillboard(FloatMolangExp2 size, FaceCameraMode f
         return true;
     }
 
-    private void updateSimpleUV(MolangParticleInstance instance) {
+    private void updateSimpleUV(IMolangParticleInstance instance) {
         float[] base = uv.uv.calculate(instance);
         float[] size = uv.uvSize.calculate(instance);
         int x = instance.getSprite().getX();
         int y = instance.getSprite().getY();
-        instance.setUV(x + base[0], y + base[1], size[0] * instance.scaleU, size[1] * instance.scaleV);
+        instance.setUV(x + base[0], y + base[1], size[0] * instance.getScaleU(), size[1] * instance.getScaleV());
     }
 
-    private void updateFlipbookUV(MolangParticleInstance instance) {
+    private void updateFlipbookUV(IMolangParticleInstance instance) {
         float[] base = uv.flipbook.baseUV.calculate(instance);
-        int index = instance.currentFrame;
-        float u = instance.uvStep[0] * index;
-        float v = instance.uvStep[1] * index;
+        float u = instance.getUvStep()[0] * instance.getCurrentFrame();
+        float v = instance.getUvStep()[1] * instance.getCurrentFrame();
         int x = instance.getSprite().getX();
         int y = instance.getSprite().getY();
-        instance.setUV(x + base[0] + u, y + base[1] + v, instance.uvSize[0], instance.uvSize[1]);
+        instance.setUV(x + base[0] + u, y + base[1] + v, instance.getUvSize()[0], instance.getUvSize()[1]);
     }
 
     @Override
@@ -164,7 +155,7 @@ public record ParticleAppearanceBillboard(FloatMolangExp2 size, FaceCameraMode f
         public static final Codec<FaceCameraMode> CODEC = StringRepresentable.fromEnum(FaceCameraMode::values);
 
         @Override
-        public @NotNull String getSerializedName() {
+        public String getSerializedName() {
             return name().toLowerCase(Locale.ROOT);
         }
 
@@ -207,7 +198,7 @@ public record ParticleAppearanceBillboard(FloatMolangExp2 size, FaceCameraMode f
             });
 
             @Override
-            public @NotNull String getSerializedName() {
+            public String getSerializedName() {
                 return name().toLowerCase(Locale.ROOT);
             }
 
@@ -298,11 +289,11 @@ public record ParticleAppearanceBillboard(FloatMolangExp2 size, FaceCameraMode f
                 }
             }
 
-            public float[] getSizeUV(MolangParticleInstance instance) {
+            public float[] getSizeUV(IMolangParticleInstance instance) {
                 return sizeUV.calculate(instance);
             }
 
-            public float[] getStepUV(MolangParticleInstance instance) {
+            public float[] getStepUV(IMolangParticleInstance instance) {
                 return stepUV.calculate(instance);
             }
 

@@ -13,7 +13,6 @@ import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.network.PacketDistributor;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 import net.neoforged.neoforge.server.ServerLifecycleHooks;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Vector3f;
 import org.mesdag.particlestorm.PSGameClient;
@@ -33,7 +32,7 @@ public record EmitterCreationPacketS2C(ResourceLocation id, Vector3f pos, Molang
     );
 
     @Override
-    public @NotNull Type<EmitterCreationPacketS2C> type() {
+    public Type<EmitterCreationPacketS2C> type() {
         return TYPE;
     }
 

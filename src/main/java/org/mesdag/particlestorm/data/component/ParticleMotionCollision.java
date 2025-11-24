@@ -6,10 +6,10 @@ import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.ExtraCodecs;
 import net.minecraft.util.Mth;
+import org.mesdag.particlestorm.api.IMolangParticleInstance;
 import org.mesdag.particlestorm.api.IParticleComponent;
 import org.mesdag.particlestorm.data.molang.BoolMolangExp;
 import org.mesdag.particlestorm.data.molang.MolangExp;
-import org.mesdag.particlestorm.particle.MolangParticleInstance;
 
 import java.util.Collections;
 import java.util.List;
@@ -59,19 +59,19 @@ public record ParticleMotionCollision(BoolMolangExp enabled, float collisionDrag
     }
 
     @Override
-    public void update(MolangParticleInstance instance) {
+    public void update(IMolangParticleInstance instance) {
         instance.setCollision(enabled.get(instance));
     }
 
     @Override
-    public void apply(MolangParticleInstance instance) {
+    public void apply(IMolangParticleInstance instance) {
         update(instance);
-        instance.collisionDrag = collisionDrag * instance.getInvTickRate();
-        instance.coefficientOfRestitution = coefficientOfRestitution;
+        instance.setCollisionDrag(collisionDrag * instance.getInvTickRate());
+        instance.setCoefficientOfRestitution(coefficientOfRestitution);
         float radius = Math.max(collisionRadius, Mth.EPSILON);
         instance.setBoundingBox(instance.getBoundingBox().inflate(radius, 0.0, radius));
         instance.setLocationFromBoundingbox();
-        instance.expireOnContact = expireOnContact;
+        instance.setExpireOnContact(expireOnContact);
     }
 
     @Override
