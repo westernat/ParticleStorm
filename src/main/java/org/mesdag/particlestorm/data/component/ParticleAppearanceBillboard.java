@@ -2,6 +2,7 @@ package org.mesdag.particlestorm.data.component;
 
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
+import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.ExtraCodecs;
 import net.minecraft.util.Mth;
@@ -113,19 +114,23 @@ public record ParticleAppearanceBillboard(FloatMolangExp2 size, FaceCameraMode f
     }
 
     private void updateSimpleUV(IMolangParticleInstance instance) {
+        TextureAtlasSprite sprite = instance.getSprite();
+        if (sprite == null) return;
         float[] base = uv.uv.calculate(instance);
         float[] size = uv.uvSize.calculate(instance);
-        int x = instance.getSprite().getX();
-        int y = instance.getSprite().getY();
+        int x = sprite.getX();
+        int y = sprite.getY();
         instance.setUV(x + base[0], y + base[1], size[0] * instance.getScaleU(), size[1] * instance.getScaleV());
     }
 
     private void updateFlipbookUV(IMolangParticleInstance instance) {
+        TextureAtlasSprite sprite = instance.getSprite();
+        if (sprite == null) return;
         float[] base = uv.flipbook.baseUV.calculate(instance);
         float u = instance.getUvStep()[0] * instance.getCurrentFrame();
         float v = instance.getUvStep()[1] * instance.getCurrentFrame();
-        int x = instance.getSprite().getX();
-        int y = instance.getSprite().getY();
+        int x = sprite.getX();
+        int y = sprite.getY();
         instance.setUV(x + base[0] + u, y + base[1] + v, instance.getUvSize()[0], instance.getUvSize()[1]);
     }
 

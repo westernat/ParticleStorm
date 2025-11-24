@@ -3,6 +3,7 @@ package org.mesdag.particlestorm.api;
 import net.minecraft.client.particle.Particle;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.core.particles.ParticleGroup;
+import org.jetbrains.annotations.Nullable;
 import org.joml.Vector3f;
 import org.mesdag.particlestorm.particle.ParticleEmitter;
 import org.mesdag.particlestorm.particle.ParticlePreset;
@@ -20,7 +21,7 @@ public interface IMolangParticleInstance extends MolangInstance {
 
     ParticlePreset getPreset();
 
-    TextureAtlasSprite getSprite();
+    @Nullable TextureAtlasSprite getSprite();
 
     Vector3f getAcceleration();
 

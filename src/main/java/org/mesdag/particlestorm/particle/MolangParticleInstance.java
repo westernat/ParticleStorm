@@ -362,7 +362,7 @@ public class MolangParticleInstance extends TextureSheetParticle implements IMol
 
     @Override
     public ResourceLocation getIdentity() {
-        return preset.effect.description.identifier();
+        return emitter.particleId;
     }
 
     @Override
