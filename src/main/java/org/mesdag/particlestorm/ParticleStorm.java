@@ -45,18 +45,8 @@ public final class ParticleStorm {
     public static final Logger LOGGER = LoggerFactory.getLogger("ParticleStorm");
     public static final boolean DEBUG = Boolean.getBoolean("particlestorm.debug");
 
-    public static final DeferredRegister<ParticleType<?>> PARTICLE = DeferredRegister.create(BuiltInRegistries.PARTICLE_TYPE, MODID);
-    public static final DeferredHolder<ParticleType<?>, ParticleType<MolangParticleOption>> MOLANG = PARTICLE.register("molang", () -> new ParticleType<>(false) {
-        @Override
-        public MapCodec<MolangParticleOption> codec() {
-            return MolangParticleOption.CODEC;
-        }
-
-        @Override
-        public StreamCodec<ByteBuf, MolangParticleOption> streamCodec() {
-            return MolangParticleOption.STREAM_CODEC;
-        }
-    });
+    private static final DeferredRegister<ParticleType<?>> REGISTER = DeferredRegister.create(BuiltInRegistries.PARTICLE_TYPE, MODID);
+    public static final DeferredHolder<ParticleType<?>, ParticleType<MolangParticleOption>> MOLANG = registerParticleType(REGISTER, "molang");
     public static final Codec<List<String>> STRING_LIST_CODEC = Codec.either(Codec.STRING, Codec.STRING.listOf()).xmap(
             either -> either.map(Collections::singletonList, Function.identity()),
             l -> l.size() == 1 ? Either.left(l.getFirst()) : Either.right(l)
@@ -65,7 +55,7 @@ public final class ParticleStorm {
 
     public ParticleStorm(IEventBus bus, ModContainer container) {
         PSClientConfigs.register(container);
-        PARTICLE.register(bus);
+        REGISTER.register(bus);
         registerGeoTest(bus);
         bus.addListener(ParticleStorm::registerPayloadHandlers);
         NeoForge.EVENT_BUS.addListener(ParticleStorm::registerCommands);
@@ -109,5 +99,19 @@ public final class ParticleStorm {
 
     public static ResourceLocation asResource(String path) {
         return ResourceLocation.fromNamespaceAndPath(MODID, path);
+    }
+
+    public static DeferredHolder<ParticleType<?>, ParticleType<MolangParticleOption>> registerParticleType(DeferredRegister<ParticleType<?>> register, String name) {
+        return register.register(name, () -> new ParticleType<>(false) {
+            @Override
+            public MapCodec<MolangParticleOption> codec() {
+                return MolangParticleOption.CODEC;
+            }
+
+            @Override
+            public StreamCodec<ByteBuf, MolangParticleOption> streamCodec() {
+                return MolangParticleOption.STREAM_CODEC;
+            }
+        });
     }
 }

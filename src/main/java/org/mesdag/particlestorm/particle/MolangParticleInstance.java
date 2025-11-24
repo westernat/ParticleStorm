@@ -7,14 +7,12 @@ import net.minecraft.client.particle.ParticleRenderType;
 import net.minecraft.client.particle.TextureSheetParticle;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.core.particles.ParticleGroup;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.fml.ModList;
-import org.jetbrains.annotations.Nullable;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
 import org.mesdag.particlestorm.api.IEventNode;
@@ -178,8 +176,8 @@ public class MolangParticleInstance extends TextureSheetParticle implements IMol
     }
 
     @Override
-    public void setBillboardSize(float[] billboardSize) {
-        this.billboardSize = billboardSize;
+    public void setBillboardSize(float[] size) {
+        this.billboardSize = size;
     }
 
     @Override
@@ -316,12 +314,6 @@ public class MolangParticleInstance extends TextureSheetParticle implements IMol
     }
 
     @Override
-    public void moveDirectly(double x, double y, double z) {
-        setBoundingBox(getBoundingBox().move(x, y, z));
-        setLocationFromBoundingbox();
-    }
-
-    @Override
     public VariableTable getVars() {
         return vars;
     }
@@ -329,15 +321,6 @@ public class MolangParticleInstance extends TextureSheetParticle implements IMol
     @Override
     public Level getLevel() {
         return level;
-    }
-
-    public float tickAge() {
-        return age * emitter.invTickRate;
-    }
-
-    @Override
-    public float tickLifetime() {
-        return lifetime * emitter.invTickRate;
     }
 
     @Override
@@ -358,26 +341,6 @@ public class MolangParticleInstance extends TextureSheetParticle implements IMol
     @Override
     public double getRandom4() {
         return particleRandom4;
-    }
-
-    @Override
-    public ResourceLocation getIdentity() {
-        return emitter.particleId;
-    }
-
-    @Override
-    public Vec3 getPosition() {
-        return getPos();
-    }
-
-    @Override
-    public @Nullable Entity getAttachedEntity() {
-        return emitter.getAttachedEntity();
-    }
-
-    @Override
-    public float getInvTickRate() {
-        return emitter.invTickRate;
     }
 
     @Override
@@ -418,13 +381,13 @@ public class MolangParticleInstance extends TextureSheetParticle implements IMol
     }
 
     @Override
-    public void render(VertexConsumer buffer, Camera renderInfo, float partialTicks) {
+    public void render(VertexConsumer buffer, Camera camera, float partialTicks) {
         Quaternionf quaternionf = new Quaternionf();
-        getFacingCameraMode().setRotation(this, quaternionf, renderInfo, partialTicks);
+        getFacingCameraMode().setRotation(this, quaternionf, camera, partialTicks);
         if (xRot != 0.0F) quaternionf.rotateX(Mth.lerp(partialTicks, xRotO, xRot));
         if (yRot != 0.0F) quaternionf.rotateY(Mth.lerp(partialTicks, yRotO, yRot));
         if (roll != 0.0F) quaternionf.rotateZ(Mth.lerp(partialTicks, oRoll, roll));
-        renderRotatedQuad(buffer, renderInfo, quaternionf, partialTicks);
+        renderRotatedQuad(buffer, camera, quaternionf, partialTicks);
     }
 
     @Override

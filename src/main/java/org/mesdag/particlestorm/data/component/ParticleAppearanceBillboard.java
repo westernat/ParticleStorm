@@ -23,7 +23,7 @@ public record ParticleAppearanceBillboard(FloatMolangExp2 size, FaceCameraMode f
     public static final Codec<ParticleAppearanceBillboard> CODEC = RecordCodecBuilder.create(instance -> instance.group(
             FloatMolangExp2.CODEC.fieldOf("size").forGetter(ParticleAppearanceBillboard::size),
             DuplicateFieldDecoder.fieldOf("face_camera_mode", "facing_camera_mode", FaceCameraMode.CODEC).forGetter(ParticleAppearanceBillboard::faceCameraMode),
-            Direction.CODEC.fieldOf("direction").orElseGet(() -> new Direction(Direction.Mode.DERIVE_FROM_VELOCITY, 0.01F, FloatMolangExp3.ZERO)).forGetter(ParticleAppearanceBillboard::direction),
+            Direction.CODEC.lenientOptionalFieldOf("direction", Direction.DEFAULT).forGetter(ParticleAppearanceBillboard::direction),
             UV.CODEC.fieldOf("uv").orElse(UV.EMPTY).forGetter(ParticleAppearanceBillboard::uv)
     ).apply(instance, ParticleAppearanceBillboard::new));
 
@@ -35,9 +35,14 @@ public record ParticleAppearanceBillboard(FloatMolangExp2 size, FaceCameraMode f
     @Override
     public List<MolangExp> getAllMolangExp() {
         return List.of(
-                size.exp1(), size.exp2(), direction.customDirection.exp1(), direction.customDirection.exp2(), direction.customDirection.exp3(),
-                uv.uv.exp1(), uv.uv.exp2(), uv.uvSize.exp1(), uv.uvSize.exp2(), uv.flipbook.baseUV.exp1(), uv.flipbook.baseUV.exp2(),
-                uv.flipbook.sizeUV.exp1(), uv.flipbook.sizeUV.exp2(), uv.flipbook.stepUV.exp1(), uv.flipbook.stepUV.exp2(), uv.flipbook.maxFrame
+                size.exp1(), size.exp2(),
+                direction.customDirection.exp1(), direction.customDirection.exp2(), direction.customDirection.exp3(),
+                uv.uv.exp1(), uv.uv.exp2(),
+                uv.uvSize.exp1(), uv.uvSize.exp2(),
+                uv.flipbook.baseUV.exp1(), uv.flipbook.baseUV.exp2(),
+                uv.flipbook.sizeUV.exp1(), uv.flipbook.sizeUV.exp2(),
+                uv.flipbook.stepUV.exp1(), uv.flipbook.stepUV.exp2(),
+                uv.flipbook.maxFrame
         );
     }
 
@@ -45,25 +50,24 @@ public record ParticleAppearanceBillboard(FloatMolangExp2 size, FaceCameraMode f
     public void update(IMolangParticleInstance instance) {
         doFacingCameraMode(instance);
         doSize(instance);
-        if (uv != UV.EMPTY) {
-            UV.Flipbook flipbook = uv.flipbook;
-            if (flipbook == UV.Flipbook.EMPTY) {
-                updateSimpleUV(instance);
-            } else if (flipbook.stretchToLifetime) {
-                updateFlipbookUV(instance);
-                instance.setMaxFrame((int) flipbook.maxFrame.calculate(instance));
-                instance.setCurrentFrame(instance.getMaxFrame() * instance.getAge() / instance.self().getLifetime());
-            } else if (instance.getLevel().getGameTime() % flipbook.framesPerTick < 1.0F) {
-                updateFlipbookUV(instance);
-                instance.setMaxFrame((int) flipbook.maxFrame.calculate(instance));
-                if (instance.getCurrentFrame() < instance.getMaxFrame()) {
-                    instance.setCurrentFrame(instance.getCurrentFrame() + 1);
-                    if (flipbook.loop && instance.getCurrentFrame() == instance.getMaxFrame()) {
-                        instance.setCurrentFrame(0);
-                    }
-                } else {
-                    instance.setCurrentFrame(instance.getMaxFrame() - 1);
+        if (uv == UV.EMPTY) return;
+        UV.Flipbook flipbook = uv.flipbook;
+        if (flipbook == UV.Flipbook.EMPTY) {
+            updateSimpleUV(instance);
+        } else if (flipbook.stretchToLifetime) {
+            updateFlipbookUV(instance);
+            instance.setMaxFrame((int) flipbook.maxFrame.calculate(instance));
+            instance.setCurrentFrame(instance.getMaxFrame() * instance.getAge() / instance.self().getLifetime());
+        } else if (instance.getLevel().getGameTime() % flipbook.framesPerTick < 1.0F) {
+            updateFlipbookUV(instance);
+            instance.setMaxFrame((int) flipbook.maxFrame.calculate(instance));
+            if (instance.getCurrentFrame() < instance.getMaxFrame()) {
+                instance.setCurrentFrame(instance.getCurrentFrame() + 1);
+                if (flipbook.loop && instance.getCurrentFrame() == instance.getMaxFrame()) {
+                    instance.setCurrentFrame(0);
                 }
+            } else {
+                instance.setCurrentFrame(instance.getMaxFrame() - 1);
             }
         }
     }
@@ -72,18 +76,17 @@ public record ParticleAppearanceBillboard(FloatMolangExp2 size, FaceCameraMode f
     public void apply(IMolangParticleInstance instance) {
         doFacingCameraMode(instance);
         doSize(instance);
-        if (uv != UV.EMPTY) {
-            if (uv.flipbook == UV.Flipbook.EMPTY) {
-                updateSimpleUV(instance);
-            } else {
-                instance.setUvSize(uv.flipbook.getSizeUV(instance));
-                instance.getUvSize()[0] *= instance.getScaleU();
-                instance.getUvSize()[1] *= instance.getScaleV();
-                instance.setUvStep(uv.flipbook.getStepUV(instance));
-                instance.getUvStep()[0] *= instance.getScaleU();
-                instance.getUvStep()[1] *= instance.getScaleV();
-                updateFlipbookUV(instance);
-            }
+        if (uv == UV.EMPTY) return;
+        if (uv.flipbook == UV.Flipbook.EMPTY) {
+            updateSimpleUV(instance);
+        } else {
+            instance.setUvSize(uv.flipbook.getSizeUV(instance));
+            instance.getUvSize()[0] *= instance.getScaleU();
+            instance.getUvSize()[1] *= instance.getScaleV();
+            instance.setUvStep(uv.flipbook.getStepUV(instance));
+            instance.getUvStep()[0] *= instance.getScaleU();
+            instance.getUvStep()[1] *= instance.getScaleV();
+            updateFlipbookUV(instance);
         }
     }
 
@@ -94,18 +97,14 @@ public record ParticleAppearanceBillboard(FloatMolangExp2 size, FaceCameraMode f
                 instance.setXRot(values[0]);
                 instance.setYRot(values[1]);
                 instance.setZRot(values[2]);
-            } else {
-                if (direction.minSpeedThreshold > 0.0F && Mth.lengthSquared(instance.getXd(), instance.getYd(), instance.getZd()) > instance.getPreset().minSpeedThresholdSqr) {
-                    instance.getFacingDirection().set(instance.getXd(), instance.getYd(), instance.getZd()).normalize();
-                }
+            } else if (direction.minSpeedThreshold > 0.0F && Mth.lengthSquared(instance.getXd(), instance.getYd(), instance.getZd()) > instance.getPreset().minSpeedThresholdSqr) {
+                instance.getFacingDirection().set(instance.getXd(), instance.getYd(), instance.getZd()).normalize();
             }
         }
     }
 
     private void doSize(IMolangParticleInstance instance) {
-        if (size.initialized()) {
-            instance.setBillboardSize(size.calculate(instance));
-        }
+        instance.setBillboardSize(size.calculate(instance));
     }
 
     @Override
@@ -175,6 +174,7 @@ public record ParticleAppearanceBillboard(FloatMolangExp2 size, FaceCameraMode f
     }
 
     public record Direction(Mode mode, float minSpeedThreshold, FloatMolangExp3 customDirection) {
+        public static final Direction DEFAULT = new Direction(Direction.Mode.DERIVE_FROM_VELOCITY, 0.01F, FloatMolangExp3.ZERO);
         public static final Codec<Direction> CODEC = Mode.CODEC.dispatchMap(
                 Direction::mode,
                 mode -> mode == Mode.CUSTOM_DIRECTION ? RecordCodecBuilder.mapCodec(instance -> instance.group(
@@ -269,7 +269,7 @@ public record ParticleAppearanceBillboard(FloatMolangExp2 size, FaceCameraMode f
             private final boolean stretchToLifetime;
             private final boolean loop;
 
-            private float framesPerTick = 1.0F;
+            private final float framesPerTick;
 
             /**
              * @param baseUV            Upper-left corner of starting UV patch
@@ -289,9 +289,7 @@ public record ParticleAppearanceBillboard(FloatMolangExp2 size, FaceCameraMode f
                 this.stretchToLifetime = stretchToLifetime;
                 this.loop = loop;
 
-                if (framesPerSecond != 0.0F) {
-                    this.framesPerTick = 20.0F / framesPerSecond;
-                }
+                this.framesPerTick = framesPerSecond == 0.0F ? 1.0F : 20.0F / framesPerSecond;
             }
 
             public float[] getSizeUV(IMolangParticleInstance instance) {

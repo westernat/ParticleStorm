@@ -10,9 +10,6 @@ import org.joml.Vector3f;
 import org.mesdag.particlestorm.api.IMolangParticleInstance;
 import org.mesdag.particlestorm.data.MathHelper;
 
-import javax.annotation.ParametersAreNonnullByDefault;
-
-@ParametersAreNonnullByDefault
 public enum FaceCameraMode implements SingleQuadParticle.FacingCameraMode {
     LOOKAT_XYZ {
         private final Vector3f wd = new Vector3f();

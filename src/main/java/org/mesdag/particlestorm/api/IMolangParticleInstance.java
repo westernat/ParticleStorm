@@ -3,6 +3,9 @@ package org.mesdag.particlestorm.api;
 import net.minecraft.client.particle.Particle;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.core.particles.ParticleGroup;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Vector3f;
 import org.mesdag.particlestorm.particle.ParticleEmitter;
@@ -99,5 +102,40 @@ public interface IMolangParticleInstance extends MolangInstance {
 
     void setCollision(boolean bool);
 
-    void moveDirectly(double x, double y, double z);
+    // region default
+    default void moveDirectly(double x, double y, double z) {
+        self().setBoundingBox(self().getBoundingBox().move(x, y, z));
+        self().setLocationFromBoundingbox();
+    }
+
+    @Override
+    default float tickAge() {
+        return getAge() * getInvTickRate();
+    }
+
+    @Override
+    default float tickLifetime() {
+        return self().getLifetime() * getInvTickRate();
+    }
+
+    @Override
+    default ResourceLocation getIdentity() {
+        return getEmitter().particleId;
+    }
+
+    @Override
+    default Vec3 getPosition() {
+        return self().getPos();
+    }
+
+    @Override
+    default @Nullable Entity getAttachedEntity() {
+        return getEmitter().getAttachedEntity();
+    }
+
+    @Override
+    default float getInvTickRate() {
+        return getEmitter().invTickRate;
+    }
+    // endregion
 }
