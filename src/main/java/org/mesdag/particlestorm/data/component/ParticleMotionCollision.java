@@ -69,8 +69,8 @@ public record ParticleMotionCollision(BoolMolangExp enabled, float collisionDrag
         instance.setCollisionDrag(collisionDrag * instance.getInvTickRate());
         instance.setCoefficientOfRestitution(coefficientOfRestitution);
         float radius = Math.max(collisionRadius, Mth.EPSILON);
-        instance.setBoundingBox(instance.getBoundingBox().inflate(radius, 0.0, radius));
-        instance.setLocationFromBoundingbox();
+        instance.self().setBoundingBox(instance.self().getBoundingBox().inflate(radius, 0.0, radius));
+        instance.self().setLocationFromBoundingbox();
         instance.setExpireOnContact(expireOnContact);
     }
 

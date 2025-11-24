@@ -76,7 +76,7 @@ public record ParticleMotionDynamic(FloatMolangExp3 linerAcceleration, FloatMola
         double zd = instance.getZd();
         acceleration.add(c * (float) xd * tickRate, c * (float) yd * tickRate, c * (float) zd * tickRate);
         float v = invTickRate * invTickRate;
-        instance.setParticleSpeed(
+        instance.self().setParticleSpeed(
                 xd + acceleration.x * v,
                 yd + acceleration.y * v,
                 zd + acceleration.z * v

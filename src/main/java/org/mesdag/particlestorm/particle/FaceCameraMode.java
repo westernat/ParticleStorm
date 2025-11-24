@@ -7,6 +7,7 @@ import org.joml.Math;
 import org.joml.Matrix4f;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
+import org.mesdag.particlestorm.api.IMolangParticleInstance;
 import org.mesdag.particlestorm.data.MathHelper;
 
 import javax.annotation.ParametersAreNonnullByDefault;
@@ -22,7 +23,7 @@ public enum FaceCameraMode implements SingleQuadParticle.FacingCameraMode {
         public void setRotation(Quaternionf quaternion, Camera camera, float partialTick) {}
 
         @Override
-        public void setRotation(MolangParticleInstance instance, Quaternionf quaternion, Camera camera, float partialTick) {
+        public void setRotation(IMolangParticleInstance instance, Quaternionf quaternion, Camera camera, float partialTick) {
             Vector3f xd = camera.getPosition().toVector3f().sub(
                     (float) instance.getX(),
                     (float) instance.getY(),
@@ -43,7 +44,7 @@ public enum FaceCameraMode implements SingleQuadParticle.FacingCameraMode {
         public void setRotation(Quaternionf quaternion, Camera camera, float partialTick) {}
 
         @Override
-        public void setRotation(MolangParticleInstance instance, Quaternionf quaternion, Camera camera, float partialTick) {
+        public void setRotation(IMolangParticleInstance instance, Quaternionf quaternion, Camera camera, float partialTick) {
             LOOKAT_XYZ.setRotation(instance, quaternion, camera, partialTick);
             quaternion.x = 0.0F;
             quaternion.z = 0.0F;
@@ -86,12 +87,12 @@ public enum FaceCameraMode implements SingleQuadParticle.FacingCameraMode {
         public void setRotation(Quaternionf quaternion, Camera camera, float partialTick) {}
 
         @Override
-        public void setRotation(MolangParticleInstance instance, Quaternionf quaternion, Camera camera, float partialTick) {
-            MathHelper.setFromUnitVectors(X, instance.facingDirection, quaternion);
-            instance.xRot = Math.atan2(
+        public void setRotation(IMolangParticleInstance instance, Quaternionf quaternion, Camera camera, float partialTick) {
+            MathHelper.setFromUnitVectors(X, instance.getFacingDirection(), quaternion);
+            instance.setXRot(Math.atan2(
                     (float) (instance.getX() - camera.getPosition().y),
                     (float) (camera.getPosition().z - instance.getZ())
-            );
+            ));
         }
     },
     EMITTER_TRANSFORM_XY {
@@ -113,7 +114,7 @@ public enum FaceCameraMode implements SingleQuadParticle.FacingCameraMode {
         }
     };
 
-    public void setRotation(MolangParticleInstance instance, Quaternionf quaternion, Camera camera, float partialTick) {
+    public void setRotation(IMolangParticleInstance instance, Quaternionf quaternion, Camera camera, float partialTick) {
         setRotation(quaternion, camera, partialTick);
     }
 }

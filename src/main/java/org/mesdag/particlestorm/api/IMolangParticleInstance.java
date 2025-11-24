@@ -1,14 +1,23 @@
 package org.mesdag.particlestorm.api;
 
+import net.minecraft.client.particle.Particle;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.core.particles.ParticleGroup;
-import net.minecraft.world.phys.AABB;
 import org.joml.Vector3f;
+import org.mesdag.particlestorm.particle.ParticleEmitter;
 import org.mesdag.particlestorm.particle.ParticlePreset;
 
 import java.util.List;
 
 public interface IMolangParticleInstance extends MolangInstance {
+    default Particle self() {
+        return (Particle) this;
+    }
+
+    int getAge();
+
+    void setEmitter(ParticleEmitter emitter);
+
     ParticlePreset getPreset();
 
     TextureAtlasSprite getSprite();
@@ -90,22 +99,4 @@ public interface IMolangParticleInstance extends MolangInstance {
     void setCollision(boolean bool);
 
     void moveDirectly(double x, double y, double z);
-
-    // region particle
-    void setLifetime(int lifetime);
-
-    int getLifetime();
-
-    int getAge();
-
-    void remove();
-
-    void setBoundingBox(AABB box);
-
-    AABB getBoundingBox();
-
-    void setLocationFromBoundingbox();
-
-    void setParticleSpeed(double xd, double yd, double zd);
-    // endregion
 }

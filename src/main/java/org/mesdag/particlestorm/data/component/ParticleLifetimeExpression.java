@@ -39,14 +39,14 @@ public record ParticleLifetimeExpression(FloatMolangExp expirationExpression, Fl
     @Override
     public void update(IMolangParticleInstance instance) {
         if (expirationExpression.initialized() && expirationExpression.getVariable().get(instance) != 0.0) {
-            instance.remove();
+            instance.self().remove();
         }
     }
 
     @Override
     public void apply(IMolangParticleInstance instance) {
         if (maxLifetime.initialized()) {
-            instance.setLifetime(Math.max((int) (maxLifetime.calculate(instance) * 20), 1));
+            instance.self().setLifetime(Math.max((int) (maxLifetime.calculate(instance) * 20), 1));
         }
     }
 

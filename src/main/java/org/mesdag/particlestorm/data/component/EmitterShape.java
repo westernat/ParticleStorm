@@ -4,6 +4,7 @@ import com.mojang.datafixers.util.Either;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.particle.Particle;
 import net.minecraft.core.particles.ParticleGroup;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
@@ -12,14 +13,12 @@ import net.minecraft.world.entity.EntityDimensions;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
-import org.mesdag.particlestorm.api.IEmitterComponent;
-import org.mesdag.particlestorm.api.IParticleComponent;
-import org.mesdag.particlestorm.api.MolangInstance;
+import org.mesdag.particlestorm.api.*;
 import org.mesdag.particlestorm.data.MathHelper;
 import org.mesdag.particlestorm.data.molang.FloatMolangExp;
 import org.mesdag.particlestorm.data.molang.FloatMolangExp3;
 import org.mesdag.particlestorm.data.molang.MolangExp;
-import org.mesdag.particlestorm.particle.MolangParticleInstance;
+import org.mesdag.particlestorm.particle.EmitterPreset;
 import org.mesdag.particlestorm.particle.ParticleEmitter;
 import org.mesdag.particlestorm.particle.ParticlePreset;
 
@@ -66,20 +65,17 @@ public abstract sealed class EmitterShape implements IEmitterComponent permits E
         return false;
     }
 
-    private void emittingParticle(ParticleEmitter emitter) {
-        MolangParticleInstance instance = (MolangParticleInstance) Minecraft.getInstance().particleEngine.makeParticle(
-                emitter.getPreset().option, emitter.getX(), emitter.getY(), emitter.getZ(), 0.0, 0.0, 0.0
-        );
-        if (instance == null) throw new NullPointerException("Failed to create particle!");
+    private <T extends Particle & IMolangParticleInstance> void emittingParticle(ParticleEmitter emitter) {
+        T instance = RegisterCustomParticleTypeEvent.createParticle(emitter);
         instance.setEmitter(emitter);
 
-        ParticlePreset preset = instance.getPreset();
-        MathHelper.redirect(preset.assignments, instance.getVars());
+        ParticlePreset particlePreset = instance.getPreset();
+        MathHelper.redirect(particlePreset.assignments, instance.getVars());
 
         Vector3f position = new Vector3f();
         Vector3f speed = new Vector3f();
         initializeParticle(instance, position, speed);
-        for (IParticleComponent component : preset.effect.orderedParticleEarlyComponents) {
+        for (IParticleComponent component : particlePreset.effect.orderedParticleEarlyComponents) {
             component.apply(instance);
         }
         speed.mul(instance.getInitialSpeed());
@@ -89,19 +85,20 @@ public abstract sealed class EmitterShape implements IEmitterComponent permits E
             speed.x *= -1;
             speed.y *= -1;
         }
-        if (emitter.parentMode != ParticleEmitter.ParentMode.WORLD && emitter.getPreset().localPosition && !emitter.getPreset().localRotation) {
+        EmitterPreset emitterPreset = emitter.getPreset();
+        if (emitter.parentMode != ParticleEmitter.ParentMode.WORLD && emitterPreset.localPosition && !emitterPreset.localRotation) {
             speed.x *= -1;
             speed.z *= -1;
         }
-        if (emitter.getPreset().localRotation) {
+        if (emitterPreset.localRotation) {
             MathHelper.applyEuler(emitter.rot.x, emitter.rot.y, 0.0F, position);
         }
-        if (emitter.getPreset().localPosition) {
+        if (emitterPreset.localPosition) {
             Vec3 emitterPos = emitter.getPosition();
             position.add((float) emitterPos.x, (float) emitterPos.y, (float) emitterPos.z);
         }
         speed.mul(emitter.invTickRate);
-        if (emitter.getAttachedEntity() != null && emitter.getPreset().localVelocity) {
+        if (emitter.getAttachedEntity() != null && emitterPreset.localVelocity) {
             Vec3 emitterVec = emitter.getAttachedEntity().getDeltaMovement();
             speed.add((float) emitterVec.x, (float) emitterVec.y, (float) emitterVec.z);
         }
@@ -111,11 +108,11 @@ public abstract sealed class EmitterShape implements IEmitterComponent permits E
         instance.setPosO(position.x, position.y, position.z);
         instance.setParticleGroup(emitter.particleGroup);
 
-        for (IParticleComponent component : preset.effect.orderedParticleComponents) {
+        for (IParticleComponent component : particlePreset.effect.orderedParticleComponents) {
             component.apply(instance);
         }
-        instance.setComponents(preset.effect.orderedParticleComponentsWhichRequireUpdate);
-        if (!preset.motionDynamic) instance.setParticleSpeed(0.0, 0.0, 0.0);
+        instance.setComponents(particlePreset.effect.orderedParticleComponentsWhichRequireUpdate);
+        if (!particlePreset.motionDynamic) instance.setParticleSpeed(0.0, 0.0, 0.0);
         Minecraft.getInstance().particleEngine.add(instance);
     }
 

@@ -3,7 +3,6 @@ package org.mesdag.particlestorm.particle;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.client.Camera;
 import net.minecraft.client.multiplayer.ClientLevel;
-import net.minecraft.client.particle.ParticleProvider;
 import net.minecraft.client.particle.ParticleRenderType;
 import net.minecraft.client.particle.TextureSheetParticle;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
@@ -18,7 +17,6 @@ import net.neoforged.fml.ModList;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
-import org.mesdag.particlestorm.PSGameClient;
 import org.mesdag.particlestorm.api.IEventNode;
 import org.mesdag.particlestorm.api.IMolangParticleInstance;
 import org.mesdag.particlestorm.api.IParticleComponent;
@@ -88,6 +86,12 @@ public class MolangParticleInstance extends TextureSheetParticle implements IMol
         this.particleRandom4 = random.nextDouble();
     }
 
+    @Override
+    public int getAge() {
+        return age;
+    }
+
+    @Override
     public void setEmitter(ParticleEmitter emitter) {
         this.emitter = emitter;
         this.vars = new ParticleVariableTable(preset.vars, emitter.vars);
@@ -401,10 +405,6 @@ public class MolangParticleInstance extends TextureSheetParticle implements IMol
         return UV == null ? super.getV1() : UV[3];
     }
 
-    public int getAge() {
-        return age;
-    }
-
     @Override
     public void tick() {
         super.tick();
@@ -528,18 +528,5 @@ public class MolangParticleInstance extends TextureSheetParticle implements IMol
     @Override
     public Optional<ParticleGroup> getParticleGroup() {
         return Optional.ofNullable(particleGroup);
-    }
-
-    public static class Provider implements ParticleProvider<MolangParticleOption> {
-        private final ExtendMutableSpriteSet sprites;
-
-        public Provider(ExtendMutableSpriteSet sprites) {
-            this.sprites = sprites;
-        }
-
-        @Override
-        public TextureSheetParticle createParticle(MolangParticleOption option, ClientLevel level, double x, double y, double z, double xSpeed, double ySpeed, double zSpeed) {
-            return new MolangParticleInstance(PSGameClient.LOADER.id2Particle().get(option.getId()), level, x, y, z, sprites);
-        }
     }
 }

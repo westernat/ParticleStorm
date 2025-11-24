@@ -1,16 +1,15 @@
 package org.mesdag.particlestorm.mixin;
 
 import net.minecraft.client.particle.ParticleEngine;
-import net.minecraft.client.particle.ParticleProvider;
 import net.minecraft.client.renderer.texture.SpriteLoader;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.resources.ResourceLocation;
 import org.mesdag.particlestorm.PSGameClient;
 import org.mesdag.particlestorm.ParticleStorm;
+import org.mesdag.particlestorm.api.RegisterCustomParticleTypeEvent;
 import org.mesdag.particlestorm.data.DefinedParticleEffect;
 import org.mesdag.particlestorm.mixed.IParticleEngine;
 import org.mesdag.particlestorm.particle.ExtendMutableSpriteSet;
-import org.mesdag.particlestorm.particle.MolangParticleInstance;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -27,9 +26,6 @@ public abstract class ParticleEngineMixin implements IParticleEngine {
     @Shadow
     @Final
     private Map<ResourceLocation, ParticleEngine.MutableSpriteSet> spriteSets;
-    @Shadow
-    @Final
-    private Map<ResourceLocation, ParticleProvider<?>> providers;
 
     @Unique
     private volatile SpriteLoader.Preparations particlestorm$preparations;
@@ -53,9 +49,7 @@ public abstract class ParticleEngineMixin implements IParticleEngine {
 
     @Inject(method = "registerProviders", at = @At("TAIL"))
     private void registerCustom(CallbackInfo ci) {
-        ExtendMutableSpriteSet extendMutableSpriteSet = new ExtendMutableSpriteSet();
-        spriteSets.put(ParticleStorm.MOLANG.getId(), extendMutableSpriteSet);
-        providers.put(ParticleStorm.MOLANG.getId(), new MolangParticleInstance.Provider(extendMutableSpriteSet));
+        RegisterCustomParticleTypeEvent.postEvent(spriteSets);
     }
 
     @ModifyArg(method = "lambda$reload$9", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/texture/TextureAtlas;upload(Lnet/minecraft/client/renderer/texture/SpriteLoader$Preparations;)V"))

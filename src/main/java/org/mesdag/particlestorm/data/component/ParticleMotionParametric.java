@@ -51,7 +51,7 @@ public record ParticleMotionParametric(FloatMolangExp3 relativePosition, FloatMo
         instance.moveDirectly(pos[0], pos[1], pos[2]);
         if (direction != FloatMolangExp3.ZERO) {
             float[] dir = direction.calculate(instance);
-            instance.setParticleSpeed(dir[0], dir[1], dir[2]);
+            instance.self().setParticleSpeed(dir[0], dir[1], dir[2]);
         }
         instance.setZRot(rotation.calculate(instance));
     }

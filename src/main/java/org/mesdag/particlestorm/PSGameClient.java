@@ -99,7 +99,7 @@ public final class PSGameClient {
                 double x = Mth.lerp(partialTicks, emitter.posO.x, emitter.pos.x);
                 double y = Mth.lerp(partialTicks, emitter.posO.y, emitter.pos.y);
                 double z = Mth.lerp(partialTicks, emitter.posO.z, emitter.pos.z);
-                DebugRenderer.renderFloatingText(poseStack, bufferSource, emitter.getPreset().option.getId().toString(), x, y + 0.5, z, 0xFFFFFF);
+                DebugRenderer.renderFloatingText(poseStack, bufferSource, emitter.particleId.toString(), x, y + 0.5, z, 0xFFFFFF);
                 DebugRenderer.renderFloatingText(poseStack, bufferSource, "id: " + emitter.id, x, y + 0.3, z, 0xFFFFFF);
                 int maxNum = minecraft.particleEngine.trackedParticleCounts.getInt(emitter.particleGroup);
                 DebugRenderer.renderFloatingText(poseStack, bufferSource, "particles: " + maxNum, x, y + 0.1, z, maxNum >= emitter.particleGroup.getLimit() ? 0xFF0000 : 0xFFFFFF);
