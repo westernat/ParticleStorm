@@ -58,16 +58,17 @@ public record ParticleAppearanceBillboard(FloatMolangExp2 size, FaceCameraMode f
             updateFlipbookUV(instance);
             instance.setMaxFrame((int) flipbook.maxFrame.calculate(instance));
             instance.setCurrentFrame(instance.getMaxFrame() * instance.getAge() / instance.self().getLifetime());
-        } else if (instance.getLevel().getGameTime() % flipbook.framesPerTick < 1.0F) {
-            updateFlipbookUV(instance);
-            instance.setMaxFrame((int) flipbook.maxFrame.calculate(instance));
-            if (instance.getCurrentFrame() < instance.getMaxFrame()) {
-                instance.setCurrentFrame(instance.getCurrentFrame() + 1);
-                if (flipbook.loop && instance.getCurrentFrame() == instance.getMaxFrame()) {
-                    instance.setCurrentFrame(0);
+        } else {
+            float gameTime = (float) (int) (instance.getLevel().getGameTime() & 0b11111111);
+            if (gameTime % (instance.getLevel().tickRateManager().tickrate() / flipbook.framesPerSecond) < 1.0F) {
+                updateFlipbookUV(instance);
+                instance.setMaxFrame((int) flipbook.maxFrame.calculate(instance));
+                int currentFrame = instance.getCurrentFrame() + 1;
+                if (currentFrame < instance.getMaxFrame()) {
+                    instance.setCurrentFrame(currentFrame);
+                } else {
+                    instance.setCurrentFrame(flipbook.loop ? 0 : instance.getMaxFrame() - 1);
                 }
-            } else {
-                instance.setCurrentFrame(instance.getMaxFrame() - 1);
             }
         }
     }
@@ -246,51 +247,27 @@ public record ParticleAppearanceBillboard(FloatMolangExp2 size, FaceCameraMode f
                     '}';
         }
 
-        /**
-         * Alternate way via specifying a flipbook animation<p>
-         * A flipbook animation uses pieces of the texture to animate, by stepping over time from one <code>frame</code> to another
-         */
-        public static class Flipbook {
+        /// Alternate way via specifying a flipbook animation
+        /// A flipbook animation uses pieces of the texture to animate, by stepping over time from one `frame` to another
+        ///
+        /// @param baseUV            Upper-left corner of starting UV patch
+        /// @param sizeUV            Size of UV patch
+        /// @param stepUV            How far to move the UV patch each frame
+        /// @param framesPerSecond   Default frames per second
+        /// @param maxFrame          Maximum frame number, with first frame being frame 1
+        /// @param stretchToLifetime Optional, adjust fps to match lifetime of particle. Default=false
+        /// @param loop              Optional, makes the animation loop when it reaches the end? Default=false
+        public record Flipbook(FloatMolangExp2 baseUV, FloatMolangExp2 sizeUV, FloatMolangExp2 stepUV, float framesPerSecond, FloatMolangExp maxFrame, boolean stretchToLifetime, boolean loop) {
             public static final Flipbook EMPTY = new Flipbook(FloatMolangExp2.ZERO, FloatMolangExp2.ZERO, FloatMolangExp2.ZERO, 0, FloatMolangExp.ZERO, false, false);
             public static final Codec<Flipbook> CODEC = RecordCodecBuilder.create(instance -> instance.group(
                     FloatMolangExp2.CODEC.lenientOptionalFieldOf("base_UV", FloatMolangExp2.ZERO).forGetter(Flipbook::baseUV),
                     FloatMolangExp2.CODEC.lenientOptionalFieldOf("size_UV", FloatMolangExp2.ZERO).forGetter(Flipbook::sizeUV),
                     FloatMolangExp2.CODEC.lenientOptionalFieldOf("step_UV", FloatMolangExp2.ZERO).forGetter(Flipbook::stepUV),
-                    Codec.FLOAT.lenientOptionalFieldOf("frames_per_second", 1.0F).forGetter(Flipbook::framesPerSecond),
+                    ExtraCodecs.POSITIVE_FLOAT.lenientOptionalFieldOf("frames_per_second", 1.0F).forGetter(Flipbook::framesPerSecond),
                     FloatMolangExp.CODEC.lenientOptionalFieldOf("max_frame", FloatMolangExp.ZERO).forGetter(Flipbook::maxFrame),
                     Codec.BOOL.lenientOptionalFieldOf("stretch_to_lifetime", false).forGetter(Flipbook::stretchToLifetime),
                     Codec.BOOL.lenientOptionalFieldOf("loop", false).forGetter(Flipbook::loop)
             ).apply(instance, Flipbook::new));
-            private final FloatMolangExp2 baseUV;
-            private final FloatMolangExp2 sizeUV;
-            private final FloatMolangExp2 stepUV;
-            private final float framesPerSecond;
-            private final FloatMolangExp maxFrame;
-            private final boolean stretchToLifetime;
-            private final boolean loop;
-
-            private final float framesPerTick;
-
-            /**
-             * @param baseUV            Upper-left corner of starting UV patch
-             * @param sizeUV            Size of UV patch
-             * @param stepUV            How far to move the UV patch each frame
-             * @param framesPerSecond   Default frames per second
-             * @param maxFrame          Maximum frame number, with first frame being frame 1
-             * @param stretchToLifetime Optional, adjust fps to match lifetime of particle. Default=false
-             * @param loop              Optional, makes the animation loop when it reaches the end? Default=false
-             */
-            public Flipbook(FloatMolangExp2 baseUV, FloatMolangExp2 sizeUV, FloatMolangExp2 stepUV, float framesPerSecond, FloatMolangExp maxFrame, boolean stretchToLifetime, boolean loop) {
-                this.baseUV = baseUV;
-                this.sizeUV = sizeUV;
-                this.stepUV = stepUV;
-                this.framesPerSecond = framesPerSecond;
-                this.maxFrame = maxFrame;
-                this.stretchToLifetime = stretchToLifetime;
-                this.loop = loop;
-
-                this.framesPerTick = framesPerSecond == 0.0F ? 1.0F : 20.0F / framesPerSecond;
-            }
 
             public float[] getSizeUV(IMolangParticleInstance instance) {
                 return sizeUV.calculate(instance);
@@ -298,34 +275,6 @@ public record ParticleAppearanceBillboard(FloatMolangExp2 size, FaceCameraMode f
 
             public float[] getStepUV(IMolangParticleInstance instance) {
                 return stepUV.calculate(instance);
-            }
-
-            public FloatMolangExp2 baseUV() {
-                return baseUV;
-            }
-
-            public FloatMolangExp2 sizeUV() {
-                return sizeUV;
-            }
-
-            public FloatMolangExp2 stepUV() {
-                return stepUV;
-            }
-
-            public float framesPerSecond() {
-                return framesPerSecond;
-            }
-
-            public FloatMolangExp maxFrame() {
-                return maxFrame;
-            }
-
-            public boolean stretchToLifetime() {
-                return stretchToLifetime;
-            }
-
-            public boolean loop() {
-                return loop;
             }
 
             @Override

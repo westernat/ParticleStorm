@@ -39,8 +39,7 @@ public abstract class ParticleEngineMixin implements IParticleEngine {
                 TextureAtlasSprite missing = particlestorm$preparations.missing();
                 spriteSet.bindMissing(missing);
                 ResourceLocation texture = entry.getValue().description.parameters().bindTexture(i);
-                TextureAtlasSprite sprite = particlestorm$preparations.regions().get(texture);
-                spriteSet.addSprite(sprite == null ? missing : sprite);
+                spriteSet.addSprite(particlestorm$preparations.regions().getOrDefault(texture, missing));
                 i++;
             }
         }

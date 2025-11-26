@@ -1,6 +1,7 @@
 package org.mesdag.particlestorm.particle;
 
 import com.google.common.collect.EvictingQueue;
+import com.google.common.collect.Lists;
 import com.google.gson.JsonParseException;
 import com.mojang.serialization.JsonOps;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
@@ -22,17 +23,18 @@ import net.minecraft.util.Mth;
 import net.minecraft.util.profiling.ProfilerFiller;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.Level;
+import net.neoforged.fml.ModLoader;
 import org.jetbrains.annotations.Nullable;
 import org.mesdag.particlestorm.ParticleStorm;
 import org.mesdag.particlestorm.api.IParticleComponent;
 import org.mesdag.particlestorm.api.IntAllocator;
+import org.mesdag.particlestorm.api.MolangParticleLoadEvent;
 import org.mesdag.particlestorm.data.DefinedParticleEffect;
 import org.mesdag.particlestorm.network.EmitterRemovalPacket;
 import org.mesdag.particlestorm.network.EmitterSynchronizePacket;
 
 import java.io.IOException;
 import java.io.Reader;
-import java.util.ArrayList;
 import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
@@ -180,7 +182,8 @@ public class MolangParticleLoader implements PreparableReloadListener {
     @Override
     public CompletableFuture<Void> reload(PreparationBarrier preparationBarrier, ResourceManager resourceManager, ProfilerFiller preparationsProfiler, ProfilerFiller reloadProfiler, Executor backgroundExecutor, Executor gameExecutor) {
         return CompletableFuture.supplyAsync(() -> PARTICLE_LISTER.listMatchingResources(resourceManager), backgroundExecutor).thenCompose(map -> {
-            List<CompletableFuture<DefinedParticleEffect>> list = new ArrayList<>(map.size());
+            ModLoader.postEvent(new MolangParticleLoadEvent.Pre(backgroundExecutor));
+            List<CompletableFuture<DefinedParticleEffect>> list = Lists.newArrayListWithExpectedSize(map.size());
             for (Map.Entry<ResourceLocation, Resource> entry : map.entrySet()) {
                 ResourceLocation id = PARTICLE_LISTER.fileToId(entry.getKey());
                 list.add(CompletableFuture.supplyAsync(() -> {
@@ -210,6 +213,7 @@ public class MolangParticleLoader implements PreparableReloadListener {
             this.id2Particle = id2Particle;
             this.id2Emitter = id2Emitter;
             this.initialized = false;
+            ModLoader.postEvent(new MolangParticleLoadEvent.Post(gameExecutor));
         }, gameExecutor);
     }
 }

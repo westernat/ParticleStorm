@@ -10,7 +10,7 @@ import org.mesdag.particlestorm.ParticleStorm;
 public record ParticleDescription(ResourceLocation identifier, DescriptionParameters parameters, ParticleType<?> type) {
     public static final Codec<ParticleDescription> CODEC = RecordCodecBuilder.create(instance -> instance.group(
             ResourceLocation.CODEC.fieldOf("identifier").forGetter(ParticleDescription::identifier),
-            DescriptionParameters.CODEC.fieldOf("basic_render_parameters").forGetter(ParticleDescription::parameters),
+            DescriptionParameters.CODEC.lenientOptionalFieldOf("basic_render_parameters", DescriptionParameters.EMPTY).forGetter(ParticleDescription::parameters),
             BuiltInRegistries.PARTICLE_TYPE.byNameCodec().fieldOf("type").orElseGet(ParticleStorm.MOLANG).forGetter(ParticleDescription::type)
     ).apply(instance, ParticleDescription::new));
 

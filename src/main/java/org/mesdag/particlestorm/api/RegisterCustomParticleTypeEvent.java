@@ -63,9 +63,8 @@ public class RegisterCustomParticleTypeEvent extends Event implements IModBusEve
         V create(ParticleEmitter emitter, ParticlePreset particlePreset, ClientLevel level, double x, double y, double z);
 
         /// @see Provider#create(ParticleEmitter, ParticlePreset, ClientLevel, double, double, double)
-        @Contract("_, _, _, _, _, _, _ -> fail")
         default V create(ParticleEmitter emitter, ParticlePreset particlePreset, ClientLevel level, double x, double y, double z, ExtendMutableSpriteSet sprites) {
-            throw new UnsupportedOperationException();
+            return create(emitter, particlePreset, level, x, y, z);
         }
     }
 
@@ -73,6 +72,7 @@ public class RegisterCustomParticleTypeEvent extends Event implements IModBusEve
     public interface ProviderWithSprites<V extends Particle & IMolangParticleInstance> extends Provider<V> {
         /// @see ProviderWithSprites#create(ParticleEmitter, ParticlePreset, ClientLevel, double, double, double, ExtendMutableSpriteSet)
         @Contract("_, _, _, _, _, _ -> fail")
+        @Override
         default V create(ParticleEmitter emitter, ParticlePreset particlePreset, ClientLevel level, double x, double y, double z) {
             throw new UnsupportedOperationException();
         }
