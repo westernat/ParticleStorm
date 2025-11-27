@@ -27,10 +27,7 @@ public class DuplicateFieldDecoder {
         return NeoForgeExtraCodecs.aliasedFieldOf(codec, names);
     }
 
-    public static <T> MapCodec<Optional<T>> optionalFieldOf(Codec<T> codec, String defaultName, String... alias) {
-        String[] names = new String[alias.length + 1];
-        names[0] = defaultName;
-        System.arraycopy(alias, 0, names, 1, alias.length);
+    public static <T> MapCodec<Optional<T>> optionalFieldOf(Codec<T> codec, String... names) {
         return new AliasOptionalFieldCodec<>(codec, names);
     }
 
