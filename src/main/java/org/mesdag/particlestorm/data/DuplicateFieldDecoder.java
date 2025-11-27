@@ -1,67 +1,94 @@
 package org.mesdag.particlestorm.data;
 
-import com.google.common.collect.Sets;
 import com.mojang.serialization.*;
-import com.mojang.serialization.codecs.FieldEncoder;
+import net.neoforged.neoforge.common.util.NeoForgeExtraCodecs;
 
+import java.util.Arrays;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
 
-public class DuplicateFieldDecoder<A> extends MapDecoder.Implementation<A> {
-    protected final Set<String> names;
-    private final Decoder<A> elementCodec;
-
-    public DuplicateFieldDecoder(final Set<String> names, final Decoder<A> elementCodec) {
-        this.names = names;
-        this.elementCodec = elementCodec;
-    }
-
+public class DuplicateFieldDecoder {
+    @Deprecated
     public static <T> MapCodec<T> fieldOf(String defaultName, Set<String> names, Codec<T> codec) {
-        Set<String> set = Sets.newHashSet(names);
-        set.add(defaultName);
-        return MapCodec.of(new FieldEncoder<>(defaultName, codec), new DuplicateFieldDecoder<>(set, codec));
+        return fieldOf(codec, defaultName, names.toArray(new String[0]));
     }
 
+    @Deprecated
     public static <T> MapCodec<T> fieldOf(String defaultName, String another, Codec<T> codec) {
-        return MapCodec.of(new FieldEncoder<>(defaultName, codec), new DuplicateFieldDecoder<>(Set.of(defaultName, another), codec));
+        return fieldOf(codec, defaultName, another);
     }
 
-    @Override
-    public <T> DataResult<A> decode(final DynamicOps<T> ops, final MapLike<T> input) {
-        for (String name : names) {
-            final T value = input.get(name);
-            if (value != null) {
-                return elementCodec.parse(ops, value);
+    public static <T> MapCodec<T> fieldOf(Codec<T> codec, String defaultName, String... alias) {
+        String[] names = new String[alias.length + 1];
+        names[0] = defaultName;
+        System.arraycopy(alias, 0, names, 1, alias.length);
+        return NeoForgeExtraCodecs.aliasedFieldOf(codec, names);
+    }
+
+    public static <T> MapCodec<Optional<T>> optionalFieldOf(Codec<T> codec, String defaultName, String... alias) {
+        String[] names = new String[alias.length + 1];
+        names[0] = defaultName;
+        System.arraycopy(alias, 0, names, 1, alias.length);
+        return new AliasOptionalFieldCodec<>(codec, names);
+    }
+
+    public static class AliasOptionalFieldCodec<A> extends MapCodec<Optional<A>> {
+        private final Codec<A> elementCodec;
+        private final String[] names;
+
+        public AliasOptionalFieldCodec(Codec<A> elementCodec, String[] names) {
+            this.elementCodec = elementCodec;
+            this.names = Arrays.stream(names).distinct().sorted().toArray(String[]::new);
+        }
+
+        @Override
+        public <T> DataResult<Optional<A>> decode(DynamicOps<T> ops, MapLike<T> input) {
+            for (String name : names) {
+                T t = input.get(name);
+                if (t == null) continue;
+                DataResult<A> parsed = elementCodec.parse(ops, t);
+                if (parsed.isSuccess()) {
+                    return parsed.map(Optional::of).setPartial(parsed.resultOrPartial());
+                }
             }
+            return DataResult.success(Optional.empty());
         }
-        return DataResult.error(() -> "No key " + names + " in " + input);
-    }
 
-    @Override
-    public <T> Stream<T> keys(final DynamicOps<T> ops) {
-        return names.stream().map(ops::createString);
-    }
-
-    @Override
-    public boolean equals(final Object o) {
-        if (this == o) {
-            return true;
+        @Override
+        public <T> RecordBuilder<T> encode(Optional<A> input, DynamicOps<T> ops, RecordBuilder<T> prefix) {
+            if (input.isEmpty()) return prefix;
+            return prefix.add(names[0], elementCodec.encodeStart(ops, input.get()));
         }
-        if (o == null || getClass() != o.getClass()) {
-            return false;
+
+        @Override
+        public <T> Stream<T> keys(DynamicOps<T> ops) {
+            return Arrays.stream(names).map(ops::createString);
         }
-        final DuplicateFieldDecoder<?> that = (DuplicateFieldDecoder<?>) o;
-        return Objects.equals(names, that.names) && Objects.equals(elementCodec, that.elementCodec);
-    }
 
-    @Override
-    public int hashCode() {
-        return Objects.hash(names, elementCodec);
-    }
+        @Override
+        public boolean equals(Object o) {
+            return o == this || (
+                    o instanceof AliasOptionalFieldCodec<?> that &&
+                            Arrays.equals(names, that.names) &&
+                            elementCodec.equals(that.elementCodec)
+            );
+        }
 
-    @Override
-    public String toString() {
-        return "DuplicateFieldDecoder[" + names + ": " + elementCodec + ']';
+        @Override
+        public int hashCode() {
+            int result = Objects.hashCode(names);
+            result = 31 * result + Objects.hashCode(elementCodec);
+            return result;
+        }
+
+        @Override
+        public String toString() {
+            return "AliasOptionalFieldCodec{" +
+                    "names='" + Arrays.toString(names) + '\'' +
+                    ", elementCodec=" + elementCodec +
+                    '}';
+        }
     }
 }

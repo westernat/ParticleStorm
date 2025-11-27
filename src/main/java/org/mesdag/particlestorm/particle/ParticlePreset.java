@@ -26,19 +26,19 @@ import java.util.*;
 import static org.mesdag.particlestorm.data.molang.compiler.MolangQueries.applyPrefixAliases;
 
 public class ParticlePreset {
-    public final DefinedParticleEffect effect;
-    public final ParticleRenderType renderType;
-    public final FaceCameraMode facingCameraMode;
-    public final float minSpeedThresholdSqr;
-    public final boolean environmentLighting;
+    public DefinedParticleEffect effect;
+    public ParticleRenderType renderType;
+    public FaceCameraMode facingCameraMode;
+    public float minSpeedThresholdSqr;
+    public boolean environmentLighting;
     public ParticleLifeTimeEvents lifeTimeEvents;
     public List<ParticleMotionCollision.Event> collisionEvents = List.of();
-    public final float invTextureWidth;
-    public final float invTextureHeight;
-    public final boolean motionDynamic;
+    public float invTextureWidth;
+    public float invTextureHeight;
+    public boolean motionDynamic;
 
-    public final VariableTable vars;
-    public final List<VariableAssignment> assignments;
+    public VariableTable vars;
+    public List<VariableAssignment> assignments;
 
     /// For custom preset data
     protected Map<Class<?>, Object> tickets;
@@ -55,12 +55,12 @@ public class ParticlePreset {
             default -> ParticleRenderType.NO_RENDER;
         };
         if (effect.components.get(ParticleAppearanceBillboard.ID) instanceof ParticleAppearanceBillboard component) {
-            this.facingCameraMode = FaceCameraMode.valueOf(component.faceCameraMode().name());
+            this.facingCameraMode = FaceCameraMode.fromComponent(component.faceCameraMode());
             this.minSpeedThresholdSqr = Mth.square(component.direction().minSpeedThreshold());
             this.invTextureWidth = 1.0F / component.uv().texturewidth();
             this.invTextureHeight = 1.0F / component.uv().textureheight();
         } else {
-            this.facingCameraMode = FaceCameraMode.ROTATE_XYZ;
+            this.facingCameraMode = FaceCameraMode.DO_NOTHING;
             this.minSpeedThresholdSqr = 0;
             this.invTextureWidth = 1;
             this.invTextureHeight = 1;

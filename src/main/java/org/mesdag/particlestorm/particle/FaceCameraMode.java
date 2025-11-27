@@ -9,8 +9,13 @@ import org.joml.Quaternionf;
 import org.joml.Vector3f;
 import org.mesdag.particlestorm.api.IMolangParticleInstance;
 import org.mesdag.particlestorm.data.MathHelper;
+import org.mesdag.particlestorm.data.component.ParticleAppearanceBillboard;
 
 public enum FaceCameraMode implements SingleQuadParticle.FacingCameraMode {
+    DO_NOTHING {
+        @Override
+        public void setRotation(Quaternionf quaternion, Camera camera, float partialTick) {}
+    },
     LOOKAT_XYZ {
         private final Vector3f wd = new Vector3f();
         private final Vector3f qd = new Vector3f();
@@ -113,5 +118,13 @@ public enum FaceCameraMode implements SingleQuadParticle.FacingCameraMode {
 
     public void setRotation(IMolangParticleInstance instance, Quaternionf quaternion, Camera camera, float partialTick) {
         setRotation(quaternion, camera, partialTick);
+    }
+
+    public static FaceCameraMode fromComponent(ParticleAppearanceBillboard.FaceCameraMode faceCameraMode) {
+        try {
+            return FaceCameraMode.valueOf(faceCameraMode.name());
+        } catch (Exception e) {
+            return DO_NOTHING;
+        }
     }
 }

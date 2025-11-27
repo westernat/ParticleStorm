@@ -22,7 +22,7 @@ public record ParticleAppearanceBillboard(FloatMolangExp2 size, FaceCameraMode f
     public static final ResourceLocation ID = ResourceLocation.withDefaultNamespace("particle_appearance_billboard");
     public static final Codec<ParticleAppearanceBillboard> CODEC = RecordCodecBuilder.create(instance -> instance.group(
             FloatMolangExp2.CODEC.fieldOf("size").forGetter(ParticleAppearanceBillboard::size),
-            DuplicateFieldDecoder.fieldOf("face_camera_mode", "facing_camera_mode", FaceCameraMode.CODEC).forGetter(ParticleAppearanceBillboard::faceCameraMode),
+            DuplicateFieldDecoder.fieldOf(FaceCameraMode.CODEC, "face_camera_mode", "facing_camera_mode").forGetter(ParticleAppearanceBillboard::faceCameraMode),
             Direction.CODEC.lenientOptionalFieldOf("direction", Direction.DEFAULT).forGetter(ParticleAppearanceBillboard::direction),
             UV.CODEC.fieldOf("uv").orElse(UV.EMPTY).forGetter(ParticleAppearanceBillboard::uv)
     ).apply(instance, ParticleAppearanceBillboard::new));
@@ -229,8 +229,8 @@ public record ParticleAppearanceBillboard(FloatMolangExp2 size, FaceCameraMode f
     public record UV(int texturewidth, int textureheight, FloatMolangExp2 uv, FloatMolangExp2 uvSize, Flipbook flipbook) {
         public static final UV EMPTY = new UV(1, 1, FloatMolangExp2.ZERO, FloatMolangExp2.ZERO, Flipbook.EMPTY);
         public static final Codec<UV> CODEC = RecordCodecBuilder.create(instance -> instance.group(
-                DuplicateFieldDecoder.fieldOf("texturewidth", "texture_width", ExtraCodecs.POSITIVE_INT).orElse(1).forGetter(UV::texturewidth),
-                DuplicateFieldDecoder.fieldOf("textureheight", "texture_height", ExtraCodecs.POSITIVE_INT).orElse(1).forGetter(UV::textureheight),
+                DuplicateFieldDecoder.fieldOf(ExtraCodecs.POSITIVE_INT, "texturewidth", "texture_width").orElse(1).forGetter(UV::texturewidth),
+                DuplicateFieldDecoder.fieldOf(ExtraCodecs.POSITIVE_INT, "textureheight", "texture_height").orElse(1).forGetter(UV::textureheight),
                 FloatMolangExp2.CODEC.fieldOf("uv").orElse(FloatMolangExp2.ZERO).forGetter(UV::uv),
                 FloatMolangExp2.CODEC.fieldOf("uv_size").orElse(FloatMolangExp2.ZERO).forGetter(UV::uvSize),
                 Flipbook.CODEC.fieldOf("flipbook").orElse(Flipbook.EMPTY).forGetter(UV::flipbook)
