@@ -83,7 +83,7 @@ public final class PSGameClient {
         LocalPlayer localPlayer = minecraft.player;
         if (localPlayer == null) {
             LOADER.removeAll();
-        } else if (!minecraft.isPaused() && !localPlayer.level().tickRateManager().isFrozen()) {
+        } else if (!minecraft.isPaused() && localPlayer.level().tickRateManager().runsNormally()) {
             LOADER.tick(localPlayer);
         }
     }
