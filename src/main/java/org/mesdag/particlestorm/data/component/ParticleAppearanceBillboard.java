@@ -1,6 +1,7 @@
 package org.mesdag.particlestorm.data.component;
 
 import com.mojang.serialization.Codec;
+import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.resources.ResourceLocation;
@@ -176,13 +177,14 @@ public record ParticleAppearanceBillboard(FloatMolangExp2 size, FaceCameraMode f
 
     public record Direction(Mode mode, float minSpeedThreshold, FloatMolangExp3 customDirection) {
         public static final Direction DEFAULT = new Direction(Direction.Mode.DERIVE_FROM_VELOCITY, 0.01F, FloatMolangExp3.ZERO);
+        public static final MapCodec<Direction> CUSTOM_MODE_CODEC = RecordCodecBuilder.mapCodec(instance -> instance.group(
+                FloatMolangExp3.CODEC.fieldOf("custom_direction").orElse(FloatMolangExp3.ZERO).forGetter(Direction::customDirection)
+        ).apply(instance, l -> new Direction(Mode.CUSTOM_DIRECTION, 0, l)));
+        public static final MapCodec<Direction> SPEED_MODE_CODEC = RecordCodecBuilder.mapCodec(instance -> instance.group(
+                Codec.FLOAT.fieldOf("min_speed_threshold").orElse(0.01F).forGetter(Direction::minSpeedThreshold)
+        ).apply(instance, f -> new Direction(Mode.DERIVE_FROM_VELOCITY, f, FloatMolangExp3.ZERO)));
         public static final Codec<Direction> CODEC = Mode.CODEC.dispatchMap(
-                Direction::mode,
-                mode -> mode == Mode.CUSTOM_DIRECTION ? RecordCodecBuilder.mapCodec(instance -> instance.group(
-                        FloatMolangExp3.CODEC.fieldOf("custom_direction").orElse(FloatMolangExp3.ZERO).forGetter(Direction::customDirection)
-                ).apply(instance, l -> new Direction(mode, 0, l))) : RecordCodecBuilder.mapCodec(instance -> instance.group(
-                        Codec.FLOAT.fieldOf("min_speed_threshold").orElse(0.01F).forGetter(Direction::minSpeedThreshold)
-                ).apply(instance, f -> new Direction(mode, f, FloatMolangExp3.ZERO)))
+                "mode", Direction::mode, mode -> mode == Mode.CUSTOM_DIRECTION ? CUSTOM_MODE_CODEC : SPEED_MODE_CODEC
         ).codec();
 
         @Override
