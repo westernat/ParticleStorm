@@ -16,10 +16,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
-/**
- * All events use the event names in the event section<p>
- * All events can be either an array or a string
- */
+/// All events use the event names in the event section
+///
+/// All events can be either an array or a string
 public final class ParticleLifeTimeEvents implements IParticleComponent {
     public static final ResourceLocation ID = ResourceLocation.withDefaultNamespace("particle_lifetime_events");
     public static final Codec<ParticleLifeTimeEvents> CODEC = RecordCodecBuilder.create(instance -> instance.group(
@@ -33,11 +32,9 @@ public final class ParticleLifeTimeEvents implements IParticleComponent {
 
     public final List<Tuple<Function<Integer, Boolean>, List<String>>> sortedTimeline;
 
-    /**
-     * @param creationEvent   Fires when the particle is created
-     * @param expirationEvent Fires when the particle expires (does not wait for particles to expire too)
-     * @param timeline        A series of times, e.g. 0.0 or 1.0, that trigger the event
-     */
+    /// @param creationEvent   Fires when the particle is created
+    /// @param expirationEvent Fires when the particle expires (does not wait for particles to expire too)
+    /// @param timeline        A series of times, e.g. 0.0 or 1.0, that trigger the event
     public ParticleLifeTimeEvents(List<String> creationEvent, List<String> expirationEvent, Map<String, List<String>> timeline) {
         this.creationEvent = creationEvent;
         this.expirationEvent = expirationEvent;

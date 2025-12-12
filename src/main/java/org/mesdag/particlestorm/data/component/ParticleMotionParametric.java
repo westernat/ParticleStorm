@@ -10,21 +10,19 @@ import org.mesdag.particlestorm.data.molang.MolangExp;
 
 import java.util.List;
 
-/**
- * This component directly controls the particle.
- *
- * @param relativePosition Directly set the position relative to the emitter. Defaults to [0, 0, 0]<p>
- *                         E.g. a spiral might be:
- *                         <p><code>
- *                         "relative_position": ["Math.cos(Params.LifeTime)", 1.0, "Math.sin(Params.Lifetime)"]
- *                         </code></p>
- *                         Evaluated every frame
- * @param direction        Directly set the 3d direction of the particle<p>
- *                         Doesn't affect direction if not specified<p>
- *                         Evaluated every frame
- * @param rotation         Directly set the rotation of the particle<p>
- *                         Evaluated every frame
- */
+/// This component directly controls the particle.
+///
+/// @param relativePosition Directly set the position relative to the emitter. Defaults to `[0, 0, 0]`<p>
+///                         E.g. a spiral might be:
+///                         ```
+///                         "relative_position": ["Math.cos(Params.LifeTime)", 1.0, "Math.sin(Params.Lifetime)"]
+///                         ```
+///                         Evaluated every frame
+/// @param direction        Directly set the 3d direction of the particle<p>
+///                         Doesn't affect direction if not specified<p>
+///                         Evaluated every frame
+/// @param rotation         Directly set the rotation of the particle<p>
+///                         Evaluated every frame
 public record ParticleMotionParametric(FloatMolangExp3 relativePosition, FloatMolangExp3 direction, FloatMolangExp rotation) implements IParticleComponent {
     public static final Codec<ParticleMotionParametric> CODEC = RecordCodecBuilder.create(instance -> instance.group(
             FloatMolangExp3.CODEC.fieldOf("relative_position").orElse(FloatMolangExp3.ZERO).forGetter(ParticleMotionParametric::relativePosition),

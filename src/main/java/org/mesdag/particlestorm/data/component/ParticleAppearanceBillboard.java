@@ -59,7 +59,7 @@ public record ParticleAppearanceBillboard(FloatMolangExp2 size, FaceCameraMode f
             instance.setMaxFrame((int) flipbook.maxFrame.calculate(instance));
             instance.setCurrentFrame(instance.getMaxFrame() * instance.getAge() / instance.self().getLifetime());
         } else {
-            float gameTime = (float) (int) (instance.getLevel().getGameTime() & 0b11111111);
+            float gameTime = (float) ((int) instance.getLevel().getGameTime() & 0b11111111);
             if (gameTime % (instance.getLevel().tickRateManager().tickrate() / flipbook.framesPerSecond) < 1.0F) {
                 updateFlipbookUV(instance);
                 instance.setMaxFrame((int) flipbook.maxFrame.calculate(instance));
@@ -215,17 +215,15 @@ public record ParticleAppearanceBillboard(FloatMolangExp2 size, FaceCameraMode f
         }
     }
 
-    /**
-     * Specifies the UVs for the particle.
-     *
-     * @param texturewidth
-     * @param textureheight Specifies the assumed texture width/height, defaults to 1<p>
-     *                      When set to 1, UV's work just like normalized UV's<p>
-     *                      When set to the texture width/height, this works like texels
-     * @param uv
-     * @param uvSize        Assuming the specified texture width and height, use these uv coordinates.<p>
-     *                      Evaluated every frame
-     */
+    /// Specifies the UVs for the particle.
+    ///
+    /// @param texturewidth
+    /// @param textureheight Specifies the assumed texture width/height, defaults to 1<p>
+    ///                      When set to 1, UV's work just like normalized UV's<p>
+    ///                      When set to the texture width/height, this works like texels
+    /// @param uv
+    /// @param uvSize        Assuming the specified texture width and height, use these uv coordinates.<p>
+    ///                      Evaluated every frame
     public record UV(int texturewidth, int textureheight, FloatMolangExp2 uv, FloatMolangExp2 uvSize, Flipbook flipbook) {
         public static final UV EMPTY = new UV(1, 1, FloatMolangExp2.ZERO, FloatMolangExp2.ZERO, Flipbook.EMPTY);
         public static final Codec<UV> CODEC = RecordCodecBuilder.create(instance -> instance.group(
@@ -248,6 +246,7 @@ public record ParticleAppearanceBillboard(FloatMolangExp2 size, FaceCameraMode f
         }
 
         /// Alternate way via specifying a flipbook animation
+        ///
         /// A flipbook animation uses pieces of the texture to animate, by stepping over time from one `frame` to another
         ///
         /// @param baseUV            Upper-left corner of starting UV patch

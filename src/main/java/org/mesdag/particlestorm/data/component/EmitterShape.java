@@ -32,9 +32,7 @@ public abstract sealed class EmitterShape implements IEmitterComponent permits E
         this.surfaceOnly = surfaceOnly;
     }
 
-    /**
-     * Emit only from the edge of the shape
-     */
+    /// Emit only from the edge of the shape
     public boolean isSurfaceOnly() {
         return surfaceOnly;
     }
@@ -121,9 +119,7 @@ public abstract sealed class EmitterShape implements IEmitterComponent permits E
         return Minecraft.getInstance().particleEngine.trackedParticleCounts.getInt(particleGroup) < particleGroup.getLimit();
     }
 
-    /**
-     * This component spawns particles using a disc shape, particles can be spawned inside the shape or on its outer perimeter.
-     */
+    /// This component spawns particles using a disc shape, particles can be spawned inside the shape or on its outer perimeter.
     public static final class Disc extends EmitterShape {
         public static final Codec<Disc> CODEC = RecordCodecBuilder.create(instance -> instance.group(
                 FloatMolangExp3.CODEC.fieldOf("offset").orElseGet(() -> FloatMolangExp3.ZERO).forGetter(disc -> disc.offset),
@@ -132,25 +128,17 @@ public abstract sealed class EmitterShape implements IEmitterComponent permits E
                 Direction.CODEC.fieldOf("direction").orElse(Direction.OUTWARDS).forGetter(disc -> disc.direction),
                 Codec.BOOL.fieldOf("surface_only").orElse(false).forGetter(EmitterShape::isSurfaceOnly)
         ).apply(instance, Disc::new));
-        /**
-         * Specifies the offset from the emitter to emit the particles
-         * <p>
-         * Evaluated once per particle emitted
-         */
+        /// Specifies the offset from the emitter to emit the particles
+        ///
+        /// Evaluated once per particle emitted
         public final FloatMolangExp3 offset;
-        /**
-         * Disc radius
-         * <p>
-         * Evaluated once per particle emitted
-         */
+        /// Disc radius
+        ///
+        /// Evaluated once per particle emitted
         public final FloatMolangExp radius;
-        /**
-         * Specifies the normal of the disc plane, the disc will be perpendicular to this direction
-         */
+        /// Specifies the normal of the disc plane, the disc will be perpendicular to this direction
         public final PlaneNormal planeNormal;
-        /**
-         * Specifies the direction of particles.
-         */
+        /// Specifies the direction of particles.
         public final Direction direction;
 
         public Disc(FloatMolangExp3 offset, FloatMolangExp radius, PlaneNormal planeNormal, Direction direction, boolean surfaceOnly) {
@@ -201,10 +189,8 @@ public abstract sealed class EmitterShape implements IEmitterComponent permits E
                     '}';
         }
 
-        /**
-         * Custom direction for the normal
-         */
-        public static class PlaneNormal {
+        /// Custom direction for the normal
+        public record PlaneNormal(String name, FloatMolangExp3 plane) {
             public static final PlaneNormal X = new PlaneNormal("x", FloatMolangExp3.X);
             public static final PlaneNormal Y = new PlaneNormal("y", FloatMolangExp3.Y);
             public static final PlaneNormal Z = new PlaneNormal("z", FloatMolangExp3.Z);
@@ -217,13 +203,6 @@ public abstract sealed class EmitterShape implements IEmitterComponent permits E
                     }, list -> new PlaneNormal("custom", list)),
                     plane -> Either.right(plane.plane)
             );
-            public final String name;
-            public final FloatMolangExp3 plane;
-
-            PlaneNormal(String name, FloatMolangExp3 list) {
-                this.name = name;
-                this.plane = list;
-            }
 
             public boolean isCustom() {
                 return "custom".equals(name);
@@ -239,9 +218,7 @@ public abstract sealed class EmitterShape implements IEmitterComponent permits E
         }
     }
 
-    /**
-     * All particles come out of a box of the specified size from the emitter.
-     */
+    /// All particles come out of a box of the specified size from the emitter.
     public static final class Box extends EmitterShape {
         public static final Codec<Box> CODEC = RecordCodecBuilder.create(instance -> instance.group(
                 FloatMolangExp3.CODEC.fieldOf("offset").orElse(FloatMolangExp3.ZERO).forGetter(box -> box.offset),
@@ -249,15 +226,11 @@ public abstract sealed class EmitterShape implements IEmitterComponent permits E
                 Direction.CODEC.fieldOf("direction").orElse(Direction.OUTWARDS).forGetter(box -> box.direction),
                 Codec.BOOL.fieldOf("surface_only").orElse(false).forGetter(EmitterShape::isSurfaceOnly)
         ).apply(instance, Box::new));
-        /**
-         * Specifies the offset from the emitter to emit the particles<p>
-         * Evaluated once per particle emitted
-         */
+        /// Specifies the offset from the emitter to emit the particles
+        /// Evaluated once per particle emitted
         public final FloatMolangExp3 offset;
         public final FloatMolangExp3 halfDimensions;
-        /**
-         * Specifies the direction of particles.
-         */
+        /// Specifies the direction of particles.
         public final Direction direction;
 
         public Box(FloatMolangExp3 offset, FloatMolangExp3 halfDimensions, Direction direction, boolean surfaceOnly) {
@@ -304,9 +277,7 @@ public abstract sealed class EmitterShape implements IEmitterComponent permits E
         }
     }
 
-    /**
-     * All particles come out of the axis-aligned bounding box (AABB) for the entity the emitter is attached to, or the emitter point if no entity.
-     */
+    /// All particles come out of the axis-aligned bounding box AABB for the entity the emitter is attached to, or the emitter point if no entity.
     public static final class EntityAABB extends EmitterShape {
         public static final Codec<EntityAABB> CODEC = RecordCodecBuilder.create(instance -> instance.group(
                 Direction.CODEC.fieldOf("direction").orElse(Direction.OUTWARDS).forGetter(entityAABB -> entityAABB.direction),
@@ -354,23 +325,17 @@ public abstract sealed class EmitterShape implements IEmitterComponent permits E
         }
     }
 
-    /**
-     * All particles come out of a point offset from the emitter.
-     */
+    /// All particles come out of a point offset from the emitter.
     public static final class Point extends EmitterShape {
         public static final Codec<Point> CODEC = RecordCodecBuilder.create(instance -> instance.group(
                 FloatMolangExp3.CODEC.fieldOf("offset").orElse(FloatMolangExp3.ZERO).forGetter(point -> point.offset),
                 Direction.CODEC.fieldOf("direction").orElse(Direction.OUTWARDS).forGetter(point -> point.direction)
         ).apply(instance, Point::new));
-        /**
-         * Specifies the offset from the emitter to emit the particles
-         * <p>
-         * Evaluated once per particle emitted
-         */
+        /// Specifies the offset from the emitter to emit the particles
+        ///
+        /// Evaluated once per particle emitted
         public final FloatMolangExp3 offset;
-        /**
-         * Specifies the direction of particles.
-         */
+        /// Specifies the direction of particles.
         public final Direction direction;
 
         public Point(FloatMolangExp3 offset, Direction direction) {
@@ -420,21 +385,15 @@ public abstract sealed class EmitterShape implements IEmitterComponent permits E
                 Direction.CODEC.fieldOf("direction").orElse(Direction.OUTWARDS).forGetter(sphere -> sphere.direction),
                 Codec.BOOL.fieldOf("surface_only").orElse(false).forGetter(EmitterShape::isSurfaceOnly)
         ).apply(instance, Sphere::new));
-        /**
-         * Specifies the offset from the emitter to emit the particles
-         * <p>
-         * Evaluated once per particle emitted
-         */
+        /// Specifies the offset from the emitter to emit the particles
+        ///
+        /// Evaluated once per particle emitted
         public final FloatMolangExp3 offset;
-        /**
-         * Sphere radius
-         * <p>
-         * Evaluated once per particle emitted
-         */
+        /// Sphere radius
+        ///
+        /// Evaluated once per particle emitted
         public final FloatMolangExp radius;
-        /**
-         * Specifies the direction of particles.
-         */
+        /// Specifies the direction of particles.
         public final Direction direction;
 
         public Sphere(FloatMolangExp3 offset, FloatMolangExp radius, Direction direction, boolean surfaceOnly) {
@@ -477,30 +436,17 @@ public abstract sealed class EmitterShape implements IEmitterComponent permits E
         }
     }
 
-    /**
-     * Evaluated once per particle emitted
-     */
-    public static class Direction implements StringRepresentable {
-        /**
-         * Particle direction towards center of shape
-         */
+    /// Evaluated once per particle emitted
+    public record Direction(String name, FloatMolangExp3 direct) implements StringRepresentable {
+        /// Particle direction towards center of shape
         public static final Direction INWARDS = new Direction("inwards", FloatMolangExp3.ZERO);
-        /**
-         * Particle direction away from center of shape
-         */
+        /// Particle direction away from center of shape
         public static final Direction OUTWARDS = new Direction("outwards", FloatMolangExp3.ZERO);
         public static final Codec<Direction> DIRECTION_CODEC = StringRepresentable.fromValues(() -> new Direction[]{INWARDS, OUTWARDS});
         public static final Codec<Direction> CODEC = Codec.either(DIRECTION_CODEC, FloatMolangExp3.CODEC).xmap(
                 either -> either.map(dir -> dir, list -> new Direction("custom", list)),
                 dir -> dir.direct == FloatMolangExp3.ZERO ? Either.left(dir) : Either.right(dir.direct)
         );
-        public final String name;
-        public final FloatMolangExp3 direct;
-
-        Direction(String name, FloatMolangExp3 direct) {
-            this.name = name;
-            this.direct = direct;
-        }
 
         @Override
         public String getSerializedName() {

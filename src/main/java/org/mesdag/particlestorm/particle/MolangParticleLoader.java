@@ -29,6 +29,7 @@ import org.mesdag.particlestorm.ParticleStorm;
 import org.mesdag.particlestorm.api.IParticleComponent;
 import org.mesdag.particlestorm.api.IntAllocator;
 import org.mesdag.particlestorm.api.MolangParticleLoadEvent;
+import org.mesdag.particlestorm.api.RegisterCustomEmitterTypeEvent;
 import org.mesdag.particlestorm.data.DefinedParticleEffect;
 import org.mesdag.particlestorm.network.EmitterRemovalPacket;
 import org.mesdag.particlestorm.network.EmitterSynchronizePacket;
@@ -121,7 +122,7 @@ public class MolangParticleLoader implements PreparableReloadListener {
     }
 
     public void loadEmitter(Level level, int id, CompoundTag tag) {
-        ParticleEmitter emitter = new ParticleEmitter(level, tag);
+        ParticleEmitter emitter = RegisterCustomEmitterTypeEvent.create(level, tag);
         emitter.id = id;
         emitters.put(id, emitter);
         if (allocator.forceAllocate(id)) {

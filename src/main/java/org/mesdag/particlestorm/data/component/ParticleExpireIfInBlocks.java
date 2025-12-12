@@ -17,10 +17,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-/**
- * Particles expire when in a block of the type in the list.<p>
- * Note: this component can exist alongside particle_lifetime_expression.
- */
+/// Particles expire when in a block of the type in the list.
+///
+/// Note: this component can exist alongside particle_lifetime_expression.
 public final class ParticleExpireIfInBlocks implements IParticleComponent {
     public static final Codec<ParticleExpireIfInBlocks> CODEC = Codec.list(Codec.STRING).xmap(
             states -> new ParticleExpireIfInBlocks(new HashSet<>(states)),

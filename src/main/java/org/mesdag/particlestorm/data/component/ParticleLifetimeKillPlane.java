@@ -7,12 +7,13 @@ import org.mesdag.particlestorm.data.molang.MolangExp;
 
 import java.util.List;
 
-/**
- * Particles that cross this plane expire.<p>
- * The plane is relative to the emitter, but oriented in world space.<p>
- * The four parameters are the usual 4 elements of a plane equation.<p>
- * A*x + B*y + C*z + D = 0 with the parameters being [ A, B, C, D ]
- */
+/// Particles that cross this plane expire.
+///
+/// The plane is relative to the emitter, but oriented in world space.
+///
+/// The four parameters are the usual 4 elements of a plane equation.
+///
+/// `A*x + B*y + C*z + D = 0` with the parameters being `[ A, B, C, D ]`
 public final class ParticleLifetimeKillPlane implements IParticleComponent {
     public static final Codec<ParticleLifetimeKillPlane> CODEC = Codec.list(Codec.FLOAT, 4, 4).xmap(
             floats -> new ParticleLifetimeKillPlane(floats.getFirst(), floats.get(1), floats.get(2), floats.get(3)),

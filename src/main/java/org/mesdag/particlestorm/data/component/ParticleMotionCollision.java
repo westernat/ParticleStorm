@@ -15,25 +15,26 @@ import java.util.Collections;
 import java.util.List;
 import java.util.function.Function;
 
-/**
- * This component enables collisions between the terrain and the particle.<p>
- * Collision detection in Minecraft consists of detecting an intersection,<p>
- * moving to a nearby non-intersecting point for the particle (if possible),<p>
- * and setting its direction to not be aimed towards the collision (usually perpendicular to the collision surface).
- *
- * @param enabled                  Enables collision when true/non-zero.<p>
- *                                 Evaluated every frame
- * @param collisionDrag            Alters the speed of the particle when it has collided<p>
- *                                 Useful for emulating friction/drag when colliding, e.g a particle that hits the ground would slow to a stop.<p>
- *                                 This drag slows down the particle by this amount in blocks/sec when in contact
- * @param coefficientOfRestitution Used for bouncing/not-bouncing<p>
- *                                 Set to 0.0 to not bounce, 1.0 to bounce back up to original height and in-between to lose speed after bouncing.<p>
- *                                 Set to >1.0 to gain energy on each bounce
- * @param collisionRadius          Used to minimize interpenetration of particles with the environment<p>
- *                                 Note that this must be less than or equal to 1/2 block
- * @param expireOnContact          Triggers expiration on contact if true
- * @param events                   Triggers an event array of individual events
- */
+/// This component enables collisions between the terrain and the particle.
+///
+/// Collision detection in Minecraft consists of detecting an intersection,
+///
+/// moving to a nearby non-intersecting point for the particle (if possible),
+///
+/// and setting its direction to not be aimed towards the collision (usually perpendicular to the collision surface).
+///
+/// @param enabled                  Enables collision when true/non-zero.<p>
+///                                 Evaluated every frame
+/// @param collisionDrag            Alters the speed of the particle when it has collided<p>
+///                                 Useful for emulating friction/drag when colliding, e.g a particle that hits the ground would slow to a stop.<p>
+///                                 This drag slows down the particle by this amount in blocks/sec when in contact
+/// @param coefficientOfRestitution Used for bouncing/not-bouncing<p>
+///                                 Set to 0.0 to not bounce, 1.0 to bounce back up to original height and in-between to lose speed after bouncing.<p>
+///                                 Set to >1.0 to gain energy on each bounce
+/// @param collisionRadius          Used to minimize interpenetration of particles with the environment<p>
+///                                 Note that this must be less than or equal to 1/2 block
+/// @param expireOnContact          Triggers expiration on contact if true
+/// @param events                   Triggers an event array of individual events
 public record ParticleMotionCollision(BoolMolangExp enabled, float collisionDrag, float coefficientOfRestitution, float collisionRadius, boolean expireOnContact, List<Event> events) implements IParticleComponent {
     public static final ResourceLocation ID = ResourceLocation.withDefaultNamespace("particle_motion_collision");
     public static final Codec<ParticleMotionCollision> CODEC = RecordCodecBuilder.create(instance -> instance.group(

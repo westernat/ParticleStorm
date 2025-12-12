@@ -9,9 +9,7 @@ import org.mesdag.particlestorm.data.molang.MolangExp;
 
 import java.util.List;
 
-/**
- * Starts the particle with a specified render expression.
- */
+/// Starts the particle with a specified render expression.
 public record ParticleInitialization(FloatMolangExp perRenderExpression) implements IParticleComponent {
     public static final Codec<ParticleInitialization> CODEC = RecordCodecBuilder.create(instance -> instance.group(
             FloatMolangExp.CODEC.fieldOf("per_render_expression").forGetter(ParticleInitialization::perRenderExpression)

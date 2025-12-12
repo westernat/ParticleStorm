@@ -10,11 +10,9 @@ import org.mesdag.particlestorm.data.molang.MolangExp;
 
 import java.util.List;
 
-/**
- * Starts the particle with a specified speed, using the direction specified by the emitter shape.
- *
- * @param speed Evaluated once
- */
+/// Starts the particle with a specified speed, using the direction specified by the emitter shape.
+///
+/// @param speed Evaluated once
 public record ParticleInitialSpeed(Either<FloatMolangExp, FloatMolangExp3> speed) implements IParticleComponent {
     public static final Codec<ParticleInitialSpeed> CODEC = Codec.either(FloatMolangExp.CODEC, FloatMolangExp3.CODEC).xmap(
             either -> either.map(f -> new ParticleInitialSpeed(Either.left(f)), l -> new ParticleInitialSpeed(Either.right(l))),

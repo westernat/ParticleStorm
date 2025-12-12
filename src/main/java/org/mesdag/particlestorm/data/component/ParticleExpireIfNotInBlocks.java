@@ -61,5 +61,4 @@ public final class ParticleExpireIfNotInBlocks implements IParticleComponent {
         return "ParticleExpireIfNotInBlocks[" +
                 "blocks=" + ids + ']';
     }
-
 }
