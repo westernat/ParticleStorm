@@ -167,5 +167,6 @@ public final class PSGameClient {
         IEventNode.register("particle_effect", ParticleEffect.CODEC.codec());
         IEventNode.register("sound_effect", SoundEffect.CODEC.codec());
         IEventNode.register("expression", NodeMolangExp.CODEC);
+        IEventNode.register("log", EventLog.CODEC);
     }
 }

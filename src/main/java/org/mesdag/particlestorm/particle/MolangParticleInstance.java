@@ -380,9 +380,11 @@ public class MolangParticleInstance extends TextureSheetParticle implements IMol
         }
     }
 
+    private static final Quaternionf quaternionf = new Quaternionf();
+
     @Override
     public void render(VertexConsumer buffer, Camera camera, float partialTicks) {
-        Quaternionf quaternionf = new Quaternionf();
+        quaternionf.identity();
         getFacingCameraMode().setRotation(this, quaternionf, camera, partialTicks);
         if (xRot != 0.0F) quaternionf.rotateX(Mth.lerp(partialTicks, xRotO, xRot));
         if (yRot != 0.0F) quaternionf.rotateY(Mth.lerp(partialTicks, yRotO, yRot));

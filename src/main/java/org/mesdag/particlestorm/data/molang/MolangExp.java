@@ -8,6 +8,7 @@ import net.minecraft.network.codec.StreamCodec;
 import org.mesdag.particlestorm.api.MolangInstance;
 import org.mesdag.particlestorm.data.molang.compiler.MathValue;
 import org.mesdag.particlestorm.data.molang.compiler.MolangParser;
+import org.mesdag.particlestorm.data.molang.compiler.MolangQueries;
 import org.mesdag.particlestorm.data.molang.compiler.value.Constant;
 
 import java.util.Map;
@@ -24,16 +25,24 @@ public class MolangExp {
     }
 
     public MolangExp(String key, double value) {
-        if (!key.startsWith("variable.")) key = "variable." + key;
-        this.expStr = key + "=" + value + ";";
+        this.expStr = MolangQueries.applyPrefixAliases(key, "variable.", "v.") + "=" + value;
     }
 
     public MolangExp(Map<String, String> exps) {
         StringBuilder builder = new StringBuilder();
+        int i = 0;
         for (Map.Entry<String, String> entry : exps.entrySet()) {
-            builder.append(entry.getKey()).append('=').append(entry.getValue()).append(';');
+            builder.append(entry.getKey()).append('=').append(entry.getValue());
+            if (++i < exps.size()) {
+                builder.append(';');
+            }
         }
         this.expStr = builder.toString();
+    }
+
+    public MolangExp(MathValue variable) {
+        this.expStr = variable.toString();
+        this.variable = variable;
     }
 
     public String getExpStr() {

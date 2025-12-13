@@ -146,6 +146,7 @@ public record ParticleAppearanceBillboard(FloatMolangExp2 size, FaceCameraMode f
     }
 
     public enum FaceCameraMode implements StringRepresentable {
+        DO_NOTHING,
         ROTATE_XYZ,
         ROTATE_Y,
         LOOKAT_XYZ,

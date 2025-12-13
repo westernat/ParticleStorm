@@ -8,6 +8,7 @@ import org.mesdag.particlestorm.api.MolangInstance;
 import org.mesdag.particlestorm.api.RegisterMolangQueriesEvent;
 import org.mesdag.particlestorm.data.molang.compiler.value.Variable;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -79,13 +80,7 @@ public final class MolangQueries {
         registerQueryVariable("query.time_of_day", p -> p.getLevel().getDayTime() / 24000f);
         registerQueryVariable("query.time_stamp", p -> p.getLevel().getGameTime());
         registerQueryVariable("query.total_emitter_count", p -> PSGameClient.LOADER.totalEmitterCount());
-        registerQueryVariable("query.total_particle_count", p -> {
-            int sum = 0;
-            for (Integer value : Minecraft.getInstance().particleEngine.trackedParticleCounts.values()) {
-                sum += value;
-            }
-            return sum;
-        });
+        registerQueryVariable("query.total_particle_count", p -> Minecraft.getInstance().particleEngine.particles.values().stream().mapToInt(Collection::size).sum());
         registerQueryVariable("query.attached_x", p -> p.getAttachedEntity() == null ? 0.0 : p.getAttachedEntity().getX());
         registerQueryVariable("query.attached_y", p -> p.getAttachedEntity() == null ? 0.0 : p.getAttachedEntity().getY());
         registerQueryVariable("query.attached_z", p -> p.getAttachedEntity() == null ? 0.0 : p.getAttachedEntity().getZ());
