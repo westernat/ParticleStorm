@@ -12,8 +12,14 @@ import java.util.List;
 /// Starts the particle with a specified render expression.
 public record ParticleInitialization(FloatMolangExp perRenderExpression) implements IParticleComponent {
     public static final Codec<ParticleInitialization> CODEC = RecordCodecBuilder.create(instance -> instance.group(
-            FloatMolangExp.CODEC.fieldOf("per_render_expression").forGetter(ParticleInitialization::perRenderExpression)
-    ).apply(instance, ParticleInitialization::new));
+            FloatMolangExp.CODEC.fieldOf("per_render_expression").forGetter(ParticleInitialization::perRenderExpression),
+            FloatMolangExp.CODEC.lenientOptionalFieldOf("per_update_expression", FloatMolangExp.ZERO).forGetter(ParticleInitialization::perRenderExpression)
+    ).apply(instance, (render, update) -> {
+        if (update != FloatMolangExp.ZERO) {
+            throw new IllegalArgumentException("per_update_expression is not allowed here, please use per_render_expression instead");
+        }
+        return new ParticleInitialization(render);
+    }));
 
     @Override
     public Codec<ParticleInitialization> codec() {
