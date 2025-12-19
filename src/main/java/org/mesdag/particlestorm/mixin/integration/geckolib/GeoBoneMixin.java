@@ -2,7 +2,6 @@ package org.mesdag.particlestorm.mixin.integration.geckolib;
 
 import org.mesdag.particlestorm.mixed.IAnimatableInstanceCache;
 import org.mesdag.particlestorm.mixed.IGeoBone;
-import org.mesdag.particlestorm.mixin.MolangQueriesAccessor;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Pseudo;
 import org.spongepowered.asm.mixin.Shadow;

@@ -10,11 +10,10 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.Mod;
+import net.neoforged.fml.loading.LoadingModList;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
@@ -23,7 +22,7 @@ import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
-import org.mesdag.particlestorm.api.geckolib.TestBlock;
+import org.mesdag.particlestorm.api.geckolib.GeckoLibHelper;
 import org.mesdag.particlestorm.network.EmitterAttachPacketS2C;
 import org.mesdag.particlestorm.network.EmitterCreationPacketS2C;
 import org.mesdag.particlestorm.network.EmitterRemovalPacket;
@@ -43,7 +42,7 @@ import static org.mesdag.particlestorm.network.EmitterSynchronizePacket.KEY;
 public final class ParticleStorm {
     public static final String MODID = "particlestorm";
     public static final Logger LOGGER = LoggerFactory.getLogger("ParticleStorm");
-    public static final boolean DEBUG = Boolean.getBoolean("particlestorm.debug");
+    public static final boolean DEBUG = Boolean.getBoolean("particlestorm.debug") && LoadingModList.get().getModFileById("geckolib") != null;
 
     private static final DeferredRegister<ParticleType<?>> REGISTER = DeferredRegister.create(BuiltInRegistries.PARTICLE_TYPE, MODID);
     public static final DeferredHolder<ParticleType<?>, ParticleType<MolangParticleOption>> MOLANG = registerParticleType(REGISTER, "molang");
@@ -51,7 +50,6 @@ public final class ParticleStorm {
             either -> either.map(Collections::singletonList, Function.identity()),
             l -> l.size() == 1 ? Either.left(l.getFirst()) : Either.right(l)
     );
-    public static DeferredHolder<BlockEntityType<?>, BlockEntityType<TestBlock.Entity>> TEST_ENTITY;
 
     public ParticleStorm(IEventBus bus, ModContainer container) {
         PSClientConfigs.register(container);
@@ -88,12 +86,7 @@ public final class ParticleStorm {
 
     private static void registerGeoTest(IEventBus bus) {
         if (DEBUG) {
-            DeferredRegister<Block> BLOCK = DeferredRegister.create(BuiltInRegistries.BLOCK, MODID);
-            DeferredRegister<BlockEntityType<?>> ENTITY = DeferredRegister.create(BuiltInRegistries.BLOCK_ENTITY_TYPE, MODID);
-            DeferredHolder<Block, Block> TEST = BLOCK.register("test_block", TestBlock::new);
-            TEST_ENTITY = ENTITY.register("test_entity", () -> BlockEntityType.Builder.of(TestBlock.Entity::new, TEST.get()).build(null));
-            BLOCK.register(bus);
-            ENTITY.register(bus);
+            GeckoLibHelper.registerStuffs(bus);
         }
     }
 

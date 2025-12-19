@@ -1,13 +1,22 @@
 package org.mesdag.particlestorm.api.geckolib;
 
 import it.unimi.dsi.fastutil.ints.IntIterator;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.phys.Vec3;
+import net.neoforged.bus.api.IEventBus;
+import net.neoforged.neoforge.client.event.EntityRenderersEvent;
+import net.neoforged.neoforge.registries.DeferredHolder;
+import net.neoforged.neoforge.registries.DeferredRegister;
 import org.joml.Vector3f;
 import org.mesdag.particlestorm.PSGameClient;
+import org.mesdag.particlestorm.ParticleStorm;
 import org.mesdag.particlestorm.data.molang.MolangExp;
 import org.mesdag.particlestorm.data.molang.VariableTable;
 import org.mesdag.particlestorm.mixed.*;
@@ -22,6 +31,22 @@ import software.bernie.geckolib.loading.json.raw.LocatorValue;
 import java.util.List;
 
 public final class GeckoLibHelper {
+    public static DeferredHolder<BlockEntityType<?>, BlockEntityType<TestBlock.Entity>> TEST_ENTITY;
+
+    public static void registerStuffs(IEventBus bus) {
+        DeferredRegister<Block> BLOCK = DeferredRegister.create(BuiltInRegistries.BLOCK, ParticleStorm.MODID);
+        DeferredRegister<BlockEntityType<?>> ENTITY = DeferredRegister.create(BuiltInRegistries.BLOCK_ENTITY_TYPE, ParticleStorm.MODID);
+        DeferredHolder<Block, Block> TEST = BLOCK.register("test_block", TestBlock::new);
+        TEST_ENTITY = ENTITY.register("test_entity", () -> BlockEntityType.Builder.of(TestBlock.Entity::new, TEST.get()).build(null));
+        BLOCK.register(bus);
+        ENTITY.register(bus);
+    }
+
+    public static void registerRenderers(EntityRenderersEvent.RegisterRenderers event) {
+        event.registerBlockEntityRenderer(GeckoLibHelper.TEST_ENTITY.get(), ExampleBlockEntityRenderer::new);
+        event.registerEntityRenderer(EntityType.CREEPER, ReplacedCreeperRenderer::new);
+    }
+
     public static double[] getLocatorOffset(Object locatorValue) {
         LocatorValue value = (LocatorValue) locatorValue;
         if (value.locatorClass() == null) {
