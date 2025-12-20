@@ -19,6 +19,7 @@ public interface IEventNode {
         return codec;
     }
 
+    @SuppressWarnings("unchecked")
     static void register(String name, Codec<? extends IEventNode> codec) {
         MAP.put(name, (Codec<IEventNode>) codec);
     }

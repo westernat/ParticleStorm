@@ -2,11 +2,13 @@ package org.mesdag.particlestorm.particle;
 
 import com.google.common.collect.Iterables;
 import net.minecraft.client.particle.ParticleRenderType;
-import org.jetbrains.annotations.NotNull;
+import net.minecraft.util.Mth;
+import net.neoforged.neoforge.common.NeoForge;
+import org.jetbrains.annotations.Nullable;
 import org.mesdag.particlestorm.PSGameClient;
-import org.mesdag.particlestorm.api.IComponent;
 import org.mesdag.particlestorm.api.IParticleComponent;
 import org.mesdag.particlestorm.api.MolangInstance;
+import org.mesdag.particlestorm.api.ParticlePresetLoadedEvent;
 import org.mesdag.particlestorm.data.DefinedParticleEffect;
 import org.mesdag.particlestorm.data.MathHelper;
 import org.mesdag.particlestorm.data.component.*;
@@ -19,27 +21,27 @@ import org.mesdag.particlestorm.data.molang.compiler.MolangParser;
 import org.mesdag.particlestorm.data.molang.compiler.value.Variable;
 import org.mesdag.particlestorm.data.molang.compiler.value.VariableAssignment;
 
-import java.util.ArrayList;
-import java.util.Hashtable;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static org.mesdag.particlestorm.data.molang.compiler.MolangQueries.applyPrefixAliases;
 
 public class ParticlePreset {
-    public final DefinedParticleEffect effect;
-    public final ParticleRenderType renderType;
-    public final FaceCameraMode facingCameraMode;
-    public final float minSpeedThresholdSqr;
-    public final boolean environmentLighting;
+    public DefinedParticleEffect effect;
+    public ParticleRenderType renderType;
+    public FaceCameraMode facingCameraMode;
+    public float minSpeedThresholdSqr;
+    public boolean environmentLighting;
     public ParticleLifeTimeEvents lifeTimeEvents;
     public List<ParticleMotionCollision.Event> collisionEvents = List.of();
-    public final float invTextureWidth;
-    public final float invTextureHeight;
+    public float invTextureWidth;
+    public float invTextureHeight;
     public boolean motionDynamic;
 
-    public final VariableTable vars;
-    public final List<VariableAssignment> assignments;
+    public VariableTable vars;
+    public List<VariableAssignment> assignments;
+
+    /// For custom preset data
+    protected Map<Class<?>, Object> tickets;
 
     public ParticlePreset(DefinedParticleEffect effect) {
         this.effect = effect;
@@ -52,13 +54,17 @@ public class ParticlePreset {
             case CUSTOM -> ParticleRenderType.CUSTOM;
             default -> ParticleRenderType.NO_RENDER;
         };
-        IComponent component1 = effect.components.get(ParticleAppearanceBillboard.ID);
-        if (component1 == null) throw new NullPointerException("No particle_appearance_billboard here");
-        ParticleAppearanceBillboard particleAppearanceBillboard = (ParticleAppearanceBillboard) component1;
-        this.facingCameraMode = FaceCameraMode.valueOf(particleAppearanceBillboard.faceCameraMode().name());
-        this.minSpeedThresholdSqr = particleAppearanceBillboard.direction().minSpeedThreshold() * particleAppearanceBillboard.direction().minSpeedThreshold();
-        this.invTextureWidth = 1.0F / particleAppearanceBillboard.uv().texturewidth();
-        this.invTextureHeight = 1.0F / particleAppearanceBillboard.uv().textureheight();
+        if (effect.components.get(ParticleAppearanceBillboard.ID) instanceof ParticleAppearanceBillboard component) {
+            this.facingCameraMode = FaceCameraMode.fromComponent(component.faceCameraMode());
+            this.minSpeedThresholdSqr = Mth.square(component.direction().minSpeedThreshold());
+            this.invTextureWidth = 1.0F / component.uv().texturewidth();
+            this.invTextureHeight = 1.0F / component.uv().textureheight();
+        } else {
+            this.facingCameraMode = FaceCameraMode.DO_NOTHING;
+            this.minSpeedThresholdSqr = 0;
+            this.invTextureWidth = 1;
+            this.invTextureHeight = 1;
+        }
         this.environmentLighting = effect.components.containsValue(ParticleAppearanceLighting.INSTANCE);
         this.lifeTimeEvents = (ParticleLifeTimeEvents) effect.components.get(ParticleLifeTimeEvents.ID);
         ParticleMotionCollision motionCollision = (ParticleMotionCollision) effect.components.get(ParticleMotionCollision.ID);
@@ -82,6 +88,7 @@ public class ParticlePreset {
 
         List<VariableAssignment> toInit = new ArrayList<>();
         for (IParticleComponent component : Iterables.concat(effect.orderedParticleEarlyComponents, effect.orderedParticleComponents)) {
+            assert component != null;
             for (MolangExp exp : component.getAllMolangExp()) {
                 exp.compile(parser);
                 MathValue variable = exp.getVariable();
@@ -92,9 +99,20 @@ public class ParticlePreset {
         }
         this.vars = table;
         this.assignments = toInit;
+        NeoForge.EVENT_BUS.post(new ParticlePresetLoadedEvent(this));
     }
 
-    private static @NotNull Hashtable<String, Variable> addDefaultVariables() {
+    public <T> void setTicket(Class<T> clazz, T value) {
+        if (tickets == null) this.tickets = new HashMap<>();
+        tickets.put(clazz, value);
+    }
+
+    @SuppressWarnings("unchecked")
+    public <T> @Nullable T getTicket(Class<T> clazz) {
+        return tickets == null ? null : (T) tickets.get(clazz);
+    }
+
+    private static Hashtable<String, Variable> addDefaultVariables() {
         Hashtable<String, Variable> table = new Hashtable<>();
         table.computeIfAbsent("variable.particle_age", s -> new Variable(s, MolangInstance::tickAge));
         table.computeIfAbsent("variable.particle_lifetime", s -> new Variable(s, MolangInstance::tickLifetime));

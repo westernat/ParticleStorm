@@ -3,37 +3,38 @@ package org.mesdag.particlestorm.data.component;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.resources.ResourceLocation;
+import org.joml.Vector3f;
+import org.mesdag.particlestorm.api.IMolangParticleInstance;
 import org.mesdag.particlestorm.api.IParticleComponent;
 import org.mesdag.particlestorm.data.molang.FloatMolangExp;
 import org.mesdag.particlestorm.data.molang.FloatMolangExp3;
 import org.mesdag.particlestorm.data.molang.MolangExp;
-import org.mesdag.particlestorm.particle.MolangParticleInstance;
 
 import java.util.List;
 
-/**
- * This component specifies the dynamic properties of the particle, from a simulation standpoint what forces act upon the particle?<p>
- * These dynamics alter the velocity of the particle, which is a combination of the direction of the particle and the speed.<p>
- * Particle direction will always be in the direction of the velocity of the particle.
- *
- * @param linerAcceleration       The linear acceleration applied to the particle, defaults to [0, 0, 0].<p>
- *                                Units are blocks/sec/sec<p>
- *                                An example would be gravity which is [0, -9.8, 0]<p>
- *                                Evaluated every frame
- * @param linearDragCoefficient   Equation is acceleration = -linear_drag_coefficient*velocity<p>
- *                                Where velocity is the current direction times speed<p>
- *                                Think of this as air-drag. The higher the exp, the more drag<p>
- *                                Evaluated every frame
- * @param rotationAcceleration    Acceleration applies to the rotation speed of the particle<p>
- *                                Think of a disc spinning up or a smoke puff that starts rotating but slows down over time<p>
- *                                Evaluated every frame<p>
- *                                Acceleration is in degrees/sec/sec
- * @param rotationDragCoefficient Drag applied to slow down rotation<p>
- *                                Equation is rotation_acceleration += -rotation_rate*rotation_drag_coefficient<p>
- *                                Useful to slow a rotation, or to limit the rotation acceleration<p>
- *                                Think of a disc that speeds up (acceleration) but reaches a terminal speed (drag)<p>
- *                                Another use is if you have a particle growing in size, having the rotation slow down due to drag can add "weight" to the particle's motion
- */
+/// This component specifies the dynamic properties of the particle, from a simulation standpoint what forces act upon the particle?
+///
+/// These dynamics alter the velocity of the particle, which is a combination of the direction of the particle and the speed.
+///
+/// Particle direction will always be in the direction of the velocity of the particle.
+///
+/// @param linerAcceleration       The linear acceleration applied to the particle, defaults to `[0, 0, 0]`.<p>
+///                                Units are blocks/sec/sec<p>
+///                                An example would be gravity which is `[0, -9.8, 0]`<p>
+///                                Evaluated every frame
+/// @param linearDragCoefficient   Equation is `acceleration = -linear_drag_coefficient*velocity`<p>
+///                                Where velocity is the current direction times speed<p>
+///                                Think of this as air-drag. The higher the exp, the more drag<p>
+///                                Evaluated every frame
+/// @param rotationAcceleration    Acceleration applies to the rotation speed of the particle<p>
+///                                Think of a disc spinning up or a smoke puff that starts rotating but slows down over time<p>
+///                                Evaluated every frame<p>
+///                                Acceleration is in degrees/sec/sec
+/// @param rotationDragCoefficient Drag applied to slow down rotation<p>
+///                                Equation is `rotation_acceleration += -rotation_rate*rotation_drag_coefficient`<p>
+///                                Useful to slow a rotation, or to limit the rotation acceleration<p>
+///                                Think of a disc that speeds up (acceleration) but reaches a terminal speed (drag)<p>
+///                                Another use is if you have a particle growing in size, having the rotation slow down due to drag can add "weight" to the particle's motion
 public record ParticleMotionDynamic(FloatMolangExp3 linerAcceleration, FloatMolangExp linearDragCoefficient, FloatMolangExp rotationAcceleration,
                                     FloatMolangExp rotationDragCoefficient) implements IParticleComponent {
     public static final ResourceLocation ID = ResourceLocation.withDefaultNamespace("particle_motion_dynamic");
@@ -58,28 +59,29 @@ public record ParticleMotionDynamic(FloatMolangExp3 linerAcceleration, FloatMola
     }
 
     @Override
-    public void update(MolangParticleInstance instance) {
+    public void update(IMolangParticleInstance instance) {
         apply(instance);
     }
 
     @Override
-    public void apply(MolangParticleInstance instance) {
+    public void apply(IMolangParticleInstance instance) {
         float invTickRate = instance.getInvTickRate();
         float tickRate = instance.getLevel().tickRateManager().tickrate();
 
-        instance.acceleration.set(linerAcceleration.calculate(instance));
+        Vector3f acceleration = instance.getAcceleration();
+        acceleration.set(linerAcceleration.calculate(instance));
         float c = -linearDragCoefficient.calculate(instance);
         double xd = instance.getXd();
         double yd = instance.getYd();
         double zd = instance.getZd();
-        instance.acceleration.add(c * (float) xd * tickRate, c * (float) yd * tickRate, c * (float) zd * tickRate);
+        acceleration.add(c * (float) xd * tickRate, c * (float) yd * tickRate, c * (float) zd * tickRate);
         float v = invTickRate * invTickRate;
-        instance.setParticleSpeed(
-                xd + instance.acceleration.x * v,
-                yd + instance.acceleration.y * v,
-                zd + instance.acceleration.z * v
+        instance.self().setParticleSpeed(
+                xd + acceleration.x * v,
+                yd + acceleration.y * v,
+                zd + acceleration.z * v
         );
-        instance.rolld = (rotationAcceleration.calculate(instance) - rotationDragCoefficient.calculate(instance) * instance.rolld * tickRate) * v;
+        instance.setZRotD((rotationAcceleration.calculate(instance) - rotationDragCoefficient.calculate(instance) * instance.getZRotD() * tickRate) * v);
     }
 
     @Override

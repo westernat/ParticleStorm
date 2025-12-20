@@ -7,15 +7,19 @@ import org.mesdag.particlestorm.data.molang.MolangExp;
 
 import java.util.List;
 
-/**
- * This component specifies the frame of reference of the emitter.<p>
- * Applies only when the emitter is attached to an entity.<p>
- * When 'position' is true, the particles will simulate in entity space, otherwise they will simulate in world space.<p>
- * Rotation works the same way for rotation.<p>
- * Default is false for both, which makes the particles emit relative to the emitter, then simulate independently of the emitter.<p>
- * Note that rotation = true and position = false is an invalid option.<p>
- * Velocity will add the emitter's velocity to the initial particle velocity.
- */
+/// This component specifies the frame of reference of the emitter.
+///
+/// Applies only when the emitter is attached to an entity.
+///
+/// When `position` is true, the particles will simulate in entity space, otherwise they will simulate in world space.
+///
+/// `rotation` works the same way for `rotation`.
+///
+/// Default is false for both, which makes the particles emit relative to the emitter, then simulate independently of the emitter.
+///
+/// Note that `rotation` = true and `position` = false is an invalid option.
+///
+/// `velocity` will add the emitter's velocity to the initial particle velocity.
 public record EmitterLocalSpace(boolean position, boolean rotation, boolean velocity) implements IEmitterComponent {
     public static final Codec<EmitterLocalSpace> CODEC = RecordCodecBuilder.create(instance -> instance.group(
             Codec.BOOL.fieldOf("position").orElse(false).forGetter(EmitterLocalSpace::position),
@@ -33,7 +37,7 @@ public record EmitterLocalSpace(boolean position, boolean rotation, boolean velo
 
     @Override
     public Codec<EmitterLocalSpace> codec() {
-        return null;
+        return CODEC;
     }
 
     @Override

@@ -2,7 +2,6 @@ package org.mesdag.particlestorm.mixin.integration.geckolib;
 
 import org.mesdag.particlestorm.mixed.IAnimatableInstanceCache;
 import org.mesdag.particlestorm.mixed.IGeoBone;
-import org.mesdag.particlestorm.mixin.MolangQueriesAccessor;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Pseudo;
 import org.spongepowered.asm.mixin.Shadow;
@@ -52,7 +51,7 @@ public abstract class GeoBoneMixin implements IGeoBone {
 
     @Inject(method = "resetStateChanges", at = @At("TAIL"))
     private void setData(CallbackInfo ci) {
-        if (particlestorm$locators == null) return;
+        if (particlestorm$locators == null || particlestorm$locators.isEmpty()) return;
         MolangQueries.Actor<?> actor = MolangQueriesAccessor.callGetActor();
         if (actor != null && actor.animatable() instanceof GeoAnimatable animatable) {
             IAnimatableInstanceCache cache = IAnimatableInstanceCache.of(animatable.getAnimatableInstanceCache());

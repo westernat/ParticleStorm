@@ -1,9 +1,7 @@
 package org.mesdag.particlestorm.particle;
 
-import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
@@ -20,16 +18,17 @@ import org.mesdag.particlestorm.api.MolangInstance;
 import org.mesdag.particlestorm.data.MathHelper;
 import org.mesdag.particlestorm.data.component.EmitterLifetime;
 import org.mesdag.particlestorm.data.component.EmitterRate;
+import org.mesdag.particlestorm.data.event.ParticleEffect;
 import org.mesdag.particlestorm.data.molang.MolangExp;
 import org.mesdag.particlestorm.data.molang.VariableTable;
 import org.mesdag.particlestorm.data.molang.compiler.MathValue;
 import org.mesdag.particlestorm.data.molang.compiler.MolangParser;
+import org.mesdag.particlestorm.data.molang.compiler.value.Variable;
 import org.mesdag.particlestorm.data.molang.compiler.value.VariableAssignment;
 import org.mesdag.particlestorm.mixed.IEntity;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Consumer;
 
 public class ParticleEmitter implements MolangInstance {
     public ResourceLocation particleId;
@@ -44,7 +43,7 @@ public class ParticleEmitter implements MolangInstance {
     protected transient VariableTable vars;
     protected transient List<IEmitterComponent> components;
     public transient ParticleEmitter parent;
-    public transient @Nullable Consumer<ParticleEmitter> afterParentInit;
+    public transient @Nullable Runnable afterParentInit;
     public transient final List<ParticleEmitter> children = new ArrayList<>();
     public transient Vector3f inheritedParticleSpeed;
     public transient boolean isManual;
@@ -83,6 +82,7 @@ public class ParticleEmitter implements MolangInstance {
     public ParticleEmitter(Level level, Vec3 pos, ResourceLocation particleId, MolangExp expression) {
         this.level = level;
         setPos(pos);
+        this.posO = pos;
         this.particleId = particleId;
         this.expression = expression;
         updateRandoms(level.random);
@@ -101,6 +101,46 @@ public class ParticleEmitter implements MolangInstance {
         init();
     }
 
+    public ParticleEmitter(ParticleEmitter parent, ParticleEffect effect) {
+        this.level = parent.level;
+        setPos(parent.pos);
+        this.posO = pos;
+        this.particleId = effect.effect();
+        this.expression = effect.preEffectExpression();
+        updateRandoms(level.random);
+        this.invTickRate = 1.0F / level.tickRateManager().tickrate();
+        this.afterParentInit = () -> {
+            switch (effect.type()) {
+                case EMITTER -> {}
+                case EMITTER_BOUND -> {
+                    attachEntity(parent.getAttachedEntity());
+                    this.attachedBlock = parent.attachedBlock;
+                    this.offsetPos = parent.offsetPos;
+                    this.offsetRot = parent.offsetRot;
+                    this.parentPosition = parent.parentPosition;
+                    this.parentRotation = parent.parentRotation;
+                    this.parentMode = parent.parentMode;
+                }
+                case PARTICLE -> this.isManual = true;
+                case PARTICLE_WITH_VELOCITY -> {
+                    this.isManual = true;
+                    if (parent.getAttachedEntity() != null) {
+                        this.inheritedParticleSpeed = parent.getAttachedEntity().getDeltaMovement().toVector3f();
+                    }
+                }
+            }
+        };
+        addParent(parent);
+        createVars();
+        for (String name : effect.sharedVars()) {
+            Variable variable = parent.getVars().table.get(name);
+            if (variable == null) throw new IllegalArgumentException("Shared vars must defined in parent directly!");
+            vars.table.put(name, variable);
+        }
+        initVars();
+        createComponents();
+    }
+
     public void attachEntity(@Nullable Entity entity) {
         if (entity == null) {
             this.vars = new VariableTable(vars.table, preset.vars);
@@ -113,16 +153,21 @@ public class ParticleEmitter implements MolangInstance {
         }
     }
 
-    private void init() {
+    protected void init() {
+        createVars();
+        initVars();
+        createComponents();
+    }
+
+    protected void createVars() {
         this.preset = PSGameClient.LOADER.id2Emitter().get(particleId);
         if (preset == null) {
-            if (Minecraft.getInstance().player != null) {
-                Minecraft.getInstance().player.sendSystemMessage(Component.translatable("particle.notFound", particleId.toString()));
-            }
-            remove();
-            return;
+            throw new IllegalArgumentException("Unknown particle id: '" + particleId + "'!");
         }
         this.vars = new VariableTable(preset.vars);
+    }
+
+    protected void initVars() {
         if (expression != null && !expression.initialized()) {
             expression.compile(new MolangParser(vars));
             MathValue variable = expression.getVariable();
@@ -133,6 +178,9 @@ public class ParticleEmitter implements MolangInstance {
             MathHelper.redirect(toInit, vars);
         }
         MathHelper.redirect(preset.assignments, vars);
+    }
+
+    protected void createComponents() {
         this.components = preset.components.stream().filter(e -> {
             e.apply(this);
             return e.requireUpdate();
@@ -191,7 +239,7 @@ public class ParticleEmitter implements MolangInstance {
         }
 
         if (afterParentInit != null && parent != null) {
-            afterParentInit.accept(parent);
+            afterParentInit.run();
             this.afterParentInit = null;
         }
 
@@ -227,7 +275,7 @@ public class ParticleEmitter implements MolangInstance {
     }
 
     public boolean isRemoved() {
-        return removed || (attached != null && attached.isRemoved());
+        return removed || (attached != null && attached.isRemoved()) || (attachedBlock != null && attachedBlock.isRemoved());
     }
 
     public void setPos(Vec3 pos) {
@@ -245,9 +293,8 @@ public class ParticleEmitter implements MolangInstance {
         this.emitterRandom2 = compound.getDouble("emitterRandom2");
         this.emitterRandom3 = compound.getDouble("emitterRandom3");
         this.emitterRandom4 = compound.getDouble("emitterRandom4");
-        this.pos = new Vec3(compound.getDouble("posX"), compound.getDouble("posY"), compound.getDouble("posZ"));
+        this.posO = this.pos = new Vec3(compound.getDouble("posX"), compound.getDouble("posY"), compound.getDouble("posZ"));
         this.rot.set(compound.getFloat("rotX"), compound.getFloat("rotY"), compound.getFloat("rotZ"));
-        this.posO = new Vec3(compound.getDouble("movX"), compound.getDouble("movY"), compound.getDouble("movZ"));
     }
 
     public void serialize(CompoundTag compound) {
@@ -263,9 +310,6 @@ public class ParticleEmitter implements MolangInstance {
         compound.putFloat("rotX", rot.x);
         compound.putFloat("rotY", rot.y);
         compound.putFloat("rotZ", rot.z);
-        compound.putDouble("movX", posO.x);
-        compound.putDouble("movY", posO.y);
-        compound.putDouble("movZ", posO.z);
     }
 
     public double getX() {

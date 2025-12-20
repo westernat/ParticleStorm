@@ -18,8 +18,8 @@ public class AnimatableInstanceCacheMixin implements IAnimatableInstanceCache {
     private Vector3f particlestorm$position;
     @Unique
     private Vector3f particlestorm$rotation;
-    @Unique
-    private Vector3f particlestorm$scale;
+//    @Unique
+//    private Vector3f particlestorm$scale;
 
     @Override
     public Object2IntMap<LocatorValue> particlestorm$getCachedId() {

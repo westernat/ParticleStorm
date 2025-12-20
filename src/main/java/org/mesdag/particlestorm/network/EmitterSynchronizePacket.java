@@ -10,7 +10,6 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
 import net.neoforged.neoforge.network.PacketDistributor;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
-import org.jetbrains.annotations.NotNull;
 import org.mesdag.particlestorm.PSGameClient;
 import org.mesdag.particlestorm.ParticleStorm;
 import org.mesdag.particlestorm.particle.ParticleEmitter;
@@ -26,7 +25,7 @@ public record EmitterSynchronizePacket(int id, CompoundTag tag) implements Custo
     public static final String KEY = "particlestorm:emitters";
 
     @Override
-    public @NotNull Type<EmitterSynchronizePacket> type() {
+    public Type<EmitterSynchronizePacket> type() {
         return TYPE;
     }
 

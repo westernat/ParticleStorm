@@ -15,11 +15,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
-/**
- * Allows for lifetime events on the emitter to trigger certain events.<p>
- * All events use the event names in the event section<p>
- * All events can be an array or a string
- */
+/// Allows for lifetime events on the emitter to trigger certain events.
+///
+/// All events use the event names in the event section
+///
+/// All events can be an array or a string
 public final class EmitterLifetimeEvents implements IEmitterComponent {
     public static final Codec<EmitterLifetimeEvents> CODEC = RecordCodecBuilder.create(instance -> instance.group(
             ParticleStorm.STRING_LIST_CODEC.fieldOf("creation_event").orElseGet(List::of).forGetter(events -> events.creationEvent),
@@ -37,16 +37,14 @@ public final class EmitterLifetimeEvents implements IEmitterComponent {
     public final List<Tuple<Function<Integer, Boolean>, List<String>>> sortedTimeline;
     public final List<Tuple<Function<Float, Boolean>, List<String>>> sortedTravelDistance;
 
-    /**
-     * @param creationEvent               Fires when the emitter is created
-     * @param expirationEvent             Fires when the emitter expires (does not wait for particles to expire too)
-     * @param timeline                    A series of times, e.g. 0.0 or 1.0, that trigger the event.<p>
-     *                                    These get fired on every loop the emitter goes through
-     * @param travelDistanceEvents        S series of distances, e.g. 0.0 or 1.0, that trigger the event.<p>
-     *                                    These get fired when the emitter has moved by the specified input
-     * @param loopingTravelDistanceEvents A series of events that occur at set intervals.<p>
-     *                                    These get fired every time the emitter has moved the specified input distance from the last time it was fired.
-     */
+    /// @param creationEvent               Fires when the emitter is created
+    /// @param expirationEvent             Fires when the emitter expires (does not wait for particles to expire too)
+    /// @param timeline                    A series of times, e.g. 0.0 or 1.0, that trigger the event.<p>
+    ///                                    These get fired on every loop the emitter goes through
+    /// @param travelDistanceEvents        S series of distances, e.g. 0.0 or 1.0, that trigger the event.<p>
+    ///                                    These get fired when the emitter has moved by the specified input
+    /// @param loopingTravelDistanceEvents A series of events that occur at set intervals.<p>
+    ///                                    These get fired every time the emitter has moved the specified input distance from the last time it was fired.
     public EmitterLifetimeEvents(List<String> creationEvent, List<String> expirationEvent, Map<String, List<String>> timeline, Map<String, List<String>> travelDistanceEvents, List<LoopingTravelDistanceEvent> loopingTravelDistanceEvents) {
         this.creationEvent = creationEvent;
         this.expirationEvent = expirationEvent;

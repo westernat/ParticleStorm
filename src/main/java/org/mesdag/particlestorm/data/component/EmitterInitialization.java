@@ -8,12 +8,10 @@ import org.mesdag.particlestorm.particle.ParticleEmitter;
 
 import java.util.List;
 
-/**
- * This component allows the emitter to run some Molang at creation, primarily to populate any Molang variables that get used later.
- *
- * @param creationExpression This is run once at emitter startup
- * @param perUpdateExpression This is run once per emitter update
- */
+/// This component allows the emitter to run some Molang at creation, primarily to populate any Molang variables that get used later.
+///
+/// @param creationExpression This is run once at emitter startup
+/// @param perUpdateExpression This is run once per emitter update
 public record EmitterInitialization(MolangExp creationExpression, MolangExp perUpdateExpression) implements IEmitterComponent {
     public static final Codec<EmitterInitialization> CODEC = RecordCodecBuilder.create(instance -> instance.group(
             MolangExp.CODEC.fieldOf("creation_expression").orElse(MolangExp.EMPTY).forGetter(EmitterInitialization::creationExpression),

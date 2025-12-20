@@ -1,6 +1,6 @@
 package org.mesdag.particlestorm.particle;
 
-import org.jetbrains.annotations.NotNull;
+import net.minecraft.core.particles.ParticleType;
 import org.mesdag.particlestorm.api.IEmitterComponent;
 import org.mesdag.particlestorm.api.IEventNode;
 import org.mesdag.particlestorm.data.MathHelper;
@@ -18,7 +18,7 @@ import java.util.List;
 import java.util.Map;
 
 public class EmitterPreset {
-    public final MolangParticleOption option;
+    public final ParticleType<?> type;
     public final List<IEmitterComponent> components;
     public final Map<String, Map<String, IEventNode>> events;
     public final VariableTable vars;
@@ -29,8 +29,13 @@ public class EmitterPreset {
     public boolean localVelocity = false;
     public EmitterLifetimeEvents lifetimeEvents;
 
+    @Deprecated
     public EmitterPreset(MolangParticleOption option, List<IEmitterComponent> components, Map<String, Map<String, IEventNode>> events) {
-        this.option = option;
+        this(option.getType(), components, events);
+    }
+
+    public EmitterPreset(ParticleType<?> type, List<IEmitterComponent> components, Map<String, Map<String, IEventNode>> events) {
+        this.type = type;
         this.components = components;
         this.events = events;
         VariableTable table = new VariableTable(addDefaultVariables(), null);
@@ -77,7 +82,7 @@ public class EmitterPreset {
         this.assignments = toInit;
     }
 
-    private static @NotNull Hashtable<String, Variable> addDefaultVariables() {
+    private static Hashtable<String, Variable> addDefaultVariables() {
         Hashtable<String, Variable> table = new Hashtable<>();
         table.computeIfAbsent("variable.emitter_age", s -> new Variable(s, i -> i.getEmitter().tickAge()));
         table.computeIfAbsent("variable.emitter_lifetime", s -> new Variable(s, i -> i.getEmitter().tickLifetime()));

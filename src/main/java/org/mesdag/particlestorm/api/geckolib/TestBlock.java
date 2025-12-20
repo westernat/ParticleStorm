@@ -10,9 +10,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.mesdag.particlestorm.ParticleStorm;
 import software.bernie.geckolib.animatable.GeoBlockEntity;
 import software.bernie.geckolib.animatable.instance.AnimatableInstanceCache;
 import software.bernie.geckolib.animation.AnimatableManager;
@@ -28,17 +26,17 @@ public class TestBlock extends Block implements EntityBlock {
     }
 
     @Override
-    public @Nullable BlockEntity newBlockEntity(@NotNull BlockPos pos, @NotNull BlockState state) {
+    public @Nullable BlockEntity newBlockEntity(BlockPos pos, BlockState state) {
         return new Entity(pos, state);
     }
 
     @Override
-    public @NotNull RenderShape getRenderShape(@NotNull BlockState state) {
+    public RenderShape getRenderShape(BlockState state) {
         return RenderShape.ENTITYBLOCK_ANIMATED;
     }
 
     @Override
-    protected @NotNull VoxelShape getShape(@NotNull BlockState state, @NotNull BlockGetter level, @NotNull BlockPos pos, @NotNull CollisionContext context) {
+    protected VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
         return BOX;
     }
 
@@ -48,7 +46,7 @@ public class TestBlock extends Block implements EntityBlock {
         private final AnimatableInstanceCache cache = GeckoLibUtil.createInstanceCache(this);
 
         public Entity(BlockPos pos, BlockState state) {
-            super(ParticleStorm.TEST_ENTITY.get(), pos, state);
+            super(GeckoLibHelper.TEST_ENTITY.get(), pos, state);
         }
 
         @Override

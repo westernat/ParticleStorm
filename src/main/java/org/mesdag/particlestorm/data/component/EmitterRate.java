@@ -22,9 +22,7 @@ public abstract sealed class EmitterRate implements IEmitterComponent permits Em
         MANUAL
     }
 
-    /**
-     * All particles come out at once, then no more unless the emitter loops.
-     */
+    /// All particles come out at once, then no more unless the emitter loops.
     public static final class Instant extends EmitterRate {
         public static final Codec<Instant> CODEC = RecordCodecBuilder.create(instance -> instance.group(
                 FloatMolangExp.CODEC.fieldOf("num_particles").orElseGet(() -> FloatMolangExp.ofConstant(10)).forGetter(Instant::getNumParticles)
@@ -68,9 +66,7 @@ public abstract sealed class EmitterRate implements IEmitterComponent permits Em
         }
     }
 
-    /**
-     * Particles come out at a steady or Molang rate over time.
-     */
+    /// Particles come out at a steady or Molang rate over time.
     public static final class Steady extends EmitterRate {
         public static final Codec<Steady> CODEC = RecordCodecBuilder.create(instance -> instance.group(
                 FloatMolangExp.CODEC.fieldOf("spawn_rate").orElse(FloatMolangExp.ONE).forGetter(Steady::getSpawnRate),
@@ -127,9 +123,7 @@ public abstract sealed class EmitterRate implements IEmitterComponent permits Em
         }
     }
 
-    /**
-     * Particle emission will occur only when the emitter is told to emit via the game itself. This is mostly used by legacy particle effects.
-     */
+    /// Particle emission will occur only when the emitter is told to emit via the game itself. This is mostly used by legacy particle effects.
     public static final class Manual extends EmitterRate {
         public static final Codec<Manual> CODEC = RecordCodecBuilder.create(instance -> instance.group(
                 FloatMolangExp.CODEC.fieldOf("max_particles").orElse(FloatMolangExp.ZERO).forGetter(Manual::getMaxParticles)
@@ -162,6 +156,7 @@ public abstract sealed class EmitterRate implements IEmitterComponent permits Em
             } else {
                 emitter.particleGroup.setLimit(limit);
             }
+            emitter.spawnRate = limit;
         }
 
         @Override

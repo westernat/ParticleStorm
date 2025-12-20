@@ -3,26 +3,21 @@ package org.mesdag.particlestorm.particle;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.client.Camera;
 import net.minecraft.client.multiplayer.ClientLevel;
-import net.minecraft.client.particle.ParticleProvider;
 import net.minecraft.client.particle.ParticleRenderType;
 import net.minecraft.client.particle.TextureSheetParticle;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.core.particles.ParticleGroup;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.fml.ModList;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
-import org.mesdag.particlestorm.PSGameClient;
 import org.mesdag.particlestorm.api.IEventNode;
+import org.mesdag.particlestorm.api.IMolangParticleInstance;
 import org.mesdag.particlestorm.api.IParticleComponent;
-import org.mesdag.particlestorm.api.MolangInstance;
 import org.mesdag.particlestorm.data.component.ParticleMotionCollision;
 import org.mesdag.particlestorm.data.molang.VariableTable;
 import org.mesdag.particlestorm.mixed.ITextureAtlasSprite;
@@ -30,54 +25,51 @@ import org.mesdag.particlestorm.mixed.ITextureAtlasSprite;
 import java.util.List;
 import java.util.Optional;
 
-public class MolangParticleInstance extends TextureSheetParticle implements MolangInstance {
+public class MolangParticleInstance extends TextureSheetParticle implements IMolangParticleInstance {
     public static final int FULL_LIGHT = 0xF000F0;
     private static final boolean isSodiumLoaded = ModList.get().isLoaded("sodium");
 
-    public final RandomSource random;
-    public final ParticlePreset preset;
+    protected final ParticlePreset preset;
     protected ParticleVariableTable vars;
     protected final float originX;
     protected final float originY;
 
-    public Vector3f acceleration = new Vector3f();
-    public Vector3f facingDirection = new Vector3f();
-    public Vector3f initialSpeed = new Vector3f();
-    public float xRot = 0.0F;
-    public float yRot = 0.0F;
+    protected Vector3f acceleration = new Vector3f();
+    protected Vector3f facingDirection = new Vector3f();
+    protected Vector3f initialSpeed = new Vector3f();
+    protected float xRot = 0.0F;
+    protected float yRot = 0.0F;
     protected float xRotO = 0.0F;
     protected float yRotO = 0.0F;
-    public float rolld = 0.0F;
-    private boolean hasCollision = false;
-    public float collisionDrag = 0.0F;
-    public float coefficientOfRestitution = 0.0F;
-    public boolean expireOnContact = false;
+    protected float rolld = 0.0F;
+    protected boolean hasCollision = false;
+    protected float collisionDrag = 0.0F;
+    protected float coefficientOfRestitution = 0.0F;
+    protected boolean expireOnContact = false;
 
     protected final double particleRandom1;
     protected final double particleRandom2;
     protected final double particleRandom3;
     protected final double particleRandom4;
-    public List<IParticleComponent> components;
+    protected List<IParticleComponent> components;
     protected ParticleEmitter emitter;
-    public boolean motionDynamic = false;
 
-    public final float scaleU;
-    public final float scaleV;
-    public float[] billboardSize = new float[2];
-    public float[] uvSize;
-    public float[] uvStep;
-    public int maxFrame = 1;
-    public int currentFrame = 0;
-    public float[] UV;
+    protected final float scaleU;
+    protected final float scaleV;
+    protected float[] billboardSize = new float[2];
+    protected float[] uvSize;
+    protected float[] uvStep;
+    protected int maxFrame = 1;
+    protected int currentFrame = 0;
+    protected float[] UV;
 
-    public boolean insideKillPlane;
-    public ParticleGroup particleGroup;
-    public int lastTimeline = 0;
+    protected boolean insideKillPlane;
+    protected ParticleGroup particleGroup;
+    protected int lastTimeline = 0;
 
     public MolangParticleInstance(ParticlePreset preset, ClientLevel level, double x, double y, double z, ExtendMutableSpriteSet sprites) {
         super(level, x, y, z);
         this.friction = 1.0F;
-        this.random = level.getRandom();
         this.preset = preset;
         setSprite(sprites.get(preset.effect.description.parameters().getTextureIndex()));
         this.originX = ((ITextureAtlasSprite) sprite).particlestorm$getOriginX();
@@ -85,60 +77,229 @@ public class MolangParticleInstance extends TextureSheetParticle implements Mola
         this.scaleU = sprite.contents().width() * preset.invTextureWidth;
         this.scaleV = sprite.contents().height() * preset.invTextureHeight;
 
+        RandomSource random = level.getRandom();
         this.particleRandom1 = random.nextDouble();
         this.particleRandom2 = random.nextDouble();
         this.particleRandom3 = random.nextDouble();
         this.particleRandom4 = random.nextDouble();
     }
 
+    @Override
+    public int getAge() {
+        return age;
+    }
+
+    @Override
     public void setEmitter(ParticleEmitter emitter) {
         this.emitter = emitter;
         this.vars = new ParticleVariableTable(preset.vars, emitter.vars);
     }
 
+    @Override
+    public ParticlePreset getPreset() {
+        return preset;
+    }
+
+    @Override
+    public TextureAtlasSprite getSprite() {
+        return sprite;
+    }
+
+    @Override
+    public Vector3f getAcceleration() {
+        return acceleration;
+    }
+
+    @Override
+    public Vector3f getFacingDirection() {
+        return facingDirection;
+    }
+
+    @Override
+    public Vector3f getInitialSpeed() {
+        return initialSpeed;
+    }
+
+    @Override
+    public void setXRot(float x) {
+        this.xRot = x;
+    }
+
+    @Override
+    public void setYRot(float y) {
+        this.yRot = y;
+    }
+
+    @Override
+    public void setZRot(float z) {
+        this.roll = z;
+    }
+
+    @Override
+    public void setZRotD(float delta) {
+        this.rolld = delta;
+    }
+
+    @Override
+    public float getZRotD() {
+        return rolld;
+    }
+
+    @Override
+    public void setCollisionDrag(float drag) {
+        this.collisionDrag = drag;
+    }
+
+    @Override
+    public void setCoefficientOfRestitution(float coefficient) {
+        this.coefficientOfRestitution = coefficient;
+    }
+
+    @Override
+    public void setExpireOnContact(boolean b) {
+        this.expireOnContact = b;
+    }
+
+    @Override
+    public void setComponents(List<IParticleComponent> components) {
+        this.components = components;
+    }
+
+    @Override
+    public float getScaleU() {
+        return scaleU;
+    }
+
+    @Override
+    public float getScaleV() {
+        return scaleV;
+    }
+
+    @Override
+    public void setBillboardSize(float[] size) {
+        this.billboardSize = size;
+    }
+
+    @Override
+    public void setUvSize(float[] size) {
+        this.uvSize = size;
+    }
+
+    @Override
+    public float[] getUvSize() {
+        return uvSize;
+    }
+
+    @Override
+    public void setUvStep(float[] step) {
+        this.uvStep = step;
+    }
+
+    @Override
+    public float[] getUvStep() {
+        return uvStep;
+    }
+
+    @Override
+    public void setMaxFrame(int frame) {
+        this.maxFrame = frame;
+    }
+
+    @Override
+    public int getMaxFrame() {
+        return maxFrame;
+    }
+
+    @Override
+    public void setCurrentFrame(int frame) {
+        this.currentFrame = frame;
+    }
+
+    @Override
+    public int getCurrentFrame() {
+        return currentFrame;
+    }
+
+    @Override
+    public void setInsideKillPlane(boolean b) {
+        this.insideKillPlane = b;
+    }
+
+    @Override
+    public boolean isInsideKillPlane() {
+        return insideKillPlane;
+    }
+
+    @Override
+    public void setParticleGroup(ParticleGroup group) {
+        this.particleGroup = group;
+    }
+
+    @Override
+    public void setLastTimeline(int last) {
+        this.lastTimeline = last;
+    }
+
+    @Override
+    public int getLastTimeline() {
+        return lastTimeline;
+    }
+
+    @Override
     public double getXd() {
         return xd;
     }
 
+    @Override
     public double getYd() {
         return yd;
     }
 
+    @Override
     public double getZd() {
         return zd;
     }
 
+    @Override
     public double getX() {
         return x;
     }
 
+    @Override
     public double getY() {
         return y;
     }
 
+    @Override
     public double getZ() {
         return z;
     }
 
+    @Override
     public void setPosO(double x, double y, double z) {
         this.xo = x;
         this.yo = y;
         this.zo = z;
     }
 
+    /// @see MolangParticleInstance#setZRot(float)
+    /// @deprecated
     public void setRoll(float roll) {
         this.roll = roll;
     }
 
+    @Deprecated
     public float getRoll() {
         return roll;
     }
 
+    @Override
     public void setColor(float red, float green, float blue, float alpha) {
         super.setColor(red, green, blue);
         super.setAlpha(alpha);
     }
 
+    @Override
     public void setUV(float u, float v, float w, float h) {
         if (UV == null) this.UV = new float[4];
         this.UV[0] = u / originX;
@@ -147,6 +308,7 @@ public class MolangParticleInstance extends TextureSheetParticle implements Mola
         this.UV[3] = (v + h) / originY;
     }
 
+    @Override
     public void setCollision(boolean bool) {
         this.hasCollision = bool;
     }
@@ -159,15 +321,6 @@ public class MolangParticleInstance extends TextureSheetParticle implements Mola
     @Override
     public Level getLevel() {
         return level;
-    }
-
-    public float tickAge() {
-        return age * emitter.invTickRate;
-    }
-
-    @Override
-    public float tickLifetime() {
-        return lifetime * emitter.invTickRate;
     }
 
     @Override
@@ -191,32 +344,8 @@ public class MolangParticleInstance extends TextureSheetParticle implements Mola
     }
 
     @Override
-    public ResourceLocation getIdentity() {
-        return preset.effect.description.identifier();
-    }
-
-    @Override
-    public Vec3 getPosition() {
-        return getPos();
-    }
-
-    @Override
-    public @Nullable Entity getAttachedEntity() {
-        return emitter.getAttachedEntity();
-    }
-
-    @Override
-    public float getInvTickRate() {
-        return emitter.invTickRate;
-    }
-
-    @Override
     public ParticleEmitter getEmitter() {
         return emitter;
-    }
-
-    public TextureAtlasSprite getSprite() {
-        return sprite;
     }
 
     @Override
@@ -239,10 +368,6 @@ public class MolangParticleInstance extends TextureSheetParticle implements Mola
         return UV == null ? super.getV1() : UV[3];
     }
 
-    public int getAge() {
-        return age;
-    }
-
     @Override
     public void tick() {
         super.tick();
@@ -255,18 +380,20 @@ public class MolangParticleInstance extends TextureSheetParticle implements Mola
         }
     }
 
+    private static final Quaternionf quaternionf = new Quaternionf();
+
     @Override
-    public void render(@NotNull VertexConsumer buffer, @NotNull Camera renderInfo, float partialTicks) {
-        Quaternionf quaternionf = new Quaternionf();
-        getFacingCameraMode().setRotation(this, quaternionf, renderInfo, partialTicks);
+    public void render(VertexConsumer buffer, Camera camera, float partialTicks) {
+        quaternionf.identity();
+        getFacingCameraMode().setRotation(this, quaternionf, camera, partialTicks);
         if (xRot != 0.0F) quaternionf.rotateX(Mth.lerp(partialTicks, xRotO, xRot));
         if (yRot != 0.0F) quaternionf.rotateY(Mth.lerp(partialTicks, yRotO, yRot));
         if (roll != 0.0F) quaternionf.rotateZ(Mth.lerp(partialTicks, oRoll, roll));
-        renderRotatedQuad(buffer, renderInfo, quaternionf, partialTicks);
+        renderRotatedQuad(buffer, camera, quaternionf, partialTicks);
     }
 
     @Override
-    protected void renderRotatedQuad(@NotNull VertexConsumer buffer, @NotNull Quaternionf quaternion, float x, float y, float z, float partialTicks) {
+    protected void renderRotatedQuad(VertexConsumer buffer, Quaternionf quaternion, float x, float y, float z, float partialTicks) {
         if (isSodiumLoaded) {
             float f1 = getU0();
             float f2 = getU1();
@@ -283,14 +410,9 @@ public class MolangParticleInstance extends TextureSheetParticle implements Mola
     }
 
     @Override
-    protected void renderVertex(@NotNull VertexConsumer buffer, @NotNull Quaternionf quaternion, float x, float y, float z, float xOffset, float yOffset, float quadSize, float u, float v, int packedLight) {
+    protected void renderVertex(VertexConsumer buffer, Quaternionf quaternion, float x, float y, float z, float xOffset, float yOffset, float quadSize, float u, float v, int packedLight) {
         Vector3f vector3f = new Vector3f(xOffset * billboardSize[0], yOffset * billboardSize[1], 0.0F).rotate(quaternion).add(x, y, z);
         buffer.addVertex(vector3f.x(), vector3f.y(), vector3f.z()).setUv(u, v).setColor(rCol, gCol, bCol, alpha).setLight(packedLight);
-    }
-
-    public void moveDirectly(double x, double y, double z) {
-        setBoundingBox(getBoundingBox().move(x, y, z));
-        setLocationFromBoundingbox();
     }
 
     @Override
@@ -354,12 +476,12 @@ public class MolangParticleInstance extends TextureSheetParticle implements Mola
     }
 
     @Override
-    public @NotNull ParticleRenderType getRenderType() {
+    public ParticleRenderType getRenderType() {
         return preset.renderType;
     }
 
     @Override
-    public @NotNull FaceCameraMode getFacingCameraMode() {
+    public FaceCameraMode getFacingCameraMode() {
         return preset.facingCameraMode;
     }
 
@@ -369,20 +491,7 @@ public class MolangParticleInstance extends TextureSheetParticle implements Mola
     }
 
     @Override
-    public @NotNull Optional<ParticleGroup> getParticleGroup() {
+    public Optional<ParticleGroup> getParticleGroup() {
         return Optional.ofNullable(particleGroup);
-    }
-
-    public static class Provider implements ParticleProvider<MolangParticleOption> {
-        private final ExtendMutableSpriteSet sprites;
-
-        public Provider(ExtendMutableSpriteSet sprites) {
-            this.sprites = sprites;
-        }
-
-        @Override
-        public TextureSheetParticle createParticle(@NotNull MolangParticleOption option, @NotNull ClientLevel level, double x, double y, double z, double xSpeed, double ySpeed, double zSpeed) {
-            return new MolangParticleInstance(PSGameClient.LOADER.id2Particle().get(option.getId()), level, x, y, z, sprites);
-        }
     }
 }

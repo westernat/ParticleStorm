@@ -16,6 +16,7 @@ public record FloatMolangExp2(FloatMolangExp exp1, FloatMolangExp exp2) {
         return new float[]{exp1.calculate(instance), exp2.calculate(instance)};
     }
 
+    @Deprecated
     public boolean initialized() {
         return exp1.initialized() && exp2.initialized();
     }

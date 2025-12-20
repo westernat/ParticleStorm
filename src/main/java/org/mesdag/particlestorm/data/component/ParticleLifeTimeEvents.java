@@ -6,9 +6,9 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Tuple;
 import org.mesdag.particlestorm.ParticleStorm;
 import org.mesdag.particlestorm.api.IEventNode;
+import org.mesdag.particlestorm.api.IMolangParticleInstance;
 import org.mesdag.particlestorm.api.IParticleComponent;
 import org.mesdag.particlestorm.data.molang.MolangExp;
-import org.mesdag.particlestorm.particle.MolangParticleInstance;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -16,10 +16,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
-/**
- * All events use the event names in the event section<p>
- * All events can be either an array or a string
- */
+/// All events use the event names in the event section
+///
+/// All events can be either an array or a string
 public final class ParticleLifeTimeEvents implements IParticleComponent {
     public static final ResourceLocation ID = ResourceLocation.withDefaultNamespace("particle_lifetime_events");
     public static final Codec<ParticleLifeTimeEvents> CODEC = RecordCodecBuilder.create(instance -> instance.group(
@@ -33,11 +32,9 @@ public final class ParticleLifeTimeEvents implements IParticleComponent {
 
     public final List<Tuple<Function<Integer, Boolean>, List<String>>> sortedTimeline;
 
-    /**
-     * @param creationEvent   Fires when the particle is created
-     * @param expirationEvent Fires when the particle expires (does not wait for particles to expire too)
-     * @param timeline        A series of times, e.g. 0.0 or 1.0, that trigger the event
-     */
+    /// @param creationEvent   Fires when the particle is created
+    /// @param expirationEvent Fires when the particle expires (does not wait for particles to expire too)
+    /// @param timeline        A series of times, e.g. 0.0 or 1.0, that trigger the event
     public ParticleLifeTimeEvents(List<String> creationEvent, List<String> expirationEvent, Map<String, List<String>> timeline) {
         this.creationEvent = creationEvent;
         this.expirationEvent = expirationEvent;
@@ -61,11 +58,11 @@ public final class ParticleLifeTimeEvents implements IParticleComponent {
     }
 
     @Override
-    public void update(MolangParticleInstance instance) {
-        for (int i = instance.lastTimeline; i < sortedTimeline.size(); i++) {
+    public void update(IMolangParticleInstance instance) {
+        for (int i = instance.getLastTimeline(); i < sortedTimeline.size(); i++) {
             Tuple<Function<Integer, Boolean>, List<String>> tuple = sortedTimeline.get(i);
-            if (tuple.getA().apply(instance.getLifetime())) {
-                instance.lastTimeline = i + 1;
+            if (tuple.getA().apply(instance.self().getLifetime())) {
+                instance.setLastTimeline(i + 1);
                 executes(instance, tuple.getB());
                 break;
             }
@@ -73,7 +70,7 @@ public final class ParticleLifeTimeEvents implements IParticleComponent {
     }
 
     @Override
-    public void apply(MolangParticleInstance instance) {
+    public void apply(IMolangParticleInstance instance) {
         executes(instance, creationEvent);
     }
 
@@ -82,7 +79,7 @@ public final class ParticleLifeTimeEvents implements IParticleComponent {
         return true;
     }
 
-    public void onExpiration(MolangParticleInstance instance) {
+    public void onExpiration(IMolangParticleInstance instance) {
         executes(instance, expirationEvent);
     }
 
@@ -94,9 +91,9 @@ public final class ParticleLifeTimeEvents implements IParticleComponent {
                 "timeline=" + timeline + ']';
     }
 
-    private static void executes(MolangParticleInstance instance, List<String> triggers) {
+    private static void executes(IMolangParticleInstance instance, List<String> triggers) {
         for (String event : triggers) {
-            for (IEventNode node : instance.preset.effect.events.get(event).values()) {
+            for (IEventNode node : instance.getPreset().effect.events.get(event).values()) {
                 node.execute(instance);
             }
         }

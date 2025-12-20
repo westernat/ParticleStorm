@@ -2,7 +2,6 @@ package org.mesdag.particlestorm.mixin.integration.geckolib;
 
 import net.minecraft.client.Minecraft;
 import org.mesdag.particlestorm.PSGameClient;
-import org.mesdag.particlestorm.mixin.ParticleEngineAccessor;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Pseudo;
 import org.spongepowered.asm.mixin.injection.At;
@@ -19,7 +18,7 @@ public abstract class MolangQueriesMixin {
         setActorVariable("query.total_emitter_count", actor -> PSGameClient.LOADER.totalEmitterCount());
         setActorVariable("query.total_particle_count", actor -> {
             int sum = 0;
-            for (Integer value : ((ParticleEngineAccessor) Minecraft.getInstance().particleEngine).trackedParticleCounts().values()) {
+            for (Integer value : Minecraft.getInstance().particleEngine.trackedParticleCounts.values()) {
                 sum += value;
             }
             return sum;
