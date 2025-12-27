@@ -149,6 +149,7 @@ dependencies {
     // http://www.gradle.org/docs/current/userguide/artifact_dependencies_tutorial.html
     // http://www.gradle.org/docs/current/userguide/dependency_management.html
     modCompileOnly "software.bernie.geckolib:geckolib-forge-${minecraft_version}:${geckolib_version}"
+    compileOnly "com.eliotlash.mclib:mclib:20"
 //    modLocalRuntime "software.bernie.geckolib:geckolib-forge-${minecraft_version}:${geckolib_version}"
 }
 

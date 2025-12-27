@@ -11,7 +11,15 @@
         "LivingEntityMixin",
         "MinecraftMixin",
         "ParticleEngineMixin",
-        "TextureAtlasSpriteMixin"
+        "TextureAtlasSpriteMixin",
+        "integration.geckolib.AnimatableInstanceCacheMixin",
+        "integration.geckolib.AnimationControllerMixin",
+        "integration.geckolib.AnimationProcessorMixin",
+        "integration.geckolib.BakedModelFactory$BuiltinMixin",
+        "integration.geckolib.GeoBoneMixin",
+        "integration.geckolib.GeoReplacedEntityRendererMixin",
+        "integration.geckolib.MolangQueriesMixin",
+        "integration.geckolib.ParticleKeyframeDataMixin"
     ],
     "injectors": {
         "defaultRequire": 1
