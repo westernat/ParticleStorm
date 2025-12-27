@@ -1,0 +1,60 @@
+package org.mesdag.particlestorm.data.component;
+
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import net.minecraft.util.GsonHelper;
+import org.mesdag.particlestorm.api.Deserializer;
+import org.mesdag.particlestorm.api.IEmitterComponent;
+import org.mesdag.particlestorm.data.molang.MolangExp;
+
+import java.util.List;
+
+/// This component specifies the frame of reference of the emitter.
+///
+/// Applies only when the emitter is attached to an entity.
+///
+/// When `position` is true, the particles will simulate in entity space, otherwise they will simulate in world space.
+///
+/// `rotation` works the same way for `rotation`.
+///
+/// Default is false for both, which makes the particles emit relative to the emitter, then simulate independently of the emitter.
+///
+/// Note that `rotation` = true and `position` = false is an invalid option.
+///
+/// `velocity` will add the emitter's velocity to the initial particle velocity.
+public record EmitterLocalSpace(boolean position, boolean rotation, boolean velocity) implements IEmitterComponent {
+    public EmitterLocalSpace(boolean position, boolean rotation, boolean velocity) {
+        this.position = position;
+        this.rotation = rotation;
+        this.velocity = velocity;
+
+        if (rotation && !position) throw new IllegalArgumentException("rotation = true and position = false is an invalid option");
+    }
+
+    @Override
+    public Deserializer<EmitterLocalSpace> deserializer() {
+        return EmitterLocalSpace::fromJson;
+    }
+
+    @Override
+    public List<MolangExp> getAllMolangExp() {
+        return List.of();
+    }
+
+    @Override
+    public String toString() {
+        return "EmitterLocalSpace[" +
+                "position=" + position + ", " +
+                "rotation=" + rotation + ", " +
+                "velocity=" + velocity + ']';
+    }
+
+    public static EmitterLocalSpace fromJson(JsonElement element) {
+        JsonObject object = element.getAsJsonObject();
+        return new EmitterLocalSpace(
+                GsonHelper.getAsBoolean(object, "position", false),
+                GsonHelper.getAsBoolean(object, "rotation", false),
+                GsonHelper.getAsBoolean(object, "velocity", false)
+        );
+    }
+}
