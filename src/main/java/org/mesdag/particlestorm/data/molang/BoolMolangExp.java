@@ -2,7 +2,6 @@ package org.mesdag.particlestorm.data.molang;
 
 import com.mojang.datafixers.util.Either;
 import com.mojang.serialization.Codec;
-import org.jetbrains.annotations.Nullable;
 import org.mesdag.particlestorm.api.MolangInstance;
 
 public class BoolMolangExp extends MolangExp {
@@ -14,7 +13,7 @@ public class BoolMolangExp extends MolangExp {
     );
     private final boolean constant;
 
-    public BoolMolangExp(boolean constant, @Nullable String expression) {
+    public BoolMolangExp(boolean constant, String expression) {
         super(expression);
         this.constant = constant;
     }

@@ -122,7 +122,7 @@ public abstract sealed class EmitterShape implements IEmitterComponent permits E
     /// This component spawns particles using a disc shape, particles can be spawned inside the shape or on its outer perimeter.
     public static final class Disc extends EmitterShape {
         public static final Codec<Disc> CODEC = RecordCodecBuilder.create(instance -> instance.group(
-                FloatMolangExp3.CODEC.fieldOf("offset").orElseGet(() -> FloatMolangExp3.ZERO).forGetter(disc -> disc.offset),
+                FloatMolangExp3.CODEC.fieldOf("offset").orElse(FloatMolangExp3.ZERO).forGetter(disc -> disc.offset),
                 FloatMolangExp.CODEC.fieldOf("radius").orElse(FloatMolangExp.ONE).forGetter(disc -> disc.radius),
                 PlaneNormal.CODEC.fieldOf("plane_normal").orElse(PlaneNormal.Y).forGetter(disc -> disc.planeNormal),
                 Direction.CODEC.fieldOf("direction").orElse(Direction.OUTWARDS).forGetter(disc -> disc.direction),
@@ -247,7 +247,11 @@ public abstract sealed class EmitterShape implements IEmitterComponent permits E
 
         @Override
         public List<MolangExp> getAllMolangExp() {
-            return List.of(direction.direct.exp1(), direction.direct.exp2(), direction.direct.exp3());
+            return List.of(
+                    offset.exp1(), offset.exp2(), offset.exp3(),
+                    halfDimensions.exp1(), halfDimensions.exp2(), halfDimensions.exp3(),
+                    direction.direct.exp1(), direction.direct.exp2(), direction.direct.exp3()
+            );
         }
 
         @Override

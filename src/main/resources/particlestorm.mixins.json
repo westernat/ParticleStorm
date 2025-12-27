@@ -2,11 +2,9 @@
     "required": true,
     "minVersion": "0.8",
     "package": "org.mesdag.particlestorm.mixin",
-    "compatibilityLevel": "JAVA_17",
+    "compatibilityLevel": "JAVA_21",
     "refmap": "particlestorm.refmap.json",
-    "mixins": [
-        "integration.geckolib.MolangQueriesAccessor"
-    ],
+    "mixins": [],
     "client": [
         "BlockEntityMixin",
         "EntityMixin",
@@ -20,6 +18,7 @@
         "integration.geckolib.BakedModelFactory$BuiltinMixin",
         "integration.geckolib.GeoBoneMixin",
         "integration.geckolib.GeoReplacedEntityRendererMixin",
+        "integration.geckolib.MolangQueriesAccessor",
         "integration.geckolib.MolangQueriesMixin",
         "integration.geckolib.ParticleKeyframeDataMixin"
     ],

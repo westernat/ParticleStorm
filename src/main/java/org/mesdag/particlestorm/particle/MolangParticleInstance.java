@@ -12,7 +12,7 @@ import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
-import net.neoforged.fml.ModList;
+import net.neoforged.fml.loading.LoadingModList;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
 import org.mesdag.particlestorm.api.IEventNode;
@@ -27,7 +27,7 @@ import java.util.Optional;
 
 public class MolangParticleInstance extends TextureSheetParticle implements IMolangParticleInstance {
     public static final int FULL_LIGHT = 0xF000F0;
-    private static final boolean isSodiumLoaded = ModList.get().isLoaded("sodium");
+    private static final boolean isSodiumLoaded = LoadingModList.get().getModFileById("sodium") != null;
 
     protected final ParticlePreset preset;
     protected ParticleVariableTable vars;

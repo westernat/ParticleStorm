@@ -1,5 +1,6 @@
 package org.mesdag.particlestorm.api.geckolib;
 
+import com.mojang.datafixers.DSL;
 import it.unimi.dsi.fastutil.ints.IntIterator;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
@@ -37,7 +38,7 @@ public final class GeckoLibHelper {
         DeferredRegister<Block> BLOCK = DeferredRegister.create(BuiltInRegistries.BLOCK, ParticleStorm.MODID);
         DeferredRegister<BlockEntityType<?>> ENTITY = DeferredRegister.create(BuiltInRegistries.BLOCK_ENTITY_TYPE, ParticleStorm.MODID);
         DeferredHolder<Block, Block> TEST = BLOCK.register("test_block", TestBlock::new);
-        TEST_ENTITY = ENTITY.register("test_entity", () -> BlockEntityType.Builder.of(TestBlock.Entity::new, TEST.get()).build(null));
+        TEST_ENTITY = ENTITY.register("test_entity", () -> BlockEntityType.Builder.of(TestBlock.Entity::new, TEST.get()).build(DSL.remainderType()));
         BLOCK.register(bus);
         ENTITY.register(bus);
     }

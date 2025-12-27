@@ -150,7 +150,7 @@ public class MolangParticleLoader implements PreparableReloadListener {
         removeEmitter(emitter.id, sync);
     }
 
-    public ParticleEmitter removeEmitter(int id, boolean sync) {
+    public @Nullable ParticleEmitter removeEmitter(int id, boolean sync) {
         ParticleEmitter removed = emitters.remove(id);
         if (removed != null) {
             removed.onRemove();
