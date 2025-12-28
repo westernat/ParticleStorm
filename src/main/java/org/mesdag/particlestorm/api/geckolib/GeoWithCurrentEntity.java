@@ -7,5 +7,5 @@ import software.bernie.geckolib.animatable.GeoReplacedEntity;
 public interface GeoWithCurrentEntity extends GeoReplacedEntity {
     @Nullable Entity getCurrentEntity();
 
-    void setCurrentEntity(Entity entity);
+    void setCurrentEntity(@Nullable Entity entity);
 }

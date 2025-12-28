@@ -15,6 +15,7 @@ import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.client.event.EntityRenderersEvent;
 import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
+import org.jetbrains.annotations.Nullable;
 import org.joml.Vector3f;
 import org.mesdag.particlestorm.PSGameClient;
 import org.mesdag.particlestorm.ParticleStorm;
@@ -126,7 +127,7 @@ public final class GeckoLibHelper {
         return false;
     }
 
-    public static void setCurrentEntity(Object animatable, Entity entity) {
+    public static void setCurrentEntity(Object animatable, @Nullable Entity entity) {
         if (animatable instanceof GeoWithCurrentEntity withCurrentEntity) {
             withCurrentEntity.setCurrentEntity(entity);
         }

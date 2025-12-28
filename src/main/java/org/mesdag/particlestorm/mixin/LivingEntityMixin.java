@@ -14,7 +14,7 @@ import org.spongepowered.asm.mixin.injection.At;
 public abstract class LivingEntityMixin {
     @WrapWithCondition(method = "tickEffects", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/level/Level;addParticle(Lnet/minecraft/core/particles/ParticleOptions;DDDDDD)V"))
     private boolean modify(Level instance, ParticleOptions particleData, double x, double y, double z, double xSpeed, double ySpeed, double zSpeed) {
-        if (particleData instanceof MolangParticleOption(ResourceLocation id)) {
+        if (instance.isClientSide && particleData instanceof MolangParticleOption(ResourceLocation id)) {
             PSGameClient.LOADER.addTrackedEmitter((LivingEntity) (Object) this, id);
             return false;
         }
