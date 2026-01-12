@@ -20,11 +20,13 @@ import net.minecraftforge.client.event.RenderLevelStageEvent;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.ModLoader;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.event.config.ModConfigEvent;
 import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 import org.mesdag.particlestorm.api.IComponent;
 import org.mesdag.particlestorm.api.IEventNode;
+import org.mesdag.particlestorm.api.RegisterDeserializersEvent;
 import org.mesdag.particlestorm.data.component.*;
 import org.mesdag.particlestorm.data.event.*;
 import org.mesdag.particlestorm.particle.MolangParticleLoader;
@@ -113,6 +115,7 @@ public final class PSGameClient {
     public static void reload(RegisterClientReloadListenersEvent event) {
         registerComponents();
         registerEventNodes();
+        ModLoader.get().postEvent(new RegisterDeserializersEvent());
         event.registerReloadListener(LOADER);
     }
 

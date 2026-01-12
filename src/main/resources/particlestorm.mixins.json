@@ -8,9 +8,8 @@
     "client": [
         "BlockEntityMixin",
         "EntityMixin",
-        "LivingEntityMixin",
-        "MinecraftMixin",
         "ParticleEngineMixin",
+        "ResourceLoadStateTrackerMixin",
         "TextureAtlasSpriteMixin",
         "integration.geckolib.AnimatableInstanceCacheMixin",
         "integration.geckolib.AnimationControllerMixin",

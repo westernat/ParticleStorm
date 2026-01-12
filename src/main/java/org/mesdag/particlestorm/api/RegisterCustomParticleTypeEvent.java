@@ -24,7 +24,7 @@ public class RegisterCustomParticleTypeEvent extends Event implements IModBusEve
     private static ExtendMutableSpriteSet sprites;
     private final Map<ResourceLocation, ParticleEngine.MutableSpriteSet> spriteSets;
 
-    private RegisterCustomParticleTypeEvent(Map<ResourceLocation, ParticleEngine.MutableSpriteSet> spriteSets) {
+    public RegisterCustomParticleTypeEvent(Map<ResourceLocation, ParticleEngine.MutableSpriteSet> spriteSets) {
         this.spriteSets = spriteSets;
     }
 

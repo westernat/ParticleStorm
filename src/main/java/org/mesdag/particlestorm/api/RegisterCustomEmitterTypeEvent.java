@@ -18,8 +18,6 @@ public class RegisterCustomEmitterTypeEvent extends Event implements IModBusEven
     public static final String TYPE_KEY = "type";
     private static Map<ResourceLocation, BiFunction<Level, CompoundTag, ? extends ParticleEmitter>> map;
 
-    private RegisterCustomEmitterTypeEvent() {}
-
     public static void postEvent() {
         map = new HashMap<>();
         ModLoader.get().postEvent(new RegisterCustomEmitterTypeEvent());
