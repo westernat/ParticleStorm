@@ -1,5 +1,6 @@
 package org.mesdag.particlestorm.data.molang.compiler;
 
+import com.google.common.collect.ImmutableMap;
 import net.minecraft.client.CameraType;
 import net.minecraft.client.Minecraft;
 import net.neoforged.fml.ModLoader;
@@ -9,14 +10,13 @@ import org.mesdag.particlestorm.api.RegisterMolangQueriesEvent;
 import org.mesdag.particlestorm.data.molang.compiler.value.Variable;
 
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.ToDoubleFunction;
 
 public final class MolangQueries {
-    private static final Map<String, Variable> UNFROZEN_QUERIES = new ConcurrentHashMap<>();
-    private static final Map<String, Variable> FROZEN_QUERIES = new HashMap<>();
+    private static Map<String, Variable> UNFROZEN_QUERIES = new ConcurrentHashMap<>();
+    private static Map<String, Variable> FROZEN_QUERIES = ImmutableMap.of();
 
     static {
         setDefaultQueryValues();
@@ -33,7 +33,7 @@ public final class MolangQueries {
     }
 
     static Variable getQueryFor(String name) {
-        return FROZEN_QUERIES.getOrDefault(applyPrefixAliases(name, "query.", "q."), new Variable(name, 0));
+        return FROZEN_QUERIES.getOrDefault(applyQueryAliases(name), new Variable(name, 0));
     }
 
     private static void registerQueryVariable(String name, ToDoubleFunction<MolangInstance> value) {
@@ -69,6 +69,13 @@ public final class MolangQueries {
         return text;
     }
 
+    public static String applyQueryAliases(String text) {
+        if (text.startsWith("q.")) {
+            return "query" + text.substring(1);
+        }
+        return text;
+    }
+
     private static void setDefaultQueryValues() {
         registerQueryVariable("query.cardinal_player_facing", p -> Minecraft.getInstance().player == null ? 0.0 : Minecraft.getInstance().player.getDirection().ordinal());
         registerQueryVariable("query.day", p -> p.getLevel().getGameTime() / 24000d);
@@ -88,7 +95,7 @@ public final class MolangQueries {
         registerQueryVariable("query.attached_yo", p -> p.getAttachedEntity() == null ? 0.0 : p.getAttachedEntity().yo);
         registerQueryVariable("query.attached_zo", p -> p.getAttachedEntity() == null ? 0.0 : p.getAttachedEntity().zo);
         ModLoader.postEvent(new RegisterMolangQueriesEvent(MolangQueries::registerQueryVariable));
-        FROZEN_QUERIES.putAll(UNFROZEN_QUERIES);
-        UNFROZEN_QUERIES.clear();
+        FROZEN_QUERIES = ImmutableMap.copyOf(UNFROZEN_QUERIES);
+        UNFROZEN_QUERIES = null;
     }
 }

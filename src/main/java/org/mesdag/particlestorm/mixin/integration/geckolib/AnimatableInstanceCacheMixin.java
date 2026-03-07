@@ -2,24 +2,24 @@ package org.mesdag.particlestorm.mixin.integration.geckolib;
 
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
+import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import org.joml.Vector3f;
 import org.mesdag.particlestorm.mixed.IAnimatableInstanceCache;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Pseudo;
 import org.spongepowered.asm.mixin.Unique;
+import software.bernie.geckolib.cache.object.GeoBone;
 import software.bernie.geckolib.loading.json.raw.LocatorValue;
+
+import java.util.Map;
 
 @Pseudo
 @Mixin(targets = "software.bernie.geckolib.animatable.instance.AnimatableInstanceCache", remap = false)
-public class AnimatableInstanceCacheMixin implements IAnimatableInstanceCache {
+public abstract class AnimatableInstanceCacheMixin implements IAnimatableInstanceCache {
     @Unique
     private Object2IntMap<LocatorValue> particlestorm$cachedId;
     @Unique
-    private Vector3f particlestorm$position;
-    @Unique
-    private Vector3f particlestorm$rotation;
-//    @Unique
-//    private Vector3f particlestorm$scale;
+    private Map<GeoBone, Vector3f[]> particlestorm$transform;
 
     @Override
     public Object2IntMap<LocatorValue> particlestorm$getCachedId() {
@@ -31,26 +31,10 @@ public class AnimatableInstanceCacheMixin implements IAnimatableInstanceCache {
     }
 
     @Override
-    public Vector3f particlestorm$getPosition() {
-        if (particlestorm$position == null) {
-            this.particlestorm$position = new Vector3f();
+    public Vector3f[] particlestorm$getTransform(GeoBone bone) {
+        if (particlestorm$transform == null) {
+            this.particlestorm$transform = new Object2ObjectOpenHashMap<>();
         }
-        return particlestorm$position;
+        return particlestorm$transform.computeIfAbsent(bone, b -> new Vector3f[]{new Vector3f(), new Vector3f()});
     }
-
-    @Override
-    public Vector3f particlestorm$getRotation() {
-        if (particlestorm$rotation == null) {
-            this.particlestorm$rotation = new Vector3f();
-        }
-        return particlestorm$rotation;
-    }
-
-//    @Override
-//    public Vector3f particlestorm$getScale() {
-//        if (particlestorm$scale == null) {
-//            this.particlestorm$scale = new Vector3f();
-//        }
-//        return particlestorm$scale;
-//    }
 }

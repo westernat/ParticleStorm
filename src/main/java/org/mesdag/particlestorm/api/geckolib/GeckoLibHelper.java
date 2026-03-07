@@ -102,9 +102,8 @@ public final class GeckoLibHelper {
         ResourceLocation particle = iData.particlestorm$getParticle();
         MolangExp expression = iData.particlestorm$getExpression(variableTable);
         IAnimatableInstanceCache cache = IAnimatableInstanceCache.of(animatable.getAnimatableInstanceCache());
-        for (GeoBone geoBone : bones) {
-            IGeoBone bone = IGeoBone.of(geoBone);
-            LocatorValue locator = bone.particlestorm$getLocators().get(keyframeData.getLocator());
+        for (GeoBone bone : bones) {
+            LocatorValue locator = IGeoBone.of(bone).particlestorm$getLocators().get(keyframeData.getLocator());
             if (locator == null) continue;
 
             ParticleEmitter current = PSGameClient.LOADER.getEmitter(cache.particlestorm$getCachedId().getInt(locator));
@@ -119,8 +118,9 @@ public final class GeckoLibHelper {
                 double[] rotation = getLocatorRotation(locator);
                 emitter.offsetPos = new Vec3(offset[0] * 0.0625, offset[1] * 0.0625, -offset[2] * 0.0625);
                 emitter.offsetRot = new Vector3f((float) Math.toRadians(rotation[0]), (float) Math.toRadians(rotation[1]), (float) Math.toRadians(rotation[2]));
-                emitter.parentPosition = cache.particlestorm$getPosition();
-                emitter.parentRotation = cache.particlestorm$getRotation();
+                Vector3f[] transform = cache.particlestorm$getTransform(bone);
+                emitter.parentPosition = transform[0];
+                emitter.parentRotation = transform[1];
                 emitter.parentMode = ParticleEmitter.ParentMode.LOCATOR;
             }
         }

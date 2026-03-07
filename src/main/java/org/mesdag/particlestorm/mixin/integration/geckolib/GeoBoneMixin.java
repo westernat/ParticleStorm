@@ -1,5 +1,6 @@
 package org.mesdag.particlestorm.mixin.integration.geckolib;
 
+import org.joml.Vector3f;
 import org.mesdag.particlestorm.mixed.IAnimatableInstanceCache;
 import org.mesdag.particlestorm.mixed.IGeoBone;
 import org.spongepowered.asm.mixin.Mixin;
@@ -10,6 +11,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import software.bernie.geckolib.animatable.GeoAnimatable;
+import software.bernie.geckolib.cache.object.GeoBone;
 import software.bernie.geckolib.loading.json.raw.LocatorValue;
 import software.bernie.geckolib.loading.math.MolangQueries;
 
@@ -30,12 +32,6 @@ public abstract class GeoBoneMixin implements IGeoBone {
     private float rotY;
     @Shadow
     private float rotZ;
-//    @Shadow
-//    private float scaleX;
-//    @Shadow
-//    private float scaleY;
-//    @Shadow
-//    private float scaleZ;
     @Unique
     private Map<String, LocatorValue> particlestorm$locators;
 
@@ -55,8 +51,9 @@ public abstract class GeoBoneMixin implements IGeoBone {
         MolangQueries.Actor<?> actor = MolangQueriesAccessor.callGetActor();
         if (actor != null && actor.animatable() instanceof GeoAnimatable animatable) {
             IAnimatableInstanceCache cache = IAnimatableInstanceCache.of(animatable.getAnimatableInstanceCache());
-            cache.particlestorm$getPosition().set(positionX, positionY, positionZ);
-            cache.particlestorm$getRotation().set(rotX, rotY, rotZ);
+            Vector3f[] transform = cache.particlestorm$getTransform((GeoBone) (Object) this);
+            transform[0].set(positionX, positionY, positionZ);
+            transform[1].set(rotX, rotY, rotZ);
             //cache.particlestorm$getScale().set(scaleX, scaleY, scaleZ); todo
         }
     }
