@@ -26,10 +26,7 @@ import net.minecraft.world.level.Level;
 import net.neoforged.fml.ModLoader;
 import org.jetbrains.annotations.Nullable;
 import org.mesdag.particlestorm.ParticleStorm;
-import org.mesdag.particlestorm.api.IParticleComponent;
-import org.mesdag.particlestorm.api.IntAllocator;
-import org.mesdag.particlestorm.api.MolangParticleLoadEvent;
-import org.mesdag.particlestorm.api.RegisterCustomEmitterTypeEvent;
+import org.mesdag.particlestorm.api.*;
 import org.mesdag.particlestorm.data.DefinedParticleEffect;
 import org.mesdag.particlestorm.network.EmitterRemovalPacket;
 import org.mesdag.particlestorm.network.EmitterSynchronizePacket;
@@ -69,8 +66,10 @@ public class MolangParticleLoader implements PreparableReloadListener {
     public void tick(LocalPlayer localPlayer) {
         if (!initialized) {
             for (ParticlePreset detail : id2Particle.values()) {
-                for (IParticleComponent component : detail.effect.orderedParticleComponents) {
-                    component.initialize(localPlayer.level());
+                for (IComponent component : detail.effect.orderedComponents) {
+                    if (component instanceof IParticleComponent particleComponent) {
+                        particleComponent.initialize(localPlayer.level());
+                    }
                 }
             }
             removeAll();

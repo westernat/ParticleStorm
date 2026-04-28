@@ -102,6 +102,10 @@ public interface IMolangParticleInstance extends MolangInstance {
 
     void setCollision(boolean bool);
 
+    void discard();
+
+    boolean isDiscarded();
+
     // region default
     default void moveDirectly(double x, double y, double z) {
         self().setBoundingBox(self().getBoundingBox().move(x, y, z));

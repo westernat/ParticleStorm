@@ -314,6 +314,16 @@ public class MolangParticleInstance extends TextureSheetParticle implements IMol
     }
 
     @Override
+    public void discard() {
+        remove();
+    }
+
+    @Override
+    public boolean isDiscarded() {
+        return removed;
+    }
+
+    @Override
     public VariableTable getVars() {
         return vars;
     }

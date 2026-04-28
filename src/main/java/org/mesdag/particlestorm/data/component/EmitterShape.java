@@ -109,6 +109,9 @@ public abstract sealed class EmitterShape implements IEmitterComponent permits E
         for (IParticleComponent component : particlePreset.effect.orderedParticleComponents) {
             component.apply(instance);
         }
+        if (instance.isDiscarded()) {
+            return;
+        }
         instance.setComponents(particlePreset.effect.orderedParticleComponentsWhichRequireUpdate);
         if (!particlePreset.motionDynamic) instance.setParticleSpeed(0.0, 0.0, 0.0);
         Minecraft.getInstance().particleEngine.add(instance);
