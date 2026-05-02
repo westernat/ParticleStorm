@@ -82,11 +82,11 @@ public class MolangParticleLoader implements PreparableReloadListener {
                 ParticleEmitter emitter = iterator.next().getValue();
                 try {
                     if (emitter.isRemoved() || emitter.level.dimension() != localPlayer.level().dimension()) {
-                        allocator.release(emitter.id);
                         emitter.onRemove();
                         emitter.remove();
                         iterator.remove();
-                    } else if (Mth.square(emitter.pos.x - localPlayer.getX()) + Mth.square(emitter.pos.z - localPlayer.getZ()) < renderDistSqr) {
+                        allocator.release(emitter.id);
+                    } else if (Mth.lengthSquared(emitter.pos.x - localPlayer.getX(), emitter.pos.z - localPlayer.getZ()) < renderDistSqr) {
                         emitter.tick();
                     }
                 } catch (Exception e) {
