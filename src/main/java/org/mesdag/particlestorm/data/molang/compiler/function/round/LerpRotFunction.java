@@ -5,14 +5,11 @@ import org.mesdag.particlestorm.api.MolangInstance;
 import org.mesdag.particlestorm.data.molang.compiler.MathValue;
 import org.mesdag.particlestorm.data.molang.compiler.function.MathFunction;
 
-/**
- * {@link MathFunction} value supplier
- *
- * <p>
- * <b>Contract:</b>
- * <br>
- * Returns the first value plus the difference between the first and second input values multiplied by the third input value, wrapping the end result as a degrees value
- */
+/// [MathFunction] value supplier
+///
+/// **Contract:**
+///
+/// Returns the first value plus the difference between the first and second input values multiplied by the third input value, wrapping the end result as a degrees value
 public final class LerpRotFunction extends MathFunction {
     private final MathValue min;
     private final MathValue max;
@@ -32,7 +29,7 @@ public final class LerpRotFunction extends MathFunction {
     }
 
     @Override
-    public double compute(MolangInstance instance) {
+    public float compute(MolangInstance instance) {
         return lerpYaw(this.delta.get(instance), this.min.get(instance), this.max.get(instance));
     }
 
@@ -46,10 +43,10 @@ public final class LerpRotFunction extends MathFunction {
         return new MathValue[] {this.min, this.max, this.delta};
     }
 
-    public static double lerpYaw(double delta, double start, double end) {
+    public static float lerpYaw(float delta, float start, float end) {
         start = Mth.wrapDegrees(start);
         end = Mth.wrapDegrees(end);
-        double diff = start - end;
+        float diff = start - end;
         end = diff > 180 || diff < -180 ? start + Math.copySign(360 - Math.abs(diff), diff) : end;
 
         return Mth.lerp(delta, start, end);

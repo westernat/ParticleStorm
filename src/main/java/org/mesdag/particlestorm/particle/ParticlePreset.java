@@ -13,6 +13,7 @@ import org.mesdag.particlestorm.data.DefinedParticleEffect;
 import org.mesdag.particlestorm.data.MathHelper;
 import org.mesdag.particlestorm.data.component.*;
 import org.mesdag.particlestorm.data.curve.ParticleCurve;
+import org.mesdag.particlestorm.data.description.DescriptionMaterial;
 import org.mesdag.particlestorm.data.molang.FloatMolangExp;
 import org.mesdag.particlestorm.data.molang.MolangExp;
 import org.mesdag.particlestorm.data.molang.VariableTable;
@@ -45,15 +46,24 @@ public class ParticlePreset {
 
     public ParticlePreset(DefinedParticleEffect effect) {
         this.effect = effect;
-        this.renderType = switch (effect.description.parameters().material()) {
-            case TERRAIN_SHEET -> ParticleRenderType.TERRAIN_SHEET;
-            case particles_opaque, PARTICLE_SHEET_OPAQUE -> ParticleRenderType.PARTICLE_SHEET_OPAQUE;
-            case particles_add -> PSGameClient.PARTICLE_ADD;
-            case particles_blend, PARTICLE_SHEET_TRANSLUCENT -> ParticleRenderType.PARTICLE_SHEET_TRANSLUCENT;
-            case particles_alpha, PARTICLE_SHEET_LIT -> ParticleRenderType.PARTICLE_SHEET_LIT;
-            case CUSTOM -> ParticleRenderType.CUSTOM;
-            default -> ParticleRenderType.NO_RENDER;
-        };
+        DescriptionMaterial material = effect.description.parameters().material();
+        if (material == DescriptionMaterial.TERRAIN_SHEET) {
+            this.renderType = ParticleRenderType.TERRAIN_SHEET;
+        } else if (material == DescriptionMaterial.particles_opaque || material == DescriptionMaterial.PARTICLE_SHEET_OPAQUE) {
+            this.renderType = ParticleRenderType.PARTICLE_SHEET_OPAQUE;
+        } else if (material == DescriptionMaterial.particles_add) {
+            this.renderType = PSGameClient.PARTICLE_ADD;
+        } else if (material == DescriptionMaterial.particles_blend) {
+            this.renderType = PSGameClient.PARTICLE_BLEND;
+        } else if (material == DescriptionMaterial.PARTICLE_SHEET_TRANSLUCENT) {
+            this.renderType = ParticleRenderType.PARTICLE_SHEET_TRANSLUCENT;
+        } else if (material == DescriptionMaterial.particles_alpha || material == DescriptionMaterial.PARTICLE_SHEET_LIT) {
+            this.renderType = ParticleRenderType.PARTICLE_SHEET_LIT;
+        } else if (material == DescriptionMaterial.CUSTOM) {
+            this.renderType = ParticleRenderType.CUSTOM;
+        } else {
+            this.renderType = ParticleRenderType.NO_RENDER;
+        }
         if (effect.components.get(ParticleAppearanceBillboard.ID) instanceof ParticleAppearanceBillboard component) {
             this.facingCameraMode = FaceCameraMode.fromComponent(component.faceCameraMode());
             this.minSpeedThresholdSqr = Mth.square(component.direction().minSpeedThreshold());
@@ -99,7 +109,7 @@ public class ParticlePreset {
         }
         this.vars = table;
         this.assignments = toInit;
-        NeoForge.EVENT_BUS.post(new ParticlePresetLoadedEvent(this));
+        NeoForge.EVENT_BUS.post(new ParticlePresetLoadedEvent(effect, this));
     }
 
     public <T> void setTicket(Class<T> clazz, T value) {

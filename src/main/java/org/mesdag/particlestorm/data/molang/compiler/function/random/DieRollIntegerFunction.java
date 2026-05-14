@@ -9,18 +9,15 @@ import org.mesdag.particlestorm.data.molang.compiler.function.MathFunction;
 import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 
-/**
- * {@link MathFunction} value supplier
- *
- * <p>
- * <b>Contract:</b>
- * <br>
- * Returns a random integer value based on the input values:
- * <ul>
- *     <li>Three inputs generates the sum of <i>n</i> (first input) random values between the second (inclusive) and third input (inclusive)</li>
- *     <li>Four inputs generates the sum of <i>n</i> (first input) random values between the second (inclusive) and third input (inclusive), seeded by the fourth input</li>
- * </ul>
- */
+/// [MathFunction] value supplier
+///
+/// **Contract:**
+///
+/// Returns a random integer value based on the input values:
+///
+///   - Three inputs generates the sum of _n_ (first input) random values between the second (inclusive) and third input (inclusive)
+///   - Four inputs generates the sum of _n_ (first input) random values between the second (inclusive) and third input (inclusive), seeded by the fourth input
+///
 public final class DieRollIntegerFunction extends MathFunction {
     private final MathValue rolls;
     private final MathValue min;
@@ -46,10 +43,10 @@ public final class DieRollIntegerFunction extends MathFunction {
     }
 
     @Override
-    public double compute(MolangInstance instance) {
-        final int rolls = (int)(Math.floor(this.rolls.get(instance)));
-        final int min = Mth.floor(this.min.get(instance));
-        final int max = Mth.ceil(this.max.get(instance));
+    public float compute(MolangInstance instance) {
+        int rolls = (int)(Math.floor(this.rolls.get(instance)));
+        int min = Mth.floor(this.min.get(instance));
+        int max = Mth.ceil(this.max.get(instance));
         int sum = 0;
         Random random;
 

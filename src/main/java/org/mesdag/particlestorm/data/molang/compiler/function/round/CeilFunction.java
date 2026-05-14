@@ -1,17 +1,15 @@
 package org.mesdag.particlestorm.data.molang.compiler.function.round;
 
+import net.minecraft.util.Mth;
 import org.mesdag.particlestorm.api.MolangInstance;
 import org.mesdag.particlestorm.data.molang.compiler.MathValue;
 import org.mesdag.particlestorm.data.molang.compiler.function.MathFunction;
 
-/**
- * {@link MathFunction} value supplier
- *
- * <p>
- * <b>Contract:</b>
- * <br>
- * Returns the smallest value that is greater than or equal to the input value and is equal to an integer
- */
+/// [MathFunction] value supplier
+///
+/// **Contract:**
+///
+/// Returns the smallest value that is greater than or equal to the input value and is equal to an integer
 public final class CeilFunction extends MathFunction {
     private final MathValue value;
 
@@ -27,8 +25,8 @@ public final class CeilFunction extends MathFunction {
     }
 
     @Override
-    public double compute(MolangInstance instance) {
-        return Math.ceil(this.value.get(instance));
+    public float compute(MolangInstance instance) {
+        return Mth.ceil(this.value.get(instance));
     }
 
     @Override

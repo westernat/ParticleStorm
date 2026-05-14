@@ -1,6 +1,9 @@
 package org.mesdag.particlestorm.mixin;
 
+import com.llamalad7.mixinextras.sugar.Local;
 import net.minecraft.client.particle.ParticleEngine;
+import net.minecraft.client.particle.ParticleRenderType;
+import net.minecraft.client.renderer.ShaderInstance;
 import net.minecraft.client.renderer.texture.SpriteLoader;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.resources.ResourceLocation;
@@ -20,6 +23,7 @@ import org.spongepowered.asm.mixin.injection.ModifyArg;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import java.util.Map;
+import java.util.function.Supplier;
 
 @Mixin(ParticleEngine.class)
 public abstract class ParticleEngineMixin implements IParticleEngine {
@@ -54,5 +58,13 @@ public abstract class ParticleEngineMixin implements IParticleEngine {
     @ModifyArg(method = "lambda$reload$9", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/texture/TextureAtlas;upload(Lnet/minecraft/client/renderer/texture/SpriteLoader$Preparations;)V"))
     private SpriteLoader.Preparations cachePreparations(SpriteLoader.Preparations preparations) {
         return this.particlestorm$preparations = preparations;
+    }
+
+    @ModifyArg(method = "render(Lnet/minecraft/client/renderer/LightTexture;Lnet/minecraft/client/Camera;FLnet/minecraft/client/renderer/culling/Frustum;Ljava/util/function/Predicate;)V", at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/systems/RenderSystem;setShader(Ljava/util/function/Supplier;)V"))
+    private Supplier<ShaderInstance> modify(Supplier<ShaderInstance> original, @Local ParticleRenderType particlerendertype) {
+        if (!ParticleStorm.IRIS_LOADED && particlerendertype == PSGameClient.PARTICLE_BLEND) {
+            return PSGameClient::getParticleNoDiscardShader;
+        }
+        return original;
     }
 }

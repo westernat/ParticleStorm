@@ -48,10 +48,10 @@ public class ParticleEmitter implements MolangInstance {
     public transient Vector3f inheritedParticleSpeed;
     public transient boolean isManual;
 
-    protected double emitterRandom1;
-    protected double emitterRandom2;
-    protected double emitterRandom3;
-    protected double emitterRandom4;
+    protected float emitterRandom1;
+    protected float emitterRandom2;
+    protected float emitterRandom3;
+    protected float emitterRandom4;
     public int id;
 
     public transient float invTickRate;
@@ -188,10 +188,10 @@ public class ParticleEmitter implements MolangInstance {
     }
 
     public synchronized void updateRandoms(RandomSource random) {
-        this.emitterRandom1 = random.nextDouble();
-        this.emitterRandom2 = random.nextDouble();
-        this.emitterRandom3 = random.nextDouble();
-        this.emitterRandom4 = random.nextDouble();
+        this.emitterRandom1 = random.nextFloat();
+        this.emitterRandom2 = random.nextFloat();
+        this.emitterRandom3 = random.nextFloat();
+        this.emitterRandom4 = random.nextFloat();
     }
 
     public void tick() {
@@ -289,10 +289,10 @@ public class ParticleEmitter implements MolangInstance {
     public void deserialize(CompoundTag compound) {
         this.particleId = ResourceLocation.parse(compound.getString("particleId"));
         this.expression = new MolangExp(compound.getString("expression"));
-        this.emitterRandom1 = compound.getDouble("emitterRandom1");
-        this.emitterRandom2 = compound.getDouble("emitterRandom2");
-        this.emitterRandom3 = compound.getDouble("emitterRandom3");
-        this.emitterRandom4 = compound.getDouble("emitterRandom4");
+        this.emitterRandom1 = compound.getFloat("emitterRandom1");
+        this.emitterRandom2 = compound.getFloat("emitterRandom2");
+        this.emitterRandom3 = compound.getFloat("emitterRandom3");
+        this.emitterRandom4 = compound.getFloat("emitterRandom4");
         this.posO = this.pos = new Vec3(compound.getDouble("posX"), compound.getDouble("posY"), compound.getDouble("posZ"));
         this.rot.set(compound.getFloat("rotX"), compound.getFloat("rotY"), compound.getFloat("rotZ"));
     }
@@ -345,22 +345,22 @@ public class ParticleEmitter implements MolangInstance {
     }
 
     @Override
-    public double getRandom1() {
+    public float getRandom1() {
         return emitterRandom1;
     }
 
     @Override
-    public double getRandom2() {
+    public float getRandom2() {
         return emitterRandom2;
     }
 
     @Override
-    public double getRandom3() {
+    public float getRandom3() {
         return emitterRandom3;
     }
 
     @Override
-    public double getRandom4() {
+    public float getRandom4() {
         return emitterRandom4;
     }
 

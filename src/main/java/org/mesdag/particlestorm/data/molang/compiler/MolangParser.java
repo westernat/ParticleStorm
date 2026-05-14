@@ -287,7 +287,7 @@ public class MolangParser {
                 return new BooleanNegate(compileSingleValue(Either.left(string.substring(1))));
 
             if (isNumeric(string))
-                return new Constant(Double.parseDouble(string));
+                return new Constant(Float.parseFloat(string));
 
             if (string.startsWith("'") && string.endsWith("'"))
                 return new StringValue(string.substring(1, string.length() - 1));

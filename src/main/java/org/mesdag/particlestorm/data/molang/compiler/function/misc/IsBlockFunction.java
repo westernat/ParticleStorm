@@ -36,7 +36,7 @@ public final class IsBlockFunction extends MathFunction {
     }
 
     @Override
-    public double compute(MolangInstance instance) {
+    public float compute(MolangInstance instance) {
         BlockState state = instance.getLevel().getBlockState(BlockPos.containing(instance.getPosition()));
         return either.map(state::is, state::is) ? 1 : 0;
     }

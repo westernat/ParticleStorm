@@ -8,18 +8,15 @@ import org.mesdag.particlestorm.data.molang.compiler.function.MathFunction;
 import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 
-/**
- * {@link MathFunction} value supplier
- *
- * <p>
- * <b>Contract:</b>
- * <br>
- * Returns a random value based on the input values:
- * <ul>
- *     <li>Three inputs generates the sum of <i>n</i> (first input) random values between the second (inclusive) and third input (exclusive)</li>
- *     <li>Four inputs generates the sum of <i>n</i> (first input) random values between the second (inclusive) and third input (exclusive), seeded by the fourth input</li>
- * </ul>
- */
+/// [MathFunction] value supplier
+///
+/// **Contract:**
+///
+/// Returns a random value based on the input values:
+///
+///   - Three inputs generates the sum of _n_ (first input) random values between the second (inclusive) and third input (exclusive)
+///   - Four inputs generates the sum of _n_ (first input) random values between the second (inclusive) and third input (exclusive), seeded by the fourth input
+///
 public final class DieRollFunction extends MathFunction {
     private final MathValue rolls;
     private final MathValue min;
@@ -45,23 +42,22 @@ public final class DieRollFunction extends MathFunction {
     }
 
     @Override
-    public double compute(MolangInstance instance) {
-        final int rolls = (int)(Math.floor(this.rolls.get(instance)));
-        final double min = this.min.get(instance);
-        final double max = this.max.get(instance);
-        double sum = 0;
+    public float compute(MolangInstance instance) {
+        int rolls = (int) (Math.floor(this.rolls.get(instance)));
+        float min = this.min.get(instance);
+        float max = this.max.get(instance);
+        float sum = 0;
         Random random;
 
         if (this.random != null) {
             random = this.random;
-            random.setSeed((long)this.seed.get(instance));
-        }
-        else {
+            random.setSeed((long) this.seed.get(instance));
+        } else {
             random = ThreadLocalRandom.current();
         }
 
         for (int i = 0; i < rolls; i++) {
-            sum += min + random.nextDouble() * (max - min);
+            sum += min + random.nextFloat() * (max - min);
         }
 
         return sum;
@@ -83,8 +79,8 @@ public final class DieRollFunction extends MathFunction {
     @Override
     public MathValue[] getArgs() {
         if (this.seed != null)
-            return new MathValue[] {this.rolls, this.min, this.max, this.seed};
+            return new MathValue[]{this.rolls, this.min, this.max, this.seed};
 
-        return new MathValue[] {this.rolls, this.min, this.max};
+        return new MathValue[]{this.rolls, this.min, this.max};
     }
 }

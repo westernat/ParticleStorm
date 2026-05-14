@@ -13,7 +13,7 @@ public class ParticleVariableTable extends VariableTable {
     }
 
     @Override
-    public double getValue(String name, MolangInstance instance) {
+    public float getValue(String name, MolangInstance instance) {
         Variable variable = table.get(name);
         if (variable == null) {
             variable = parent.table.get(name); // 预设表没有父级

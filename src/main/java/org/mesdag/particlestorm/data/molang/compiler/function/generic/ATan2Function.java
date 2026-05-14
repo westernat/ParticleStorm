@@ -5,14 +5,11 @@ import org.mesdag.particlestorm.api.MolangInstance;
 import org.mesdag.particlestorm.data.molang.compiler.MathValue;
 import org.mesdag.particlestorm.data.molang.compiler.function.MathFunction;
 
-/**
- * {@link MathFunction} value supplier
- *
- * <p>
- * <b>Contract:</b>
- * <br>
- * Returns the arc-tangent theta of the input rectangular coordinate values (y,x), with the output converted to degrees
- */
+/// [MathFunction] value supplier
+///
+/// **Contract:**
+///
+/// Returns the arc-tangent theta of the input rectangular coordinate values (y,x), with the output converted to degrees
 public final class ATan2Function extends MathFunction {
     private final MathValue y;
     private final MathValue x;
@@ -30,8 +27,8 @@ public final class ATan2Function extends MathFunction {
     }
 
     @Override
-    public double compute(MolangInstance instance) {
-        return Math.atan2(this.y.get(instance), this.x.get(instance)) * Mth.RAD_TO_DEG;
+    public float compute(MolangInstance instance) {
+        return (float) Mth.atan2(y.get(instance), x.get(instance)) * Mth.RAD_TO_DEG;
     }
 
     @Override
@@ -41,6 +38,6 @@ public final class ATan2Function extends MathFunction {
 
     @Override
     public MathValue[] getArgs() {
-        return new MathValue[] {this.y, this.x};
+        return new MathValue[] {y, x};
     }
 }

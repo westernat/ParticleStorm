@@ -37,4 +37,10 @@ public record FloatMolangExpList(int size, List<FloatMolangExp> expressions) {
         Objects.checkIndex(index, size);
         return expressions.get(index);
     }
+
+    public void markImmutable() {
+        for (FloatMolangExp exp : expressions) {
+            exp.markImmutable();
+        }
+    }
 }

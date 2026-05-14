@@ -3,17 +3,14 @@ package org.mesdag.particlestorm.data.molang.compiler.value;
 import org.mesdag.particlestorm.api.MolangInstance;
 import org.mesdag.particlestorm.data.molang.compiler.MathValue;
 
-/**
- * {@link MathValue} value supplier
- *
- * <p>
- * <b>Contract:</b>
- * <br>
- * An immutable double value
- */
-public record Constant(double value) implements MathValue {
+/// [MathValue] value supplier
+///
+/// **Contract:**
+///
+/// An immutable double value
+public record Constant(float value) implements MathValue {
     @Override
-    public double get(MolangInstance instance) {
+    public float get(MolangInstance instance) {
         return this.value;
     }
 
@@ -21,6 +18,9 @@ public record Constant(double value) implements MathValue {
     public boolean isMutable() {
         return false;
     }
+
+    @Override
+    public void markImmutable() {}
 
     @Override
     public String toString() {

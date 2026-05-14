@@ -4,14 +4,11 @@ import org.mesdag.particlestorm.api.MolangInstance;
 import org.mesdag.particlestorm.data.molang.compiler.MathValue;
 import org.mesdag.particlestorm.data.molang.compiler.function.MathFunction;
 
-/**
- * {@link MathFunction} value supplier
- *
- * <p>
- * <b>Contract:</b>
- * <br>
- * Returns the log value (euler base) of the input value
- */
+/// [MathFunction] value supplier
+///
+/// **Contract:**
+///
+/// Returns the log value (euler base) of the input value
 public final class LogFunction extends MathFunction {
     private final MathValue value;
 
@@ -27,8 +24,8 @@ public final class LogFunction extends MathFunction {
     }
 
     @Override
-    public double compute(MolangInstance instance) {
-        return Math.log(this.value.get(instance));
+    public float compute(MolangInstance instance) {
+        return (float) Math.log(value.get(instance));
     }
 
     @Override
@@ -38,6 +35,6 @@ public final class LogFunction extends MathFunction {
 
     @Override
     public MathValue[] getArgs() {
-        return new MathValue[] {this.value};
+        return new MathValue[] {value};
     }
 }

@@ -18,13 +18,13 @@ public interface MolangInstance {
 
     float tickLifetime();
 
-    double getRandom1();
+    float getRandom1();
 
-    double getRandom2();
+    float getRandom2();
 
-    double getRandom3();
+    float getRandom3();
 
-    double getRandom4();
+    float getRandom4();
 
     ResourceLocation getIdentity();
 

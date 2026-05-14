@@ -3,19 +3,23 @@ package org.mesdag.particlestorm.data.molang.compiler.value;
 import org.mesdag.particlestorm.api.MolangInstance;
 import org.mesdag.particlestorm.data.molang.compiler.MathValue;
 
-/**
- * {@link MathValue} value supplier
- *
- * <p>
- * <b>Contract:</b>
- * <br>
- * Returns one of two stored values dependent on the result of the stored condition value.
- * This returns such that a non-zero result from the condition will return the <b>true</b> stored value, otherwise returning the <b>false</b> stored value
- */
+/// [MathValue] value supplier
+///
+/// **Contract:**
+///
+/// Returns one of two stored values dependent on the result of the stored condition value.
+/// This returns such that a non-zero result from the condition will return the **true** stored value, otherwise returning the **false** stored value
 public record Ternary(MathValue condition, MathValue trueValue, MathValue falseValue) implements MathValue {
     @Override
-    public double get(MolangInstance instance) {
-        return this.condition.get(instance) != 0 ? this.trueValue.get(instance) : this.falseValue.get(instance);
+    public float get(MolangInstance instance) {
+        return this.condition.get(instance) == 0 ? this.falseValue.get(instance) : this.trueValue.get(instance);
+    }
+
+    @Override
+    public void markImmutable() {
+        condition.markImmutable();
+        trueValue.markImmutable();
+        falseValue.markImmutable();
     }
 
     @Override

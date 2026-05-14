@@ -5,14 +5,11 @@ import org.mesdag.particlestorm.api.MolangInstance;
 import org.mesdag.particlestorm.data.molang.compiler.MathValue;
 import org.mesdag.particlestorm.data.molang.compiler.function.MathFunction;
 
-/**
- * {@link MathFunction} value supplier
- *
- * <p>
- * <b>Contract:</b>
- * <br>
- * Returns the cosine of the input value angle, with the input angle converted to radians
- */
+/// [MathFunction] value supplier
+///
+/// **Contract:**
+///
+/// Returns the cosine of the input value angle, with the input angle converted to radians
 public final class CosFunction extends MathFunction {
     private final MathValue value;
 
@@ -28,8 +25,8 @@ public final class CosFunction extends MathFunction {
     }
 
     @Override
-    public double compute(MolangInstance instance) {
-        return Mth.cos((float)this.value.get(instance) * Mth.DEG_TO_RAD);
+    public float compute(MolangInstance instance) {
+        return Mth.cos(value.get(instance) * Mth.DEG_TO_RAD);
     }
 
     @Override
@@ -39,6 +36,6 @@ public final class CosFunction extends MathFunction {
 
     @Override
     public MathValue[] getArgs() {
-        return new MathValue[] {this.value};
+        return new MathValue[] {value};
     }
 }

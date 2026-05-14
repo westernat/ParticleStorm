@@ -10,36 +10,34 @@ import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.renderer.LevelRenderer;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
+import net.minecraft.client.renderer.ShaderInstance;
 import net.minecraft.client.renderer.debug.DebugRenderer;
 import net.minecraft.client.renderer.texture.TextureAtlas;
 import net.minecraft.client.renderer.texture.TextureManager;
 import net.minecraft.util.Mth;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.ModLoader;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.fml.event.config.ModConfigEvent;
-import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
-import net.neoforged.neoforge.client.event.ClientTickEvent;
-import net.neoforged.neoforge.client.event.EntityRenderersEvent;
-import net.neoforged.neoforge.client.event.RegisterClientReloadListenersEvent;
-import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
-import net.neoforged.neoforge.common.NeoForge;
-import org.mesdag.particlestorm.api.IComponent;
-import org.mesdag.particlestorm.api.IEventNode;
+import net.neoforged.neoforge.client.event.*;
+import org.mesdag.particlestorm.api.*;
 import org.mesdag.particlestorm.api.geckolib.GeckoLibHelper;
 import org.mesdag.particlestorm.data.component.*;
 import org.mesdag.particlestorm.data.event.*;
+import org.mesdag.particlestorm.particle.MolangParticleInstance;
 import org.mesdag.particlestorm.particle.MolangParticleLoader;
 import org.mesdag.particlestorm.particle.ParticleEmitter;
 
-@EventBusSubscriber(modid = ParticleStorm.MODID, bus = EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
+import java.io.IOException;
+
+@EventBusSubscriber(modid = ParticleStorm.MODID, value = Dist.CLIENT)
 public final class PSGameClient {
     public static final MolangParticleLoader LOADER = new MolangParticleLoader();
     public static final ParticleRenderType PARTICLE_ADD = new ParticleRenderType() {
         @Override
         public BufferBuilder begin(Tesselator tesselator, TextureManager textureManager) {
             RenderSystem.enableDepthTest();
-            Minecraft.getInstance().gameRenderer.lightTexture().turnOnLightLayer();
             RenderSystem.depthMask(false);
             RenderSystem.setShaderTexture(0, TextureAtlas.LOCATION_PARTICLES);
             RenderSystem.enableBlend();
@@ -51,6 +49,32 @@ public final class PSGameClient {
             return "PARTICLE_ADD";
         }
     };
+    public static final ParticleRenderType PARTICLE_BLEND = new ParticleRenderType() {
+        @Override
+        public BufferBuilder begin(Tesselator tesselator, TextureManager textureManager) {
+            RenderSystem.enableDepthTest();
+            RenderSystem.depthMask(false);
+            RenderSystem.setShaderTexture(0, TextureAtlas.LOCATION_PARTICLES);
+            RenderSystem.enableBlend();
+            RenderSystem.blendFunc(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA);
+            return tesselator.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.PARTICLE);
+        }
+
+        public String toString() {
+            return "PARTICLE_BLEND";
+        }
+    };
+
+    private static ShaderInstance particleNoDiscard;
+
+    public static ShaderInstance getParticleNoDiscardShader() {
+        return particleNoDiscard;
+    }
+
+    @SubscribeEvent
+    public static void registerShaders(RegisterShadersEvent event) throws IOException {
+        event.registerShader(new ShaderInstance(event.getResourceProvider(), ParticleStorm.asResource("particle_no_discard"), DefaultVertexFormat.PARTICLE), instance -> particleNoDiscard = instance);
+    }
 
     @SubscribeEvent
     public static void registerRenderers(EntityRenderersEvent.RegisterRenderers event) {
@@ -60,22 +84,21 @@ public final class PSGameClient {
     }
 
     @SubscribeEvent
-    public static void clientSetup(FMLClientSetupEvent event) {
-        event.enqueueWork(() -> {
-            PSClientConfigs.onLoad();
-            NeoForge.EVENT_BUS.addListener(PSGameClient::tick);
-            NeoForge.EVENT_BUS.addListener(PSGameClient::renderLevelStage);
-        });
-    }
-
-    @SubscribeEvent
-    public static void modConfig$Reloading(ModConfigEvent.Reloading event) {
-        if (event.getConfig().getModId().equals(ParticleStorm.MODID)) {
+    public static void modConfig$Loading(ModConfigEvent.Loading event) {
+        if (ParticleStorm.MODID.equals(event.getConfig().getModId())) {
             PSClientConfigs.onLoad();
         }
     }
 
-    private static void tick(ClientTickEvent.Pre event) {
+    @SubscribeEvent
+    public static void modConfig$Reloading(ModConfigEvent.Reloading event) {
+        if (ParticleStorm.MODID.equals(event.getConfig().getModId())) {
+            PSClientConfigs.onLoad();
+        }
+    }
+
+    @SubscribeEvent
+    public static void tick(ClientTickEvent.Pre event) {
         Minecraft minecraft = Minecraft.getInstance();
         LocalPlayer localPlayer = minecraft.player;
         if (localPlayer == null) {
@@ -85,7 +108,8 @@ public final class PSGameClient {
         }
     }
 
-    private static void renderLevelStage(RenderLevelStageEvent event) {
+    @SubscribeEvent
+    public static void renderLevelStage(RenderLevelStageEvent event) {
         if (!PSClientConfigs.showEmitterOutline) return;
         Minecraft minecraft = Minecraft.getInstance();
         if (event.getStage() == RenderLevelStageEvent.Stage.AFTER_PARTICLES && minecraft.getEntityRenderDispatcher().shouldRenderHitBoxes()) {
@@ -117,6 +141,13 @@ public final class PSGameClient {
         registerComponents();
         registerEventNodes();
         event.registerReloadListener(LOADER);
+    }
+
+    @SubscribeEvent
+    public static void registerCustomParticleType(RegisterCustomParticleTypeEvent event) {
+        event.registerWithSprites(ParticleStorm.MOLANG, (emitter, particlePreset, level, x, y, z, sprites) ->
+                new MolangParticleInstance(particlePreset, level, x, y, z, sprites)
+        );
     }
 
     private static void registerComponents() {
@@ -155,6 +186,8 @@ public final class PSGameClient {
         IComponent.register("particle_kill_plane", ParticleLifetimeKillPlane.CODEC);
         IComponent.register("particle_expire_if_in_blocks", ParticleExpireIfInBlocks.CODEC);
         IComponent.register("particle_expire_if_not_in_blocks", ParticleExpireIfNotInBlocks.CODEC);
+
+        ModLoader.postEvent(new RegisterCustomComponentEvent());
     }
 
     private static void registerEventNodes() {
@@ -165,5 +198,7 @@ public final class PSGameClient {
         IEventNode.register("sound_effect", SoundEffect.CODEC.codec());
         IEventNode.register("expression", NodeMolangExp.CODEC);
         IEventNode.register("log", EventLog.CODEC);
+
+        ModLoader.postEvent(new RegisterCustomEventNodeEvent());
     }
 }

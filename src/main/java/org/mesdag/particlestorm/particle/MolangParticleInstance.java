@@ -37,20 +37,20 @@ public class MolangParticleInstance extends TextureSheetParticle implements IMol
     protected Vector3f acceleration = new Vector3f();
     protected Vector3f facingDirection = new Vector3f();
     protected Vector3f initialSpeed = new Vector3f();
-    protected float xRot = 0.0F;
-    protected float yRot = 0.0F;
-    protected float xRotO = 0.0F;
-    protected float yRotO = 0.0F;
-    protected float rolld = 0.0F;
-    protected boolean hasCollision = false;
-    protected float collisionDrag = 0.0F;
-    protected float coefficientOfRestitution = 0.0F;
-    protected boolean expireOnContact = false;
+    protected float xRot;
+    protected float yRot;
+    protected float xRotO;
+    protected float yRotO;
+    protected float rolld;
+    protected boolean hasCollision;
+    protected float collisionDrag;
+    protected float coefficientOfRestitution;
+    protected boolean expireOnContact;
 
-    protected final double particleRandom1;
-    protected final double particleRandom2;
-    protected final double particleRandom3;
-    protected final double particleRandom4;
+    protected final float particleRandom1;
+    protected final float particleRandom2;
+    protected final float particleRandom3;
+    protected final float particleRandom4;
     protected List<IParticleComponent> components;
     protected ParticleEmitter emitter;
 
@@ -60,12 +60,12 @@ public class MolangParticleInstance extends TextureSheetParticle implements IMol
     protected float[] uvSize;
     protected float[] uvStep;
     protected int maxFrame = 1;
-    protected int currentFrame = 0;
+    protected int currentFrame;
     protected float[] UV;
 
     protected boolean insideKillPlane;
     protected ParticleGroup particleGroup;
-    protected int lastTimeline = 0;
+    protected int lastTimeline;
 
     public MolangParticleInstance(ParticlePreset preset, ClientLevel level, double x, double y, double z, ExtendMutableSpriteSet sprites) {
         super(level, x, y, z);
@@ -78,10 +78,10 @@ public class MolangParticleInstance extends TextureSheetParticle implements IMol
         this.scaleV = sprite.contents().height() * preset.invTextureHeight;
 
         RandomSource random = level.getRandom();
-        this.particleRandom1 = random.nextDouble();
-        this.particleRandom2 = random.nextDouble();
-        this.particleRandom3 = random.nextDouble();
-        this.particleRandom4 = random.nextDouble();
+        this.particleRandom1 = random.nextFloat();
+        this.particleRandom2 = random.nextFloat();
+        this.particleRandom3 = random.nextFloat();
+        this.particleRandom4 = random.nextFloat();
     }
 
     @Override
@@ -334,22 +334,22 @@ public class MolangParticleInstance extends TextureSheetParticle implements IMol
     }
 
     @Override
-    public double getRandom1() {
+    public float getRandom1() {
         return particleRandom1;
     }
 
     @Override
-    public double getRandom2() {
+    public float getRandom2() {
         return particleRandom2;
     }
 
     @Override
-    public double getRandom3() {
+    public float getRandom3() {
         return particleRandom3;
     }
 
     @Override
-    public double getRandom4() {
+    public float getRandom4() {
         return particleRandom4;
     }
 
