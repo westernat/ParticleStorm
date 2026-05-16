@@ -98,13 +98,16 @@ public final class PSGameClient {
     }
 
     @SubscribeEvent
+    public static void clientNetwork$LoggingOut(ClientPlayerNetworkEvent.LoggingOut event) {
+        LOADER.removeAll();
+    }
+
+    @SubscribeEvent
     public static void tick(ClientTickEvent.Pre event) {
         Minecraft minecraft = Minecraft.getInstance();
-        LocalPlayer localPlayer = minecraft.player;
-        if (localPlayer == null) {
-            LOADER.removeAll();
-        } else if (!minecraft.isPaused() && localPlayer.level().tickRateManager().runsNormally()) {
-            LOADER.tick(localPlayer);
+        LocalPlayer player = minecraft.player;
+        if (player != null && !minecraft.isPaused() && player.clientLevel.tickRateManager().runsNormally()) {
+            LOADER.tick(player);
         }
     }
 

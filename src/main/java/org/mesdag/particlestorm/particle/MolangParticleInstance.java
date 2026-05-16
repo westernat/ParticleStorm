@@ -11,10 +11,11 @@ import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
-import net.neoforged.fml.loading.LoadingModList;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
+import org.mesdag.particlestorm.ParticleStorm;
 import org.mesdag.particlestorm.api.IEventNode;
 import org.mesdag.particlestorm.api.IMolangParticleInstance;
 import org.mesdag.particlestorm.api.IParticleComponent;
@@ -26,9 +27,6 @@ import java.util.List;
 import java.util.Optional;
 
 public class MolangParticleInstance extends TextureSheetParticle implements IMolangParticleInstance {
-    public static final int FULL_LIGHT = 0xF000F0;
-    private static final boolean isSodiumLoaded = LoadingModList.get().getModFileById("sodium") != null;
-
     protected final ParticlePreset preset;
     protected ParticleVariableTable vars;
     protected final float originX;
@@ -390,7 +388,7 @@ public class MolangParticleInstance extends TextureSheetParticle implements IMol
         }
     }
 
-    private static final Quaternionf quaternionf = new Quaternionf();
+    protected static final Quaternionf quaternionf = new Quaternionf();
 
     @Override
     public void render(VertexConsumer buffer, Camera camera, float partialTicks) {
@@ -404,7 +402,7 @@ public class MolangParticleInstance extends TextureSheetParticle implements IMol
 
     @Override
     protected void renderRotatedQuad(VertexConsumer buffer, Quaternionf quaternion, float x, float y, float z, float partialTicks) {
-        if (isSodiumLoaded) {
+        if (ParticleStorm.SODIUM_LOADED) {
             float f1 = getU0();
             float f2 = getU1();
             float f3 = getV0();
@@ -419,10 +417,18 @@ public class MolangParticleInstance extends TextureSheetParticle implements IMol
         }
     }
 
+    protected static final Vector3f vector3f = new Vector3f();
+
     @Override
     protected void renderVertex(VertexConsumer buffer, Quaternionf quaternion, float x, float y, float z, float xOffset, float yOffset, float quadSize, float u, float v, int packedLight) {
-        Vector3f vector3f = new Vector3f(xOffset * billboardSize[0], yOffset * billboardSize[1], 0.0F).rotate(quaternion).add(x, y, z);
+        vector3f.set(xOffset * billboardSize[0], yOffset * billboardSize[1], 0.0F).rotate(quaternion).add(x, y, z);
         buffer.addVertex(vector3f.x(), vector3f.y(), vector3f.z()).setUv(u, v).setColor(rCol, gCol, bCol, alpha).setLight(packedLight);
+    }
+
+    @Override
+    public AABB getRenderBoundingBox(float partialTicks) {
+        float size = Math.max(billboardSize[0], billboardSize[1]);
+        return new AABB(x - size, y - size, z - size, x + size, y + size, z + size);
     }
 
     @Override
@@ -497,7 +503,7 @@ public class MolangParticleInstance extends TextureSheetParticle implements IMol
 
     @Override
     protected int getLightColor(float partialTick) {
-        return preset.environmentLighting ? super.getLightColor(partialTick) : FULL_LIGHT;
+        return preset.environmentLighting ? super.getLightColor(partialTick) : 0xF000F0;
     }
 
     @Override
