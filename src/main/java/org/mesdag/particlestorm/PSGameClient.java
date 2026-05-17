@@ -120,6 +120,7 @@ public final class PSGameClient {
             PoseStack poseStack = event.getPoseStack();
             MultiBufferSource.BufferSource bufferSource = minecraft.renderBuffers().bufferSource();
             for (ParticleEmitter emitter : LOADER.getEmitters()) {
+                if (emitter.hideOutline) continue;
                 double x = Mth.lerp(partialTicks, emitter.posO.x, emitter.pos.x);
                 double y = Mth.lerp(partialTicks, emitter.posO.y, emitter.pos.y);
                 double z = Mth.lerp(partialTicks, emitter.posO.z, emitter.pos.z);

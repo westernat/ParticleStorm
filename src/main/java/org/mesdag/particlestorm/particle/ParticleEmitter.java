@@ -10,6 +10,7 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.phys.Vec3;
+import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Vector3f;
 import org.mesdag.particlestorm.PSGameClient;
@@ -44,7 +45,7 @@ public class ParticleEmitter implements MolangInstance {
     protected transient List<IEmitterComponent> components;
     public transient ParticleEmitter parent;
     public transient @Nullable Runnable afterParentInit;
-    public transient final List<ParticleEmitter> children = new ArrayList<>();
+    protected transient @Nullable List<ParticleEmitter> children;
     public transient Vector3f inheritedParticleSpeed;
     public transient boolean isManual;
 
@@ -55,28 +56,29 @@ public class ParticleEmitter implements MolangInstance {
     public int id;
 
     public transient float invTickRate;
-    public transient int age = 0;
-    public transient int lifetime = 0;
+    public transient int age;
+    public transient int lifetime;
     public transient boolean active = true;
-    public transient int loopingTime = 0;
-    public transient int activeTime = 0;
-    public transient int fullLoopTime = 0;
+    public transient int loopingTime;
+    public transient int activeTime;
+    public transient int fullLoopTime;
     public transient MutableParticleGroup particleGroup;
     public transient int spawnDuration = 1;
-    public transient int spawnRate = 0;
-    public transient boolean spawned = false;
+    public transient int spawnRate;
+    public transient boolean spawned;
     protected transient Entity attached;
     public transient BlockEntity attachedBlock;
-    public transient int lastTimeline = 0;
-    public transient float moveDist = 0.0F;
-    public transient float moveDistO = 0.0F;
-    public transient int lastTravelDist = 0;
+    public transient int lastTimeline;
+    public transient float moveDist;
+    public transient float moveDistO;
+    public transient int lastTravelDist;
     public transient float[] cachedLooping;
 
     public transient final Level level;
     public Vec3 pos;
     public Vec3 posO = Vec3.ZERO;
     public Vector3f rot = new Vector3f();
+    public boolean hideOutline;
     private transient boolean removed = false;
 
     public ParticleEmitter(Level level, Vec3 pos, ResourceLocation particleId, MolangExp expression) {
@@ -258,19 +260,29 @@ public class ParticleEmitter implements MolangInstance {
         this.removed = true;
     }
 
+    @Contract(value = "true -> !null", pure = true)
+    public @Nullable List<ParticleEmitter> getChildren(boolean create) {
+        if (create && children == null) {
+            this.children = new ArrayList<>();
+        }
+        return children;
+    }
+
     public void onRemove() {
-        children.removeIf(child -> {
-            child.parent = null;
-            child.remove();
-            return true;
-        });
+        if (children != null) {
+            children.removeIf(child -> {
+                child.parent = null;
+                child.remove();
+                return true;
+            });
+        }
         if (preset != null && preset.lifetimeEvents != null) {
             preset.lifetimeEvents.onExpiration(this);
         }
     }
 
     public void addParent(ParticleEmitter parent) {
-        parent.children.add(this);
+        parent.getChildren(true).add(this);
         this.parent = parent;
     }
 
@@ -286,30 +298,32 @@ public class ParticleEmitter implements MolangInstance {
         return preset;
     }
 
-    public void deserialize(CompoundTag compound) {
-        this.particleId = ResourceLocation.parse(compound.getString("particleId"));
-        this.expression = new MolangExp(compound.getString("expression"));
-        this.emitterRandom1 = compound.getFloat("emitterRandom1");
-        this.emitterRandom2 = compound.getFloat("emitterRandom2");
-        this.emitterRandom3 = compound.getFloat("emitterRandom3");
-        this.emitterRandom4 = compound.getFloat("emitterRandom4");
-        this.posO = this.pos = new Vec3(compound.getDouble("posX"), compound.getDouble("posY"), compound.getDouble("posZ"));
-        this.rot.set(compound.getFloat("rotX"), compound.getFloat("rotY"), compound.getFloat("rotZ"));
+    public void deserialize(CompoundTag tag) {
+        this.particleId = ResourceLocation.parse(tag.getString("particleId"));
+        this.expression = new MolangExp(tag.getString("expression"));
+        this.emitterRandom1 = tag.getFloat("emitterRandom1");
+        this.emitterRandom2 = tag.getFloat("emitterRandom2");
+        this.emitterRandom3 = tag.getFloat("emitterRandom3");
+        this.emitterRandom4 = tag.getFloat("emitterRandom4");
+        this.posO = this.pos = new Vec3(tag.getDouble("posX"), tag.getDouble("posY"), tag.getDouble("posZ"));
+        this.rot.set(tag.getFloat("rotX"), tag.getFloat("rotY"), tag.getFloat("rotZ"));
+        this.hideOutline = tag.getBoolean("hideOutline");
     }
 
-    public void serialize(CompoundTag compound) {
-        compound.putString("particleId", particleId.toString());
-        compound.putString("expression", expression.getExpStr());
-        compound.putDouble("emitterRandom1", emitterRandom1);
-        compound.putDouble("emitterRandom2", emitterRandom2);
-        compound.putDouble("emitterRandom3", emitterRandom3);
-        compound.putDouble("emitterRandom4", emitterRandom4);
-        compound.putDouble("posX", pos.x);
-        compound.putDouble("posY", pos.y);
-        compound.putDouble("posZ", pos.z);
-        compound.putFloat("rotX", rot.x);
-        compound.putFloat("rotY", rot.y);
-        compound.putFloat("rotZ", rot.z);
+    public void serialize(CompoundTag tag) {
+        tag.putString("particleId", particleId.toString());
+        tag.putString("expression", expression.getExpStr());
+        tag.putDouble("emitterRandom1", emitterRandom1);
+        tag.putDouble("emitterRandom2", emitterRandom2);
+        tag.putDouble("emitterRandom3", emitterRandom3);
+        tag.putDouble("emitterRandom4", emitterRandom4);
+        tag.putDouble("posX", pos.x);
+        tag.putDouble("posY", pos.y);
+        tag.putDouble("posZ", pos.z);
+        tag.putFloat("rotX", rot.x);
+        tag.putFloat("rotY", rot.y);
+        tag.putFloat("rotZ", rot.z);
+        tag.putBoolean("hideOutline", hideOutline);
     }
 
     public double getX() {

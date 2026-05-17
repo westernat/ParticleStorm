@@ -105,11 +105,14 @@ public final class EmitterLifetimeEvents implements IEmitterComponent {
 
     @Override
     public void apply(ParticleEmitter emitter) {
-        emitter.children.removeIf(child -> {
-            child.parent = null;
-            child.remove();
-            return true;
-        });
+        List<ParticleEmitter> children = emitter.getChildren(false);
+        if (children != null) {
+            children.removeIf(child -> {
+                child.parent = null;
+                child.remove();
+                return true;
+            });
+        }
         executes(emitter, creationEvent);
         emitter.cachedLooping = new float[loopingTravelDistanceEvents.size()];
     }
