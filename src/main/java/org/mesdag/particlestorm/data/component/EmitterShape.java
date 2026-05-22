@@ -9,10 +9,12 @@ import net.minecraft.core.particles.ParticleGroup;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
 import net.minecraft.util.StringRepresentable;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityDimensions;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
+import org.mesdag.particlestorm.PSGameClient;
 import org.mesdag.particlestorm.api.*;
 import org.mesdag.particlestorm.data.MathHelper;
 import org.mesdag.particlestorm.data.molang.FloatMolangExp;
@@ -38,16 +40,16 @@ public abstract sealed class EmitterShape implements IEmitterComponent permits E
     }
 
     @Override
-    public void update(ParticleEmitter entity) {
-        if (entity.spawned) return;
-        if (entity.spawnDuration <= 1 || entity.age % entity.spawnDuration == 0) {
-            for (int num = 0; num < entity.spawnRate; num++) {
-                if (hasSpaceInParticleLimit(entity)) {
-                    emittingParticle(entity);
+    public void update(ParticleEmitter emitter) {
+        if (emitter.spawned) return;
+        if (emitter.spawnDuration <= 1 || emitter.age % emitter.spawnDuration == 0) {
+            for (int num = 0; num < emitter.spawnRate; num++) {
+                if (hasSpaceInParticleLimit(emitter)) {
+                    emittingParticle(emitter);
                 }
             }
-            if (entity.getPreset().emitterRateType == EmitterRate.Type.INSTANT) {
-                entity.spawned = true;
+            if (emitter.getPreset().emitterRateType == EmitterRate.Type.INSTANT) {
+                emitter.spawned = true;
             }
         }
     }
@@ -88,17 +90,28 @@ public abstract sealed class EmitterShape implements IEmitterComponent permits E
             speed.x *= -1;
             speed.z *= -1;
         }
-        if (emitterPreset.localRotation) {
-            MathHelper.applyEuler(emitter.rot.x, emitter.rot.y, 0.0F, position);
-        }
-        if (emitterPreset.localPosition) {
+        speed.mul(emitter.invTickRate);
+        Entity attachedEntity = emitter.getAttachedEntity();
+        if (attachedEntity == null) {
             Vec3 emitterPos = emitter.getPosition();
             position.add((float) emitterPos.x, (float) emitterPos.y, (float) emitterPos.z);
-        }
-        speed.mul(emitter.invTickRate);
-        if (emitter.getAttachedEntity() != null && emitterPreset.localVelocity) {
-            Vec3 emitterVec = emitter.getAttachedEntity().getDeltaMovement();
-            speed.add((float) emitterVec.x, (float) emitterVec.y, (float) emitterVec.z);
+        } else {
+            // region todo 改为渲染时
+//            if (emitter.parentMode == ParticleEmitter.ParentMode.LOCATOR) {
+//
+//            }
+            if (emitterPreset.localRotation) {
+                MathHelper.applyEuler(emitter.rot.x, emitter.rot.y, 0.0F, position);
+            }
+            if (!emitterPreset.localPosition) {
+                Vec3 emitterPos = emitter.getPosition();
+                position.add((float) emitterPos.x, (float) emitterPos.y, (float) emitterPos.z);
+            }
+            // endregion
+            if (emitterPreset.localVelocity) {
+                Vec3 emitterVec = attachedEntity.getDeltaMovement();
+                speed.add((float) emitterVec.x, (float) emitterVec.y, (float) emitterVec.z);
+            }
         }
 
         instance.setParticleSpeed(speed.x, speed.y, speed.z);
@@ -115,6 +128,7 @@ public abstract sealed class EmitterShape implements IEmitterComponent permits E
         instance.setComponents(particlePreset.effect.orderedParticleComponentsWhichRequireUpdate);
         if (!particlePreset.motionDynamic) instance.setParticleSpeed(0.0, 0.0, 0.0);
         Minecraft.getInstance().particleEngine.add(instance);
+        PSGameClient.LOADER.addParticleForEmitter(instance);
     }
 
     private static boolean hasSpaceInParticleLimit(ParticleEmitter emitter) {

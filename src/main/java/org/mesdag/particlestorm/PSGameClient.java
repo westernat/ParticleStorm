@@ -121,9 +121,9 @@ public final class PSGameClient {
             MultiBufferSource.BufferSource bufferSource = minecraft.renderBuffers().bufferSource();
             for (ParticleEmitter emitter : LOADER.getEmitters()) {
                 if (emitter.hideOutline) continue;
-                double x = Mth.lerp(partialTicks, emitter.posO.x, emitter.pos.x);
-                double y = Mth.lerp(partialTicks, emitter.posO.y, emitter.pos.y);
-                double z = Mth.lerp(partialTicks, emitter.posO.z, emitter.pos.z);
+                double x = Mth.lerp(partialTicks, emitter.posO.x, emitter.getPosition().x);
+                double y = Mth.lerp(partialTicks, emitter.posO.y, emitter.getPosition().y);
+                double z = Mth.lerp(partialTicks, emitter.posO.z, emitter.getPosition().z);
                 DebugRenderer.renderFloatingText(poseStack, bufferSource, emitter.particleId.toString(), x, y + 0.5, z, 0xFFFFFF);
                 DebugRenderer.renderFloatingText(poseStack, bufferSource, "id: " + emitter.id, x, y + 0.3, z, 0xFFFFFF);
                 int maxNum = minecraft.particleEngine.trackedParticleCounts.getInt(emitter.particleGroup);
@@ -175,7 +175,7 @@ public final class PSGameClient {
 
         IComponent.register("particle_initial_speed", ParticleInitialSpeed.CODEC);
         IComponent.register("particle_initial_spin", ParticleInitialSpin.CODEC);
-        IComponent.register("particle_initialization", ParticleInitialization.CODEC);
+        IComponent.register(ParticleInitialization.ID, ParticleInitialization.CODEC);
 
         IComponent.register(ParticleMotionDynamic.ID, ParticleMotionDynamic.CODEC);
         IComponent.register("particle_motion_parametric", ParticleMotionParametric.CODEC);

@@ -11,6 +11,7 @@ import net.minecraft.util.ByIdMap;
 import net.minecraft.util.StringRepresentable;
 import org.mesdag.particlestorm.PSGameClient;
 import org.mesdag.particlestorm.api.IEventNode;
+import org.mesdag.particlestorm.api.IMolangParticleInstance;
 import org.mesdag.particlestorm.api.MolangInstance;
 import org.mesdag.particlestorm.data.molang.MolangExp;
 import org.mesdag.particlestorm.data.molang.compiler.MolangQueries;
@@ -37,7 +38,12 @@ public record ParticleEffect(ResourceLocation effect, Type type, MolangExp preEf
 
     @Override
     public void execute(MolangInstance instance) {
-        PSGameClient.LOADER.addEmitter(new ParticleEmitter(instance.getEmitter(), this), false);
+        ParticleEmitter emitter = new ParticleEmitter(instance.getEmitter(), this);
+        if (instance instanceof IMolangParticleInstance) {
+            emitter.setPos(instance.getPosition());
+            emitter.posO = emitter.getPosition();
+        }
+        PSGameClient.LOADER.addEmitter(emitter, false);
     }
 
     @Override

@@ -2,8 +2,9 @@ package org.mesdag.particlestorm.data.component;
 
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
+import it.unimi.dsi.fastutil.floats.FloatObjectImmutablePair;
+import it.unimi.dsi.fastutil.floats.FloatObjectPair;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.util.Tuple;
 import org.mesdag.particlestorm.ParticleStorm;
 import org.mesdag.particlestorm.api.IEventNode;
 import org.mesdag.particlestorm.api.IMolangParticleInstance;
@@ -14,7 +15,6 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
 
 /// All events use the event names in the event section
 ///
@@ -30,7 +30,7 @@ public final class ParticleLifeTimeEvents implements IParticleComponent {
     public final List<String> expirationEvent;
     public final Map<String, List<String>> timeline;
 
-    public final List<Tuple<Function<Integer, Boolean>, List<String>>> sortedTimeline;
+    public final List<FloatObjectPair<List<String>>> sortedTimeline;
 
     /// @param creationEvent   Fires when the particle is created
     /// @param expirationEvent Fires when the particle expires (does not wait for particles to expire too)
@@ -42,9 +42,9 @@ public final class ParticleLifeTimeEvents implements IParticleComponent {
 
         this.sortedTimeline = new ArrayList<>();
         timeline.entrySet().stream()
-                .map(entry -> new Tuple<>(Float.parseFloat(entry.getKey()), entry.getValue()))
-                .sorted(Comparator.comparing(Tuple::getA))
-                .forEachOrdered(tuple -> sortedTimeline.add(new Tuple<>(time -> time >= tuple.getA() * 20, tuple.getB())));
+                .map(entry -> new FloatObjectImmutablePair<>(Float.parseFloat(entry.getKey()) * 20, entry.getValue()))
+                .sorted(Comparator.comparing(FloatObjectPair::leftFloat))
+                .forEachOrdered(sortedTimeline::add);
     }
 
     @Override
@@ -60,10 +60,10 @@ public final class ParticleLifeTimeEvents implements IParticleComponent {
     @Override
     public void update(IMolangParticleInstance instance) {
         for (int i = instance.getLastTimeline(); i < sortedTimeline.size(); i++) {
-            Tuple<Function<Integer, Boolean>, List<String>> tuple = sortedTimeline.get(i);
-            if (tuple.getA().apply(instance.self().getLifetime())) {
+            FloatObjectPair<List<String>> pair = sortedTimeline.get(i);
+            if (instance.getAge() >= pair.leftFloat()) {
                 instance.setLastTimeline(i + 1);
-                executes(instance, tuple.getB());
+                executes(instance, pair.right());
                 break;
             }
         }

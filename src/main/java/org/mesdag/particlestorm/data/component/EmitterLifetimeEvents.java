@@ -2,7 +2,8 @@ package org.mesdag.particlestorm.data.component;
 
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
-import net.minecraft.util.Tuple;
+import it.unimi.dsi.fastutil.floats.FloatObjectImmutablePair;
+import it.unimi.dsi.fastutil.floats.FloatObjectPair;
 import org.mesdag.particlestorm.ParticleStorm;
 import org.mesdag.particlestorm.api.IEmitterComponent;
 import org.mesdag.particlestorm.api.IEventNode;
@@ -13,7 +14,6 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
 
 /// Allows for lifetime events on the emitter to trigger certain events.
 ///
@@ -34,8 +34,8 @@ public final class EmitterLifetimeEvents implements IEmitterComponent {
     public final Map<String, List<String>> travelDistanceEvents;
     public final List<LoopingTravelDistanceEvent> loopingTravelDistanceEvents;
 
-    public final List<Tuple<Function<Integer, Boolean>, List<String>>> sortedTimeline;
-    public final List<Tuple<Function<Float, Boolean>, List<String>>> sortedTravelDistance;
+    public final List<FloatObjectPair<List<String>>> sortedTimeline;
+    public final List<FloatObjectPair<List<String>>> sortedTravelDistance;
 
     /// @param creationEvent               Fires when the emitter is created
     /// @param expirationEvent             Fires when the emitter expires (does not wait for particles to expire too)
@@ -54,14 +54,14 @@ public final class EmitterLifetimeEvents implements IEmitterComponent {
 
         this.sortedTimeline = new ArrayList<>();
         timeline.entrySet().stream()
-                .map(entry -> new Tuple<>(Float.parseFloat(entry.getKey()), entry.getValue()))
-                .sorted(Comparator.comparing(Tuple::getA))
-                .forEachOrdered(tuple -> sortedTimeline.add(new Tuple<>(time -> time >= tuple.getA() * 20, tuple.getB())));
+                .map(entry -> new FloatObjectImmutablePair<>(Float.parseFloat(entry.getKey()) * 20, entry.getValue()))
+                .sorted(Comparator.comparing(FloatObjectPair::leftFloat))
+                .forEachOrdered(sortedTimeline::add);
         this.sortedTravelDistance = new ArrayList<>();
         travelDistanceEvents.entrySet().stream()
-                .map(entry -> new Tuple<>(Float.parseFloat(entry.getKey()), entry.getValue()))
-                .sorted(Comparator.comparing(Tuple::getA))
-                .forEachOrdered(tuple -> sortedTravelDistance.add(new Tuple<>(dist -> dist >= tuple.getA(), tuple.getB())));
+                .map(entry -> new FloatObjectImmutablePair<>(Float.parseFloat(entry.getKey()), entry.getValue()))
+                .sorted(Comparator.comparing(FloatObjectPair::leftFloat))
+                .forEachOrdered(sortedTravelDistance::add);
     }
 
     @Override
@@ -77,19 +77,19 @@ public final class EmitterLifetimeEvents implements IEmitterComponent {
     @Override
     public void update(ParticleEmitter emitter) {
         for (int i = emitter.lastTimeline; i < sortedTimeline.size(); i++) {
-            Tuple<Function<Integer, Boolean>, List<String>> tuple = sortedTimeline.get(i);
-            if (tuple.getA().apply(emitter.lifetime)) {
+            FloatObjectPair<List<String>> pair = sortedTimeline.get(i);
+            if (emitter.age >= pair.leftFloat()) {
                 emitter.lastTimeline = i + 1;
-                executes(emitter, tuple.getB());
+                executes(emitter, pair.right());
                 break;
             }
         }
         if (emitter.moveDist == emitter.moveDistO) return;
         for (int i = emitter.lastTravelDist; i < sortedTravelDistance.size(); i++) {
-            Tuple<Function<Float, Boolean>, List<String>> tuple = sortedTravelDistance.get(i);
-            if (tuple.getA().apply(emitter.moveDist)) {
+            FloatObjectPair<List<String>> pair = sortedTravelDistance.get(i);
+            if (emitter.moveDist >= pair.leftFloat()) {
                 emitter.lastTravelDist = i + 1;
-                executes(emitter, tuple.getB());
+                executes(emitter, pair.right());
                 break;
             }
         }

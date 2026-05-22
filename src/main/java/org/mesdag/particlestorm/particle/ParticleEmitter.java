@@ -75,7 +75,7 @@ public class ParticleEmitter implements MolangInstance {
     public transient float[] cachedLooping;
 
     public transient final Level level;
-    public Vec3 pos;
+    protected Vec3 pos;
     public Vec3 posO = Vec3.ZERO;
     public Vector3f rot = new Vector3f();
     public boolean hideOutline;

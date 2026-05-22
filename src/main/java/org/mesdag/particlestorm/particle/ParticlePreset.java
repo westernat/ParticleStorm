@@ -37,6 +37,7 @@ public class ParticlePreset {
     public float invTextureWidth;
     public float invTextureHeight;
     public boolean motionDynamic;
+    public @Nullable FloatMolangExp perUpdateExpression;
 
     public VariableTable vars;
     public List<VariableAssignment> assignments;
@@ -80,6 +81,8 @@ public class ParticlePreset {
         ParticleMotionCollision motionCollision = (ParticleMotionCollision) effect.components.get(ParticleMotionCollision.ID);
         if (motionCollision != null) this.collisionEvents = motionCollision.events();
         this.motionDynamic = effect.components.get(ParticleMotionDynamic.ID) != null;
+        ParticleInitialization initialization = (ParticleInitialization) effect.components.get(ParticleInitialization.ID);
+        if (initialization != null) this.perUpdateExpression = initialization.perUpdateExpression();
 
         VariableTable table = new VariableTable(addDefaultVariables(), null);
         MolangParser parser = new MolangParser(table);
