@@ -208,8 +208,10 @@ public class ParticleEmitter implements MolangInstance {
                 remove();
                 return;
             }
-            if (parentSpace != null) {
+            if (isLocalSpace()) {
                 rotated.set(parentSpace.m30(), parentSpace.m31(), parentSpace.m32());
+            } else {
+                rotated.set(0);
             }
             this.pos = new Vec3(attached.getX() + rotated.x, attached.getY() + rotated.y, attached.getZ() + rotated.z);
         } else if (attachedBlock != null) {
@@ -217,8 +219,10 @@ public class ParticleEmitter implements MolangInstance {
                 remove();
                 return;
             }
-            if (parentSpace != null) {
+            if (isLocalSpace()) {
                 rotated.set(parentSpace.m30(), parentSpace.m31(), parentSpace.m32());
+            } else {
+                rotated.set(0);
             }
             BlockPos bp = attachedBlock.getBlockPos();
             this.pos = new Vec3(bp.getX() + 0.5 + rotated.x, bp.getY() + rotated.y, bp.getZ() + 0.5 + rotated.z);

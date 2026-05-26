@@ -5,8 +5,6 @@
     "compatibilityLevel": "JAVA_21",
     "refmap": "particlestorm.refmap.json",
     "mixins": [
-        "integration.geckolib.GeoModelMixin",
-        "integration.geckolib.GeoReplacedEntityMixin"
     ],
     "client": [
         "BlockEntityMixin",
@@ -20,6 +18,7 @@
         "integration.geckolib.AnimationProcessorMixin",
         "integration.geckolib.BakedModelFactory$BuiltinMixin",
         "integration.geckolib.GeoBoneMixin",
+        "integration.geckolib.GeoModelMixin",
         "integration.geckolib.GeoReplacedEntityRendererMixin",
         "integration.geckolib.MolangQueriesMixin",
         "integration.geckolib.ParticleKeyframeDataMixin"

@@ -7,6 +7,7 @@ import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.core.particles.ParticleGroup;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Vector3f;
@@ -49,6 +50,10 @@ public interface IMolangParticleInstance extends MolangInstance {
     void setCoefficientOfRestitution(float coefficient);
 
     void setExpireOnContact(boolean b);
+
+    void setCollisionRadius(float radius);
+
+    float getCollisionRadius();
 
     void setComponents(List<IParticleComponent> components);
 
@@ -110,7 +115,16 @@ public interface IMolangParticleInstance extends MolangInstance {
 
     // region default
     default void moveDirectly(double x, double y, double z) {
-        self().setBoundingBox(self().getBoundingBox().move(x, y, z));
+        AABB aabb = self().getBoundingBox();
+        float radius = getCollisionRadius();
+        self().setBoundingBox(new AABB(
+                aabb.minX - radius + x,
+                aabb.minY - radius + y,
+                aabb.minZ - radius + z,
+                aabb.maxX + radius + x,
+                aabb.maxY + radius + y,
+                aabb.maxZ + radius + z
+        ));
         self().setLocationFromBoundingbox();
     }
 

@@ -69,6 +69,7 @@ public class MolangParticleInstance extends TextureSheetParticle implements IMol
     public MolangParticleInstance(ParticlePreset preset, ClientLevel level, double x, double y, double z, ExtendMutableSpriteSet sprites) {
         super(level, x, y, z);
         this.friction = 1.0F;
+        this.quadSize = 0; // as collision radius
         this.preset = preset;
         setSprite(sprites.get(preset.effect.description.parameters().getTextureIndex()));
         this.originX = ((ITextureAtlasSprite) sprite).particlestorm$getOriginX();
@@ -157,6 +158,16 @@ public class MolangParticleInstance extends TextureSheetParticle implements IMol
     @Override
     public void setExpireOnContact(boolean b) {
         this.expireOnContact = b;
+    }
+
+    @Override
+    public void setCollisionRadius(float radius) {
+        this.quadSize = radius;
+    }
+
+    @Override
+    public float getCollisionRadius() {
+        return quadSize;
     }
 
     @Override
@@ -466,13 +477,20 @@ public class MolangParticleInstance extends TextureSheetParticle implements IMol
     public void move(double x, double y, double z) {
         if (stoppedByCollision) return;
 
-        // todo 坐标系转换
-
         double d0 = x;
         double d1 = y;
         double d2 = z;
         if (hasPhysics && hasCollision && (x != 0.0 || y != 0.0 || z != 0.0) && Mth.lengthSquared(x, y, z) < MAXIMUM_COLLISION_VELOCITY_SQUARED) {
-            Vec3 vec3 = Entity.collideBoundingBox(null, new Vec3(x, y, z), getBoundingBox(), level, List.of());
+            AABB aabb = getBoundingBox();
+            if (emitter.isLocalSpace()) {
+                emitter.local2World(vector3f.set(aabb.minX, aabb.minY, aabb.minZ), 1);
+                float mx = vector3f.x;
+                float my = vector3f.y;
+                float mz = vector3f.z;
+                emitter.local2World(vector3f.set(aabb.maxX, aabb.maxY, aabb.maxZ), 1);
+                aabb = new AABB(mx, my, mz, vector3f.x, vector3f.y, vector3f.z);
+            }
+            Vec3 vec3 = Entity.collideBoundingBox(null, new Vec3(x, y, z), aabb, level, List.of());
             if (x != vec3.x) {
                 this.xd = -Mth.sign(xd) * (Math.abs(xd) - collisionDrag) * coefficientOfRestitution;
             }
