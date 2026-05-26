@@ -4,7 +4,10 @@
     "package": "org.mesdag.particlestorm.mixin",
     "compatibilityLevel": "JAVA_21",
     "refmap": "particlestorm.refmap.json",
-    "mixins": [],
+    "mixins": [
+        "integration.geckolib.GeoModelMixin",
+        "integration.geckolib.GeoReplacedEntityMixin"
+    ],
     "client": [
         "BlockEntityMixin",
         "EntityMixin",

@@ -10,8 +10,8 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
 import net.neoforged.neoforge.network.PacketDistributor;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
-import org.mesdag.particlestorm.PSGameClient;
 import org.mesdag.particlestorm.ParticleStorm;
+import org.mesdag.particlestorm.particle.MolangParticleEngine;
 import org.mesdag.particlestorm.particle.ParticleEmitter;
 
 public record EmitterSynchronizePacket(int id, CompoundTag tag) implements CustomPacketPayload {
@@ -33,7 +33,7 @@ public record EmitterSynchronizePacket(int id, CompoundTag tag) implements Custo
         context.enqueueWork(() -> {
             Player player = context.player();
             if (player.isLocalPlayer()) {
-                PSGameClient.LOADER.loadEmitter(player.level(), id, tag);
+                MolangParticleEngine.INSTANCE.loadEmitter(player.level(), id, tag);
             } else {
                 CompoundTag data = player.getPersistentData();
                 if (data.contains(KEY)) {

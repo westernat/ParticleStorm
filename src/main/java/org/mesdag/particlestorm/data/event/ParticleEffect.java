@@ -9,12 +9,14 @@ import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.ByIdMap;
 import net.minecraft.util.StringRepresentable;
-import org.mesdag.particlestorm.PSGameClient;
+import net.minecraft.world.phys.Vec3;
+import org.joml.Vector3f;
 import org.mesdag.particlestorm.api.IEventNode;
 import org.mesdag.particlestorm.api.IMolangParticleInstance;
 import org.mesdag.particlestorm.api.MolangInstance;
 import org.mesdag.particlestorm.data.molang.MolangExp;
 import org.mesdag.particlestorm.data.molang.compiler.MolangQueries;
+import org.mesdag.particlestorm.particle.MolangParticleEngine;
 import org.mesdag.particlestorm.particle.ParticleEmitter;
 
 import java.util.List;
@@ -36,14 +38,17 @@ public record ParticleEffect(ResourceLocation effect, Type type, MolangExp preEf
         this(effect, type, preEffectExpression, List.of());
     }
 
+    private static final Vector3f vector3f = new Vector3f();
+
     @Override
     public void execute(MolangInstance instance) {
         ParticleEmitter emitter = new ParticleEmitter(instance.getEmitter(), this);
-        if (instance instanceof IMolangParticleInstance) {
-            emitter.setPos(instance.getPosition());
+        if (instance instanceof IMolangParticleInstance p) {
+            p.getEmitter().local2World(vector3f.set((float) p.getX(), (float) p.getY(), (float) p.getZ()), 1);
+            emitter.setPos(new Vec3(vector3f.x, vector3f.y, vector3f.z));
             emitter.posO = emitter.getPosition();
         }
-        PSGameClient.LOADER.addEmitter(emitter, false);
+        MolangParticleEngine.INSTANCE.addEmitter(emitter, false);
     }
 
     @Override

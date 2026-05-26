@@ -4,13 +4,12 @@ import com.google.common.collect.ImmutableMap;
 import net.minecraft.client.CameraType;
 import net.minecraft.client.Minecraft;
 import net.neoforged.fml.ModLoader;
-import org.mesdag.particlestorm.PSGameClient;
 import org.mesdag.particlestorm.api.MolangInstance;
 import org.mesdag.particlestorm.api.RegisterMolangQueriesEvent;
 import org.mesdag.particlestorm.api.ToFloatFunction;
 import org.mesdag.particlestorm.data.molang.compiler.value.Variable;
+import org.mesdag.particlestorm.particle.MolangParticleEngine;
 
-import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -84,8 +83,8 @@ public final class MolangQueries {
         registerQueryVariable("query.player_level", p -> Minecraft.getInstance().player == null ? 0 : Minecraft.getInstance().player.experienceLevel);
         registerQueryVariable("query.time_of_day", p -> p.getLevel().getDayTime() / 24000f);
         registerQueryVariable("query.time_stamp", p -> p.getLevel().getGameTime());
-        registerQueryVariable("query.total_emitter_count", p -> PSGameClient.LOADER.totalEmitterCount());
-        registerQueryVariable("query.total_particle_count", p -> Minecraft.getInstance().particleEngine.particles.values().stream().mapToInt(Collection::size).sum());
+        registerQueryVariable("query.total_emitter_count", p -> MolangParticleEngine.INSTANCE.totalEmitterCount());
+        registerQueryVariable("query.total_particle_count", p -> MolangParticleEngine.INSTANCE.totalParticleCount());
         registerQueryVariable("query.attached_x", p -> p.getAttachedEntity() == null ? 0 : (float) p.getAttachedEntity().getX());
         registerQueryVariable("query.attached_y", p -> p.getAttachedEntity() == null ? 0 : (float) p.getAttachedEntity().getY());
         registerQueryVariable("query.attached_z", p -> p.getAttachedEntity() == null ? 0 : (float) p.getAttachedEntity().getZ());

@@ -76,6 +76,7 @@ public record ParticleMotionCollision(
         update(instance);
         instance.setCollisionDrag(collisionDrag * instance.getInvTickRate());
         instance.setCoefficientOfRestitution(coefficientOfRestitution);
+        // todo fix bounding box
         float radius = Math.max(collisionRadius, Mth.EPSILON);
         instance.self().setBoundingBox(instance.self().getBoundingBox().inflate(radius, 0.0, radius));
         instance.self().setLocationFromBoundingbox();

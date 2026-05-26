@@ -47,8 +47,29 @@
 						}
 					],
 					"locators": {
-						"locator": [-3, 6, -3],
-						"locator2": [3, 12, 3]
+						"locator": [-3, 6, -3]
+					}
+				},
+				{
+					"name": "bone2",
+					"parent": "bone",
+					"pivot": [0, 0, -8],
+					"cubes": [
+						{
+							"origin": [-1, 0, -15],
+							"size": [2, 2, 2],
+							"uv": {
+								"north": {"uv": [0, 0], "uv_size": [2, 2]},
+								"east": {"uv": [0, 0], "uv_size": [2, 2]},
+								"south": {"uv": [0, 0], "uv_size": [2, 2]},
+								"west": {"uv": [0, 0], "uv_size": [2, 2]},
+								"up": {"uv": [2, 2], "uv_size": [-2, -2]},
+								"down": {"uv": [2, 2], "uv_size": [-2, -2]}
+							}
+						}
+					],
+					"locators": {
+						"locator2": [0, 1, -14]
 					}
 				}
 			]

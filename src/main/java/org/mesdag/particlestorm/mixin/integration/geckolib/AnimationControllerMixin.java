@@ -51,7 +51,7 @@ public abstract class AnimationControllerMixin<T extends GeoAnimatable> implemen
 
     @WrapWithCondition(method = "processCurrentAnimation", at = @At(value = "INVOKE", target = "Lorg/apache/logging/log4j/Logger;log(Lorg/apache/logging/log4j/Level;Ljava/lang/String;)V", ordinal = 1))
     private boolean processParticleEffect(Logger instance, Level level, String s, @Local(name = "keyframeData") ParticleKeyframeData keyframeData) {
-        return GeckoLibHelper.processParticleEffect(animatable, this, keyframeData);
+        return GeckoLibHelper.processParticleEffect(animatable, (AnimationController<?>) (Object) this, keyframeData);
     }
 
     @Inject(method = "resetEventKeyFrames", at = @At("HEAD"))

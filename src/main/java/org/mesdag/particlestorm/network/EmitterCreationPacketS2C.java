@@ -15,9 +15,9 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
 import net.neoforged.neoforge.server.ServerLifecycleHooks;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Vector3f;
-import org.mesdag.particlestorm.PSGameClient;
 import org.mesdag.particlestorm.ParticleStorm;
 import org.mesdag.particlestorm.data.molang.MolangExp;
+import org.mesdag.particlestorm.particle.MolangParticleEngine;
 import org.mesdag.particlestorm.particle.ParticleEmitter;
 
 public record EmitterCreationPacketS2C(ResourceLocation id, Vector3f pos, MolangExp expression, int entityId) implements CustomPacketPayload {
@@ -44,7 +44,7 @@ public record EmitterCreationPacketS2C(ResourceLocation id, Vector3f pos, Molang
                 if (entityId > 0) {
                     emitter.attachEntity(player.level().getEntity(entityId));
                 }
-                PSGameClient.LOADER.addEmitter(emitter, false);
+                MolangParticleEngine.INSTANCE.addEmitter(emitter, false);
             }
         }).exceptionally(e -> {
             context.disconnect(Component.translatable("neoforge.network.invalid_flow", e.getMessage()));

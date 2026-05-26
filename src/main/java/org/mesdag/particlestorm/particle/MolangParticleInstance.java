@@ -5,6 +5,7 @@ import net.minecraft.client.Camera;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.particle.ParticleRenderType;
 import net.minecraft.client.particle.TextureSheetParticle;
+import net.minecraft.client.renderer.culling.Frustum;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.core.particles.ParticleGroup;
 import net.minecraft.util.Mth;
@@ -389,7 +390,39 @@ public class MolangParticleInstance extends TextureSheetParticle implements IMol
     }
 
     protected static final Quaternionf quaternionf = new Quaternionf();
+    protected static final Vector3f vector3f = new Vector3f();
 
+    // 在render前调用
+    @Override
+    public boolean isVisible(Camera camera, Frustum frustum, float partialTick) {
+        Vec3 camPos = camera.getPosition();
+        if (emitter.isLocalSpace()) {
+            emitter.local2World(vector3f.set(
+                    (float) Mth.lerp(partialTick, xo, x),
+                    (float) Mth.lerp(partialTick, yo, y),
+                    (float) Mth.lerp(partialTick, zo, z)
+            ), partialTick);
+            float size = Math.max(billboardSize[0], billboardSize[1]);
+            boolean inFrustum = frustum.cubeInFrustum(
+                    vector3f.x - size,
+                    vector3f.y - size,
+                    vector3f.z - size,
+                    vector3f.x + size,
+                    vector3f.y + size,
+                    vector3f.z + size
+            );
+            vector3f.sub((float) camPos.x, (float) camPos.y, (float) camPos.z);
+            return inFrustum;
+        }
+        vector3f.set(
+                (float) (Mth.lerp(partialTick, xo, x) - camPos.x),
+                (float) (Mth.lerp(partialTick, yo, y) - camPos.y),
+                (float) (Mth.lerp(partialTick, zo, z) - camPos.z)
+        );
+        return IMolangParticleInstance.super.isVisible(camera, frustum, partialTick);
+    }
+
+    // 在isVisible后调用
     @Override
     public void render(VertexConsumer buffer, Camera camera, float partialTicks) {
         quaternionf.identity();
@@ -397,7 +430,7 @@ public class MolangParticleInstance extends TextureSheetParticle implements IMol
         if (xRot != 0.0F) quaternionf.rotateX(Mth.lerp(partialTicks, xRotO, xRot));
         if (yRot != 0.0F) quaternionf.rotateY(Mth.lerp(partialTicks, yRotO, yRot));
         if (roll != 0.0F) quaternionf.rotateZ(Mth.lerp(partialTicks, oRoll, roll));
-        renderRotatedQuad(buffer, camera, quaternionf, partialTicks);
+        renderRotatedQuad(buffer, quaternionf, vector3f.x, vector3f.y, vector3f.z, partialTicks);
     }
 
     @Override
@@ -417,8 +450,6 @@ public class MolangParticleInstance extends TextureSheetParticle implements IMol
         }
     }
 
-    protected static final Vector3f vector3f = new Vector3f();
-
     @Override
     protected void renderVertex(VertexConsumer buffer, Quaternionf quaternion, float x, float y, float z, float xOffset, float yOffset, float quadSize, float u, float v, int packedLight) {
         vector3f.set(xOffset * billboardSize[0], yOffset * billboardSize[1], 0.0F).rotate(quaternion).add(x, y, z);
@@ -434,10 +465,13 @@ public class MolangParticleInstance extends TextureSheetParticle implements IMol
     @Override
     public void move(double x, double y, double z) {
         if (stoppedByCollision) return;
+
+        // todo 坐标系转换
+
         double d0 = x;
         double d1 = y;
         double d2 = z;
-        if (hasPhysics && hasCollision && (x != 0.0 || y != 0.0 || z != 0.0) && x * x + y * y + z * z < MAXIMUM_COLLISION_VELOCITY_SQUARED) {
+        if (hasPhysics && hasCollision && (x != 0.0 || y != 0.0 || z != 0.0) && Mth.lengthSquared(x, y, z) < MAXIMUM_COLLISION_VELOCITY_SQUARED) {
             Vec3 vec3 = Entity.collideBoundingBox(null, new Vec3(x, y, z), getBoundingBox(), level, List.of());
             if (x != vec3.x) {
                 this.xd = -Mth.sign(xd) * (Math.abs(xd) - collisionDrag) * coefficientOfRestitution;
@@ -463,13 +497,12 @@ public class MolangParticleInstance extends TextureSheetParticle implements IMol
 
         if (hasPhysics && hasCollision) {
             this.onGround = d1 != y && d1 < 0.0;
-            boolean collided = d0 != x || d2 != z;
 
-            if (onGround || collided) {
+            if (onGround || (d0 != x || d2 != z)) {
                 if (!preset.collisionEvents.isEmpty()) {
                     for (ParticleMotionCollision.Event event : preset.collisionEvents) {
                         float tickSpeed = event.minSpeed() * getInvTickRate();
-                        if (tickSpeed * tickSpeed < xd * xd + yd * yd + zd * zd) {
+                        if (tickSpeed * tickSpeed < Mth.lengthSquared(xd, yd, zd)) {
                             for (IEventNode node : preset.effect.events.get(event.event()).values()) {
                                 node.execute(this);
                             }

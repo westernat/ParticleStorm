@@ -1,6 +1,8 @@
 package org.mesdag.particlestorm.api;
 
+import net.minecraft.client.Camera;
 import net.minecraft.client.particle.Particle;
+import net.minecraft.client.renderer.culling.Frustum;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.core.particles.ParticleGroup;
 import net.minecraft.resources.ResourceLocation;
@@ -140,6 +142,10 @@ public interface IMolangParticleInstance extends MolangInstance {
     @Override
     default float getInvTickRate() {
         return getEmitter().invTickRate;
+    }
+
+    default boolean isVisible(Camera camera, Frustum frustum, float partialTick) {
+        return frustum.isVisible(self().getRenderBoundingBox(partialTick));
     }
     // endregion
 }

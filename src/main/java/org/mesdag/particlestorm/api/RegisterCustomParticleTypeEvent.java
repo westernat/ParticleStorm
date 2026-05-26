@@ -11,8 +11,8 @@ import net.neoforged.bus.api.Event;
 import net.neoforged.fml.ModLoader;
 import net.neoforged.fml.event.IModBusEvent;
 import org.jetbrains.annotations.Contract;
-import org.mesdag.particlestorm.PSGameClient;
 import org.mesdag.particlestorm.particle.ExtendMutableSpriteSet;
+import org.mesdag.particlestorm.particle.MolangParticleEngine;
 import org.mesdag.particlestorm.particle.ParticleEmitter;
 import org.mesdag.particlestorm.particle.ParticlePreset;
 
@@ -55,7 +55,7 @@ public class RegisterCustomParticleTypeEvent extends Event implements IModBusEve
             throw new NullPointerException("Provider from '" + BuiltInRegistries.PARTICLE_TYPE.getKey(emitter.getPreset().type) + "' is not registered");
         }
 
-        return (V) provider.create(emitter, PSGameClient.LOADER.id2Particle().get(emitter.particleId), (ClientLevel) emitter.level, emitter.getX(), emitter.getY(), emitter.getZ(), sprites);
+        return (V) provider.create(emitter, MolangParticleEngine.INSTANCE.id2Particle().get(emitter.particleId), (ClientLevel) emitter.level, emitter.getX(), emitter.getY(), emitter.getZ(), sprites);
     }
 
     @FunctionalInterface

@@ -2,15 +2,20 @@ package org.mesdag.particlestorm.api.geckolib;
 
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
+import org.jetbrains.annotations.Nullable;
 import software.bernie.geckolib.animatable.instance.AnimatableInstanceCache;
 import software.bernie.geckolib.animation.AnimatableManager;
 import software.bernie.geckolib.animation.AnimationController;
 import software.bernie.geckolib.constant.DefaultAnimations;
 import software.bernie.geckolib.util.GeckoLibUtil;
 
-public class ReplacedCreeperEntity implements GeoWithCurrentEntity {
+public class ReplacedCreeperEntity implements ParticleStormGeoReplacedEntity {
+    public static final ReplacedCreeperEntity INSTANCE = new ReplacedCreeperEntity();
+
     private final AnimatableInstanceCache cache = GeckoLibUtil.createInstanceCache(this);
     private Entity currentEntity;
+
+    private ReplacedCreeperEntity() {}
 
     public void registerControllers(AnimatableManager.ControllerRegistrar controllers) {
         controllers.add(new AnimationController[]{DefaultAnimations.genericWalkIdleController(this)});
@@ -30,7 +35,7 @@ public class ReplacedCreeperEntity implements GeoWithCurrentEntity {
     }
 
     @Override
-    public void setCurrentEntity(Entity entity) {
+    public void setCurrentEntity(@Nullable Entity entity) {
         this.currentEntity = entity;
     }
 }

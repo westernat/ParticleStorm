@@ -3,7 +3,6 @@ package org.mesdag.particlestorm.data.component;
 import com.mojang.datafixers.util.Either;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.particle.Particle;
 import net.minecraft.core.particles.ParticleGroup;
 import net.minecraft.util.Mth;
@@ -14,18 +13,18 @@ import net.minecraft.world.entity.EntityDimensions;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
-import org.mesdag.particlestorm.PSGameClient;
 import org.mesdag.particlestorm.api.*;
 import org.mesdag.particlestorm.data.MathHelper;
 import org.mesdag.particlestorm.data.molang.FloatMolangExp;
 import org.mesdag.particlestorm.data.molang.FloatMolangExp3;
 import org.mesdag.particlestorm.data.molang.MolangExp;
-import org.mesdag.particlestorm.particle.EmitterPreset;
+import org.mesdag.particlestorm.particle.MolangParticleEngine;
 import org.mesdag.particlestorm.particle.ParticleEmitter;
 import org.mesdag.particlestorm.particle.ParticlePreset;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Queue;
 
 public abstract sealed class EmitterShape implements IEmitterComponent permits EmitterShape.Disc, EmitterShape.Box, EmitterShape.EntityAABB, EmitterShape.Point, EmitterShape.Sphere {
     protected final boolean surfaceOnly;
@@ -79,39 +78,21 @@ public abstract sealed class EmitterShape implements IEmitterComponent permits E
             component.apply(instance);
         }
         speed.mul(instance.getInitialSpeed());
-        if (emitter.parentMode == ParticleEmitter.ParentMode.LOCATOR) {
-            position.x *= -1;
-            position.y *= -1;
-            speed.x *= -1;
-            speed.y *= -1;
-        }
-        EmitterPreset emitterPreset = emitter.getPreset();
-        if (emitter.parentMode != ParticleEmitter.ParentMode.WORLD && emitterPreset.localPosition && !emitterPreset.localRotation) {
-            speed.x *= -1;
-            speed.z *= -1;
-        }
         speed.mul(emitter.invTickRate);
-        Entity attachedEntity = emitter.getAttachedEntity();
-        if (attachedEntity == null) {
-            Vec3 emitterPos = emitter.getPosition();
-            position.add((float) emitterPos.x, (float) emitterPos.y, (float) emitterPos.z);
-        } else {
-            // region todo 改为渲染时
-//            if (emitter.parentMode == ParticleEmitter.ParentMode.LOCATOR) {
-//
-//            }
-            if (emitterPreset.localRotation) {
-                MathHelper.applyEuler(emitter.rot.x, emitter.rot.y, 0.0F, position);
-            }
-            if (!emitterPreset.localPosition) {
+
+        if (emitter.isLocalSpace()) {
+            if (!emitter.getPreset().localPosition) {
                 Vec3 emitterPos = emitter.getPosition();
                 position.add((float) emitterPos.x, (float) emitterPos.y, (float) emitterPos.z);
             }
-            // endregion
-            if (emitterPreset.localVelocity) {
+            Entity attachedEntity = emitter.getAttachedEntity();
+            if (attachedEntity != null && emitter.getPreset().localVelocity) {
                 Vec3 emitterVec = attachedEntity.getDeltaMovement();
                 speed.add((float) emitterVec.x, (float) emitterVec.y, (float) emitterVec.z);
             }
+        } else {
+            Vec3 emitterPos = emitter.getPosition();
+            position.add((float) emitterPos.x, (float) emitterPos.y, (float) emitterPos.z);
         }
 
         instance.setParticleSpeed(speed.x, speed.y, speed.z);
@@ -127,13 +108,13 @@ public abstract sealed class EmitterShape implements IEmitterComponent permits E
         }
         instance.setComponents(particlePreset.effect.orderedParticleComponentsWhichRequireUpdate);
         if (!particlePreset.motionDynamic) instance.setParticleSpeed(0.0, 0.0, 0.0);
-        Minecraft.getInstance().particleEngine.add(instance);
-        PSGameClient.LOADER.addParticleForEmitter(instance);
+        MolangParticleEngine.INSTANCE.addParticle(instance);
     }
 
     private static boolean hasSpaceInParticleLimit(ParticleEmitter emitter) {
         ParticleGroup particleGroup = emitter.particleGroup;
-        return Minecraft.getInstance().particleEngine.trackedParticleCounts.getInt(particleGroup) < particleGroup.getLimit();
+        Queue<IMolangParticleInstance> queue = MolangParticleEngine.INSTANCE.getParticlesForEmitter(emitter);
+        return queue == null || queue.size() < particleGroup.getLimit();
     }
 
     /// This component spawns particles using a disc shape, particles can be spawned inside the shape or on its outer perimeter.

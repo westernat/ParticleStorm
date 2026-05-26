@@ -6,6 +6,7 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
+import org.joml.Vector3f;
 import org.mesdag.particlestorm.api.IMolangParticleInstance;
 import org.mesdag.particlestorm.api.IParticleComponent;
 import org.mesdag.particlestorm.data.molang.MolangExp;
@@ -46,11 +47,24 @@ public final class ParticleExpireIfNotInBlocks implements IParticleComponent {
         }
     }
 
+    private static final Vector3f vector3f = new Vector3f();
+
     @Override
     public void apply(IMolangParticleInstance instance) {
-        if (!blocks.contains(instance.getLevel().getBlockState(BlockPos.containing(instance.getPosition())).getBlock())) {
+        instance.getEmitter().local2World(vector3f.set((float) instance.getX(), (float) instance.getY(), (float) instance.getZ()), 1);
+        if (!blocks.contains(instance.getLevel().getBlockState(BlockPos.containing(vector3f.x, vector3f.y, vector3f.z)).getBlock())) {
             instance.discard();
         }
+    }
+
+    @Override
+    public void update(IMolangParticleInstance instance) {
+        apply(instance);
+    }
+
+    @Override
+    public boolean requireUpdate() {
+        return true;
     }
 
     @Override
