@@ -21,7 +21,6 @@
         "integration.geckolib.BakedModelFactory$BuiltinMixin",
         "integration.geckolib.GeoBoneMixin",
         "integration.geckolib.GeoReplacedEntityRendererMixin",
-        "integration.geckolib.MolangQueriesAccessor",
         "integration.geckolib.MolangQueriesMixin",
         "integration.geckolib.ParticleKeyframeDataMixin"
     ],

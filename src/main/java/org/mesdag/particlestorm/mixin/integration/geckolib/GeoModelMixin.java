@@ -12,7 +12,7 @@ import software.bernie.geckolib.animation.AnimationProcessor;
 import software.bernie.geckolib.cache.object.GeoBone;
 
 @Pseudo
-@Mixin(targets = "software.bernie.geckolib.model.GeoModel")
+@Mixin(targets = "software.bernie.geckolib.model.GeoModel", remap = false)
 public abstract class GeoModelMixin<T extends GeoAnimatable> {
     @Inject(method = "handleAnimations", at = @At("TAIL"))
     private void transform(
