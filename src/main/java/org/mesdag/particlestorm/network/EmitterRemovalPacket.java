@@ -1,58 +1,59 @@
 package org.mesdag.particlestorm.network;
 
-import io.netty.buffer.ByteBuf;
+import net.minecraft.client.Minecraft;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.codec.ByteBufCodecs;
-import net.minecraft.network.codec.StreamCodec;
-import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
-import net.neoforged.neoforge.network.PacketDistributor;
-import net.neoforged.neoforge.network.handling.IPayloadContext;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.fml.DistExecutor;
+import net.minecraftforge.network.NetworkDirection;
+import net.minecraftforge.network.NetworkEvent;
+import net.minecraftforge.network.PacketDistributor;
 import org.mesdag.particlestorm.ParticleStorm;
 import org.mesdag.particlestorm.particle.MolangParticleEngine;
 import org.mesdag.particlestorm.particle.ParticleEmitter;
 
+import java.util.function.Supplier;
+
 import static org.mesdag.particlestorm.network.EmitterSynchronizePacket.KEY;
 
-public record EmitterRemovalPacket(int id) implements CustomPacketPayload {
-    public static final Type<EmitterRemovalPacket> TYPE = new Type<>(ParticleStorm.asResource("emitter_removal"));
-
-    public static final StreamCodec<ByteBuf, EmitterRemovalPacket> STREAM_CODEC = StreamCodec.composite(
-            ByteBufCodecs.INT, p -> p.id,
-            EmitterRemovalPacket::new
-    );
-
-    @Override
-    public Type<EmitterRemovalPacket> type() {
-        return TYPE;
+public record EmitterRemovalPacket(int id) {
+    public static void encode(EmitterRemovalPacket msg, FriendlyByteBuf buf) {
+        buf.writeInt(msg.id);
     }
 
-    public void handle(IPayloadContext context) {
-        context.enqueueWork(() -> {
-            Player player = context.player();
-            if (player.isLocalPlayer()) {
-                ParticleEmitter emitter = MolangParticleEngine.INSTANCE.removeEmitter(id, false);
-                if (emitter == null) {
-                    player.sendSystemMessage(Component.translatable("particle.notFound", id));
-                } else {
-                    player.sendSystemMessage(Component.translatable("commands.particlestorm.remove", emitter.particleId == null ? id : emitter.particleId.toString()));
+    public static EmitterRemovalPacket decode(FriendlyByteBuf buf) {
+        return new EmitterRemovalPacket(buf.readInt());
+    }
+
+    public void handle(Supplier<NetworkEvent.Context> ctx) {
+        if (ctx.get().getDirection() == NetworkDirection.PLAY_TO_CLIENT) {
+            DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> {
+                Player player = Minecraft.getInstance().player;
+                if (player != null) {
+                    ParticleEmitter emitter = MolangParticleEngine.INSTANCE.removeEmitter(id, false);
+                    if (emitter == null) {
+                        player.displayClientMessage(Component.translatable("particle.notFound", id), false);
+                    } else {
+                        player.displayClientMessage(Component.translatable("commands.particlestorm.remove", emitter.particleId == null ? id : emitter.particleId.toString()), false);
+                    }
                 }
-            } else {
+            });
+        } else {
+            Player player = ctx.get().getSender();
+            if (player != null) {
                 CompoundTag data = player.getPersistentData();
                 if (data.contains(KEY)) {
                     data.getCompound(KEY).remove(Integer.toString(id));
                 }
             }
-        }).exceptionally(e -> {
-            context.disconnect(Component.translatable("neoforge.network.invalid_flow", e.getMessage()));
-            return null;
-        });
+        }
     }
 
     public static void sendToServer(int id) {
-        PacketDistributor.sendToServer(new EmitterRemovalPacket(id));
+        ParticleStorm.CHANNEL.sendToServer(new EmitterRemovalPacket(id));
     }
 
     public static void sendToClient(ServerPlayer player, int id) {
@@ -60,6 +61,6 @@ public record EmitterRemovalPacket(int id) implements CustomPacketPayload {
         if (data.contains(KEY)) {
             data.getCompound(KEY).remove(Integer.toString(id));
         }
-        PacketDistributor.sendToPlayer(player, new EmitterRemovalPacket(id));
+        ParticleStorm.CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), new EmitterRemovalPacket(id));
     }
 }

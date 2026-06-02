@@ -9,7 +9,6 @@ import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
 import net.minecraft.util.StringRepresentable;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.EntityDimensions;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
@@ -171,7 +170,7 @@ public abstract sealed class EmitterShape implements IEmitterComponent permits E
             position.z += sp * Mth.sin(op);
             float[] lp = planeNormal.plane.calculate(instance);
             if (!Arrays.equals(lp, PlaneNormal.YN)) {
-                MathHelper.applyQuaternion(MathHelper.setFromUnitVectors(Mth.Y_AXIS, new Vector3f(lp), new Quaternionf()), position);
+                MathHelper.applyQuaternion(MathHelper.setFromUnitVectors(new Vector3f(0, 1, 0), new Vector3f(lp), new Quaternionf()), position);
             }
             direction.apply(instance, this, position, speed);
         }
@@ -305,8 +304,8 @@ public abstract sealed class EmitterShape implements IEmitterComponent permits E
 
         @Override
         protected void initializeParticle(MolangInstance instance, Vector3f position, Vector3f speed) {
-            EntityDimensions dimensions = instance.getAttachedEntity().getDimensions(instance.getAttachedEntity().getPose());
-            Vector3f n = new Vector3f(dimensions.width(), dimensions.height(), dimensions.width()).mul(0.5F);
+            var dimensions = instance.getAttachedEntity().getDimensions(instance.getAttachedEntity().getPose());
+            Vector3f n = new Vector3f(dimensions.width, dimensions.height, dimensions.width).mul(0.5F);
             RandomSource random = instance.getLevel().random;
             position.x = Mth.nextFloat(random, -n.x, n.x);
             position.y = Mth.nextFloat(random, -n.y, n.y);
@@ -445,7 +444,10 @@ public abstract sealed class EmitterShape implements IEmitterComponent permits E
         public static final Direction INWARDS = new Direction("inwards", FloatMolangExp3.ZERO);
         /// Particle direction away from center of shape
         public static final Direction OUTWARDS = new Direction("outwards", FloatMolangExp3.ZERO);
-        public static final Codec<Direction> DIRECTION_CODEC = StringRepresentable.fromValues(() -> new Direction[]{INWARDS, OUTWARDS});
+        public static final Codec<Direction> DIRECTION_CODEC = Codec.STRING.xmap(
+                name -> "inwards".equals(name) ? INWARDS : OUTWARDS,
+                Direction::getSerializedName
+        );
         public static final Codec<Direction> CODEC = Codec.either(DIRECTION_CODEC, FloatMolangExp3.CODEC).xmap(
                 either -> either.map(dir -> dir, list -> new Direction("custom", list)),
                 dir -> dir.direct == FloatMolangExp3.ZERO ? Either.left(dir) : Either.right(dir.direct)

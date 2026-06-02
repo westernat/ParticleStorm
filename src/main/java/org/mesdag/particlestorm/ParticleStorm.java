@@ -2,25 +2,23 @@ package org.mesdag.particlestorm;
 
 import com.mojang.datafixers.util.Either;
 import com.mojang.serialization.Codec;
-import com.mojang.serialization.MapCodec;
-import io.netty.buffer.ByteBuf;
 import net.minecraft.core.particles.ParticleType;
-import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
-import net.neoforged.bus.api.IEventBus;
-import net.neoforged.fml.ModContainer;
-import net.neoforged.fml.common.Mod;
-import net.neoforged.fml.loading.LoadingModList;
-import net.neoforged.neoforge.common.NeoForge;
-import net.neoforged.neoforge.event.RegisterCommandsEvent;
-import net.neoforged.neoforge.event.entity.player.PlayerEvent;
-import net.neoforged.neoforge.network.PacketDistributor;
-import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
-import net.neoforged.neoforge.registries.DeferredHolder;
-import net.neoforged.neoforge.registries.DeferredRegister;
+import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.event.RegisterCommandsEvent;
+import net.minecraftforge.event.entity.player.PlayerEvent;
+import net.minecraftforge.eventbus.api.IEventBus;
+import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
+import net.minecraftforge.fml.loading.LoadingModList;
+import net.minecraftforge.network.NetworkRegistry;
+import net.minecraftforge.network.PacketDistributor;
+import net.minecraftforge.network.simple.SimpleChannel;
+import net.minecraftforge.registries.DeferredRegister;
+import net.minecraftforge.registries.ForgeRegistries;
+import net.minecraftforge.registries.RegistryObject;
 import org.mesdag.particlestorm.api.geckolib.GeckoLibHelper;
 import org.mesdag.particlestorm.network.EmitterAttachPacketS2C;
 import org.mesdag.particlestorm.network.EmitterCreationPacketS2C;
@@ -46,29 +44,61 @@ public final class ParticleStorm {
     public static final boolean IRIS_LOADED = LoadingModList.get().getModFileById("iris") != null;
     public static final boolean DEBUG = Boolean.getBoolean("particlestorm.debug") && GECKOLIB_LOADED;
 
-    private static final DeferredRegister<ParticleType<?>> REGISTER = DeferredRegister.create(BuiltInRegistries.PARTICLE_TYPE, MODID);
-    public static final DeferredHolder<ParticleType<?>, ParticleType<MolangParticleOption>> MOLANG = registerParticleType(REGISTER, "molang");
-    public static final Codec<List<String>> STRING_LIST_CODEC = Codec.either(Codec.STRING, Codec.STRING.listOf()).xmap(
-            either -> either.map(Collections::singletonList, Function.identity()),
-            l -> l.size() == 1 ? Either.left(l.getFirst()) : Either.right(l)
-    );
+    private static final DeferredRegister<ParticleType<?>> REGISTER = DeferredRegister.create(ForgeRegistries.PARTICLE_TYPES, MODID);
+    public static final RegistryObject<ParticleType<MolangParticleOption>> MOLANG = registerParticleType(REGISTER, "molang");
 
-    public ParticleStorm(IEventBus bus, ModContainer container) {
-        PSClientConfigs.register(container);
-        REGISTER.register(bus);
-        registerGeoTest(bus);
-        bus.addListener(ParticleStorm::registerPayloadHandlers);
-        NeoForge.EVENT_BUS.addListener(ParticleStorm::registerCommands);
-        NeoForge.EVENT_BUS.addListener(ParticleStorm::playerLoggedIn);
+    public static RegistryObject<ParticleType<MolangParticleOption>> registerParticleType(DeferredRegister<ParticleType<?>> register, String name) {
+        return register.register(name, () -> new ParticleType<>(false, MolangParticleOption.DESERIALIZER) {
+            @Override
+            public Codec<MolangParticleOption> codec() {
+                return MolangParticleOption.CODEC;
+            }
+        });
     }
 
-    private static void registerPayloadHandlers(RegisterPayloadHandlersEvent event) {
-        event.registrar("1")
-                .playToClient(EmitterCreationPacketS2C.TYPE, EmitterCreationPacketS2C.STREAM_CODEC, EmitterCreationPacketS2C::handle)
-                .playToClient(EmitterAttachPacketS2C.TYPE, EmitterAttachPacketS2C.STREAM_CODEC, EmitterAttachPacketS2C::handle)
-                .playBidirectional(EmitterRemovalPacket.TYPE, EmitterRemovalPacket.STREAM_CODEC, EmitterRemovalPacket::handle)
-                .playBidirectional(EmitterSynchronizePacket.TYPE, EmitterSynchronizePacket.STREAM_CODEC, EmitterSynchronizePacket::handle)
-        ;
+    public static final Codec<List<String>> STRING_LIST_CODEC = Codec.either(Codec.STRING, Codec.STRING.listOf()).xmap(
+            either -> either.map(Collections::singletonList, Function.identity()),
+            l -> l.size() == 1 ? Either.left(l.get(0)) : Either.right(l)
+    );
+
+    public static final String NETWORK_VERSION = "1";
+    public static final SimpleChannel CHANNEL = NetworkRegistry.newSimpleChannel(
+            asResource("main"),
+            () -> NETWORK_VERSION,
+            NETWORK_VERSION::equals,
+            NETWORK_VERSION::equals
+    );
+
+    public ParticleStorm(FMLJavaModLoadingContext context) {
+        PSClientConfigs.register(context.getContainer());
+        REGISTER.register(context.getModEventBus());
+        registerGeoTest(context.getModEventBus());
+        registerNetwork();
+        MinecraftForge.EVENT_BUS.addListener(ParticleStorm::registerCommands);
+        MinecraftForge.EVENT_BUS.addListener(ParticleStorm::playerLoggedIn);
+    }
+
+    private static void registerNetwork() {
+        CHANNEL.messageBuilder(EmitterCreationPacketS2C.class, 0)
+                .encoder(EmitterCreationPacketS2C::encode)
+                .decoder(EmitterCreationPacketS2C::decode)
+                .consumerMainThread(EmitterCreationPacketS2C::handle)
+                .add();
+        CHANNEL.messageBuilder(EmitterAttachPacketS2C.class, 1)
+                .encoder(EmitterAttachPacketS2C::encode)
+                .decoder(EmitterAttachPacketS2C::decode)
+                .consumerMainThread(EmitterAttachPacketS2C::handle)
+                .add();
+        CHANNEL.messageBuilder(EmitterRemovalPacket.class, 2)
+                .encoder(EmitterRemovalPacket::encode)
+                .decoder(EmitterRemovalPacket::decode)
+                .consumerMainThread(EmitterRemovalPacket::handle)
+                .add();
+        CHANNEL.messageBuilder(EmitterSynchronizePacket.class, 3)
+                .encoder(EmitterSynchronizePacket::encode)
+                .decoder(EmitterSynchronizePacket::decode)
+                .consumerMainThread(EmitterSynchronizePacket::handle)
+                .add();
     }
 
     private static void registerCommands(RegisterCommandsEvent event) {
@@ -80,8 +110,9 @@ public final class ParticleStorm {
             CompoundTag data = player.getPersistentData();
             if (data.contains(KEY)) {
                 CompoundTag emitters = data.getCompound(KEY);
-                for (String id : emitters.getAllKeys()) {
-                    PacketDistributor.sendToPlayer(player, new EmitterSynchronizePacket(Integer.parseInt(id), emitters.getCompound(id)));
+                for (String emitterId : emitters.getAllKeys()) {
+                    CHANNEL.send(PacketDistributor.PLAYER.with(() -> player),
+                            new EmitterSynchronizePacket(Integer.parseInt(emitterId), emitters.getCompound(emitterId)));
                 }
             }
         }
@@ -95,19 +126,5 @@ public final class ParticleStorm {
 
     public static ResourceLocation asResource(String path) {
         return ResourceLocation.fromNamespaceAndPath(MODID, path);
-    }
-
-    public static DeferredHolder<ParticleType<?>, ParticleType<MolangParticleOption>> registerParticleType(DeferredRegister<ParticleType<?>> register, String name) {
-        return register.register(name, () -> new ParticleType<>(false) {
-            @Override
-            public MapCodec<MolangParticleOption> codec() {
-                return MolangParticleOption.CODEC;
-            }
-
-            @Override
-            public StreamCodec<ByteBuf, MolangParticleOption> streamCodec() {
-                return MolangParticleOption.STREAM_CODEC;
-            }
-        });
     }
 }

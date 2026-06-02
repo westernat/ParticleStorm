@@ -13,7 +13,7 @@ import software.bernie.geckolib.loading.json.raw.LocatorValue;
 import java.util.Map;
 
 @Pseudo
-@Mixin(targets = "software.bernie.geckolib.animatable.instance.AnimatableInstanceCache", remap = false)
+@Mixin(targets = "software.bernie.geckolib.core.animatable.instance.AnimatableInstanceCache", remap = false)
 public abstract class AnimatableInstanceCacheMixin implements IAnimatableInstanceCache {
     @Unique
     private Object2IntMap<LocatorValue> particlestorm$cachedId;

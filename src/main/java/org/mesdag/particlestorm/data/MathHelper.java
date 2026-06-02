@@ -96,7 +96,8 @@ public class MathHelper {
     }
 
     public static void forCompound(Map<String, Variable> table, List<VariableAssignment> toInit, MathValue variable) {
-        if (variable instanceof CompoundValue(MathValue[] subValues)) {
+        if (variable instanceof CompoundValue compoundValue) {
+            MathValue[] subValues = compoundValue.subValues();
             for (MathValue value : subValues) {
                 forAssignment(table, toInit, value);
             }

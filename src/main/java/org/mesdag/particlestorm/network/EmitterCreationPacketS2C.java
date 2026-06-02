@@ -1,18 +1,17 @@
 package org.mesdag.particlestorm.network;
 
-import io.netty.buffer.ByteBuf;
-import net.minecraft.network.chat.Component;
-import net.minecraft.network.codec.ByteBufCodecs;
-import net.minecraft.network.codec.StreamCodec;
-import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.minecraft.client.Minecraft;
+import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.Vec3;
-import net.neoforged.neoforge.network.PacketDistributor;
-import net.neoforged.neoforge.network.handling.IPayloadContext;
-import net.neoforged.neoforge.server.ServerLifecycleHooks;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.fml.DistExecutor;
+import net.minecraftforge.network.NetworkEvent;
+import net.minecraftforge.network.PacketDistributor;
+import net.minecraftforge.server.ServerLifecycleHooks;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Vector3f;
 import org.mesdag.particlestorm.ParticleStorm;
@@ -20,45 +19,48 @@ import org.mesdag.particlestorm.data.molang.MolangExp;
 import org.mesdag.particlestorm.particle.MolangParticleEngine;
 import org.mesdag.particlestorm.particle.ParticleEmitter;
 
-public record EmitterCreationPacketS2C(ResourceLocation id, Vector3f pos, MolangExp expression, int entityId) implements CustomPacketPayload {
-    public static final Type<EmitterCreationPacketS2C> TYPE = new Type<>(ParticleStorm.asResource("emitter_creation"));
+import java.util.function.Supplier;
 
-    public static final StreamCodec<ByteBuf, EmitterCreationPacketS2C> STREAM_CODEC = StreamCodec.composite(
-            ResourceLocation.STREAM_CODEC, EmitterCreationPacketS2C::id,
-            ByteBufCodecs.VECTOR3F, EmitterCreationPacketS2C::pos,
-            MolangExp.STREAM_CODEC, EmitterCreationPacketS2C::expression,
-            ByteBufCodecs.VAR_INT, EmitterCreationPacketS2C::entityId,
-            EmitterCreationPacketS2C::new
-    );
-
-    @Override
-    public Type<EmitterCreationPacketS2C> type() {
-        return TYPE;
+public record EmitterCreationPacketS2C(ResourceLocation id, Vector3f pos, MolangExp expression, int entityId) {
+    public static void encode(EmitterCreationPacketS2C msg, FriendlyByteBuf buf) {
+        buf.writeResourceLocation(msg.id);
+        buf.writeFloat(msg.pos.x);
+        buf.writeFloat(msg.pos.y);
+        buf.writeFloat(msg.pos.z);
+        msg.expression.writeToNetwork(buf);
+        buf.writeVarInt(msg.entityId);
     }
 
-    public void handle(IPayloadContext context) {
-        context.enqueueWork(() -> {
-            Player player = context.player();
-            if (player.isLocalPlayer()) {
+    public static EmitterCreationPacketS2C decode(FriendlyByteBuf buf) {
+        ResourceLocation id = buf.readResourceLocation();
+        Vector3f pos = new Vector3f(buf.readFloat(), buf.readFloat(), buf.readFloat());
+        MolangExp expression = MolangExp.fromNetwork(buf);
+        int entityId = buf.readVarInt();
+        return new EmitterCreationPacketS2C(id, pos, expression, entityId);
+    }
+
+    public void handle(Supplier<NetworkEvent.Context> ctx) {
+        DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> {
+            Player player = Minecraft.getInstance().player;
+            if (player != null) {
                 ParticleEmitter emitter = new ParticleEmitter(player.level(), new Vec3(pos.x, pos.y, pos.z), id, expression);
                 if (entityId > 0) {
                     emitter.attachEntity(player.level().getEntity(entityId));
                 }
-                MolangParticleEngine.INSTANCE.addEmitter(emitter, false);
+                MolangParticleEngine.INSTANCE.addEmitter(emitter);
             }
-        }).exceptionally(e -> {
-            context.disconnect(Component.translatable("neoforge.network.invalid_flow", e.getMessage()));
-            return null;
         });
     }
 
     public static void sendToAll(ResourceLocation id, Vector3f pos, MolangExp expression, @Nullable Entity entity) {
         if (ServerLifecycleHooks.getCurrentServer() != null) {
-            PacketDistributor.sendToAllPlayers(new EmitterCreationPacketS2C(id, pos, expression, entity == null ? -1 : entity.getId()));
+            ParticleStorm.CHANNEL.send(PacketDistributor.ALL.noArg(),
+                    new EmitterCreationPacketS2C(id, pos, expression, entity == null ? -1 : entity.getId()));
         }
     }
 
     public static void sendToClient(ServerPlayer player, ResourceLocation id, Vector3f pos, MolangExp expression, @Nullable Entity entity) {
-        PacketDistributor.sendToPlayer(player, new EmitterCreationPacketS2C(id, pos, expression, entity == null ? -1 : entity.getId()));
+        ParticleStorm.CHANNEL.send(PacketDistributor.PLAYER.with(() -> player),
+                new EmitterCreationPacketS2C(id, pos, expression, entity == null ? -1 : entity.getId()));
     }
 }

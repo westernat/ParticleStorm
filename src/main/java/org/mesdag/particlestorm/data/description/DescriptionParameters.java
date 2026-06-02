@@ -9,8 +9,8 @@ public class DescriptionParameters {
     public static final ResourceLocation MISSING_TEXTURE = ParticleStorm.asResource("missing");
     public static final DescriptionParameters EMPTY = new DescriptionParameters(DescriptionMaterial.CUSTOM, MISSING_TEXTURE);
     public static final Codec<DescriptionParameters> CODEC = RecordCodecBuilder.create(instance -> instance.group(
-            DescriptionMaterial.CODEC.lenientOptionalFieldOf("material", DescriptionMaterial.CUSTOM).orElse(DescriptionMaterial.PARTICLE_SHEET_TRANSLUCENT).forGetter(DescriptionParameters::material),
-            ResourceLocation.CODEC.lenientOptionalFieldOf("texture", MISSING_TEXTURE).forGetter(DescriptionParameters::texture)
+            DescriptionMaterial.CODEC.optionalFieldOf("material", DescriptionMaterial.CUSTOM).orElse(DescriptionMaterial.PARTICLE_SHEET_TRANSLUCENT).forGetter(DescriptionParameters::material),
+            ResourceLocation.CODEC.optionalFieldOf("texture", MISSING_TEXTURE).forGetter(DescriptionParameters::texture)
     ).apply(instance, DescriptionParameters::new));
     private final DescriptionMaterial material;
     private final ResourceLocation texture;

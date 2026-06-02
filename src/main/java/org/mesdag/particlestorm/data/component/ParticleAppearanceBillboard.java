@@ -1,6 +1,9 @@
 package org.mesdag.particlestorm.data.component;
 
+import com.mojang.datafixers.util.Pair;
 import com.mojang.serialization.Codec;
+import com.mojang.serialization.DataResult;
+import com.mojang.serialization.DynamicOps;
 import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
@@ -24,7 +27,7 @@ public record ParticleAppearanceBillboard(FloatMolangExp2 size, FaceCameraMode f
     public static final Codec<ParticleAppearanceBillboard> CODEC = RecordCodecBuilder.create(instance -> instance.group(
             FloatMolangExp2.CODEC.fieldOf("size").forGetter(ParticleAppearanceBillboard::size),
             DuplicateFieldDecoder.fieldOf(FaceCameraMode.CODEC, "face_camera_mode", "facing_camera_mode").forGetter(ParticleAppearanceBillboard::faceCameraMode),
-            Direction.CODEC.lenientOptionalFieldOf("direction", Direction.DEFAULT).forGetter(ParticleAppearanceBillboard::direction),
+            Direction.CODEC.optionalFieldOf("direction", Direction.DEFAULT).forGetter(ParticleAppearanceBillboard::direction),
             UV.CODEC.fieldOf("uv").orElse(UV.EMPTY).forGetter(ParticleAppearanceBillboard::uv)
     ).apply(instance, ParticleAppearanceBillboard::new));
 
@@ -61,7 +64,7 @@ public record ParticleAppearanceBillboard(FloatMolangExp2 size, FaceCameraMode f
             instance.setCurrentFrame(instance.getMaxFrame() * instance.getAge() / instance.self().getLifetime());
         } else {
             float gameTime = (float) ((int) instance.getLevel().getGameTime() & 0b11111111);
-            if (gameTime % (instance.getLevel().tickRateManager().tickrate() / flipbook.framesPerSecond) < 1.0F) {
+            if (gameTime % (20.0F / flipbook.framesPerSecond) < 1.0F) {
                 updateFlipbookUV(instance);
                 instance.setMaxFrame((int) flipbook.maxFrame.calculate(instance));
                 int currentFrame = instance.getCurrentFrame() + 1;
@@ -184,9 +187,22 @@ public record ParticleAppearanceBillboard(FloatMolangExp2 size, FaceCameraMode f
         public static final MapCodec<Direction> SPEED_MODE_CODEC = RecordCodecBuilder.mapCodec(instance -> instance.group(
                 Codec.FLOAT.fieldOf("min_speed_threshold").orElse(0.01F).forGetter(Direction::minSpeedThreshold)
         ).apply(instance, f -> new Direction(Mode.DERIVE_FROM_VELOCITY, f, FloatMolangExp3.ZERO)));
-        public static final Codec<Direction> CODEC = Mode.CODEC.dispatchMap(
-                "mode", Direction::mode, mode -> mode == Mode.CUSTOM_DIRECTION ? CUSTOM_MODE_CODEC : SPEED_MODE_CODEC
-        ).codec();
+        public static final Codec<Direction> CODEC = new Codec<>() {
+            @Override
+            public <T> DataResult<Pair<Direction, T>> decode(DynamicOps<T> ops, T input) {
+                return ops.getMap(input).flatMap(map -> {
+                    DataResult<Mode> modeResult = Mode.CODEC.parse(ops, map.get("mode"));
+                    Mode mode = modeResult.result().orElse(Mode.DERIVE_FROM_VELOCITY);
+                    return (mode == Mode.CUSTOM_DIRECTION ? CUSTOM_MODE_CODEC : SPEED_MODE_CODEC).decode(ops, map).map(p -> Pair.of(p, input));
+                });
+            }
+
+            @Override
+            public <T> DataResult<T> encode(Direction input, DynamicOps<T> ops, T prefix) {
+                MapCodec<Direction> codec = input.mode == Mode.CUSTOM_DIRECTION ? CUSTOM_MODE_CODEC : SPEED_MODE_CODEC;
+                return codec.encode(input, ops, ops.mapBuilder()).build(prefix);
+            }
+        };
 
         @Override
         public String toString() {
@@ -262,13 +278,13 @@ public record ParticleAppearanceBillboard(FloatMolangExp2 size, FaceCameraMode f
         public record Flipbook(FloatMolangExp2 baseUV, FloatMolangExp2 sizeUV, FloatMolangExp2 stepUV, float framesPerSecond, FloatMolangExp maxFrame, boolean stretchToLifetime, boolean loop) {
             public static final Flipbook EMPTY = new Flipbook(FloatMolangExp2.ZERO, FloatMolangExp2.ZERO, FloatMolangExp2.ZERO, 0, FloatMolangExp.ZERO, false, false);
             public static final Codec<Flipbook> CODEC = RecordCodecBuilder.create(instance -> instance.group(
-                    FloatMolangExp2.CODEC.lenientOptionalFieldOf("base_UV", FloatMolangExp2.ZERO).forGetter(Flipbook::baseUV),
-                    FloatMolangExp2.CODEC.lenientOptionalFieldOf("size_UV", FloatMolangExp2.ZERO).forGetter(Flipbook::sizeUV),
-                    FloatMolangExp2.CODEC.lenientOptionalFieldOf("step_UV", FloatMolangExp2.ZERO).forGetter(Flipbook::stepUV),
-                    ExtraCodecs.POSITIVE_FLOAT.lenientOptionalFieldOf("frames_per_second", 1.0F).forGetter(Flipbook::framesPerSecond),
-                    FloatMolangExp.CODEC.lenientOptionalFieldOf("max_frame", FloatMolangExp.ZERO).forGetter(Flipbook::maxFrame),
-                    Codec.BOOL.lenientOptionalFieldOf("stretch_to_lifetime", false).forGetter(Flipbook::stretchToLifetime),
-                    Codec.BOOL.lenientOptionalFieldOf("loop", false).forGetter(Flipbook::loop)
+                    FloatMolangExp2.CODEC.optionalFieldOf("base_UV", FloatMolangExp2.ZERO).forGetter(Flipbook::baseUV),
+                    FloatMolangExp2.CODEC.optionalFieldOf("size_UV", FloatMolangExp2.ZERO).forGetter(Flipbook::sizeUV),
+                    FloatMolangExp2.CODEC.optionalFieldOf("step_UV", FloatMolangExp2.ZERO).forGetter(Flipbook::stepUV),
+                    ExtraCodecs.POSITIVE_FLOAT.optionalFieldOf("frames_per_second", 1.0F).forGetter(Flipbook::framesPerSecond),
+                    FloatMolangExp.CODEC.optionalFieldOf("max_frame", FloatMolangExp.ZERO).forGetter(Flipbook::maxFrame),
+                    Codec.BOOL.optionalFieldOf("stretch_to_lifetime", false).forGetter(Flipbook::stretchToLifetime),
+                    Codec.BOOL.optionalFieldOf("loop", false).forGetter(Flipbook::loop)
             ).apply(instance, Flipbook::new));
 
             public float[] getSizeUV(IMolangParticleInstance instance) {

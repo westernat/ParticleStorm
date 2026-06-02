@@ -101,7 +101,7 @@ public abstract sealed class EmitterRate implements IEmitterComponent permits Em
         @Override
         public void apply(ParticleEmitter emitter) {
             float calculated = spawnRate.calculate(emitter);
-            float tickrate = emitter.level.tickRateManager().tickrate();
+            float tickrate = 20.0F;
             emitter.spawnDuration = Math.max((int) (tickrate / calculated), 1);
             if (emitter.spawnRate != calculated) {
                 emitter.spawnRate = emitter.spawnDuration == 1 ? (int) (calculated / tickrate) : 1;

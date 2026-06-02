@@ -1,11 +1,11 @@
 package org.mesdag.particlestorm;
 
-import net.neoforged.fml.ModContainer;
-import net.neoforged.fml.config.ModConfig;
-import net.neoforged.neoforge.common.ModConfigSpec;
+import net.minecraftforge.common.ForgeConfigSpec;
+import net.minecraftforge.fml.ModContainer;
+import net.minecraftforge.fml.config.ModConfig;
 
 public final class PSClientConfigs {
-    private static ModConfigSpec.BooleanValue SHOW_EMITTER_OUTLINE;
+    private static ForgeConfigSpec.BooleanValue SHOW_EMITTER_OUTLINE;
 
     public static boolean showEmitterOutline = true;
 
@@ -14,8 +14,8 @@ public final class PSClientConfigs {
     }
 
     public static void register(ModContainer container) {
-        ModConfigSpec.Builder BUILDER = new ModConfigSpec.Builder();
+        ForgeConfigSpec.Builder BUILDER = new ForgeConfigSpec.Builder();
         SHOW_EMITTER_OUTLINE = BUILDER.define("showEmitterOutline", true);
-        container.registerConfig(ModConfig.Type.COMMON, BUILDER.build());
+        container.addConfig(new ModConfig(ModConfig.Type.COMMON, BUILDER.build(), container));
     }
 }

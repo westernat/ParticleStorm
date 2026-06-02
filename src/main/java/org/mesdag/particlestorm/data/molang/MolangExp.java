@@ -1,10 +1,8 @@
 package org.mesdag.particlestorm.data.molang;
 
 import com.mojang.serialization.Codec;
-import io.netty.buffer.ByteBuf;
 import net.minecraft.Util;
-import net.minecraft.network.codec.ByteBufCodecs;
-import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.network.FriendlyByteBuf;
 import org.mesdag.particlestorm.api.MolangInstance;
 import org.mesdag.particlestorm.data.molang.compiler.MathValue;
 import org.mesdag.particlestorm.data.molang.compiler.MolangParser;
@@ -16,7 +14,6 @@ import java.util.Map;
 public class MolangExp {
     public static final MolangExp EMPTY = Util.make(new MolangExp(""), exp -> exp.variable = new Constant(0));
     public static final Codec<MolangExp> CODEC = Codec.STRING.xmap(MolangExp::new, MolangExp::getExpStr);
-    public static final StreamCodec<ByteBuf, MolangExp> STREAM_CODEC = ByteBufCodecs.STRING_UTF8.map(MolangExp::new, MolangExp::getExpStr);
     protected final String expStr;
     protected MathValue variable;
     protected boolean immutable;
@@ -74,6 +71,14 @@ public class MolangExp {
 
     public boolean initialized() {
         return variable != null;
+    }
+
+    public void writeToNetwork(FriendlyByteBuf buf) {
+        buf.writeUtf(expStr);
+    }
+
+    public static MolangExp fromNetwork(FriendlyByteBuf buf) {
+        return new MolangExp(buf.readUtf());
     }
 
     @Override

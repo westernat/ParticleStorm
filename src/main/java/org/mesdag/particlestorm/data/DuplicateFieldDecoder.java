@@ -1,7 +1,6 @@
 package org.mesdag.particlestorm.data;
 
 import com.mojang.serialization.*;
-import net.neoforged.neoforge.common.util.NeoForgeExtraCodecs;
 
 import java.util.Arrays;
 import java.util.Objects;
@@ -24,11 +23,66 @@ public class DuplicateFieldDecoder {
         String[] names = new String[alias.length + 1];
         names[0] = defaultName;
         System.arraycopy(alias, 0, names, 1, alias.length);
-        return NeoForgeExtraCodecs.aliasedFieldOf(codec, names);
+        return new AliasFieldCodec<>(codec, names);
     }
 
     public static <T> MapCodec<Optional<T>> optionalFieldOf(Codec<T> codec, String... names) {
         return new AliasOptionalFieldCodec<>(codec, names);
+    }
+
+    public static class AliasFieldCodec<A> extends MapCodec<A> {
+        private final Codec<A> elementCodec;
+        private final String[] names;
+
+        public AliasFieldCodec(Codec<A> elementCodec, String[] names) {
+            this.elementCodec = elementCodec;
+            this.names = Arrays.stream(names).distinct().sorted().toArray(String[]::new);
+        }
+
+        @Override
+        public <T> DataResult<A> decode(DynamicOps<T> ops, MapLike<T> input) {
+            for (String name : names) {
+                T t = input.get(name);
+                if (t != null) {
+                    return elementCodec.parse(ops, t);
+                }
+            }
+            return DataResult.error(() -> "No field found among: " + Arrays.toString(names));
+        }
+
+        @Override
+        public <T> RecordBuilder<T> encode(A input, DynamicOps<T> ops, RecordBuilder<T> prefix) {
+            return prefix.add(names[0], elementCodec.encodeStart(ops, input));
+        }
+
+        @Override
+        public <T> Stream<T> keys(DynamicOps<T> ops) {
+            return Arrays.stream(names).map(ops::createString);
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            return o == this || (
+                    o instanceof AliasFieldCodec<?> that &&
+                            Arrays.equals(names, that.names) &&
+                            elementCodec.equals(that.elementCodec)
+            );
+        }
+
+        @Override
+        public int hashCode() {
+            int result = Objects.hashCode(names);
+            result = 31 * result + Objects.hashCode(elementCodec);
+            return result;
+        }
+
+        @Override
+        public String toString() {
+            return "AliasFieldCodec{" +
+                    "names='" + Arrays.toString(names) + '\'' +
+                    ", elementCodec=" + elementCodec +
+                    '}';
+        }
     }
 
     public static class AliasOptionalFieldCodec<A> extends MapCodec<Optional<A>> {
@@ -46,8 +100,8 @@ public class DuplicateFieldDecoder {
                 T t = input.get(name);
                 if (t == null) continue;
                 DataResult<A> parsed = elementCodec.parse(ops, t);
-                if (parsed.isSuccess()) {
-                    return parsed.map(Optional::of).setPartial(parsed.resultOrPartial());
+                if (parsed.result().isPresent()) {
+                    return parsed.map(Optional::of);
                 }
             }
             return DataResult.success(Optional.empty());

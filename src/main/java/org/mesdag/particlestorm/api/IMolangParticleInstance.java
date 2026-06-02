@@ -117,15 +117,16 @@ public interface IMolangParticleInstance extends MolangInstance {
     default void moveDirectly(double x, double y, double z) {
         AABB aabb = self().getBoundingBox();
         float radius = getCollisionRadius();
-        self().setBoundingBox(new AABB(
+        AABB newBox = new AABB(
                 aabb.minX - radius + x,
                 aabb.minY - radius + y,
                 aabb.minZ - radius + z,
                 aabb.maxX + radius + x,
                 aabb.maxY + radius + y,
                 aabb.maxZ + radius + z
-        ));
-        self().setLocationFromBoundingbox();
+        );
+        self().setBoundingBox(newBox);
+        self().setPos(newBox.minX + (newBox.maxX - newBox.minX) / 2.0, newBox.minY, newBox.minZ + (newBox.maxZ - newBox.minZ) / 2.0);
     }
 
     @Override
@@ -159,7 +160,7 @@ public interface IMolangParticleInstance extends MolangInstance {
     }
 
     default boolean isVisible(Camera camera, Frustum frustum, float partialTick) {
-        return frustum.isVisible(self().getRenderBoundingBox(partialTick));
+        return frustum.isVisible(self().getBoundingBox().inflate(1));
     }
     // endregion
 }

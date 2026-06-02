@@ -2,7 +2,7 @@ package org.mesdag.particlestorm.mixed;
 
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import org.mesdag.particlestorm.api.geckolib.GeckoLibHelper;
-import software.bernie.geckolib.animatable.instance.AnimatableInstanceCache;
+import software.bernie.geckolib.core.animatable.instance.AnimatableInstanceCache;
 import software.bernie.geckolib.loading.json.raw.LocatorValue;
 
 public interface IAnimatableInstanceCache {

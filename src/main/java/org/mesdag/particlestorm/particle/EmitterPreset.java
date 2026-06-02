@@ -53,19 +53,21 @@ public class EmitterPreset {
                     throw new IllegalArgumentException("Duplicate emitter rate component");
                 } else {
                     rate = true;
-                    switch (component) {
-                        case EmitterRate.Instant ignored -> this.emitterRateType = EmitterRate.Type.INSTANT;
-                        case EmitterRate.Steady ignored -> this.emitterRateType = EmitterRate.Type.STEADY;
-                        default -> this.emitterRateType = EmitterRate.Type.MANUAL;
+                    if (component instanceof EmitterRate.Instant) {
+                        this.emitterRateType = EmitterRate.Type.INSTANT;
+                    } else if (component instanceof EmitterRate.Steady) {
+                        this.emitterRateType = EmitterRate.Type.STEADY;
+                    } else {
+                        this.emitterRateType = EmitterRate.Type.MANUAL;
                     }
                 }
             } else if (component instanceof EmitterShape) {
                 if (shape) throw new IllegalArgumentException("Duplicate emitter shape component");
                 else shape = true;
-            } else if (component instanceof EmitterLocalSpace(boolean position, boolean rotation, boolean velocity)) {
-                this.localPosition = position;
-                this.localRotation = rotation;
-                this.localVelocity = velocity;
+            } else if (component instanceof EmitterLocalSpace localSpace) {
+                this.localPosition = localSpace.position();
+                this.localRotation = localSpace.rotation();
+                this.localVelocity = localSpace.velocity();
             } else if (component instanceof EmitterLifetimeEvents e) {
                 this.lifetimeEvents = e;
             }

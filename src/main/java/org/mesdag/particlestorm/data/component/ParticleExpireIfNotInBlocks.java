@@ -2,10 +2,10 @@ package org.mesdag.particlestorm.data.component;
 
 import com.mojang.serialization.Codec;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
+import net.minecraftforge.registries.ForgeRegistries;
 import org.joml.Vector3f;
 import org.mesdag.particlestorm.api.IMolangParticleInstance;
 import org.mesdag.particlestorm.api.IParticleComponent;
@@ -42,7 +42,10 @@ public final class ParticleExpireIfNotInBlocks implements IParticleComponent {
     public void initialize(Level level) {
         if (blocks.isEmpty()) {
             for (String id : ids) {
-                BuiltInRegistries.BLOCK.getOptional(ResourceLocation.parse(id)).ifPresent(blocks::add);
+                Block block = ForgeRegistries.BLOCKS.getValue(ResourceLocation.parse(id));
+                if (block != null) {
+                    blocks.add(block);
+                }
             }
         }
     }

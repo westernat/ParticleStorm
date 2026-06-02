@@ -2,12 +2,12 @@ package org.mesdag.particlestorm.data.molang.compiler.function.misc;
 
 import com.mojang.datafixers.util.Either;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraftforge.registries.ForgeRegistries;
 import org.mesdag.particlestorm.api.MolangInstance;
 import org.mesdag.particlestorm.data.molang.compiler.MathValue;
 import org.mesdag.particlestorm.data.molang.compiler.function.MathFunction;
@@ -24,7 +24,7 @@ public final class IsBlockFunction extends MathFunction {
             String value = stringValue.value();
             this.either = value.startsWith("#")
                     ? Either.right(BlockTags.create(ResourceLocation.parse(value.substring(1))))
-                    : Either.left(BuiltInRegistries.BLOCK.get(ResourceLocation.parse(value)));
+                    : Either.left(ForgeRegistries.BLOCKS.getValue(ResourceLocation.parse(value)));
         } else {
             throw new IllegalArgumentException(values[0] + " is not a string value");
         }

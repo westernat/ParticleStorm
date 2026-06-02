@@ -3,10 +3,9 @@ package org.mesdag.particlestorm.api.geckolib;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import org.jetbrains.annotations.Nullable;
-import software.bernie.geckolib.animatable.instance.AnimatableInstanceCache;
-import software.bernie.geckolib.animation.AnimatableManager;
-import software.bernie.geckolib.animation.AnimationController;
 import software.bernie.geckolib.constant.DefaultAnimations;
+import software.bernie.geckolib.core.animatable.instance.AnimatableInstanceCache;
+import software.bernie.geckolib.core.animation.AnimatableManager;
 import software.bernie.geckolib.util.GeckoLibUtil;
 
 public class ReplacedCreeperEntity implements ParticleStormGeoReplacedEntity {
@@ -18,7 +17,7 @@ public class ReplacedCreeperEntity implements ParticleStormGeoReplacedEntity {
     private ReplacedCreeperEntity() {}
 
     public void registerControllers(AnimatableManager.ControllerRegistrar controllers) {
-        controllers.add(new AnimationController[]{DefaultAnimations.genericWalkIdleController(this)});
+        controllers.add(DefaultAnimations.genericWalkIdleController(this));
     }
 
     public AnimatableInstanceCache getAnimatableInstanceCache() {

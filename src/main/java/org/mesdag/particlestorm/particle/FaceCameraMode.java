@@ -1,7 +1,6 @@
 package org.mesdag.particlestorm.particle;
 
 import net.minecraft.client.Camera;
-import net.minecraft.client.particle.SingleQuadParticle;
 import net.minecraft.util.Mth;
 import net.minecraft.world.phys.Vec3;
 import org.joml.*;
@@ -9,9 +8,8 @@ import org.mesdag.particlestorm.api.IMolangParticleInstance;
 import org.mesdag.particlestorm.data.MathHelper;
 import org.mesdag.particlestorm.data.component.ParticleAppearanceBillboard;
 
-public enum FaceCameraMode implements SingleQuadParticle.FacingCameraMode {
+public enum FaceCameraMode {
     DO_NOTHING {
-        @Override
         public void setRotation(Quaternionf quaternion, Camera camera, float partialTick) {}
     },
     LOOKAT_XYZ {
@@ -20,7 +18,6 @@ public enum FaceCameraMode implements SingleQuadParticle.FacingCameraMode {
         private static final Vector3f up = new Vector3f(0, 1, 0);
         private static final Matrix3f mat = new Matrix3f();
 
-        @Override
         public void setRotation(Quaternionf quaternion, Camera camera, float partialTick) {}
 
         @Override
@@ -40,7 +37,6 @@ public enum FaceCameraMode implements SingleQuadParticle.FacingCameraMode {
         }
     },
     LOOKAT_Y {
-        @Override
         public void setRotation(Quaternionf quaternion, Camera camera, float partialTick) {}
 
         @Override
@@ -51,31 +47,26 @@ public enum FaceCameraMode implements SingleQuadParticle.FacingCameraMode {
         }
     },
     ROTATE_XYZ {
-        @Override
         public void setRotation(Quaternionf quaternion, Camera camera, float partialTick) {
             quaternion.set(camera.rotation());
         }
     },
     ROTATE_Y {
-        @Override
         public void setRotation(Quaternionf quaternion, Camera camera, float partialTick) {
             quaternion.set(0.0F, camera.rotation().y, 0.0F, camera.rotation().w);
         }
     },
     DIRECTION_X {
-        @Override
         public void setRotation(Quaternionf quaternion, Camera camera, float partialTick) {
             quaternion.rotationXYZ(0.0F, Mth.HALF_PI, 0.0F);
         }
     },
     DIRECTION_Y {
-        @Override
         public void setRotation(Quaternionf quaternion, Camera camera, float partialTick) {
             quaternion.rotationXYZ(Mth.HALF_PI, Mth.PI, 0.0F);
         }
     },
     DIRECTION_Z {
-        @Override
         public void setRotation(Quaternionf quaternion, Camera camera, float partialTick) {
             quaternion.rotationXYZ(0.0F, 0.0F, 0.0F);
         }
@@ -85,7 +76,6 @@ public enum FaceCameraMode implements SingleQuadParticle.FacingCameraMode {
         private static final Vector4f t = new Vector4f();
         private static final Matrix4f m = new Matrix4f();
 
-        @Override
         public void setRotation(Quaternionf quaternion, Camera camera, float partialTick) {}
 
         @Override
@@ -102,23 +92,22 @@ public enum FaceCameraMode implements SingleQuadParticle.FacingCameraMode {
         }
     },
     EMITTER_TRANSFORM_XY {
-        @Override
         public void setRotation(Quaternionf quaternion, Camera camera, float partialTick) {
             quaternion.rotationXYZ(0.0F, 0.0F, 0.0F);
         }
     },
     EMITTER_TRANSFORM_XZ {
-        @Override
         public void setRotation(Quaternionf quaternion, Camera camera, float partialTick) {
             quaternion.rotationXYZ(Mth.HALF_PI, 0.0F, 0.0F);
         }
     },
     EMITTER_TRANSFORM_YZ {
-        @Override
         public void setRotation(Quaternionf quaternion, Camera camera, float partialTick) {
             quaternion.rotationXYZ(0.0F, -Mth.HALF_PI, 0.0F);
         }
     };
+
+    public abstract void setRotation(Quaternionf quaternion, Camera camera, float partialTick);
 
     public void setRotation(IMolangParticleInstance instance, Quaternionf quaternion, Camera camera, float partialTick) {
         setRotation(quaternion, camera, partialTick);

@@ -1,16 +1,21 @@
 package org.mesdag.particlestorm.data.description;
 
+import com.mojang.datafixers.util.Pair;
 import com.mojang.serialization.Codec;
+import com.mojang.serialization.DataResult;
+import com.mojang.serialization.DynamicOps;
+import net.minecraft.Util;
 import net.minecraft.util.StringRepresentable;
-import net.neoforged.fml.ModLoader;
+import net.minecraftforge.fml.ModLoader;
 import org.mesdag.particlestorm.api.RegisterCustomMaterialEvent;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public final class DescriptionMaterial implements StringRepresentable {
     private static List<DescriptionMaterial> list = new ArrayList<>();
-    private static DescriptionMaterial[] values;
 
     public static final DescriptionMaterial
             TERRAIN_SHEET = register("terrain_sheet"),
@@ -31,14 +36,25 @@ public final class DescriptionMaterial implements StringRepresentable {
         return material;
     }
 
-    public static final Codec<DescriptionMaterial> CODEC = StringRepresentable.fromValues(() -> {
-        if (values == null) {
-            ModLoader.postEvent(new RegisterCustomMaterialEvent(DescriptionMaterial::register));
-            values = list.toArray(DescriptionMaterial[]::new);
+    public static final Codec<DescriptionMaterial> CODEC = new Codec<>() {
+        private final Map<String, DescriptionMaterial> getter = Util.make(new HashMap<>(), map -> {
+            ModLoader.get().postEvent(new RegisterCustomMaterialEvent(DescriptionMaterial::register));
+            for (DescriptionMaterial material : list) {
+                map.put(material.getSerializedName(), material);
+            }
             list = null;
+        });
+
+        @Override
+        public <T> DataResult<Pair<DescriptionMaterial, T>> decode(DynamicOps<T> ops, T input) {
+            return Codec.STRING.decode(ops, input).map(p -> new Pair<>(getter.getOrDefault(p.getFirst(), CUSTOM), p.getSecond()));
         }
-        return values;
-    });
+
+        @Override
+        public <T> DataResult<T> encode(DescriptionMaterial input, DynamicOps<T> ops, T prefix) {
+            return Codec.STRING.encode(input.getSerializedName(), ops, prefix);
+        }
+    };
 
     private final String name;
 

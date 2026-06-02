@@ -84,7 +84,7 @@ public class ParticleEmitter implements MolangInstance {
         this.particleId = particleId;
         this.expression = expression;
         updateRandoms(level.random);
-        this.invTickRate = 1.0F / level.tickRateManager().tickrate();
+        this.invTickRate = 1.0F / 20.0F;
         init();
     }
 
@@ -95,7 +95,7 @@ public class ParticleEmitter implements MolangInstance {
     public ParticleEmitter(Level level, CompoundTag tag) {
         this.level = level;
         deserialize(tag);
-        this.invTickRate = 1.0F / level.tickRateManager().tickrate();
+        this.invTickRate = 1.0F / 20.0F;
         init();
     }
 
@@ -106,7 +106,8 @@ public class ParticleEmitter implements MolangInstance {
         this.particleId = effect.effect();
         this.expression = effect.preEffectExpression();
         updateRandoms(level.random);
-        this.invTickRate = 1.0F / level.tickRateManager().tickrate();
+        this.invTickRate = 1.0F / 20.0F;
+        this.hideOutline = parent.hideOutline;
         this.afterParentInit = () -> {
             switch (effect.type()) {
                 case EMITTER -> {}
@@ -189,7 +190,7 @@ public class ParticleEmitter implements MolangInstance {
     }
 
     public void tick() {
-        this.invTickRate = 1.0F / level.tickRateManager().tickrate();
+        this.invTickRate = 1.0F / 20.0F;
         this.moveDistO = moveDist;
         this.posO = pos;
         for (IEmitterComponent component : components) {
@@ -243,9 +244,7 @@ public class ParticleEmitter implements MolangInstance {
     public void local2World(Vector3f vec, float partialTick) {
         if (isLocalSpace()) {
             if (preset.localRotation) {
-                if (parentSpace != null) {
-                    vec.mulDirection(parentSpace);
-                }
+                vec.mulDirection(parentSpace);
             }
             if (preset.localPosition) {
                 vec.add(

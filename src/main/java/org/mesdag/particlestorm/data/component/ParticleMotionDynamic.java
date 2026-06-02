@@ -70,7 +70,7 @@ public record ParticleMotionDynamic(
     @Override
     public void apply(IMolangParticleInstance instance) {
         float invTickRate = instance.getInvTickRate();
-        float tickRate = instance.getLevel().tickRateManager().tickrate();
+        float tickRate = 20.0F;
 
         Vector3f acceleration = instance.getAcceleration();
         acceleration.set(linerAcceleration.calculate(instance));

@@ -22,9 +22,9 @@ import java.util.List;
 /// `velocity` will add the emitter's velocity to the initial particle velocity.
 public record EmitterLocalSpace(boolean position, boolean rotation, boolean velocity) implements IEmitterComponent {
     public static final Codec<EmitterLocalSpace> CODEC = RecordCodecBuilder.create(instance -> instance.group(
-            Codec.BOOL.lenientOptionalFieldOf("position", false).forGetter(EmitterLocalSpace::position),
-            Codec.BOOL.lenientOptionalFieldOf("rotation", false).forGetter(EmitterLocalSpace::rotation),
-            Codec.BOOL.lenientOptionalFieldOf("velocity", false).forGetter(EmitterLocalSpace::velocity)
+            Codec.BOOL.optionalFieldOf("position", false).forGetter(EmitterLocalSpace::position),
+            Codec.BOOL.optionalFieldOf("rotation", false).forGetter(EmitterLocalSpace::rotation),
+            Codec.BOOL.optionalFieldOf("velocity", false).forGetter(EmitterLocalSpace::velocity)
     ).apply(instance, EmitterLocalSpace::new));
 
     public EmitterLocalSpace(boolean position, boolean rotation, boolean velocity) {

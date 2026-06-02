@@ -1,6 +1,6 @@
 package org.mesdag.particlestorm.api;
 
-import net.neoforged.bus.api.Event;
+import net.minecraftforge.eventbus.api.Event;
 import org.mesdag.particlestorm.data.DefinedParticleEffect;
 import org.mesdag.particlestorm.particle.ParticlePreset;
 

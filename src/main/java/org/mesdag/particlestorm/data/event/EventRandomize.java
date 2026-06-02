@@ -5,13 +5,15 @@ import net.minecraft.util.ExtraCodecs;
 import net.minecraft.util.Tuple;
 import org.mesdag.particlestorm.api.IEventNode;
 import org.mesdag.particlestorm.api.MolangInstance;
+import org.mesdag.particlestorm.data.DFUCompat;
 
 import java.util.*;
 
 public final class EventRandomize implements IEventNode {
-    public static final Codec<EventRandomize> CODEC = Codec.dispatchedMap(Codec.STRING, name -> {
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    public static final Codec<EventRandomize> CODEC = DFUCompat.dispatchedMap(Codec.STRING, name -> {
         Codec<IEventNode> codec = MAP.get(name);
-        if (codec == null) return EventLog.CODEC;
+        if (codec == null) return (Codec<IEventNode>) (Codec) EventLog.CODEC;
         return codec;
     }).listOf().xmap(EventRandomize::new, eventRandomize -> eventRandomize.nodes);
     public final List<Map<String, IEventNode>> nodes;

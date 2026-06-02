@@ -7,28 +7,27 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class ExtendMutableSpriteSet extends ParticleEngine.MutableSpriteSet {
+    private final List<TextureAtlasSprite> extendedSprites = new ArrayList<>();
     private TextureAtlasSprite missing;
 
-    public ExtendMutableSpriteSet() {
-        this.sprites = new ArrayList<>();
-    }
-
     public TextureAtlasSprite get(int index) {
-        if (index < 0 || index >= sprites.size()) return missing;
-        return sprites.get(index);
+        if (index < 0 || index >= extendedSprites.size()) return missing;
+        return extendedSprites.get(index);
     }
 
     public void addSprite(TextureAtlasSprite sprite) {
-        sprites.add(sprite);
+        extendedSprites.add(sprite);
     }
 
     public void clear() {
-        sprites.clear();
+        extendedSprites.clear();
     }
 
     @Override
     public void rebind(List<TextureAtlasSprite> sprites) {
-        this.sprites = new ArrayList<>(sprites);
+        super.rebind(sprites);
+        this.extendedSprites.clear();
+        this.extendedSprites.addAll(sprites);
     }
 
     public void bindMissing(TextureAtlasSprite missing) {

@@ -249,7 +249,7 @@ public class MolangParser {
 
     public MathValue parseSymbols(List<Either<String, List<MathValue>>> symbols) throws IllegalArgumentException {
         if (symbols.size() == 2) {
-            Optional<String> prefix = symbols.getFirst().left().filter(left -> left.startsWith("-") || left.startsWith("!") || isFunctionRegistered(MolangQueries.applyQueryAliases(left)));
+            Optional<String> prefix = symbols.get(0).left().filter(left -> left.startsWith("-") || left.startsWith("!") || isFunctionRegistered(MolangQueries.applyQueryAliases(left)));
             Optional<List<MathValue>> group = symbols.get(1).right();
 
             if (prefix.isPresent() && group.isPresent())
@@ -267,7 +267,7 @@ public class MolangParser {
     @Nullable
     protected MathValue compileValue(List<Either<String, List<MathValue>>> symbols) throws IllegalArgumentException {
         if (symbols.size() == 1)
-            return compileSingleValue(symbols.getFirst());
+            return compileSingleValue(symbols.get(0));
 
         Ternary ternary = compileTernary(symbols);
 
@@ -280,7 +280,7 @@ public class MolangParser {
     @Nullable
     protected MathValue compileSingleValue(Either<String, List<MathValue>> symbol) throws IllegalArgumentException {
         if (symbol.right().isPresent())
-            return new Group(symbol.right().get().getFirst());
+            return new Group(symbol.right().get().get(0));
 
         return symbol.left().map(string -> {
             if (string.startsWith("!"))
@@ -383,14 +383,14 @@ public class MolangParser {
     protected MathValue compileFunction(String name, List<MathValue> args) throws IllegalArgumentException {
         if (name.startsWith("!")) {
             if (name.length() == 1)
-                return new BooleanNegate(args.getFirst());
+                return new BooleanNegate(args.get(0));
 
             return new BooleanNegate(compileFunction(name.substring(1), args));
         }
 
         if (name.startsWith("-")) {
             if (name.length() == 1)
-                return new Negative(args.getFirst());
+                return new Negative(args.get(0));
 
             return new Negative(compileFunction(name.substring(1), args));
         }

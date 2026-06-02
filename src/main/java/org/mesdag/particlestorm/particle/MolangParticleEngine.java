@@ -6,8 +6,7 @@ import com.google.common.collect.Lists;
 import com.google.gson.JsonParseException;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.BufferBuilder;
-import com.mojang.blaze3d.vertex.BufferUploader;
-import com.mojang.blaze3d.vertex.MeshData;
+import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.Tesselator;
 import com.mojang.serialization.JsonOps;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
@@ -24,6 +23,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.particle.ParticleRenderType;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.renderer.GameRenderer;
+import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.culling.Frustum;
 import net.minecraft.client.renderer.texture.TextureManager;
 import net.minecraft.core.particles.ParticleGroup;
@@ -38,7 +38,7 @@ import net.minecraft.util.Mth;
 import net.minecraft.util.profiling.ProfilerFiller;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.Level;
-import net.neoforged.fml.ModLoader;
+import net.minecraftforge.fml.ModLoader;
 import org.jetbrains.annotations.Nullable;
 import org.mesdag.particlestorm.PSGameClient;
 import org.mesdag.particlestorm.ParticleStorm;
@@ -62,7 +62,7 @@ public final class MolangParticleEngine implements PreparableReloadListener {
     private Map<ResourceLocation, EmitterPreset> id2Emitter = ImmutableMap.of();
 
     private final Int2ObjectOpenHashMap<ParticleEmitter> emitters = new Int2ObjectOpenHashMap<>();
-    private final Object2ObjectOpenHashMap<Entity, EvictingQueue<ParticleEmitter>> tracker = new Object2ObjectOpenHashMap<>();
+    private final Object2ObjectOpenHashMap<Entity, Queue<ParticleEmitter>> tracker = new Object2ObjectOpenHashMap<>();
     private final Int2ObjectOpenHashMap<Queue<IMolangParticleInstance>> particlesForEmitter = new Int2ObjectOpenHashMap<>();
     private final Queue<IMolangParticleInstance> particlesToAdd = new ArrayDeque<>();
     private final Reference2ObjectOpenHashMap<ParticleRenderType, Queue<IMolangParticleInstance>> groupedParticles = new Reference2ObjectOpenHashMap<>();
@@ -125,7 +125,7 @@ public final class MolangParticleEngine implements PreparableReloadListener {
         if (!tracker.isEmpty()) {
             var iterator = tracker.object2ObjectEntrySet().fastIterator();
             while (iterator.hasNext()) {
-                Map.Entry<Entity, EvictingQueue<ParticleEmitter>> entry = iterator.next();
+                Map.Entry<Entity, Queue<ParticleEmitter>> entry = iterator.next();
                 if (entry.getKey().isRemoved()) {
                     iterator.remove();
                 } else if (entry.getValue().removeIf(ParticleEmitter::isRemoved) && entry.getValue().isEmpty()) {
@@ -164,9 +164,19 @@ public final class MolangParticleEngine implements PreparableReloadListener {
         }
     }
 
-    public void renderParticles(TextureManager textureManager, Camera camera, float partialTick, Frustum frustum, Predicate<ParticleRenderType> renderTypePredicate) {
+    public void renderParticles(LightTexture lightTexture, TextureManager textureManager, PoseStack poseStack, Camera camera, float partialTick, Frustum frustum, Predicate<ParticleRenderType> renderTypePredicate) {
         if (groupedParticles.isEmpty()) return;
+        lightTexture.turnOnLightLayer();
+        RenderSystem.enableDepthTest();
+        RenderSystem.activeTexture(org.lwjgl.opengl.GL13.GL_TEXTURE2);
+        RenderSystem.activeTexture(org.lwjgl.opengl.GL13.GL_TEXTURE0);
+        PoseStack posestack = RenderSystem.getModelViewStack();
+        posestack.pushPose();
+        posestack.mulPoseMatrix(poseStack.last().pose());
+        RenderSystem.applyModelViewMatrix();
         Tesselator tesselator = Tesselator.getInstance();
+        BufferBuilder builder = tesselator.getBuilder();
+
         var iterator = groupedParticles.reference2ObjectEntrySet().fastIterator();
         while (iterator.hasNext()) {
             var entry = iterator.next();
@@ -178,8 +188,7 @@ public final class MolangParticleEngine implements PreparableReloadListener {
             RenderSystem.setShader(!ParticleStorm.IRIS_LOADED && type == PSGameClient.PARTICLE_BLEND
                     ? PSGameClient::getParticleNoDiscardShader
                     : GameRenderer::getParticleShader);
-            BufferBuilder builder = type.begin(tesselator, textureManager);
-            if (builder == null) continue;
+            type.begin(builder, textureManager);
 
             for (IMolangParticleInstance instance : queue) {
                 if (instance.isVisible(camera, frustum, partialTick)) {
@@ -193,11 +202,14 @@ public final class MolangParticleEngine implements PreparableReloadListener {
                     }
                 }
             }
-            MeshData mesh = builder.build();
-            if (mesh != null) {
-                BufferUploader.drawWithShader(mesh);
-            }
+            type.end(tesselator);
         }
+
+        posestack.popPose();
+        RenderSystem.applyModelViewMatrix();
+        RenderSystem.depthMask(true);
+        RenderSystem.disableBlend();
+        lightTexture.turnOffLightLayer();
     }
 
     public ObjectIterator<Int2ObjectMap.Entry<ParticleEmitter>> getEmitters() {
@@ -232,10 +244,10 @@ public final class MolangParticleEngine implements PreparableReloadListener {
     }
 
     public boolean addTrackedEmitter(Entity entity, ResourceLocation particleId) {
-        EvictingQueue<ParticleEmitter> queue = tracker.computeIfAbsent(entity, e -> EvictingQueue.create(16));
+        Queue<ParticleEmitter> queue = tracker.computeIfAbsent(entity, e -> EvictingQueue.create(16));
         if (!queue.isEmpty() && queue.stream().anyMatch(emitter -> particleId.equals(emitter.particleId))) return false;
         ParticleEmitter emitter = new ParticleEmitter(entity.level(), entity.position(), particleId);
-        addEmitter(emitter, false);
+        addEmitter(emitter);
         emitter.attachEntity(entity);
         queue.add(emitter);
         return true;
@@ -304,13 +316,13 @@ public final class MolangParticleEngine implements PreparableReloadListener {
     @Override
     public CompletableFuture<Void> reload(PreparationBarrier preparationBarrier, ResourceManager resourceManager, ProfilerFiller preparationsProfiler, ProfilerFiller reloadProfiler, Executor backgroundExecutor, Executor gameExecutor) {
         return CompletableFuture.supplyAsync(() -> PARTICLE_LISTER.listMatchingResources(resourceManager), backgroundExecutor).thenCompose(map -> {
-            ModLoader.postEvent(new MolangParticleLoadEvent.Pre(backgroundExecutor));
+            ModLoader.get().postEvent(new MolangParticleLoadEvent.Pre(backgroundExecutor));
             List<CompletableFuture<DefinedParticleEffect>> list = Lists.newArrayListWithExpectedSize(map.size());
             for (Map.Entry<ResourceLocation, Resource> entry : map.entrySet()) {
                 ResourceLocation id = PARTICLE_LISTER.fileToId(entry.getKey());
                 list.add(CompletableFuture.supplyAsync(() -> {
                     try (Reader reader = entry.getValue().openAsReader()) {
-                        return DefinedParticleEffect.CODEC.parse(JsonOps.INSTANCE, GsonHelper.parse(reader).get("particle_effect")).getOrThrow(JsonParseException::new);
+                        return DefinedParticleEffect.CODEC.parse(JsonOps.INSTANCE, GsonHelper.parse(reader).get("particle_effect")).getOrThrow(false, msg -> {throw new JsonParseException(msg);});
                     } catch (IOException exception) {
                         throw new IllegalStateException("Failed to load definition for particle " + id, exception);
                     }
@@ -335,7 +347,7 @@ public final class MolangParticleEngine implements PreparableReloadListener {
             this.id2Particle = id2Particle.build();
             this.id2Emitter = id2Emitter.build();
             this.initialized = false;
-            ModLoader.postEvent(new MolangParticleLoadEvent.Post(gameExecutor));
+            ModLoader.get().postEvent(new MolangParticleLoadEvent.Post(gameExecutor));
         }, gameExecutor);
     }
 }

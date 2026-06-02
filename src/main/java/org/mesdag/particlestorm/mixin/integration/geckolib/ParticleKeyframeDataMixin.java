@@ -8,7 +8,7 @@ import org.mesdag.particlestorm.mixed.IParticleKeyframeData;
 import org.spongepowered.asm.mixin.*;
 
 @Pseudo
-@Mixin(targets = "software.bernie.geckolib.animation.keyframe.event.data.ParticleKeyframeData", remap = false)
+@Mixin(targets = "software.bernie.geckolib.core.keyframe.event.data.ParticleKeyframeData", remap = false)
 public abstract class ParticleKeyframeDataMixin implements IParticleKeyframeData {
     @Shadow
     @Final

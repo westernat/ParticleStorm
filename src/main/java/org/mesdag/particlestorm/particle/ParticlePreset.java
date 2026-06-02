@@ -3,7 +3,7 @@ package org.mesdag.particlestorm.particle;
 import com.google.common.collect.Iterables;
 import net.minecraft.client.particle.ParticleRenderType;
 import net.minecraft.util.Mth;
-import net.neoforged.neoforge.common.NeoForge;
+import net.minecraftforge.common.MinecraftForge;
 import org.jetbrains.annotations.Nullable;
 import org.mesdag.particlestorm.PSGameClient;
 import org.mesdag.particlestorm.api.IParticleComponent;
@@ -112,7 +112,7 @@ public class ParticlePreset {
         }
         this.vars = table;
         this.assignments = toInit;
-        NeoForge.EVENT_BUS.post(new ParticlePresetLoadedEvent(effect, this));
+        MinecraftForge.EVENT_BUS.post(new ParticlePresetLoadedEvent(effect, this));
     }
 
     public <T> void setTicket(Class<T> clazz, T value) {

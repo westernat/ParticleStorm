@@ -15,14 +15,14 @@ import net.minecraft.client.renderer.debug.DebugRenderer;
 import net.minecraft.client.renderer.texture.TextureAtlas;
 import net.minecraft.client.renderer.texture.TextureManager;
 import net.minecraft.util.Mth;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.ModLoader;
-import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.fml.event.config.ModConfigEvent;
-import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
-import net.neoforged.neoforge.client.event.*;
-import org.jetbrains.annotations.ApiStatus;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.client.event.*;
+import net.minecraftforge.event.TickEvent;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.ModLoader;
+import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.fml.event.config.ModConfigEvent;
+import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 import org.mesdag.particlestorm.api.*;
 import org.mesdag.particlestorm.api.geckolib.GeckoLibHelper;
 import org.mesdag.particlestorm.data.component.*;
@@ -34,20 +34,22 @@ import org.mesdag.particlestorm.particle.ParticleEmitter;
 import java.io.IOException;
 import java.util.Queue;
 
-@EventBusSubscriber(modid = ParticleStorm.MODID, value = Dist.CLIENT)
+@Mod.EventBusSubscriber(modid = ParticleStorm.MODID, value = Dist.CLIENT, bus = Mod.EventBusSubscriber.Bus.MOD)
 public final class PSGameClient {
-    @Deprecated(forRemoval = true, since = "1.3.0")
-    @ApiStatus.ScheduledForRemoval(inVersion = "1.4.0")
-    public static final MolangParticleEngine LOADER = MolangParticleEngine.INSTANCE;
     public static final ParticleRenderType PARTICLE_ADD = new ParticleRenderType() {
         @Override
-        public BufferBuilder begin(Tesselator tesselator, TextureManager textureManager) {
+        public void begin(BufferBuilder builder, TextureManager textureManager) {
             RenderSystem.enableDepthTest();
             RenderSystem.depthMask(false);
             RenderSystem.setShaderTexture(0, TextureAtlas.LOCATION_PARTICLES);
             RenderSystem.enableBlend();
             RenderSystem.blendFunc(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE);
-            return tesselator.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.PARTICLE);
+            builder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.PARTICLE);
+        }
+
+        @Override
+        public void end(Tesselator tesselator) {
+            tesselator.end();
         }
 
         public String toString() {
@@ -56,19 +58,28 @@ public final class PSGameClient {
     };
     public static final ParticleRenderType PARTICLE_BLEND = new ParticleRenderType() {
         @Override
-        public BufferBuilder begin(Tesselator tesselator, TextureManager textureManager) {
+        public void begin(BufferBuilder builder, TextureManager textureManager) {
             RenderSystem.enableDepthTest();
             RenderSystem.depthMask(false);
             RenderSystem.setShaderTexture(0, TextureAtlas.LOCATION_PARTICLES);
             RenderSystem.enableBlend();
             RenderSystem.blendFunc(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA);
-            return tesselator.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.PARTICLE);
+            builder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.PARTICLE);
+        }
+
+        @Override
+        public void end(Tesselator tesselator) {
+            tesselator.end();
         }
 
         public String toString() {
             return "PARTICLE_BLEND";
         }
     };
+
+    public static boolean isTranslucent(ParticleRenderType type) {
+        return type != ParticleRenderType.PARTICLE_SHEET_OPAQUE && type != ParticleRenderType.PARTICLE_SHEET_LIT;
+    }
 
     private static ShaderInstance particleNoDiscard;
 
@@ -103,52 +114,6 @@ public final class PSGameClient {
     }
 
     @SubscribeEvent
-    public static void clientNetwork$LoggingOut(ClientPlayerNetworkEvent.LoggingOut event) {
-        MolangParticleEngine.INSTANCE.removeAll();
-    }
-
-    @SubscribeEvent
-    public static void tick(ClientTickEvent.Pre event) {
-        Minecraft minecraft = Minecraft.getInstance();
-        LocalPlayer player = minecraft.player;
-        if (player != null && !minecraft.isPaused() && player.clientLevel.tickRateManager().runsNormally()) {
-            MolangParticleEngine.INSTANCE.tick(minecraft, player);
-        }
-    }
-
-    @SubscribeEvent
-    public static void renderLevelStage(RenderLevelStageEvent event) {
-        if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_PARTICLES) return;
-        if (!PSClientConfigs.showEmitterOutline) return;
-        Minecraft minecraft = Minecraft.getInstance();
-        if (!minecraft.getEntityRenderDispatcher().shouldRenderHitBoxes()) return;
-        PoseStack poseStack = event.getPoseStack();
-        MultiBufferSource.BufferSource bufferSource = minecraft.renderBuffers().bufferSource();
-        Camera camera = event.getCamera();
-        double camX = camera.getPosition().x;
-        double camY = camera.getPosition().y;
-        double camZ = camera.getPosition().z;
-        float partialTick = event.getPartialTick().getGameTimeDeltaPartialTick(true);
-        var iterator = MolangParticleEngine.INSTANCE.getEmitters();
-        while (iterator.hasNext()) {
-            ParticleEmitter emitter = iterator.next().getValue();
-            if (emitter.hideOutline) continue;
-            double x = Mth.lerp(partialTick, emitter.posO.x, emitter.getX());
-            double y = Mth.lerp(partialTick, emitter.posO.y, emitter.getY());
-            double z = Mth.lerp(partialTick, emitter.posO.z, emitter.getZ());
-            DebugRenderer.renderFloatingText(poseStack, bufferSource, emitter.particleId.toString(), x, y + 0.5, z, 0xFFFFFF);
-            DebugRenderer.renderFloatingText(poseStack, bufferSource, "id: " + emitter.id, x, y + 0.3, z, 0xFFFFFF);
-            Queue<IMolangParticleInstance> queue = MolangParticleEngine.INSTANCE.getParticlesForEmitter(emitter);
-            int count = queue == null ? 0 : queue.size();
-            DebugRenderer.renderFloatingText(poseStack, bufferSource, "particles: " + count, x, y + 0.1, z, count >= emitter.particleGroup.getLimit() ? 0xFF0000 : 0xFFFFFF);
-            poseStack.pushPose();
-            poseStack.translate(x - camX, y - camY, z - camZ);
-            LevelRenderer.renderLineBox(poseStack, bufferSource.getBuffer(RenderType.lines()), -0.5, -0.5, -0.5, 0.5, 0.5, 0.5, 0, 1, 0, 1);
-            poseStack.popPose();
-        }
-    }
-
-    @SubscribeEvent
     public static void reload(RegisterClientReloadListenersEvent event) {
         registerComponents();
         registerEventNodes();
@@ -157,7 +122,7 @@ public final class PSGameClient {
 
     @SubscribeEvent
     public static void registerCustomParticleType(RegisterCustomParticleTypeEvent event) {
-        event.registerWithSprites(ParticleStorm.MOLANG, (emitter, particlePreset, level, x, y, z, sprites) ->
+        event.registerWithSprites(ParticleStorm.MOLANG.get(), (emitter, particlePreset, level, x, y, z, sprites) ->
                 new MolangParticleInstance(particlePreset, level, x, y, z, sprites)
         );
     }
@@ -199,7 +164,7 @@ public final class PSGameClient {
         IComponent.register("particle_expire_if_in_blocks", ParticleExpireIfInBlocks.CODEC);
         IComponent.register("particle_expire_if_not_in_blocks", ParticleExpireIfNotInBlocks.CODEC);
 
-        ModLoader.postEvent(new RegisterCustomComponentEvent());
+        ModLoader.get().postEvent(new RegisterCustomComponentEvent());
     }
 
     private static void registerEventNodes() {
@@ -211,7 +176,7 @@ public final class PSGameClient {
         IEventNode.register("expression", NodeMolangExp.CODEC);
         IEventNode.register("log", EventLog.CODEC);
 
-        ModLoader.postEvent(new RegisterCustomEventNodeEvent());
+        ModLoader.get().postEvent(new RegisterCustomEventNodeEvent());
     }
 
     @SubscribeEvent
@@ -220,6 +185,58 @@ public final class PSGameClient {
             if (ParticleStorm.GECKOLIB_LOADED) {
                 GeckoLibHelper.postEvent();
             }
+            RegisterCustomEmitterTypeEvent.postEvent();
         });
+    }
+
+    @Mod.EventBusSubscriber(modid = ParticleStorm.MODID, value = Dist.CLIENT, bus = Mod.EventBusSubscriber.Bus.FORGE)
+    public static final class ForgeEvents {
+        @SubscribeEvent
+        public static void clientNetwork$LoggingOut(ClientPlayerNetworkEvent.LoggingOut event) {
+            MolangParticleEngine.INSTANCE.removeAll();
+        }
+
+        @SubscribeEvent
+        public static void tick(TickEvent.ClientTickEvent event) {
+            if (event.phase != TickEvent.Phase.START) return;
+            Minecraft minecraft = Minecraft.getInstance();
+            LocalPlayer player = minecraft.player;
+            if (player != null && !minecraft.isPaused()) {
+                MolangParticleEngine.INSTANCE.tick(minecraft, player);
+            }
+        }
+
+        @SubscribeEvent
+        public static void renderLevelStage(RenderLevelStageEvent event) {
+            if (event.getStage() == RenderLevelStageEvent.Stage.AFTER_PARTICLES) {
+                Minecraft minecraft = Minecraft.getInstance();
+                Camera camera = event.getCamera();
+                float partialTick = event.getPartialTick();
+                if (PSClientConfigs.showEmitterOutline && minecraft.getEntityRenderDispatcher().shouldRenderHitBoxes()) {
+                    PoseStack poseStack = event.getPoseStack();
+                    MultiBufferSource.BufferSource bufferSource = minecraft.renderBuffers().bufferSource();
+                    double camX = camera.getPosition().x;
+                    double camY = camera.getPosition().y;
+                    double camZ = camera.getPosition().z;
+                    var iterator = MolangParticleEngine.INSTANCE.getEmitters();
+                    while (iterator.hasNext()) {
+                        ParticleEmitter emitter = iterator.next().getValue();
+                        if (emitter.hideOutline) continue;
+                        double x = Mth.lerp(partialTick, emitter.posO.x, emitter.getX());
+                        double y = Mth.lerp(partialTick, emitter.posO.y, emitter.getY());
+                        double z = Mth.lerp(partialTick, emitter.posO.z, emitter.getZ());
+                        DebugRenderer.renderFloatingText(poseStack, bufferSource, emitter.particleId.toString(), x, y + 0.5, z, 0xFFFFFF);
+                        DebugRenderer.renderFloatingText(poseStack, bufferSource, "id: " + emitter.id, x, y + 0.3, z, 0xFFFFFF);
+                        Queue<IMolangParticleInstance> queue = MolangParticleEngine.INSTANCE.getParticlesForEmitter(emitter);
+                        int count = queue == null ? 0 : queue.size();
+                        DebugRenderer.renderFloatingText(poseStack, bufferSource, "particles: " + count, x, y + 0.1, z, count >= emitter.particleGroup.getLimit() ? 0xFF0000 : 0xFFFFFF);
+                        poseStack.pushPose();
+                        poseStack.translate(x - camX, y - camY, z - camZ);
+                        LevelRenderer.renderLineBox(poseStack, bufferSource.getBuffer(RenderType.lines()), -0.5, -0.5, -0.5, 0.5, 0.5, 0.5, 0, 1, 0, 1);
+                        poseStack.popPose();
+                    }
+                }
+            }
+        }
     }
 }

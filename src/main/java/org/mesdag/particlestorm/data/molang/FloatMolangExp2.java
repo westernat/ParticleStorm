@@ -7,8 +7,8 @@ import java.util.List;
 
 public record FloatMolangExp2(FloatMolangExp exp1, FloatMolangExp exp2) {
     public static final FloatMolangExp2 ZERO = new FloatMolangExp2(FloatMolangExp.ZERO, FloatMolangExp.ZERO);
-    public static final Codec<FloatMolangExp2> CODEC = Codec.list(FloatMolangExp.CODEC, 2, 2).xmap(
-            exps -> new FloatMolangExp2(exps.getFirst(), exps.get(1)),
+    public static final Codec<FloatMolangExp2> CODEC = FloatMolangExp.CODEC.listOf().xmap(
+            exps -> new FloatMolangExp2(exps.get(0), exps.get(1)),
             exp2 -> List.of(exp2.exp1, exp2.exp2)
     );
 

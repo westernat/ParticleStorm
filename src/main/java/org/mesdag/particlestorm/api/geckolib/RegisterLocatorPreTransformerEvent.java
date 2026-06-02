@@ -14,15 +14,15 @@ import net.minecraft.world.entity.Pose;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
-import net.neoforged.bus.api.Event;
-import net.neoforged.fml.event.IModBusEvent;
-import software.bernie.geckolib.animatable.GeoAnimatable;
+import net.minecraftforge.eventbus.api.Event;
+import net.minecraftforge.fml.event.IModBusEvent;
 import software.bernie.geckolib.animatable.GeoBlockEntity;
 import software.bernie.geckolib.animatable.GeoEntity;
 import software.bernie.geckolib.animatable.GeoItem;
-import software.bernie.geckolib.animatable.instance.AnimatableInstanceCache;
 import software.bernie.geckolib.cache.object.GeoBone;
-import software.bernie.geckolib.util.RenderUtil;
+import software.bernie.geckolib.core.animatable.GeoAnimatable;
+import software.bernie.geckolib.core.animatable.instance.AnimatableInstanceCache;
+import software.bernie.geckolib.util.RenderUtils;
 
 import java.util.ArrayDeque;
 import java.util.Deque;
@@ -52,13 +52,18 @@ public class RegisterLocatorPreTransformerEvent extends Event implements IModBus
 
     @SuppressWarnings("unchecked")
     public static <T extends GeoAnimatable> Transformer<T> getTransformer(T animatable) {
-        Transformer<?> transformer = switch (animatable) {
-            case Entity entity -> entityTransformers.getOrDefault(entity.getType(), Transformer::entityTransformer);
-            case BlockEntity blockEntity -> blockEntityTransformers.getOrDefault(blockEntity.getType(), Transformer::defaultTransformer);
-            case Item ignored -> singletonTransformers.getOrDefault(animatable.getAnimatableInstanceCache(), Transformer::defaultTransformer);
-            case ParticleStormGeoReplacedEntity ignored -> singletonTransformers.getOrDefault(animatable.getAnimatableInstanceCache(), Transformer::replacedEntityTransformer);
-            default -> null;
-        };
+        Transformer<?> transformer;
+        if (animatable instanceof Entity entity) {
+            transformer = entityTransformers.getOrDefault(entity.getType(), Transformer::entityTransformer);
+        } else if (animatable instanceof BlockEntity blockEntity) {
+            transformer = blockEntityTransformers.getOrDefault(blockEntity.getType(), Transformer::defaultTransformer);
+        } else if (animatable instanceof Item) {
+            transformer = singletonTransformers.getOrDefault(animatable.getAnimatableInstanceCache(), Transformer::defaultTransformer);
+        } else if (animatable instanceof ParticleStormGeoReplacedEntity) {
+            transformer = singletonTransformers.getOrDefault(animatable.getAnimatableInstanceCache(), Transformer::replacedEntityTransformer);
+        } else {
+            transformer = null;
+        }
         return transformer == null ? Transformer::defaultTransformer : (Transformer<T>) transformer;
     }
 
@@ -121,7 +126,7 @@ public class RegisterLocatorPreTransformerEvent extends Event implements IModBus
                 } else if (entity.hasPose(Pose.SLEEPING)) {
                     Direction bedOrientation = living.getBedOrientation();
 
-                    poseStack.mulPose(Axis.YP.rotationDegrees(bedOrientation != null ? RenderUtil.getDirectionAngle(bedOrientation) : lerpBodyRot));
+                    poseStack.mulPose(Axis.YP.rotationDegrees(bedOrientation != null ? RenderUtils.getDirectionAngle(bedOrientation) : lerpBodyRot));
                     poseStack.mulPose(Axis.ZP.rotationDegrees(90));
                     poseStack.mulPose(Axis.YP.rotationDegrees(270f));
                 } else if (LivingEntityRenderer.isEntityUpsideDown(living)) {
@@ -140,7 +145,7 @@ public class RegisterLocatorPreTransformerEvent extends Event implements IModBus
                 current = current.getParent();
             }
             while (!chain.isEmpty()) {
-                RenderUtil.prepMatrixForBone(poseStack, chain.pollLast());
+                RenderUtils.prepMatrixForBone(poseStack, chain.pollLast());
             }
         }
     }

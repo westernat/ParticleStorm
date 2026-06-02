@@ -26,9 +26,9 @@ import java.util.List;
 ///                         Evaluated every frame
 public record ParticleMotionParametric(FloatMolangExp3 relativePosition, FloatMolangExp3 direction, FloatMolangExp rotation) implements IParticleComponent {
     public static final Codec<ParticleMotionParametric> CODEC = RecordCodecBuilder.create(instance -> instance.group(
-            FloatMolangExp3.CODEC.lenientOptionalFieldOf("relative_position", FloatMolangExp3.ZERO).forGetter(ParticleMotionParametric::relativePosition),
-            FloatMolangExp3.CODEC.lenientOptionalFieldOf("direction", FloatMolangExp3.ZERO).forGetter(ParticleMotionParametric::direction),
-            FloatMolangExp.CODEC.lenientOptionalFieldOf("rotation", FloatMolangExp.ZERO).forGetter(ParticleMotionParametric::rotation)
+            FloatMolangExp3.CODEC.optionalFieldOf("relative_position", FloatMolangExp3.ZERO).forGetter(ParticleMotionParametric::relativePosition),
+            FloatMolangExp3.CODEC.optionalFieldOf("direction", FloatMolangExp3.ZERO).forGetter(ParticleMotionParametric::direction),
+            FloatMolangExp.CODEC.optionalFieldOf("rotation", FloatMolangExp.ZERO).forGetter(ParticleMotionParametric::rotation)
     ).apply(instance, ParticleMotionParametric::new));
 
     @Override

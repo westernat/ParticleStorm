@@ -16,7 +16,6 @@ import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
-import org.mesdag.particlestorm.ParticleStorm;
 import org.mesdag.particlestorm.api.IEventNode;
 import org.mesdag.particlestorm.api.IMolangParticleInstance;
 import org.mesdag.particlestorm.api.IParticleComponent;
@@ -430,7 +429,8 @@ public class MolangParticleInstance extends TextureSheetParticle implements IMol
                 (float) (Mth.lerp(partialTick, yo, y) - camPos.y),
                 (float) (Mth.lerp(partialTick, zo, z) - camPos.z)
         );
-        return IMolangParticleInstance.super.isVisible(camera, frustum, partialTick);
+        float size = Math.max(billboardSize[0], billboardSize[1]);
+        return frustum.cubeInFrustum(x - size, y - size, z - size, x + size, y + size, z + size);
     }
 
     // 在isVisible后调用
@@ -441,36 +441,34 @@ public class MolangParticleInstance extends TextureSheetParticle implements IMol
         if (xRot != 0.0F) quaternionf.rotateX(Mth.lerp(partialTicks, xRotO, xRot));
         if (yRot != 0.0F) quaternionf.rotateY(Mth.lerp(partialTicks, yRotO, yRot));
         if (roll != 0.0F) quaternionf.rotateZ(Mth.lerp(partialTicks, oRoll, roll));
-        renderRotatedQuad(buffer, quaternionf, vector3f.x, vector3f.y, vector3f.z, partialTicks);
+        renderRotatedQuad(buffer, vector3f.x, vector3f.y, vector3f.z, partialTicks);
     }
 
-    @Override
-    protected void renderRotatedQuad(VertexConsumer buffer, Quaternionf quaternion, float x, float y, float z, float partialTicks) {
-        if (ParticleStorm.SODIUM_LOADED) {
-            float f1 = getU0();
-            float f2 = getU1();
-            float f3 = getV0();
-            float f4 = getV1();
-            int i = getLightColor(partialTicks);
-            renderVertex(buffer, quaternion, x, y, z, 1.0F, -1.0F, 0.0F, f2, f4, i);
-            renderVertex(buffer, quaternion, x, y, z, 1.0F, 1.0F, 0.0F, f2, f3, i);
-            renderVertex(buffer, quaternion, x, y, z, -1.0F, 1.0F, 0.0F, f1, f3, i);
-            renderVertex(buffer, quaternion, x, y, z, -1.0F, -1.0F, 0.0F, f1, f4, i);
-        } else {
-            super.renderRotatedQuad(buffer, quaternion, x, y, z, partialTicks);
-        }
+    protected void renderRotatedQuad(VertexConsumer buffer, float x, float y, float z, float partialTicks) {
+        float u0 = getU0();
+        float u1 = getU1();
+        float v0 = getV0();
+        float v1 = getV1();
+        int color = getLightColor(partialTicks);
+        renderVertex(buffer, x, y, z, -1.0F, -1.0F, u0, v0, color);
+        renderVertex(buffer, x, y, z, -1.0F, 1.0F, u0, v1, color);
+        renderVertex(buffer, x, y, z, 1.0F, 1.0F, u1, v1, color);
+        renderVertex(buffer, x, y, z, 1.0F, -1.0F, u1, v0, color);
     }
 
-    @Override
-    protected void renderVertex(VertexConsumer buffer, Quaternionf quaternion, float x, float y, float z, float xOffset, float yOffset, float quadSize, float u, float v, int packedLight) {
-        vector3f.set(xOffset * billboardSize[0], yOffset * billboardSize[1], 0.0F).rotate(quaternion).add(x, y, z);
-        buffer.addVertex(vector3f.x(), vector3f.y(), vector3f.z()).setUv(u, v).setColor(rCol, gCol, bCol, alpha).setLight(packedLight);
-    }
-
-    @Override
-    public AABB getRenderBoundingBox(float partialTicks) {
-        float size = Math.max(billboardSize[0], billboardSize[1]);
-        return new AABB(x - size, y - size, z - size, x + size, y + size, z + size);
+    protected void renderVertex(
+            VertexConsumer buffer,
+            float x,
+            float y,
+            float z,
+            float xOffset,
+            float yOffset,
+            float u,
+            float v,
+            int packedLight
+    ) {
+        vector3f.set(xOffset * billboardSize[0], yOffset * billboardSize[1], 0.0F).rotate(quaternionf).add(x, y, z);
+        buffer.vertex(vector3f.x(), vector3f.y(), vector3f.z()).uv(u, v).color(rCol, gCol, bCol, alpha).uv2(packedLight).endVertex();
     }
 
     @Override
@@ -547,7 +545,6 @@ public class MolangParticleInstance extends TextureSheetParticle implements IMol
         return preset.renderType;
     }
 
-    @Override
     public FaceCameraMode getFacingCameraMode() {
         return preset.facingCameraMode;
     }

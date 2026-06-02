@@ -10,7 +10,7 @@ import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-import software.bernie.geckolib.animatable.GeoAnimatable;
+import software.bernie.geckolib.core.animatable.GeoAnimatable;
 
 @Pseudo
 @Mixin(targets = "software.bernie.geckolib.renderer.GeoReplacedEntityRenderer", remap = false)
@@ -19,7 +19,7 @@ public abstract class GeoReplacedEntityRendererMixin<E extends Entity, T extends
     @Final
     protected T animatable;
 
-    @Inject(method = "render", at = @At(value = "INVOKE", target = "Lsoftware/bernie/geckolib/renderer/GeoReplacedEntityRenderer;defaultRender(Lcom/mojang/blaze3d/vertex/PoseStack;Lsoftware/bernie/geckolib/animatable/GeoAnimatable;Lnet/minecraft/client/renderer/MultiBufferSource;Lnet/minecraft/client/renderer/RenderType;Lcom/mojang/blaze3d/vertex/VertexConsumer;FFI)V"))
+    @Inject(method = "render", at = @At(value = "INVOKE", target = "Lsoftware/bernie/geckolib/renderer/GeoReplacedEntityRenderer;defaultRender(Lcom/mojang/blaze3d/vertex/PoseStack;Lsoftware/bernie/geckolib/core/animatable/GeoAnimatable;Lnet/minecraft/client/renderer/MultiBufferSource;Lnet/minecraft/client/renderer/RenderType;Lcom/mojang/blaze3d/vertex/VertexConsumer;FFI)V"))
     private void setCurrentEntity(CallbackInfo ci, @Local(argsOnly = true) E entity) {
         GeckoLibHelper.setCurrentEntity(animatable, entity);
     }
