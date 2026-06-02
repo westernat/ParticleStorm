@@ -48,12 +48,18 @@ public final class ParticleStorm {
     public static final RegistryObject<ParticleType<MolangParticleOption>> MOLANG = registerParticleType(REGISTER, "molang");
 
     public static RegistryObject<ParticleType<MolangParticleOption>> registerParticleType(DeferredRegister<ParticleType<?>> register, String name) {
-        return register.register(name, () -> new ParticleType<MolangParticleOption>(false, MolangParticleOption.DESERIALIZER) {
-            @Override
-            public Codec<MolangParticleOption> codec() {
-                return MolangParticleOption.CODEC;
-            }
-        });
+        return register.register(name, MolangParticleType::new);
+    }
+
+    static class MolangParticleType extends ParticleType<MolangParticleOption> {
+        MolangParticleType() {
+            super(false, MolangParticleOption.DESERIALIZER);
+        }
+
+        @Override
+        public Codec<MolangParticleOption> codec() {
+            return MolangParticleOption.CODEC;
+        }
     }
 
     public static final Codec<List<String>> STRING_LIST_CODEC = Codec.either(Codec.STRING, Codec.STRING.listOf()).xmap(
