@@ -94,7 +94,7 @@ repositories {
     }
 }
 
-boolean slim = false
+boolean slim = true
 
 dependencies {
     modCompileOnly "software.bernie.geckolib:geckolib-forge-${minecraft_version}:${geckolib_version}"
