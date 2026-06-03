@@ -81,6 +81,10 @@ public final class PSGameClient {
         return type != ParticleRenderType.PARTICLE_SHEET_OPAQUE && type != ParticleRenderType.PARTICLE_SHEET_LIT;
     }
 
+    public static boolean isNotTranslucent(ParticleRenderType type) {
+        return type == ParticleRenderType.PARTICLE_SHEET_OPAQUE || type == ParticleRenderType.PARTICLE_SHEET_LIT;
+    }
+
     private static ShaderInstance particleNoDiscard;
 
     public static ShaderInstance getParticleNoDiscardShader() {

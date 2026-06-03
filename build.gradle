@@ -6,6 +6,9 @@ plugins {
     id 'net.neoforged.moddev.legacyforge' version '2.0.141'
 }
 
+import groovy.json.JsonOutput
+import groovy.json.JsonSlurper
+
 tasks.named('wrapper', Wrapper).configure {
     distributionType = Wrapper.DistributionType.BIN
 }
@@ -91,7 +94,7 @@ repositories {
     }
 }
 
-boolean slim = true
+boolean slim = false
 
 dependencies {
     modCompileOnly "software.bernie.geckolib:geckolib-forge-${minecraft_version}:${geckolib_version}"
@@ -166,6 +169,33 @@ idea {
         downloadSources = true
         downloadJavadoc = true
     }
+}
+
+def refmapPath = layout.buildDirectory.file("mixin/${mod_id}.refmap.json")
+tasks.register('patchRefmap') {
+    dependsOn compileJava
+    doLast {
+        def refmapFile = refmapPath.get().asFile
+        if (!refmapFile.exists()) {
+            logger.warn("Refmap file not found at ${refmapFile.absolutePath}, skipping patch")
+            return
+        }
+
+        def json = new JsonSlurper().parse(refmapFile) as Map
+        def lambdaMapping = 'Lnet/minecraft/client/particle/ParticleEngine;m_244715_(Lnet/minecraft/util/profiling/ProfilerFiller;Ljava/util/concurrent/CompletableFuture;Ljava/util/concurrent/CompletableFuture;Ljava/lang/Void;)V'
+        def key = 'org/mesdag/particlestorm/mixin/ParticleEngineMixin'
+        def methodName = 'lambda$reload$9'
+
+        json.mappings[key][methodName] = lambdaMapping
+        json.data.searge[key][methodName] = lambdaMapping
+
+        refmapFile.text = JsonOutput.prettyPrint(JsonOutput.toJson(json))
+        logger.lifecycle('Patched refmap with lambda$reload$9 mapping')
+    }
+}
+
+tasks.named('jar') {
+    dependsOn patchRefmap
 }
 
 tasks.withType(JavaCompile) {

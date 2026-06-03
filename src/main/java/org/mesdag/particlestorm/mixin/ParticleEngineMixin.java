@@ -1,5 +1,6 @@
 package org.mesdag.particlestorm.mixin;
 
+import com.llamalad7.mixinextras.sugar.Local;
 import net.minecraft.client.particle.ParticleEngine;
 import net.minecraft.client.renderer.texture.SpriteLoader;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
@@ -16,7 +17,6 @@ import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.ModifyArg;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import java.util.Map;
@@ -51,8 +51,9 @@ public abstract class ParticleEngineMixin implements IParticleEngine {
         RegisterCustomParticleTypeEvent.postEvent(spriteSets);
     }
 
-    @ModifyArg(method = "lambda$reload$9", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/texture/TextureAtlas;upload(Lnet/minecraft/client/renderer/texture/SpriteLoader$Preparations;)V"))
-    private SpriteLoader.Preparations cachePreparations(SpriteLoader.Preparations preparations) {
-        return this.particlestorm$preparations = preparations;
+    // patched on build gradle
+    @Inject(method = "lambda$reload$9", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/texture/TextureAtlas;upload(Lnet/minecraft/client/renderer/texture/SpriteLoader$Preparations;)V", remap = true), remap = false)
+    private void cachePreparations(CallbackInfo ci, @Local SpriteLoader.Preparations spriteloader$preparations) {
+        this.particlestorm$preparations = spriteloader$preparations;
     }
 }

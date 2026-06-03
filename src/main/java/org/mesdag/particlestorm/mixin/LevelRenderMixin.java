@@ -1,6 +1,7 @@
 package org.mesdag.particlestorm.mixin;
 
 import com.llamalad7.mixinextras.sugar.Local;
+import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
@@ -24,7 +25,7 @@ public abstract class LevelRenderMixin {
     @Final
     private Minecraft minecraft;
 
-    @Inject(method = "renderLevel", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/particle/ParticleEngine;render(Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/MultiBufferSource$BufferSource;Lnet/minecraft/client/renderer/LightTexture;Lnet/minecraft/client/Camera;FLnet/minecraft/client/renderer/culling/Frustum;)V", ordinal = 0, remap = false))
+    @Inject(method = "renderLevel", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/particle/ParticleEngine;render(Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/MultiBufferSource$BufferSource;Lnet/minecraft/client/renderer/LightTexture;Lnet/minecraft/client/Camera;FLnet/minecraft/client/renderer/culling/Frustum;)V", ordinal = 0, remap = false, shift = At.Shift.AFTER))
     private void renderTransparency(
             CallbackInfo ci,
             @Local(argsOnly = true) PoseStack poseStack,
@@ -49,10 +50,11 @@ public abstract class LevelRenderMixin {
     ) {
         if (frustum == null) return;
         profilerfiller.popPush("solid_molang_particles");
-        MolangParticleEngine.INSTANCE.renderParticles(lightTexture, minecraft.textureManager, poseStack, camera, partialTick, frustum, type -> !PSGameClient.isTranslucent(type));
+        RenderSystem.depthMask(true);
+        MolangParticleEngine.INSTANCE.renderParticles(lightTexture, minecraft.textureManager, poseStack, camera, partialTick, frustum, PSGameClient::isNotTranslucent);
     }
 
-    @Inject(method = "renderLevel", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/particle/ParticleEngine;render(Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/MultiBufferSource$BufferSource;Lnet/minecraft/client/renderer/LightTexture;Lnet/minecraft/client/Camera;FLnet/minecraft/client/renderer/culling/Frustum;)V", ordinal = 1, remap = false))
+    @Inject(method = "renderLevel", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/particle/ParticleEngine;render(Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/MultiBufferSource$BufferSource;Lnet/minecraft/client/renderer/LightTexture;Lnet/minecraft/client/Camera;FLnet/minecraft/client/renderer/culling/Frustum;)V", ordinal = 1, remap = false, shift = At.Shift.AFTER))
     private void renderNonTransparency(
             CallbackInfo ci,
             @Local(argsOnly = true) PoseStack poseStack,
