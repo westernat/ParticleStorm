@@ -19,7 +19,6 @@ import net.neoforged.neoforge.event.RegisterCommandsEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.network.PacketDistributor;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
-import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import org.mesdag.particlestorm.api.geckolib.GeckoLibHelper;
@@ -42,7 +41,10 @@ import static org.mesdag.particlestorm.network.EmitterSynchronizePacket.KEY;
 public final class ParticleStorm {
     public static final String MODID = "particlestorm";
     public static final Logger LOGGER = LoggerFactory.getLogger("ParticleStorm");
-    public static final boolean DEBUG = Boolean.getBoolean("particlestorm.debug") && LoadingModList.get().getModFileById("geckolib") != null;
+    public static final boolean GECKOLIB_LOADED = LoadingModList.get().getModFileById("geckolib") != null;
+    public static final boolean SODIUM_LOADED = LoadingModList.get().getModFileById("sodium") != null;
+    public static final boolean IRIS_LOADED = LoadingModList.get().getModFileById("iris") != null;
+    public static final boolean DEBUG = Boolean.getBoolean("particlestorm.debug") && GECKOLIB_LOADED;
 
     private static final DeferredRegister<ParticleType<?>> REGISTER = DeferredRegister.create(BuiltInRegistries.PARTICLE_TYPE, MODID);
     public static final DeferredHolder<ParticleType<?>, ParticleType<MolangParticleOption>> MOLANG = registerParticleType(REGISTER, "molang");
@@ -61,11 +63,12 @@ public final class ParticleStorm {
     }
 
     private static void registerPayloadHandlers(RegisterPayloadHandlersEvent event) {
-        PayloadRegistrar registrar = event.registrar("1");
-        registrar.playToClient(EmitterCreationPacketS2C.TYPE, EmitterCreationPacketS2C.STREAM_CODEC, EmitterCreationPacketS2C::handle);
-        registrar.playToClient(EmitterAttachPacketS2C.TYPE, EmitterAttachPacketS2C.STREAM_CODEC, EmitterAttachPacketS2C::handle);
-        registrar.playBidirectional(EmitterRemovalPacket.TYPE, EmitterRemovalPacket.STREAM_CODEC, EmitterRemovalPacket::handle);
-        registrar.playBidirectional(EmitterSynchronizePacket.TYPE, EmitterSynchronizePacket.STREAM_CODEC, EmitterSynchronizePacket::handle);
+        event.registrar("1")
+                .playToClient(EmitterCreationPacketS2C.TYPE, EmitterCreationPacketS2C.STREAM_CODEC, EmitterCreationPacketS2C::handle)
+                .playToClient(EmitterAttachPacketS2C.TYPE, EmitterAttachPacketS2C.STREAM_CODEC, EmitterAttachPacketS2C::handle)
+                .playBidirectional(EmitterRemovalPacket.TYPE, EmitterRemovalPacket.STREAM_CODEC, EmitterRemovalPacket::handle)
+                .playBidirectional(EmitterSynchronizePacket.TYPE, EmitterSynchronizePacket.STREAM_CODEC, EmitterSynchronizePacket::handle)
+        ;
     }
 
     private static void registerCommands(RegisterCommandsEvent event) {

@@ -7,12 +7,14 @@ import net.minecraft.client.renderer.entity.EntityRendererProvider;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.monster.Creeper;
 import org.jetbrains.annotations.Nullable;
+import org.mesdag.particlestorm.ParticleStorm;
 import software.bernie.geckolib.cache.object.BakedGeoModel;
+import software.bernie.geckolib.model.DefaultedEntityGeoModel;
 import software.bernie.geckolib.renderer.GeoReplacedEntityRenderer;
 
 public class ReplacedCreeperRenderer extends GeoReplacedEntityRenderer<Creeper, ReplacedCreeperEntity> {
-    public ReplacedCreeperRenderer(EntityRendererProvider.Context renderManager) {
-        super(renderManager, new ReplacedCreeperModel(), new ReplacedCreeperEntity());
+    public ReplacedCreeperRenderer(EntityRendererProvider.Context context) {
+        super(context, new DefaultedEntityGeoModel<>(ParticleStorm.asResource("creeper")), ReplacedCreeperEntity.INSTANCE);
     }
 
     @Override

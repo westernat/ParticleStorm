@@ -3,12 +3,13 @@
 	"animations": {
 		"animation.test_block.new": {
 			"loop": true,
-			"animation_length": 2,
+			"animation_length": 4,
 			"bones": {
 				"bone": {
-					"rotation": {
-						"vector": [0, "math.sin(query.anim_time * 90) * 180", 0]
-					}
+					"rotation": [0, "-query.anim_time * 90", 0]
+				},
+				"bone2": {
+					"rotation": [0, "-query.anim_time * 90", 0]
 				}
 			},
 			"particle_effects": {

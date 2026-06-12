@@ -3,7 +3,7 @@ plugins {
     id 'eclipse'
     id 'idea'
     id 'maven-publish'
-    id 'net.neoforged.moddev' version '2.0.88'
+    id 'net.neoforged.moddev' version '2.0.140'
 }
 
 version = mod_version
@@ -28,10 +28,7 @@ neoForge {
         mappingsVersion = project.parchment_mappings_version
         minecraftVersion = project.parchment_minecraft_version
     }
-
-    accessTransformers {
-        file('src/main/resources/META-INF/accesstransformer.cfg')
-    }
+    validateAccessTransformers = true
 
     runs {
         client {
@@ -46,12 +43,6 @@ neoForge {
             systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
         }
 
-        data {
-            data()
-
-            programArguments.addAll '--mod', project.mod_id, '--all', '--output', file('src/generated/resources/').getAbsolutePath(), '--existing', file('src/main/resources/').getAbsolutePath()
-        }
-
         configureEach {
             systemProperty 'forge.logging.markers', 'REGISTRIES'
             systemProperty 'particlestorm.debug', 'true'
@@ -61,7 +52,9 @@ neoForge {
                     // 忽略无效指令，避免有的人没安装 JetBrain Runtime 无法启动游戏
                     "-XX:+IgnoreUnrecognizedVMOptions",
                     // 启用 JetBrain Runtime 热重载功能
-                    "-XX:+AllowEnhancedClassRedefinition"
+                    "-XX:+AllowEnhancedClassRedefinition",
+                    // 并发修改检测
+                    //"-javaagent:mods/CMESuckMyDuck-1.0.5.jar=net/minecraft/util/ClassInstanceMultiMap;byClass;Map;nonstatic"
             ])
             if (isRunningInIdea) {
                 systemProperty "terminal.jline", "true"
@@ -94,7 +87,7 @@ repositories {
 
 dependencies {
     compileOnly "software.bernie.geckolib:geckolib-neoforge-${minecraft_version}:${geckolib_version}"
-//    localRuntime "software.bernie.geckolib:geckolib-neoforge-${minecraft_version}:${geckolib_version}"
+    localRuntime "software.bernie.geckolib:geckolib-neoforge-${minecraft_version}:${geckolib_version}"
 }
 
 tasks.withType(ProcessResources).configureEach {

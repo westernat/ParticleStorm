@@ -4,16 +4,15 @@ import net.neoforged.bus.api.Event;
 import net.neoforged.fml.event.IModBusEvent;
 
 import java.util.function.BiConsumer;
-import java.util.function.ToDoubleFunction;
 
 public class RegisterMolangQueriesEvent extends Event implements IModBusEvent {
-    private final BiConsumer<String, ToDoubleFunction<MolangInstance>> variable;
+    private final BiConsumer<String, ToFloatFunction<MolangInstance>> variable;
 
-    public RegisterMolangQueriesEvent(BiConsumer<String, ToDoubleFunction<MolangInstance>> variable) {
+    public RegisterMolangQueriesEvent(BiConsumer<String, ToFloatFunction<MolangInstance>> variable) {
         this.variable = variable;
     }
 
-    public void registerVariable(String name, ToDoubleFunction<MolangInstance> value) {
+    public void registerVariable(String name, ToFloatFunction<MolangInstance> value) {
         variable.accept(name, value);
     }
 }

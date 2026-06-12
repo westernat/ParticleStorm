@@ -9,11 +9,8 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import software.bernie.geckolib.animatable.GeoAnimatable;
-import software.bernie.geckolib.animation.AnimatableManager;
 import software.bernie.geckolib.animation.AnimationController;
-import software.bernie.geckolib.animation.AnimationState;
 import software.bernie.geckolib.cache.object.GeoBone;
-import software.bernie.geckolib.model.GeoModel;
 
 import java.util.Collection;
 
@@ -24,7 +21,7 @@ public abstract class AnimationProcessorMixin<T extends GeoAnimatable> {
     public abstract Collection<GeoBone> getRegisteredBones();
 
     @Inject(method = "tickAnimation", at = @At(value = "INVOKE", target = "Lsoftware/bernie/geckolib/animation/AnimationController;process(Lsoftware/bernie/geckolib/model/GeoModel;Lsoftware/bernie/geckolib/animation/AnimationState;Ljava/util/Map;Ljava/util/Map;DZ)V"))
-    private void tickLocators(T animatable, GeoModel<T> model, AnimatableManager<T> animatableManager, double animTime, AnimationState<T> state, boolean crashWhenCantFindBone, CallbackInfo ci, @Local AnimationController<T> controller) {
+    private void fillLocators(CallbackInfo ci, @Local(name = "controller") AnimationController<T> controller) {
         IAnimationController.of(controller).particlestorm$setBonesWhichHasLocators(getRegisteredBones());
     }
 }

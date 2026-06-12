@@ -4,14 +4,11 @@ import org.mesdag.particlestorm.api.MolangInstance;
 import org.mesdag.particlestorm.data.molang.compiler.MathValue;
 import org.mesdag.particlestorm.data.molang.compiler.function.MathFunction;
 
-/**
- * {@link MathFunction} value supplier
- *
- * <p>
- * <b>Contract:</b>
- * <br>
- * Returns the closest integer value to the input value
- */
+/// [MathFunction] value supplier
+///
+/// **Contract:**
+///
+/// Returns the closest integer value to the input value
 public final class RoundFunction extends MathFunction {
     private final MathValue value;
 
@@ -27,7 +24,7 @@ public final class RoundFunction extends MathFunction {
     }
 
     @Override
-    public double compute(MolangInstance instance) {
+    public float compute(MolangInstance instance) {
         return Math.round(this.value.get(instance));
     }
 

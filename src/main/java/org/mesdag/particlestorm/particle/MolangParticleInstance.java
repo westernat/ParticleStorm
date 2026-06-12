@@ -5,16 +5,18 @@ import net.minecraft.client.Camera;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.particle.ParticleRenderType;
 import net.minecraft.client.particle.TextureSheetParticle;
+import net.minecraft.client.renderer.culling.Frustum;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.core.particles.ParticleGroup;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
-import net.neoforged.fml.ModList;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
+import org.mesdag.particlestorm.ParticleStorm;
 import org.mesdag.particlestorm.api.IEventNode;
 import org.mesdag.particlestorm.api.IMolangParticleInstance;
 import org.mesdag.particlestorm.api.IParticleComponent;
@@ -26,9 +28,6 @@ import java.util.List;
 import java.util.Optional;
 
 public class MolangParticleInstance extends TextureSheetParticle implements IMolangParticleInstance {
-    public static final int FULL_LIGHT = 0xF000F0;
-    private static final boolean isSodiumLoaded = ModList.get().isLoaded("sodium");
-
     protected final ParticlePreset preset;
     protected ParticleVariableTable vars;
     protected final float originX;
@@ -37,20 +36,20 @@ public class MolangParticleInstance extends TextureSheetParticle implements IMol
     protected Vector3f acceleration = new Vector3f();
     protected Vector3f facingDirection = new Vector3f();
     protected Vector3f initialSpeed = new Vector3f();
-    protected float xRot = 0.0F;
-    protected float yRot = 0.0F;
-    protected float xRotO = 0.0F;
-    protected float yRotO = 0.0F;
-    protected float rolld = 0.0F;
-    protected boolean hasCollision = false;
-    protected float collisionDrag = 0.0F;
-    protected float coefficientOfRestitution = 0.0F;
-    protected boolean expireOnContact = false;
+    protected float xRot;
+    protected float yRot;
+    protected float xRotO;
+    protected float yRotO;
+    protected float rolld;
+    protected boolean hasCollision;
+    protected float collisionDrag;
+    protected float coefficientOfRestitution;
+    protected boolean expireOnContact;
 
-    protected final double particleRandom1;
-    protected final double particleRandom2;
-    protected final double particleRandom3;
-    protected final double particleRandom4;
+    protected final float particleRandom1;
+    protected final float particleRandom2;
+    protected final float particleRandom3;
+    protected final float particleRandom4;
     protected List<IParticleComponent> components;
     protected ParticleEmitter emitter;
 
@@ -60,16 +59,17 @@ public class MolangParticleInstance extends TextureSheetParticle implements IMol
     protected float[] uvSize;
     protected float[] uvStep;
     protected int maxFrame = 1;
-    protected int currentFrame = 0;
+    protected int currentFrame;
     protected float[] UV;
 
     protected boolean insideKillPlane;
     protected ParticleGroup particleGroup;
-    protected int lastTimeline = 0;
+    protected int lastTimeline;
 
     public MolangParticleInstance(ParticlePreset preset, ClientLevel level, double x, double y, double z, ExtendMutableSpriteSet sprites) {
         super(level, x, y, z);
         this.friction = 1.0F;
+        this.quadSize = 0; // as collision radius
         this.preset = preset;
         setSprite(sprites.get(preset.effect.description.parameters().getTextureIndex()));
         this.originX = ((ITextureAtlasSprite) sprite).particlestorm$getOriginX();
@@ -78,10 +78,10 @@ public class MolangParticleInstance extends TextureSheetParticle implements IMol
         this.scaleV = sprite.contents().height() * preset.invTextureHeight;
 
         RandomSource random = level.getRandom();
-        this.particleRandom1 = random.nextDouble();
-        this.particleRandom2 = random.nextDouble();
-        this.particleRandom3 = random.nextDouble();
-        this.particleRandom4 = random.nextDouble();
+        this.particleRandom1 = random.nextFloat();
+        this.particleRandom2 = random.nextFloat();
+        this.particleRandom3 = random.nextFloat();
+        this.particleRandom4 = random.nextFloat();
     }
 
     @Override
@@ -158,6 +158,16 @@ public class MolangParticleInstance extends TextureSheetParticle implements IMol
     @Override
     public void setExpireOnContact(boolean b) {
         this.expireOnContact = b;
+    }
+
+    @Override
+    public void setCollisionRadius(float radius) {
+        this.quadSize = radius;
+    }
+
+    @Override
+    public float getCollisionRadius() {
+        return quadSize;
     }
 
     @Override
@@ -314,6 +324,16 @@ public class MolangParticleInstance extends TextureSheetParticle implements IMol
     }
 
     @Override
+    public void discard() {
+        remove();
+    }
+
+    @Override
+    public boolean isDiscarded() {
+        return removed;
+    }
+
+    @Override
     public VariableTable getVars() {
         return vars;
     }
@@ -324,22 +344,22 @@ public class MolangParticleInstance extends TextureSheetParticle implements IMol
     }
 
     @Override
-    public double getRandom1() {
+    public float getRandom1() {
         return particleRandom1;
     }
 
     @Override
-    public double getRandom2() {
+    public float getRandom2() {
         return particleRandom2;
     }
 
     @Override
-    public double getRandom3() {
+    public float getRandom3() {
         return particleRandom3;
     }
 
     @Override
-    public double getRandom4() {
+    public float getRandom4() {
         return particleRandom4;
     }
 
@@ -380,8 +400,40 @@ public class MolangParticleInstance extends TextureSheetParticle implements IMol
         }
     }
 
-    private static final Quaternionf quaternionf = new Quaternionf();
+    protected static final Quaternionf quaternionf = new Quaternionf();
+    protected static final Vector3f vector3f = new Vector3f();
 
+    // 在render前调用
+    @Override
+    public boolean isVisible(Camera camera, Frustum frustum, float partialTick) {
+        Vec3 camPos = camera.getPosition();
+        if (emitter.isLocalSpace()) {
+            emitter.local2World(vector3f.set(
+                    (float) Mth.lerp(partialTick, xo, x),
+                    (float) Mth.lerp(partialTick, yo, y),
+                    (float) Mth.lerp(partialTick, zo, z)
+            ), partialTick);
+            float size = Math.max(billboardSize[0], billboardSize[1]);
+            boolean inFrustum = frustum.cubeInFrustum(
+                    vector3f.x - size,
+                    vector3f.y - size,
+                    vector3f.z - size,
+                    vector3f.x + size,
+                    vector3f.y + size,
+                    vector3f.z + size
+            );
+            vector3f.sub((float) camPos.x, (float) camPos.y, (float) camPos.z);
+            return inFrustum;
+        }
+        vector3f.set(
+                (float) (Mth.lerp(partialTick, xo, x) - camPos.x),
+                (float) (Mth.lerp(partialTick, yo, y) - camPos.y),
+                (float) (Mth.lerp(partialTick, zo, z) - camPos.z)
+        );
+        return IMolangParticleInstance.super.isVisible(camera, frustum, partialTick);
+    }
+
+    // 在isVisible后调用
     @Override
     public void render(VertexConsumer buffer, Camera camera, float partialTicks) {
         quaternionf.identity();
@@ -389,12 +441,12 @@ public class MolangParticleInstance extends TextureSheetParticle implements IMol
         if (xRot != 0.0F) quaternionf.rotateX(Mth.lerp(partialTicks, xRotO, xRot));
         if (yRot != 0.0F) quaternionf.rotateY(Mth.lerp(partialTicks, yRotO, yRot));
         if (roll != 0.0F) quaternionf.rotateZ(Mth.lerp(partialTicks, oRoll, roll));
-        renderRotatedQuad(buffer, camera, quaternionf, partialTicks);
+        renderRotatedQuad(buffer, quaternionf, vector3f.x, vector3f.y, vector3f.z, partialTicks);
     }
 
     @Override
     protected void renderRotatedQuad(VertexConsumer buffer, Quaternionf quaternion, float x, float y, float z, float partialTicks) {
-        if (isSodiumLoaded) {
+        if (ParticleStorm.SODIUM_LOADED) {
             float f1 = getU0();
             float f2 = getU1();
             float f3 = getV0();
@@ -411,18 +463,34 @@ public class MolangParticleInstance extends TextureSheetParticle implements IMol
 
     @Override
     protected void renderVertex(VertexConsumer buffer, Quaternionf quaternion, float x, float y, float z, float xOffset, float yOffset, float quadSize, float u, float v, int packedLight) {
-        Vector3f vector3f = new Vector3f(xOffset * billboardSize[0], yOffset * billboardSize[1], 0.0F).rotate(quaternion).add(x, y, z);
+        vector3f.set(xOffset * billboardSize[0], yOffset * billboardSize[1], 0.0F).rotate(quaternion).add(x, y, z);
         buffer.addVertex(vector3f.x(), vector3f.y(), vector3f.z()).setUv(u, v).setColor(rCol, gCol, bCol, alpha).setLight(packedLight);
+    }
+
+    @Override
+    public AABB getRenderBoundingBox(float partialTicks) {
+        float size = Math.max(billboardSize[0], billboardSize[1]);
+        return new AABB(x - size, y - size, z - size, x + size, y + size, z + size);
     }
 
     @Override
     public void move(double x, double y, double z) {
         if (stoppedByCollision) return;
+
         double d0 = x;
         double d1 = y;
         double d2 = z;
-        if (hasPhysics && hasCollision && (x != 0.0 || y != 0.0 || z != 0.0) && x * x + y * y + z * z < MAXIMUM_COLLISION_VELOCITY_SQUARED) {
-            Vec3 vec3 = Entity.collideBoundingBox(null, new Vec3(x, y, z), getBoundingBox(), level, List.of());
+        if (hasPhysics && hasCollision && (x != 0.0 || y != 0.0 || z != 0.0) && Mth.lengthSquared(x, y, z) < MAXIMUM_COLLISION_VELOCITY_SQUARED) {
+            AABB aabb = getBoundingBox();
+            if (emitter.isLocalSpace()) {
+                emitter.local2World(vector3f.set(aabb.minX, aabb.minY, aabb.minZ), 1);
+                float mx = vector3f.x;
+                float my = vector3f.y;
+                float mz = vector3f.z;
+                emitter.local2World(vector3f.set(aabb.maxX, aabb.maxY, aabb.maxZ), 1);
+                aabb = new AABB(mx, my, mz, vector3f.x, vector3f.y, vector3f.z);
+            }
+            Vec3 vec3 = Entity.collideBoundingBox(null, new Vec3(x, y, z), aabb, level, List.of());
             if (x != vec3.x) {
                 this.xd = -Mth.sign(xd) * (Math.abs(xd) - collisionDrag) * coefficientOfRestitution;
             }
@@ -447,13 +515,12 @@ public class MolangParticleInstance extends TextureSheetParticle implements IMol
 
         if (hasPhysics && hasCollision) {
             this.onGround = d1 != y && d1 < 0.0;
-            boolean collided = d0 != x || d2 != z;
 
-            if (onGround || collided) {
+            if (onGround || (d0 != x || d2 != z)) {
                 if (!preset.collisionEvents.isEmpty()) {
                     for (ParticleMotionCollision.Event event : preset.collisionEvents) {
                         float tickSpeed = event.minSpeed() * getInvTickRate();
-                        if (tickSpeed * tickSpeed < xd * xd + yd * yd + zd * zd) {
+                        if (tickSpeed * tickSpeed < Mth.lengthSquared(xd, yd, zd)) {
                             for (IEventNode node : preset.effect.events.get(event.event()).values()) {
                                 node.execute(this);
                             }
@@ -487,7 +554,7 @@ public class MolangParticleInstance extends TextureSheetParticle implements IMol
 
     @Override
     protected int getLightColor(float partialTick) {
-        return preset.environmentLighting ? super.getLightColor(partialTick) : FULL_LIGHT;
+        return preset.environmentLighting ? super.getLightColor(partialTick) : 0xF000F0;
     }
 
     @Override

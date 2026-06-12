@@ -2,6 +2,7 @@ package org.mesdag.particlestorm.data.component;
 
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
+import net.minecraft.world.phys.Vec3;
 import org.mesdag.particlestorm.api.IMolangParticleInstance;
 import org.mesdag.particlestorm.api.IParticleComponent;
 import org.mesdag.particlestorm.data.molang.FloatMolangExp;
@@ -25,9 +26,9 @@ import java.util.List;
 ///                         Evaluated every frame
 public record ParticleMotionParametric(FloatMolangExp3 relativePosition, FloatMolangExp3 direction, FloatMolangExp rotation) implements IParticleComponent {
     public static final Codec<ParticleMotionParametric> CODEC = RecordCodecBuilder.create(instance -> instance.group(
-            FloatMolangExp3.CODEC.fieldOf("relative_position").orElse(FloatMolangExp3.ZERO).forGetter(ParticleMotionParametric::relativePosition),
-            FloatMolangExp3.CODEC.fieldOf("direction").orElse(FloatMolangExp3.ZERO).forGetter(ParticleMotionParametric::direction),
-            FloatMolangExp.CODEC.fieldOf("rotation").orElse(FloatMolangExp.ZERO).forGetter(ParticleMotionParametric::rotation)
+            FloatMolangExp3.CODEC.lenientOptionalFieldOf("relative_position", FloatMolangExp3.ZERO).forGetter(ParticleMotionParametric::relativePosition),
+            FloatMolangExp3.CODEC.lenientOptionalFieldOf("direction", FloatMolangExp3.ZERO).forGetter(ParticleMotionParametric::direction),
+            FloatMolangExp.CODEC.lenientOptionalFieldOf("rotation", FloatMolangExp.ZERO).forGetter(ParticleMotionParametric::rotation)
     ).apply(instance, ParticleMotionParametric::new));
 
     @Override
@@ -46,7 +47,8 @@ public record ParticleMotionParametric(FloatMolangExp3 relativePosition, FloatMo
     @Override
     public void update(IMolangParticleInstance instance) {
         float[] pos = relativePosition.calculate(instance);
-        instance.moveDirectly(pos[0], pos[1], pos[2]);
+        Vec3 position = instance.getEmitter().getPosition();
+        instance.self().setPos(position.x + pos[0], position.y + pos[1], position.z + pos[2]);
         if (direction != FloatMolangExp3.ZERO) {
             float[] dir = direction.calculate(instance);
             instance.self().setParticleSpeed(dir[0], dir[1], dir[2]);

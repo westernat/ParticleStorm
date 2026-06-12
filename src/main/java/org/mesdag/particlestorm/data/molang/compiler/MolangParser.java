@@ -10,6 +10,7 @@ import org.mesdag.particlestorm.data.molang.compiler.function.generic.*;
 import org.mesdag.particlestorm.data.molang.compiler.function.limit.ClampFunction;
 import org.mesdag.particlestorm.data.molang.compiler.function.limit.MaxFunction;
 import org.mesdag.particlestorm.data.molang.compiler.function.limit.MinFunction;
+import org.mesdag.particlestorm.data.molang.compiler.function.misc.IsBlockFunction;
 import org.mesdag.particlestorm.data.molang.compiler.function.misc.PiFunction;
 import org.mesdag.particlestorm.data.molang.compiler.function.misc.ToDegFunction;
 import org.mesdag.particlestorm.data.molang.compiler.function.misc.ToRadFunction;
@@ -31,7 +32,7 @@ import java.util.regex.Pattern;
 import static org.mesdag.particlestorm.data.molang.compiler.MolangQueries.applyPrefixAliases;
 
 public class MolangParser {
-    private static final Pattern EXPRESSION_FORMAT = Pattern.compile("^[\\w\\s_+-/*%^&|<>=!?:.,()]+$");
+    private static final Pattern EXPRESSION_FORMAT = Pattern.compile("^[\\w\\s_+-/*%^&|<>=!?:.,()']+$");
     private static final Pattern WHITESPACE = Pattern.compile("\\s");
     private static final Pattern NUMERIC = Pattern.compile("^-?\\d+(\\.\\d+)?$");
     private static final String MOLANG_RETURN = "return ";
@@ -66,6 +67,7 @@ public class MolangParser {
         map.put("math.to_deg", ToDegFunction::new);
         map.put("math.to_rad", ToRadFunction::new);
         map.put("math.trunc", TruncateFunction::new);
+        map.put("query.is_block", IsBlockFunction::new);
     });
     private final VariableTable table;
 
@@ -247,7 +249,7 @@ public class MolangParser {
 
     public MathValue parseSymbols(List<Either<String, List<MathValue>>> symbols) throws IllegalArgumentException {
         if (symbols.size() == 2) {
-            Optional<String> prefix = symbols.getFirst().left().filter(left -> left.startsWith("-") || left.startsWith("!") || isFunctionRegistered(left));
+            Optional<String> prefix = symbols.getFirst().left().filter(left -> left.startsWith("-") || left.startsWith("!") || isFunctionRegistered(MolangQueries.applyQueryAliases(left)));
             Optional<List<MathValue>> group = symbols.get(1).right();
 
             if (prefix.isPresent() && group.isPresent())
@@ -285,7 +287,10 @@ public class MolangParser {
                 return new BooleanNegate(compileSingleValue(Either.left(string.substring(1))));
 
             if (isNumeric(string))
-                return new Constant(Double.parseDouble(string));
+                return new Constant(Float.parseFloat(string));
+
+            if (string.startsWith("'") && string.endsWith("'"))
+                return new StringValue(string.substring(1, string.length() - 1));
 
             if (isLikelyVariable(string)) {
                 if (string.startsWith("-"))
@@ -389,6 +394,8 @@ public class MolangParser {
 
             return new Negative(compileFunction(name.substring(1), args));
         }
+
+        name = MolangQueries.applyQueryAliases(name);
 
         if (!isFunctionRegistered(name))
             return null;

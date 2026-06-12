@@ -2,12 +2,12 @@ package org.mesdag.particlestorm.data.molang;
 
 import org.jetbrains.annotations.Nullable;
 import org.mesdag.particlestorm.api.MolangInstance;
+import org.mesdag.particlestorm.api.ToFloatFunction;
 import org.mesdag.particlestorm.data.molang.compiler.value.Variable;
 
 import java.util.Hashtable;
 import java.util.Map;
 import java.util.function.Function;
-import java.util.function.ToDoubleFunction;
 
 public class VariableTable {
     public final Map<String, Variable> table;
@@ -22,16 +22,16 @@ public class VariableTable {
         this(new Hashtable<>(), parent);
     }
 
-    public double getValue(String name, MolangInstance instance) {
+    public float getValue(String name, MolangInstance instance) {
         Variable variable = table.get(name);
         if (variable == null) {
-            if (parent == null) return 0.0;
+            if (parent == null) return 0;
             return parent.getValue(name, instance);
         }
         return variable.get(instance);
     }
 
-    public void setValue(String name, ToDoubleFunction<MolangInstance> function) {
+    public void setValue(String name, ToFloatFunction<MolangInstance> function) {
         Variable variable = table.get(name);
         if (variable == null) {
             table.put(name, new Variable(name, function));

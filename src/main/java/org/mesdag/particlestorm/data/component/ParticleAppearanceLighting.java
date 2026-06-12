@@ -14,6 +14,8 @@ public final class ParticleAppearanceLighting implements IParticleComponent {
     public static final ParticleAppearanceLighting INSTANCE = new ParticleAppearanceLighting();
     public static final Codec<ParticleAppearanceLighting> CODEC = MapCodec.of(Encoder.empty(), Decoder.unit(ParticleAppearanceLighting.INSTANCE)).codec();
 
+    private ParticleAppearanceLighting() {}
+
     @Override
     public Codec<ParticleAppearanceLighting> codec() {
         return CODEC;

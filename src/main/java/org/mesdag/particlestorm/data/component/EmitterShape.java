@@ -3,12 +3,12 @@ package org.mesdag.particlestorm.data.component;
 import com.mojang.datafixers.util.Either;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.particle.Particle;
 import net.minecraft.core.particles.ParticleGroup;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
 import net.minecraft.util.StringRepresentable;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityDimensions;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Quaternionf;
@@ -18,12 +18,13 @@ import org.mesdag.particlestorm.data.MathHelper;
 import org.mesdag.particlestorm.data.molang.FloatMolangExp;
 import org.mesdag.particlestorm.data.molang.FloatMolangExp3;
 import org.mesdag.particlestorm.data.molang.MolangExp;
-import org.mesdag.particlestorm.particle.EmitterPreset;
+import org.mesdag.particlestorm.particle.MolangParticleEngine;
 import org.mesdag.particlestorm.particle.ParticleEmitter;
 import org.mesdag.particlestorm.particle.ParticlePreset;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Queue;
 
 public abstract sealed class EmitterShape implements IEmitterComponent permits EmitterShape.Disc, EmitterShape.Box, EmitterShape.EntityAABB, EmitterShape.Point, EmitterShape.Sphere {
     protected final boolean surfaceOnly;
@@ -38,16 +39,16 @@ public abstract sealed class EmitterShape implements IEmitterComponent permits E
     }
 
     @Override
-    public void update(ParticleEmitter entity) {
-        if (entity.spawned) return;
-        if (entity.spawnDuration <= 1 || entity.age % entity.spawnDuration == 0) {
-            for (int num = 0; num < entity.spawnRate; num++) {
-                if (hasSpaceInParticleLimit(entity)) {
-                    emittingParticle(entity);
+    public void update(ParticleEmitter emitter) {
+        if (emitter.spawned) return;
+        if (emitter.spawnDuration <= 1 || emitter.age % emitter.spawnDuration == 0) {
+            for (int num = 0; num < emitter.spawnRate; num++) {
+                if (hasSpaceInParticleLimit(emitter)) {
+                    emittingParticle(emitter);
                 }
             }
-            if (entity.getPreset().emitterRateType == EmitterRate.Type.INSTANT) {
-                entity.spawned = true;
+            if (emitter.getPreset().emitterRateType == EmitterRate.Type.INSTANT) {
+                emitter.spawned = true;
             }
         }
     }
@@ -77,28 +78,21 @@ public abstract sealed class EmitterShape implements IEmitterComponent permits E
             component.apply(instance);
         }
         speed.mul(instance.getInitialSpeed());
-        if (emitter.parentMode == ParticleEmitter.ParentMode.LOCATOR) {
-            position.x *= -1;
-            position.y *= -1;
-            speed.x *= -1;
-            speed.y *= -1;
-        }
-        EmitterPreset emitterPreset = emitter.getPreset();
-        if (emitter.parentMode != ParticleEmitter.ParentMode.WORLD && emitterPreset.localPosition && !emitterPreset.localRotation) {
-            speed.x *= -1;
-            speed.z *= -1;
-        }
-        if (emitterPreset.localRotation) {
-            MathHelper.applyEuler(emitter.rot.x, emitter.rot.y, 0.0F, position);
-        }
-        if (emitterPreset.localPosition) {
+        speed.mul(emitter.invTickRate);
+
+        if (emitter.isLocalSpace()) {
+            if (!emitter.getPreset().localPosition) {
+                Vec3 emitterPos = emitter.getPosition();
+                position.add((float) emitterPos.x, (float) emitterPos.y, (float) emitterPos.z);
+            }
+            Entity attachedEntity = emitter.getAttachedEntity();
+            if (attachedEntity != null && emitter.getPreset().localVelocity) {
+                Vec3 emitterVec = attachedEntity.getDeltaMovement();
+                speed.add((float) emitterVec.x, (float) emitterVec.y, (float) emitterVec.z);
+            }
+        } else {
             Vec3 emitterPos = emitter.getPosition();
             position.add((float) emitterPos.x, (float) emitterPos.y, (float) emitterPos.z);
-        }
-        speed.mul(emitter.invTickRate);
-        if (emitter.getAttachedEntity() != null && emitterPreset.localVelocity) {
-            Vec3 emitterVec = emitter.getAttachedEntity().getDeltaMovement();
-            speed.add((float) emitterVec.x, (float) emitterVec.y, (float) emitterVec.z);
         }
 
         instance.setParticleSpeed(speed.x, speed.y, speed.z);
@@ -109,20 +103,24 @@ public abstract sealed class EmitterShape implements IEmitterComponent permits E
         for (IParticleComponent component : particlePreset.effect.orderedParticleComponents) {
             component.apply(instance);
         }
+        if (instance.isDiscarded()) {
+            return;
+        }
         instance.setComponents(particlePreset.effect.orderedParticleComponentsWhichRequireUpdate);
         if (!particlePreset.motionDynamic) instance.setParticleSpeed(0.0, 0.0, 0.0);
-        Minecraft.getInstance().particleEngine.add(instance);
+        MolangParticleEngine.INSTANCE.addParticle(instance);
     }
 
     private static boolean hasSpaceInParticleLimit(ParticleEmitter emitter) {
         ParticleGroup particleGroup = emitter.particleGroup;
-        return Minecraft.getInstance().particleEngine.trackedParticleCounts.getInt(particleGroup) < particleGroup.getLimit();
+        Queue<IMolangParticleInstance> queue = MolangParticleEngine.INSTANCE.getParticlesForEmitter(emitter);
+        return queue == null || queue.size() < particleGroup.getLimit();
     }
 
     /// This component spawns particles using a disc shape, particles can be spawned inside the shape or on its outer perimeter.
     public static final class Disc extends EmitterShape {
         public static final Codec<Disc> CODEC = RecordCodecBuilder.create(instance -> instance.group(
-                FloatMolangExp3.CODEC.fieldOf("offset").orElseGet(() -> FloatMolangExp3.ZERO).forGetter(disc -> disc.offset),
+                FloatMolangExp3.CODEC.fieldOf("offset").orElse(FloatMolangExp3.ZERO).forGetter(disc -> disc.offset),
                 FloatMolangExp.CODEC.fieldOf("radius").orElse(FloatMolangExp.ONE).forGetter(disc -> disc.radius),
                 PlaneNormal.CODEC.fieldOf("plane_normal").orElse(PlaneNormal.Y).forGetter(disc -> disc.planeNormal),
                 Direction.CODEC.fieldOf("direction").orElse(Direction.OUTWARDS).forGetter(disc -> disc.direction),
@@ -247,7 +245,11 @@ public abstract sealed class EmitterShape implements IEmitterComponent permits E
 
         @Override
         public List<MolangExp> getAllMolangExp() {
-            return List.of(direction.direct.exp1(), direction.direct.exp2(), direction.direct.exp3());
+            return List.of(
+                    offset.exp1(), offset.exp2(), offset.exp3(),
+                    halfDimensions.exp1(), halfDimensions.exp2(), halfDimensions.exp3(),
+                    direction.direct.exp1(), direction.direct.exp2(), direction.direct.exp3()
+            );
         }
 
         @Override

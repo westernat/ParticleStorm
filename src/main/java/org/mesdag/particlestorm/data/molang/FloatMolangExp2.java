@@ -16,6 +16,11 @@ public record FloatMolangExp2(FloatMolangExp exp1, FloatMolangExp exp2) {
         return new float[]{exp1.calculate(instance), exp2.calculate(instance)};
     }
 
+    public void markImmutable() {
+        exp1.markImmutable();
+        exp2.markImmutable();
+    }
+
     @Deprecated
     public boolean initialized() {
         return exp1.initialized() && exp2.initialized();
