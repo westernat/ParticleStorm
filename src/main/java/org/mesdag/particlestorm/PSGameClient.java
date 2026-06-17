@@ -206,8 +206,8 @@ public final class PSGameClient {
         IEventNode.register("sequence", EventSequence.CODEC);
         IEventNode.register("weight", EventRandomize.Weight.CODEC);
         IEventNode.register("randomize", EventRandomize.CODEC);
-        IEventNode.register("particle_effect", ParticleEffect.CODEC.codec());
-        IEventNode.register("sound_effect", SoundEffect.CODEC.codec());
+        IEventNode.register("particle_effect", ParticleEffect.CODEC);
+        IEventNode.register("sound_effect", SoundEffect.CODEC);
         IEventNode.register("expression", NodeMolangExp.CODEC);
         IEventNode.register("log", EventLog.CODEC);
 

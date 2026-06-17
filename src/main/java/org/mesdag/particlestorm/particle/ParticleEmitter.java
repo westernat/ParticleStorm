@@ -107,6 +107,7 @@ public class ParticleEmitter implements MolangInstance {
         this.expression = effect.preEffectExpression();
         updateRandoms(level.random);
         this.invTickRate = 1.0F / level.tickRateManager().tickrate();
+        this.hideOutline = parent.hideOutline;
         this.afterParentInit = () -> {
             switch (effect.type()) {
                 case EMITTER -> {}

@@ -1,7 +1,6 @@
 package org.mesdag.particlestorm.data.event;
 
 import com.mojang.serialization.Codec;
-import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import io.netty.buffer.ByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;
@@ -24,7 +23,7 @@ import java.util.Locale;
 import java.util.function.IntFunction;
 
 public record ParticleEffect(ResourceLocation effect, Type type, MolangExp preEffectExpression, List<String> sharedVars) implements IEventNode {
-    public static final MapCodec<ParticleEffect> CODEC = RecordCodecBuilder.mapCodec(instance -> instance.group(
+    public static final Codec<ParticleEffect> CODEC = RecordCodecBuilder.create(instance -> instance.group(
             ResourceLocation.CODEC.fieldOf("effect").forGetter(ParticleEffect::effect),
             Type.CODEC.fieldOf("type").forGetter(ParticleEffect::type),
             MolangExp.CODEC.fieldOf("pre_effect_expression").orElse(MolangExp.EMPTY).forGetter(ParticleEffect::preEffectExpression),
