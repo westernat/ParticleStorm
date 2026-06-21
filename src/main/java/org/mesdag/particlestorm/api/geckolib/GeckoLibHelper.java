@@ -145,10 +145,9 @@ public final class GeckoLibHelper {
         }
     }
 
-    private static final PoseStack poseStack = new PoseStack();
     private static final Quaternionf quaternion = new Quaternionf();
 
-    public static void transformLocator(GeoBone bone, GeoAnimatable animatable, float partialTick) {
+    public static void transformLocator(PoseStack poseStack, GeoBone bone, GeoAnimatable animatable, float partialTick) {
         Map<String, LocatorValue> locators = IGeoBone.of(bone).particlestorm$getLocators();
         if (locators == null || locators.isEmpty()) return;
         poseStack.pushPose();

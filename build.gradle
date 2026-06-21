@@ -41,7 +41,7 @@ legacyForge {
         }
         server {
             server()
-            programArgument '--nogui'
+//            programArgument '--nogui'
             systemProperty 'forge.enabledGameTestNamespaces', project.mod_id
         }
         data {
@@ -155,7 +155,7 @@ publishing {
     repositories {
         maven {
             name = "Confluence"
-            url = version.toString().endsWith("SNAPSHOT") ? snapshotsUrl : releasesUrl
+            url = mod_version.split("\\.").length == 4 ? snapshotsUrl : releasesUrl
             credentials {
                 username = System.getenv("MAGIC_TEAM_USERNAME")
                 password = System.getenv("MAGIC_TEAM_TOKEN")
