@@ -8,9 +8,9 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.ExtraCodecs;
 import net.minecraft.util.Mth;
 import net.minecraft.util.StringRepresentable;
+import net.neoforged.neoforge.common.util.NeoForgeExtraCodecs;
 import org.mesdag.particlestorm.api.IMolangParticleInstance;
 import org.mesdag.particlestorm.api.IParticleComponent;
-import org.mesdag.particlestorm.data.DuplicateFieldDecoder;
 import org.mesdag.particlestorm.data.molang.FloatMolangExp;
 import org.mesdag.particlestorm.data.molang.FloatMolangExp2;
 import org.mesdag.particlestorm.data.molang.FloatMolangExp3;
@@ -23,7 +23,7 @@ public record ParticleAppearanceBillboard(FloatMolangExp2 size, FaceCameraMode f
     public static final ResourceLocation ID = ResourceLocation.withDefaultNamespace("particle_appearance_billboard");
     public static final Codec<ParticleAppearanceBillboard> CODEC = RecordCodecBuilder.create(instance -> instance.group(
             FloatMolangExp2.CODEC.fieldOf("size").forGetter(ParticleAppearanceBillboard::size),
-            DuplicateFieldDecoder.fieldOf(FaceCameraMode.CODEC, "face_camera_mode", "facing_camera_mode").forGetter(ParticleAppearanceBillboard::faceCameraMode),
+            NeoForgeExtraCodecs.aliasedFieldOf(FaceCameraMode.CODEC, "face_camera_mode", "facing_camera_mode").forGetter(ParticleAppearanceBillboard::faceCameraMode),
             Direction.CODEC.lenientOptionalFieldOf("direction", Direction.DEFAULT).forGetter(ParticleAppearanceBillboard::direction),
             UV.CODEC.fieldOf("uv").orElse(UV.EMPTY).forGetter(ParticleAppearanceBillboard::uv)
     ).apply(instance, ParticleAppearanceBillboard::new));
@@ -222,16 +222,16 @@ public record ParticleAppearanceBillboard(FloatMolangExp2 size, FaceCameraMode f
     ///
     /// @param texturewidth
     /// @param textureheight Specifies the assumed texture width/height, defaults to 1<p>
-    ///                      When set to 1, UV's work just like normalized UV's<p>
-    ///                      When set to the texture width/height, this works like texels
+    ///                                           When set to 1, UV's work just like normalized UV's<p>
+    ///                                           When set to the texture width/height, this works like texels
     /// @param uv
     /// @param uvSize        Assuming the specified texture width and height, use these uv coordinates.<p>
-    ///                      Evaluated every frame
+    ///                                           Evaluated every frame
     public record UV(int texturewidth, int textureheight, FloatMolangExp2 uv, FloatMolangExp2 uvSize, Flipbook flipbook) {
         public static final UV EMPTY = new UV(1, 1, FloatMolangExp2.ZERO, FloatMolangExp2.ZERO, Flipbook.EMPTY);
         public static final Codec<UV> CODEC = RecordCodecBuilder.create(instance -> instance.group(
-                DuplicateFieldDecoder.fieldOf(ExtraCodecs.POSITIVE_INT, "texturewidth", "texture_width").orElse(1).forGetter(UV::texturewidth),
-                DuplicateFieldDecoder.fieldOf(ExtraCodecs.POSITIVE_INT, "textureheight", "texture_height").orElse(1).forGetter(UV::textureheight),
+                NeoForgeExtraCodecs.aliasedFieldOf(ExtraCodecs.POSITIVE_INT, "texturewidth", "texture_width").orElse(1).forGetter(UV::texturewidth),
+                NeoForgeExtraCodecs.aliasedFieldOf(ExtraCodecs.POSITIVE_INT, "textureheight", "texture_height").orElse(1).forGetter(UV::textureheight),
                 FloatMolangExp2.CODEC.fieldOf("uv").orElse(FloatMolangExp2.ZERO).forGetter(UV::uv),
                 FloatMolangExp2.CODEC.fieldOf("uv_size").orElse(FloatMolangExp2.ZERO).forGetter(UV::uvSize),
                 Flipbook.CODEC.fieldOf("flipbook").orElse(Flipbook.EMPTY).forGetter(UV::flipbook)

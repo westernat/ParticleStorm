@@ -188,7 +188,7 @@ public final class MolangParticleEngine implements PreparableReloadListener {
                     } catch (Throwable e) {
                         CrashReport report = CrashReport.forThrowable(e, "Rendering Molang Particle");
                         CrashReportCategory category = report.addCategory("Molang Particle being rendered");
-                        category.setDetail("Particle Id", () -> instance.getEmitter().particleId.toString());
+                        category.setDetail("Molang Particle Id", () -> instance.getEmitter().particleId.toString());
                         throw new ReportedException(report);
                     }
                 }
@@ -235,7 +235,7 @@ public final class MolangParticleEngine implements PreparableReloadListener {
         EvictingQueue<ParticleEmitter> queue = tracker.computeIfAbsent(entity, e -> EvictingQueue.create(16));
         if (!queue.isEmpty() && queue.stream().anyMatch(emitter -> particleId.equals(emitter.particleId))) return false;
         ParticleEmitter emitter = new ParticleEmitter(entity.level(), entity.position(), particleId);
-        addEmitter(emitter, false);
+        addEmitter(emitter);
         emitter.attachEntity(entity);
         queue.add(emitter);
         return true;

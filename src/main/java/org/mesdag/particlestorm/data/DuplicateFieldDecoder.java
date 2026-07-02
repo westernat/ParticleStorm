@@ -2,6 +2,7 @@ package org.mesdag.particlestorm.data;
 
 import com.mojang.serialization.*;
 import net.neoforged.neoforge.common.util.NeoForgeExtraCodecs;
+import org.jetbrains.annotations.ApiStatus;
 
 import java.util.Arrays;
 import java.util.Objects;
@@ -9,13 +10,13 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
 
+@Deprecated(forRemoval = true, since = "1.3.2")
+@ApiStatus.ScheduledForRemoval(inVersion = "1.4.0")
 public class DuplicateFieldDecoder {
-    @Deprecated
     public static <T> MapCodec<T> fieldOf(String defaultName, Set<String> names, Codec<T> codec) {
         return fieldOf(codec, defaultName, names.toArray(new String[0]));
     }
 
-    @Deprecated
     public static <T> MapCodec<T> fieldOf(String defaultName, String another, Codec<T> codec) {
         return fieldOf(codec, defaultName, another);
     }

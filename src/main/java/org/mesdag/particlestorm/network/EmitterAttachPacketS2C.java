@@ -1,7 +1,6 @@
 package org.mesdag.particlestorm.network;
 
 import io.netty.buffer.ByteBuf;
-import net.minecraft.network.chat.Component;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
@@ -37,9 +36,6 @@ public record EmitterAttachPacketS2C(int particleId, int entityId) implements Cu
                     emitter.attachEntity(entity);
                 }
             }
-        }).exceptionally(e -> {
-            context.disconnect(Component.translatable("neoforge.network.invalid_flow", e.getMessage()));
-            return null;
         });
     }
 

@@ -2,7 +2,6 @@ package org.mesdag.particlestorm.network;
 
 import io.netty.buffer.ByteBuf;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.network.chat.Component;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
@@ -16,7 +15,6 @@ import org.mesdag.particlestorm.particle.ParticleEmitter;
 
 public record EmitterSynchronizePacket(int id, CompoundTag tag) implements CustomPacketPayload {
     public static final Type<EmitterSynchronizePacket> TYPE = new Type<>(ParticleStorm.asResource("emitter_synchronize"));
-
     public static final StreamCodec<ByteBuf, EmitterSynchronizePacket> STREAM_CODEC = StreamCodec.composite(
             ByteBufCodecs.INT, p -> p.id,
             ByteBufCodecs.COMPOUND_TAG, p -> p.tag,
@@ -44,9 +42,6 @@ public record EmitterSynchronizePacket(int id, CompoundTag tag) implements Custo
                     data.put(KEY, emitters);
                 }
             }
-        }).exceptionally(e -> {
-            context.disconnect(Component.translatable("neoforge.network.invalid_flow", e.getMessage()));
-            return null;
         });
     }
 

@@ -45,9 +45,9 @@ public abstract class ParticleEngineMixin implements IParticleEngine {
         if (particlestorm$preparations != null && spriteSets.get(ParticleStorm.MOLANG.getId()) instanceof ExtendMutableSpriteSet spriteSet) {
             spriteSet.clear();
             int i = 0;
+            TextureAtlasSprite missing = particlestorm$preparations.missing();
+            spriteSet.bindMissing(missing);
             for (Map.Entry<ResourceLocation, DefinedParticleEffect> entry : MolangParticleEngine.INSTANCE.id2Effect().entrySet()) {
-                TextureAtlasSprite missing = particlestorm$preparations.missing();
-                spriteSet.bindMissing(missing);
                 ResourceLocation texture = entry.getValue().description.parameters().bindTexture(i);
                 spriteSet.addSprite(particlestorm$preparations.regions().getOrDefault(texture, missing));
                 i++;

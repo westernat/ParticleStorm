@@ -5,7 +5,7 @@ import com.mojang.serialization.Codec;
 import com.mojang.serialization.MapCodec;
 import io.netty.buffer.ByteBuf;
 import net.minecraft.core.particles.ParticleType;
-import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.resources.ResourceLocation;
@@ -46,7 +46,7 @@ public final class ParticleStorm {
     public static final boolean IRIS_LOADED = LoadingModList.get().getModFileById("iris") != null;
     public static final boolean DEBUG = Boolean.getBoolean("particlestorm.debug") && GECKOLIB_LOADED;
 
-    private static final DeferredRegister<ParticleType<?>> REGISTER = DeferredRegister.create(BuiltInRegistries.PARTICLE_TYPE, MODID);
+    private static final DeferredRegister<ParticleType<?>> REGISTER = DeferredRegister.create(Registries.PARTICLE_TYPE, MODID);
     public static final DeferredHolder<ParticleType<?>, ParticleType<MolangParticleOption>> MOLANG = registerParticleType(REGISTER, "molang");
     public static final Codec<List<String>> STRING_LIST_CODEC = Codec.either(Codec.STRING, Codec.STRING.listOf()).xmap(
             either -> either.map(Collections::singletonList, Function.identity()),

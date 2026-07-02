@@ -18,7 +18,6 @@ import static org.mesdag.particlestorm.network.EmitterSynchronizePacket.KEY;
 
 public record EmitterRemovalPacket(int id) implements CustomPacketPayload {
     public static final Type<EmitterRemovalPacket> TYPE = new Type<>(ParticleStorm.asResource("emitter_removal"));
-
     public static final StreamCodec<ByteBuf, EmitterRemovalPacket> STREAM_CODEC = StreamCodec.composite(
             ByteBufCodecs.INT, p -> p.id,
             EmitterRemovalPacket::new
@@ -45,9 +44,6 @@ public record EmitterRemovalPacket(int id) implements CustomPacketPayload {
                     data.getCompound(KEY).remove(Integer.toString(id));
                 }
             }
-        }).exceptionally(e -> {
-            context.disconnect(Component.translatable("neoforge.network.invalid_flow", e.getMessage()));
-            return null;
         });
     }
 

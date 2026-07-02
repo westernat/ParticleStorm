@@ -1,7 +1,7 @@
 package org.mesdag.particlestorm.mixed;
 
 public interface ITextureAtlasSprite {
-    int particlestorm$getOriginX();
+    int particlestorm$getInvOx();
 
-    int particlestorm$getOriginY();
+    int particlestorm$getInvOy();
 }

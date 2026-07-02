@@ -25,12 +25,6 @@ public final class MolangQueries {
         return FROZEN_QUERIES.containsKey(name);
     }
 
-    @Deprecated
-    public static void registerVariable(String name, Variable variable) {
-        checkFrozen();
-        UNFROZEN_QUERIES.put(name, variable);
-    }
-
     static Variable getQueryFor(String name) {
         return FROZEN_QUERIES.getOrDefault(applyQueryAliases(name), new Variable(name, 0));
     }

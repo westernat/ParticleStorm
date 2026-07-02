@@ -30,8 +30,8 @@ import java.util.Optional;
 public class MolangParticleInstance extends TextureSheetParticle implements IMolangParticleInstance {
     protected final ParticlePreset preset;
     protected ParticleVariableTable vars;
-    protected final float originX;
-    protected final float originY;
+    protected final float invOx;
+    protected final float invOy;
 
     protected Vector3f acceleration = new Vector3f();
     protected Vector3f facingDirection = new Vector3f();
@@ -72,8 +72,8 @@ public class MolangParticleInstance extends TextureSheetParticle implements IMol
         this.quadSize = 0; // as collision radius
         this.preset = preset;
         setSprite(sprites.get(preset.effect.description.parameters().getTextureIndex()));
-        this.originX = ((ITextureAtlasSprite) sprite).particlestorm$getOriginX();
-        this.originY = ((ITextureAtlasSprite) sprite).particlestorm$getOriginY();
+        this.invOx = ((ITextureAtlasSprite) sprite).particlestorm$getInvOx();
+        this.invOy = ((ITextureAtlasSprite) sprite).particlestorm$getInvOy();
         this.scaleU = sprite.contents().width() * preset.invTextureWidth;
         this.scaleV = sprite.contents().height() * preset.invTextureHeight;
 
@@ -292,17 +292,6 @@ public class MolangParticleInstance extends TextureSheetParticle implements IMol
         this.zo = z;
     }
 
-    /// @see MolangParticleInstance#setZRot(float)
-    /// @deprecated
-    public void setRoll(float roll) {
-        this.roll = roll;
-    }
-
-    @Deprecated
-    public float getRoll() {
-        return roll;
-    }
-
     @Override
     public void setColor(float red, float green, float blue, float alpha) {
         super.setColor(red, green, blue);
@@ -312,10 +301,10 @@ public class MolangParticleInstance extends TextureSheetParticle implements IMol
     @Override
     public void setUV(float u, float v, float w, float h) {
         if (UV == null) this.UV = new float[4];
-        this.UV[0] = u / originX;
-        this.UV[1] = v / originY;
-        this.UV[2] = (u + w) / originX;
-        this.UV[3] = (v + h) / originY;
+        this.UV[0] = u * invOx;
+        this.UV[1] = v * invOy;
+        this.UV[2] = (u + w) * invOx;
+        this.UV[3] = (v + h) * invOy;
     }
 
     @Override

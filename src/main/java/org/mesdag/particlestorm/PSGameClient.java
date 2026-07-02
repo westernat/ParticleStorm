@@ -34,6 +34,7 @@ import org.mesdag.particlestorm.particle.ParticleEmitter;
 import java.io.IOException;
 import java.util.Queue;
 
+@SuppressWarnings("deprecation")
 @EventBusSubscriber(modid = ParticleStorm.MODID, value = Dist.CLIENT)
 public final class PSGameClient {
     @Deprecated(forRemoval = true, since = "1.3.0")

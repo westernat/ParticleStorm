@@ -2,8 +2,6 @@ package org.mesdag.particlestorm.data.curve;
 
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
-import it.unimi.dsi.fastutil.floats.FloatArrayList;
-import net.minecraft.util.Mth;
 import net.minecraft.util.Tuple;
 import org.mesdag.particlestorm.api.MolangInstance;
 import org.mesdag.particlestorm.data.molang.FloatMolangExp;
@@ -52,11 +50,12 @@ public final class ParticleCurve {
             case CATMULL_ROM -> {
                 SplineCurve curve = cachedCurves.get(name);
                 if (curve == null) {
-                    FloatArrayList points = new FloatArrayList();
-                    for (FloatMolangExp exp : nodes.either.right().get()) {
-                        points.add(exp.calculate(instance));
+                    List<FloatMolangExp> nodez = nodes.either.right().orElseThrow();
+                    float[] points = new float[nodez.size()];
+                    for (int j = 0; j < points.length; j++) {
+                        points[j] = nodez.get(j).calculate(instance);
                     }
-                    curve = new SplineCurve.CatMullRom(points.toFloatArray());
+                    curve = new SplineCurve.CatMullRom(points);
                     cachedCurves.put(name, curve);
                 }
                 int c = nodes.length() - 3;
@@ -66,21 +65,22 @@ public final class ParticleCurve {
             case LINEAR -> {
                 int c = nodes.length() - 1;
                 i *= c;
-                int o = Mth.floor(i);
+                int o = Math.max(0, (int) i);
                 float s = i % 1;
-                List<FloatMolangExp> floatMolangExps = nodes.either.right().get();
-                float calculate = floatMolangExps.get(o).calculate(instance);
-                float l = floatMolangExps.get(o + 1).calculate(instance) - calculate;
+                List<FloatMolangExp> nodez = nodes.either.right().orElseThrow();
+                float calculate = nodez.get(o).calculate(instance);
+                float l = nodez.get(o + 1).calculate(instance) - calculate;
                 return calculate + l * s;
             }
             case BEZIER -> {
                 SplineCurve curve = cachedCurves.get(name);
                 if (curve == null) {
-                    FloatArrayList points = new FloatArrayList();
-                    for (FloatMolangExp exp : nodes.either.right().get()) {
-                        points.add(exp.calculate(instance));
+                    List<FloatMolangExp> nodez = nodes.either.right().orElseThrow();
+                    float[] points = new float[nodez.size()];
+                    for (int j = 0; j < points.length; j++) {
+                        points[j] = nodez.get(j).calculate(instance);
                     }
-                    curve = new SplineCurve.Bezier(points.toFloatArray());
+                    curve = new SplineCurve.Bezier(points);
                     cachedCurves.put(name, curve);
                 }
                 return curve.getPoint(i);

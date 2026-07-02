@@ -29,11 +29,6 @@ public class EmitterPreset {
     public boolean localVelocity = false;
     public EmitterLifetimeEvents lifetimeEvents;
 
-    @Deprecated
-    public EmitterPreset(MolangParticleOption option, List<IEmitterComponent> components, Map<String, Map<String, IEventNode>> events) {
-        this(option.getType(), components, events);
-    }
-
     public EmitterPreset(ParticleType<?> type, List<IEmitterComponent> components, Map<String, Map<String, IEventNode>> events) {
         this.type = type;
         this.components = components;

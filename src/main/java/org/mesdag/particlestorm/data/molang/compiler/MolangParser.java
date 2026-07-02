@@ -403,27 +403,12 @@ public class MolangParser {
         return buildFunction(name, args.toArray(new MathValue[0]));
     }
 
-    @Deprecated(forRemoval = true)
-    public static boolean isOperativeSymbol(char symbol) {
-        return isOperativeSymbol(String.valueOf(symbol));
-    }
-
-    @Deprecated(forRemoval = true)
-    public static boolean isOperativeSymbol(String symbol) {
-        return Operator.isOperator(symbol) || symbol.equals("?") || symbol.equals(":");
-    }
-
     public static boolean isNumeric(String string) {
         return NUMERIC.matcher(string).matches();
     }
 
     protected static Operator getOperatorFor(String op) throws IllegalArgumentException {
         return Operator.getOperatorFor(op).orElseThrow(() -> new IllegalArgumentException("Unknown operator symbol '" + op + "'"));
-    }
-
-    @Deprecated(forRemoval = true)
-    protected static boolean isQueryOrFunctionName(String string) {
-        return !isNumeric(string) && !isOperativeSymbol(string);
     }
 
     protected boolean isLikelyVariable(String string) {
