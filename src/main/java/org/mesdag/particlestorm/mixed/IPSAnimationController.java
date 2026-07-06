@@ -6,12 +6,12 @@ import software.bernie.geckolib.cache.object.GeoBone;
 import java.util.Collection;
 import java.util.List;
 
-public interface IAnimationController {
+public interface IPSAnimationController {
     List<GeoBone> particlestorm$getBonesWhichHasLocators();
 
     void particlestorm$setBonesWhichHasLocators(Collection<GeoBone> registeredBones);
 
-    static IAnimationController of(AnimationController<?> controller) {
-        return (IAnimationController) controller;
+    static IPSAnimationController of(AnimationController<?> controller) {
+        return (IPSAnimationController) controller;
     }
 }

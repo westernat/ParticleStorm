@@ -25,7 +25,8 @@ import org.mesdag.particlestorm.data.molang.compiler.MathValue;
 import org.mesdag.particlestorm.data.molang.compiler.MolangParser;
 import org.mesdag.particlestorm.data.molang.compiler.value.Variable;
 import org.mesdag.particlestorm.data.molang.compiler.value.VariableAssignment;
-import org.mesdag.particlestorm.mixed.IEntity;
+import org.mesdag.particlestorm.mixed.IPSBlockEntity;
+import org.mesdag.particlestorm.mixed.IPSEntity;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -34,7 +35,7 @@ public class ParticleEmitter implements MolangInstance {
     public ResourceLocation particleId;
     public MolangExp expression;
 
-    public transient Matrix4f parentSpace;
+    private transient Matrix4f localSpace;
 
     protected transient EmitterPreset preset;
     protected transient VariableTable vars;
@@ -63,7 +64,7 @@ public class ParticleEmitter implements MolangInstance {
     public transient int spawnRate;
     public transient boolean spawned;
     protected transient Entity attached;
-    public transient BlockEntity attachedBlock;
+    protected transient BlockEntity attachedBlock;
     public transient int lastTimeline;
     public transient float moveDist;
     public transient float moveDistO;
@@ -72,9 +73,9 @@ public class ParticleEmitter implements MolangInstance {
 
     public transient final Level level;
     protected Vec3 pos;
-    public Vec3 posO = Vec3.ZERO;
+    public Vec3 posO;
     public boolean hideOutline;
-    private transient boolean removed = false;
+    private transient boolean removed;
 
     public ParticleEmitter(Level level, Vec3 pos, ResourceLocation particleId, MolangExp expression) {
         this.level = level;
@@ -113,7 +114,7 @@ public class ParticleEmitter implements MolangInstance {
                 case EMITTER_BOUND -> {
                     attachEntity(parent.getAttachedEntity());
                     this.attachedBlock = parent.attachedBlock;
-                    this.parentSpace = parent.parentSpace;
+                    this.localSpace = parent.localSpace;
                 }
                 case PARTICLE -> this.isManual = true;
                 case PARTICLE_WITH_VELOCITY -> {
@@ -140,11 +141,27 @@ public class ParticleEmitter implements MolangInstance {
             this.vars = new VariableTable(vars.table, preset.vars);
             this.attached = null;
         } else {
-            VariableTable parent = IEntity.of(entity).particlestorm$getVariableTable();
+            VariableTable parent = IPSEntity.of(entity).particlestorm$getVariableTable();
             parent.setParent(preset.vars);
             this.vars = new VariableTable(vars.table, parent);
             this.attached = entity;
         }
+    }
+
+    public void attachBlock(@Nullable BlockEntity entity) {
+        if (entity == null) {
+            this.vars = new VariableTable(vars.table, preset.vars);
+            this.attachedBlock = null;
+        } else {
+            VariableTable parent = IPSBlockEntity.of(entity).particlestorm$getVariableTable();
+            parent.setParent(preset.vars);
+            this.vars = new VariableTable(vars.table, parent);
+            this.attachedBlock = entity;
+        }
+    }
+
+    public BlockEntity getAttachedBlock() {
+        return attachedBlock;
     }
 
     protected void init() {
@@ -232,9 +249,9 @@ public class ParticleEmitter implements MolangInstance {
 
     protected void updatePos(double x, double y, double z) {
         if (isLocalSpace()) {
-            x += parentSpace.m30();
-            y += parentSpace.m31();
-            z += parentSpace.m32();
+            x += localSpace.m30();
+            y += localSpace.m31();
+            z += localSpace.m32();
         }
         this.pos = new Vec3(x, y, z);
     }
@@ -242,7 +259,7 @@ public class ParticleEmitter implements MolangInstance {
     public void local2World(Vector3f vec, float partialTick) {
         if (isLocalSpace()) {
             if (preset.localRotation) {
-                vec.mulDirection(parentSpace);
+                vec.mulDirection(localSpace);
             }
             if (preset.localPosition) {
                 vec.add(
@@ -255,7 +272,22 @@ public class ParticleEmitter implements MolangInstance {
     }
 
     public final boolean isLocalSpace() {
-        return parentSpace != null;
+        return localSpace != null;
+    }
+
+    public final Matrix4f getLocalSpace() {
+        return localSpace;
+    }
+
+    public final void setLocalSpace(@Nullable Matrix4f space) {
+        setLocalSpace(space, true);
+    }
+
+    public final void setLocalSpace(@Nullable Matrix4f space, boolean updatePos) {
+        this.localSpace = space;
+        if (updatePos) {
+            updatePos(getX(), getY(), getZ());
+        }
     }
 
     public void remove() {

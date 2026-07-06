@@ -1,7 +1,7 @@
 package org.mesdag.particlestorm.mixin.integration.geckolib;
 
 import com.llamalad7.mixinextras.sugar.Local;
-import org.mesdag.particlestorm.mixed.IAnimationController;
+import org.mesdag.particlestorm.mixed.IPSAnimationController;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Pseudo;
 import org.spongepowered.asm.mixin.Shadow;
@@ -22,6 +22,6 @@ public abstract class AnimationProcessorMixin<T extends GeoAnimatable> {
 
     @Inject(method = "tickAnimation", at = @At(value = "INVOKE", target = "Lsoftware/bernie/geckolib/animation/AnimationController;process(Lsoftware/bernie/geckolib/model/GeoModel;Lsoftware/bernie/geckolib/animation/AnimationState;Ljava/util/Map;Ljava/util/Map;DZ)V"))
     private void fillLocators(CallbackInfo ci, @Local(name = "controller") AnimationController<T> controller) {
-        IAnimationController.of(controller).particlestorm$setBonesWhichHasLocators(getRegisteredBones());
+        IPSAnimationController.of(controller).particlestorm$setBonesWhichHasLocators(getRegisteredBones());
     }
 }

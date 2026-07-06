@@ -22,7 +22,7 @@ import org.mesdag.particlestorm.api.IMolangParticleInstance;
 import org.mesdag.particlestorm.api.IParticleComponent;
 import org.mesdag.particlestorm.data.component.ParticleMotionCollision;
 import org.mesdag.particlestorm.data.molang.VariableTable;
-import org.mesdag.particlestorm.mixed.ITextureAtlasSprite;
+import org.mesdag.particlestorm.mixed.IPSTextureAtlasSprite;
 
 import java.util.List;
 import java.util.Optional;
@@ -72,8 +72,8 @@ public class MolangParticleInstance extends TextureSheetParticle implements IMol
         this.quadSize = 0; // as collision radius
         this.preset = preset;
         setSprite(sprites.get(preset.effect.description.parameters().getTextureIndex()));
-        this.invOx = ((ITextureAtlasSprite) sprite).particlestorm$getInvOx();
-        this.invOy = ((ITextureAtlasSprite) sprite).particlestorm$getInvOy();
+        this.invOx = ((IPSTextureAtlasSprite) sprite).particlestorm$getInvOx();
+        this.invOy = ((IPSTextureAtlasSprite) sprite).particlestorm$getInvOy();
         this.scaleU = sprite.contents().width() * preset.invTextureWidth;
         this.scaleV = sprite.contents().height() * preset.invTextureHeight;
 

@@ -1,6 +1,6 @@
 package org.mesdag.particlestorm.mixed;
 
-public interface ITextureAtlasSprite {
+public interface IPSTextureAtlasSprite {
     float particlestorm$getInvOx();
 
     float particlestorm$getInvOy();

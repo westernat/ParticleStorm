@@ -4,12 +4,12 @@ import net.minecraft.resources.ResourceLocation;
 import org.mesdag.particlestorm.data.molang.MolangExp;
 import org.mesdag.particlestorm.data.molang.VariableTable;
 import org.mesdag.particlestorm.data.molang.compiler.MolangParser;
-import org.mesdag.particlestorm.mixed.IParticleKeyframeData;
+import org.mesdag.particlestorm.mixed.IPSParticleKeyframeData;
 import org.spongepowered.asm.mixin.*;
 
 @Pseudo
 @Mixin(targets = "software.bernie.geckolib.animation.keyframe.event.data.ParticleKeyframeData", remap = false)
-public abstract class ParticleKeyframeDataMixin implements IParticleKeyframeData {
+public abstract class ParticleKeyframeDataMixin implements IPSParticleKeyframeData {
     @Shadow
     @Final
     private String effect;

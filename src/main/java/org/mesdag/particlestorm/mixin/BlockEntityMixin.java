@@ -2,12 +2,12 @@ package org.mesdag.particlestorm.mixin;
 
 import net.minecraft.world.level.block.entity.BlockEntity;
 import org.mesdag.particlestorm.data.molang.VariableTable;
-import org.mesdag.particlestorm.mixed.IBlockEntity;
+import org.mesdag.particlestorm.mixed.IPSBlockEntity;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 
 @Mixin(BlockEntity.class)
-public abstract class BlockEntityMixin implements IBlockEntity {
+public abstract class BlockEntityMixin implements IPSBlockEntity {
     @Unique
     private VariableTable particlestorm$variableTable;
 

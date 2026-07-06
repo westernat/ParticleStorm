@@ -1,7 +1,7 @@
 package org.mesdag.particlestorm.mixin.integration.geckolib;
 
 import org.jetbrains.annotations.Nullable;
-import org.mesdag.particlestorm.mixed.IGeoBone;
+import org.mesdag.particlestorm.mixed.IPSGeoBone;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Pseudo;
 import org.spongepowered.asm.mixin.Unique;
@@ -11,7 +11,7 @@ import java.util.Map;
 
 @Pseudo
 @Mixin(targets = "software.bernie.geckolib.cache.object.GeoBone", remap = false)
-public abstract class GeoBoneMixin implements IGeoBone {
+public abstract class GeoBoneMixin implements IPSGeoBone {
     @Unique
     private Map<String, LocatorValue> particlestorm$locators;
 

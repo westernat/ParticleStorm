@@ -13,7 +13,7 @@ import org.jetbrains.annotations.Nullable;
 import org.mesdag.particlestorm.ParticleStorm;
 import org.mesdag.particlestorm.api.RegisterCustomParticleTypeEvent;
 import org.mesdag.particlestorm.data.DefinedParticleEffect;
-import org.mesdag.particlestorm.mixed.IParticleEngine;
+import org.mesdag.particlestorm.mixed.IPSParticleEngine;
 import org.mesdag.particlestorm.particle.ExtendMutableSpriteSet;
 import org.mesdag.particlestorm.particle.MolangParticleEngine;
 import org.spongepowered.asm.mixin.Final;
@@ -29,7 +29,7 @@ import java.util.Map;
 import java.util.function.Predicate;
 
 @Mixin(ParticleEngine.class)
-public abstract class ParticleEngineMixin implements IParticleEngine {
+public abstract class ParticleEngineMixin implements IPSParticleEngine {
     @Shadow
     @Final
     private Map<ResourceLocation, ParticleEngine.MutableSpriteSet> spriteSets;
