@@ -73,7 +73,6 @@ public class ParticleEmitter implements MolangInstance {
     public transient final Level level;
     protected Vec3 pos;
     public Vec3 posO = Vec3.ZERO;
-    protected final Vector3f rotated = new Vector3f();
     public boolean hideOutline;
     private transient boolean removed = false;
 
@@ -209,24 +208,14 @@ public class ParticleEmitter implements MolangInstance {
                 remove();
                 return;
             }
-            if (isLocalSpace()) {
-                rotated.set(parentSpace.m30(), parentSpace.m31(), parentSpace.m32());
-            } else {
-                rotated.set(0);
-            }
-            this.pos = new Vec3(attached.getX() + rotated.x, attached.getY() + rotated.y, attached.getZ() + rotated.z);
+            updatePos(attached.getX(), attached.getY(), attached.getZ());
         } else if (attachedBlock != null) {
             if (attachedBlock.isRemoved()) {
                 remove();
                 return;
             }
-            if (isLocalSpace()) {
-                rotated.set(parentSpace.m30(), parentSpace.m31(), parentSpace.m32());
-            } else {
-                rotated.set(0);
-            }
             BlockPos bp = attachedBlock.getBlockPos();
-            this.pos = new Vec3(bp.getX() + 0.5 + rotated.x, bp.getY() + rotated.y, bp.getZ() + 0.5 + rotated.z);
+            updatePos(bp.getX() + 0.5, bp.getY(), bp.getZ() + 0.5);
         }
 
         if (afterParentInit != null && parent != null) {
@@ -241,12 +230,19 @@ public class ParticleEmitter implements MolangInstance {
         }
     }
 
+    protected void updatePos(double x, double y, double z) {
+        if (isLocalSpace()) {
+            x += parentSpace.m30();
+            y += parentSpace.m31();
+            z += parentSpace.m32();
+        }
+        this.pos = new Vec3(x, y, z);
+    }
+
     public void local2World(Vector3f vec, float partialTick) {
         if (isLocalSpace()) {
             if (preset.localRotation) {
-                if (parentSpace != null) {
-                    vec.mulDirection(parentSpace);
-                }
+                vec.mulDirection(parentSpace);
             }
             if (preset.localPosition) {
                 vec.add(
@@ -258,7 +254,7 @@ public class ParticleEmitter implements MolangInstance {
         }
     }
 
-    public boolean isLocalSpace() {
+    public final boolean isLocalSpace() {
         return parentSpace != null;
     }
 

@@ -114,16 +114,18 @@ public interface IMolangParticleInstance extends MolangInstance {
     boolean isDiscarded();
 
     // region default
-    default void moveDirectly(double x, double y, double z) {
-        AABB aabb = self().getBoundingBox();
+    default void moveDirectly(double dx, double dy, double dz) {
         float radius = getCollisionRadius();
+        double px = getX() + dx;
+        double py = getY() + dy;
+        double pz = getZ() + dz;
         self().setBoundingBox(new AABB(
-                aabb.minX - radius + x,
-                aabb.minY - radius + y,
-                aabb.minZ - radius + z,
-                aabb.maxX + radius + x,
-                aabb.maxY + radius + y,
-                aabb.maxZ + radius + z
+                px - radius,
+                py,
+                pz - radius,
+                px + radius,
+                py + radius + radius,
+                pz + radius
         ));
         self().setLocationFromBoundingbox();
     }

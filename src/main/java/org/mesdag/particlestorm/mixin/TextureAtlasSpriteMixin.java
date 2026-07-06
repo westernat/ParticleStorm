@@ -13,23 +13,23 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(TextureAtlasSprite.class)
 public abstract class TextureAtlasSpriteMixin implements ITextureAtlasSprite {
     @Unique
-    private int particlestorm$invOx;
+    private float particlestorm$invOx;
     @Unique
-    private int particlestorm$invOy;
+    private float particlestorm$invOy;
 
     @Override
-    public int particlestorm$getInvOx() {
+    public float particlestorm$getInvOx() {
         return particlestorm$invOx;
     }
 
     @Override
-    public int particlestorm$getInvOy() {
+    public float particlestorm$getInvOy() {
         return particlestorm$invOy;
     }
 
     @Inject(method = "<init>", at = @At("TAIL"))
     private void storeOrigin(ResourceLocation atlasLocation, SpriteContents contents, int originX, int originY, int x, int y, CallbackInfo ci) {
-        this.particlestorm$invOx = 1 / originX;
-        this.particlestorm$invOy = 1 / originY;
+        this.particlestorm$invOx = 1.0F / originX;
+        this.particlestorm$invOy = 1.0F / originY;
     }
 }
