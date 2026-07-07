@@ -40,6 +40,7 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.Level;
 import net.neoforged.fml.ModLoader;
 import org.jetbrains.annotations.Nullable;
+import org.lwjgl.opengl.GL11;
 import org.mesdag.particlestorm.PSGameClient;
 import org.mesdag.particlestorm.ParticleStorm;
 import org.mesdag.particlestorm.api.*;
@@ -166,6 +167,10 @@ public final class MolangParticleEngine implements PreparableReloadListener {
 
     public void renderParticles(TextureManager textureManager, Camera camera, float partialTick, Frustum frustum, Predicate<ParticleRenderType> renderTypePredicate) {
         if (groupedParticles.isEmpty()) return;
+        boolean cull = GL11.glIsEnabled(GL11.GL_CULL_FACE);
+        if (cull) {
+            RenderSystem.disableCull();
+        }
         Tesselator tesselator = Tesselator.getInstance();
         var iterator = groupedParticles.reference2ObjectEntrySet().fastIterator();
         while (iterator.hasNext()) {
@@ -197,6 +202,9 @@ public final class MolangParticleEngine implements PreparableReloadListener {
             if (mesh != null) {
                 BufferUploader.drawWithShader(mesh);
             }
+        }
+        if (cull) {
+            RenderSystem.enableCull();
         }
     }
 

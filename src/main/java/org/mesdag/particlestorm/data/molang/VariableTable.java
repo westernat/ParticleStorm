@@ -31,13 +31,14 @@ public class VariableTable {
         return variable.get(instance);
     }
 
-    public void setValue(String name, ToFloatFunction<MolangInstance> function) {
+    public Variable setValue(String name, ToFloatFunction<MolangInstance> function) {
         Variable variable = table.get(name);
         if (variable == null) {
-            table.put(name, new Variable(name, function));
+            table.put(name, variable = new Variable(name, function));
         } else {
             variable.set(function);
         }
+        return variable;
     }
 
     public void setValue(String name, Variable value) {
@@ -64,5 +65,14 @@ public class VariableTable {
 
     public @Nullable VariableTable getParent() {
         return parent;
+    }
+
+    public @Nullable Variable getVariable(String name) {
+        Variable variable = table.get(name);
+        if (variable == null) {
+            if (parent == null) return null;
+            return parent.getVariable(name);
+        }
+        return variable;
     }
 }

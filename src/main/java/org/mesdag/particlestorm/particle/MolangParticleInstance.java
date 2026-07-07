@@ -121,18 +121,27 @@ public class MolangParticleInstance extends TextureSheetParticle implements IMol
     }
 
     @Override
-    public void setXRot(float x) {
+    public void setXRot(float x, boolean o) {
         this.xRot = x;
+        if (o) {
+            this.xRotO = x;
+        }
     }
 
     @Override
-    public void setYRot(float y) {
+    public void setYRot(float y, boolean o) {
         this.yRot = y;
+        if (o) {
+            this.yRotO = y;
+        }
     }
 
     @Override
-    public void setZRot(float z) {
+    public void setZRot(float z, boolean o) {
         this.roll = z;
+        if (o) {
+            this.oRoll = z;
+        }
     }
 
     @Override
@@ -286,10 +295,13 @@ public class MolangParticleInstance extends TextureSheetParticle implements IMol
     }
 
     @Override
-    public void setPosO(double x, double y, double z) {
-        this.xo = x;
-        this.yo = y;
-        this.zo = z;
+    public void setPos(double x, double y, double z, boolean o) {
+        setPos(x, y, z);
+        if (o) {
+            this.xo = x;
+            this.yo = y;
+            this.zo = z;
+        }
     }
 
     @Override
@@ -416,7 +428,7 @@ public class MolangParticleInstance extends TextureSheetParticle implements IMol
         }
         vector3f.set(
                 (float) (Mth.lerp(partialTick, xo, x) - camPos.x),
-                (float) (Mth.lerp(partialTick, yo, y) - camPos.y),
+                (float) (Mth.lerp(partialTick, yo, y) - camPos.y) + 1.0e-4f, // add an epsilon to fix the z-flash
                 (float) (Mth.lerp(partialTick, zo, z) - camPos.z)
         );
         return IMolangParticleInstance.super.isVisible(camera, frustum, partialTick);
@@ -464,7 +476,10 @@ public class MolangParticleInstance extends TextureSheetParticle implements IMol
 
     @Override
     public void move(double x, double y, double z) {
-        if (stoppedByCollision) return;
+        if (stoppedByCollision) {
+            collisionEvent();
+            return;
+        }
 
         double d0 = x;
         double d1 = y;
@@ -506,21 +521,30 @@ public class MolangParticleInstance extends TextureSheetParticle implements IMol
             this.onGround = d1 != y && d1 < 0.0;
 
             if (onGround || (d0 != x || d2 != z)) {
-                if (!preset.collisionEvents.isEmpty()) {
-                    for (ParticleMotionCollision.Event event : preset.collisionEvents) {
-                        float tickSpeed = event.minSpeed() * getInvTickRate();
-                        if (tickSpeed * tickSpeed < Mth.lengthSquared(xd, yd, zd)) {
-                            for (IEventNode node : preset.effect.events.get(event.event()).values()) {
-                                node.execute(this);
-                            }
-                        }
-                    }
-                }
+                collisionEvent();
                 if (expireOnContact) {
                     remove();
                 }
             }
         }
+    }
+
+    protected void collisionEvent() {
+        if (preset.collisionEvents.isEmpty()) return;
+        for (ParticleMotionCollision.Event event : preset.collisionEvents) {
+            float tickSpeed = event.minSpeed() * getInvTickRate();
+            if (tickSpeed * tickSpeed < Mth.lengthSquared(xd, yd, zd)) {
+                for (IEventNode node : preset.effect.events.get(event.event()).values()) {
+                    node.execute(this);
+                }
+            }
+        }
+    }
+
+    @Override
+    public void setParticleSpeed(double xd, double yd, double zd) {
+        if (stoppedByCollision) return;
+        super.setParticleSpeed(xd, yd, zd);
     }
 
     @Override

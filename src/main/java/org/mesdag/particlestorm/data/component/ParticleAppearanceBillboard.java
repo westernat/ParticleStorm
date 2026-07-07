@@ -92,14 +92,17 @@ public record ParticleAppearanceBillboard(FloatMolangExp2 size, FaceCameraMode f
         }
     }
 
+    @Override
+    public int order() {
+        return 700; // 比ParticleInitialization早
+    }
+
     private void doFacingCameraMode(IMolangParticleInstance instance) {
         if (faceCameraMode.isDirection()) {
             if (direction.mode == Direction.Mode.CUSTOM_DIRECTION) {
                 float[] values = direction.customDirection.calculate(instance);
-                instance.setXRot(values[0]);
-                instance.setYRot(values[1]);
-                instance.setZRot(values[2]);
-            } else if (direction.minSpeedThreshold > 0.0F && Mth.lengthSquared(instance.getXd(), instance.getYd(), instance.getZd()) > instance.getPreset().minSpeedThresholdSqr) {
+                instance.getFacingDirection().set(values[0], values[1], values[2]).normalize();
+            } else if (Mth.length(instance.getXd(), instance.getYd(), instance.getZd()) >= direction.minSpeedThreshold) {
                 instance.getFacingDirection().set(instance.getXd(), instance.getYd(), instance.getZd()).normalize();
             }
         }
@@ -117,11 +120,14 @@ public record ParticleAppearanceBillboard(FloatMolangExp2 size, FaceCameraMode f
     private void updateSimpleUV(IMolangParticleInstance instance) {
         TextureAtlasSprite sprite = instance.getSprite();
         if (sprite == null) return;
-        float[] base = uv.uv.calculate(instance);
-        float[] size = uv.uvSize.calculate(instance);
-        int x = sprite.getX();
-        int y = sprite.getY();
-        instance.setUV(x + base[0], y + base[1], size[0] * instance.getScaleU(), size[1] * instance.getScaleV());
+        float[] uvStart = uv.uv.calculate(instance);
+        float[] uvSize = uv.uvSize.calculate(instance);
+        instance.setUV(
+                sprite.getX() + uvStart[0] * instance.getScaleU(),
+                sprite.getY() + uvStart[1] * instance.getScaleV(),
+                uvSize[0] * instance.getScaleU(),
+                uvSize[1] * instance.getScaleV()
+        );
     }
 
     private void updateFlipbookUV(IMolangParticleInstance instance) {
@@ -222,11 +228,11 @@ public record ParticleAppearanceBillboard(FloatMolangExp2 size, FaceCameraMode f
     ///
     /// @param texturewidth
     /// @param textureheight Specifies the assumed texture width/height, defaults to 1<p>
-    ///                                           When set to 1, UV's work just like normalized UV's<p>
-    ///                                           When set to the texture width/height, this works like texels
+    ///                                                                                                                                                    When set to 1, UV's work just like normalized UV's<p>
+    ///                                                                                                                                                    When set to the texture width/height, this works like texels
     /// @param uv
     /// @param uvSize        Assuming the specified texture width and height, use these uv coordinates.<p>
-    ///                                           Evaluated every frame
+    ///                                                                                                                                                    Evaluated every frame
     public record UV(int texturewidth, int textureheight, FloatMolangExp2 uv, FloatMolangExp2 uvSize, Flipbook flipbook) {
         public static final UV EMPTY = new UV(1, 1, FloatMolangExp2.ZERO, FloatMolangExp2.ZERO, Flipbook.EMPTY);
         public static final Codec<UV> CODEC = RecordCodecBuilder.create(instance -> instance.group(

@@ -45,7 +45,7 @@ public record ParticleInitialization(FloatMolangExp perRenderExpression, FloatMo
 
     @Override
     public int order() {
-        return 400;
+        return 800;
     }
 
     @Override

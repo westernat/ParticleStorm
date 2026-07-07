@@ -3,11 +3,9 @@ package org.mesdag.particlestorm.particle;
 import net.minecraft.core.particles.ParticleType;
 import org.mesdag.particlestorm.api.IEmitterComponent;
 import org.mesdag.particlestorm.api.IEventNode;
-import org.mesdag.particlestorm.data.MathHelper;
 import org.mesdag.particlestorm.data.component.*;
 import org.mesdag.particlestorm.data.molang.MolangExp;
 import org.mesdag.particlestorm.data.molang.VariableTable;
-import org.mesdag.particlestorm.data.molang.compiler.MathValue;
 import org.mesdag.particlestorm.data.molang.compiler.MolangParser;
 import org.mesdag.particlestorm.data.molang.compiler.value.Variable;
 import org.mesdag.particlestorm.data.molang.compiler.value.VariableAssignment;
@@ -66,10 +64,10 @@ public class EmitterPreset {
             }
             for (MolangExp exp : component.getAllMolangExp()) {
                 exp.compile(parser);
-                MathValue variable = exp.getVariable();
-                if (variable != null && !MathHelper.forAssignment(table.table, toInit, variable)) {
-                    MathHelper.forCompound(table.table, toInit, variable);
-                }
+//                MathValue variable = exp.getVariable();
+//                if (variable != null && !MathHelper.forAssignment(table.table, toInit, variable)) {
+//                    MathHelper.forCompound(table.table, toInit, variable);
+//                }
             }
         }
 

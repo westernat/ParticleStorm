@@ -35,11 +35,23 @@ public interface IMolangParticleInstance extends MolangInstance {
 
     Vector3f getInitialSpeed();
 
-    void setXRot(float x);
+    void setXRot(float x, boolean o);
 
-    void setYRot(float y);
+    default void setXRot(float x) {
+        setXRot(x, false);
+    }
 
-    void setZRot(float z);
+    void setYRot(float y, boolean o);
+
+    default void setYRot(float y) {
+        setYRot(y, false);
+    }
+
+    void setZRot(float z, boolean o);
+
+    default void setZRot(float z) {
+        setZRot(z, false);
+    }
 
     void setZRotD(float delta);
 
@@ -101,7 +113,7 @@ public interface IMolangParticleInstance extends MolangInstance {
 
     double getZ();
 
-    void setPosO(double x, double y, double z);
+    void setPos(double x, double y, double z, boolean o);
 
     void setColor(float red, float green, float blue, float alpha);
 

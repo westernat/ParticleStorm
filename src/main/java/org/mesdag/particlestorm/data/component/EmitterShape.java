@@ -69,7 +69,7 @@ public abstract sealed class EmitterShape implements IEmitterComponent permits E
         instance.setEmitter(emitter);
 
         ParticlePreset particlePreset = instance.getPreset();
-        MathHelper.redirect(particlePreset.assignments, instance.getVars());
+//        MathHelper.redirect(particlePreset.assignments, instance.getVars());
 
         Vector3f position = new Vector3f();
         Vector3f speed = new Vector3f();
@@ -96,8 +96,7 @@ public abstract sealed class EmitterShape implements IEmitterComponent permits E
         }
 
         instance.setParticleSpeed(speed.x, speed.y, speed.z);
-        instance.setPos(position.x, position.y, position.z);
-        instance.setPosO(position.x, position.y, position.z);
+        instance.setPos(position.x, position.y, position.z, true);
         instance.setParticleGroup(emitter.particleGroup);
 
         for (IParticleComponent component : particlePreset.effect.orderedParticleComponents) {
@@ -161,6 +160,9 @@ public abstract sealed class EmitterShape implements IEmitterComponent permits E
             );
         }
 
+        private static final Vector3f v = new Vector3f();
+        private static final Quaternionf q = new Quaternionf();
+
         @Override
         protected void initializeParticle(MolangInstance instance, Vector3f position, Vector3f speed) {
             position.set(offset.calculate(instance));
@@ -171,7 +173,7 @@ public abstract sealed class EmitterShape implements IEmitterComponent permits E
             position.z += sp * Mth.sin(op);
             float[] lp = planeNormal.plane.calculate(instance);
             if (!Arrays.equals(lp, PlaneNormal.YN)) {
-                MathHelper.applyQuaternion(MathHelper.setFromUnitVectors(Mth.Y_AXIS, new Vector3f(lp), new Quaternionf()), position);
+                MathHelper.applyQuaternion(MathHelper.setFromUnitVectors(Mth.Y_AXIS, v.set(lp), q.identity()), position);
             }
             direction.apply(instance, this, position, speed);
         }

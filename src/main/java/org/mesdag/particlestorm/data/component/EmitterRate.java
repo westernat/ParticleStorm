@@ -13,7 +13,7 @@ import java.util.List;
 public abstract sealed class EmitterRate implements IEmitterComponent permits EmitterRate.Instant, EmitterRate.Steady, EmitterRate.Manual {
     @Override
     public int order() {
-        return 500;
+        return 900;
     }
 
     public enum Type {

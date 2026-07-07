@@ -15,16 +15,13 @@ import org.joml.Matrix4f;
 import org.joml.Vector3f;
 import org.mesdag.particlestorm.api.IEmitterComponent;
 import org.mesdag.particlestorm.api.MolangInstance;
-import org.mesdag.particlestorm.data.MathHelper;
 import org.mesdag.particlestorm.data.component.EmitterLifetime;
 import org.mesdag.particlestorm.data.component.EmitterRate;
 import org.mesdag.particlestorm.data.event.ParticleEffect;
 import org.mesdag.particlestorm.data.molang.MolangExp;
 import org.mesdag.particlestorm.data.molang.VariableTable;
-import org.mesdag.particlestorm.data.molang.compiler.MathValue;
 import org.mesdag.particlestorm.data.molang.compiler.MolangParser;
 import org.mesdag.particlestorm.data.molang.compiler.value.Variable;
-import org.mesdag.particlestorm.data.molang.compiler.value.VariableAssignment;
 import org.mesdag.particlestorm.mixed.IPSBlockEntity;
 import org.mesdag.particlestorm.mixed.IPSEntity;
 
@@ -181,14 +178,14 @@ public class ParticleEmitter implements MolangInstance {
     protected void initVars() {
         if (expression != null && !expression.initialized()) {
             expression.compile(new MolangParser(vars));
-            MathValue variable = expression.getVariable();
-            List<VariableAssignment> toInit = new ArrayList<>();
-            if (variable != null && !MathHelper.forAssignment(vars.table, toInit, variable)) {
-                MathHelper.forCompound(vars.table, toInit, variable);
-            }
-            MathHelper.redirect(toInit, vars);
+//            MathValue variable = expression.getVariable();
+//            List<VariableAssignment> toInit = new ArrayList<>();
+//            if (variable != null && !MathHelper.forAssignment(vars.table, toInit, variable)) {
+//                MathHelper.forCompound(vars.table, toInit, variable);
+//            }
+//            MathHelper.redirect(toInit, vars);
         }
-        MathHelper.redirect(preset.assignments, vars);
+//        MathHelper.redirect(preset.assignments, vars);
     }
 
     protected void createComponents() {
