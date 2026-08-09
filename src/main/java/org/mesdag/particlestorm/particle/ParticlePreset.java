@@ -92,7 +92,7 @@ public class ParticlePreset {
                 }
             }
         }
-        this.motionDynamic = effect.components.get(ParticleMotionDynamic.ID) != null;
+        this.motionDynamic = effect.components.containsKey(ParticleMotionDynamic.ID);
         this.initialization = (ParticleInitialization) effect.components.get(ParticleInitialization.ID);
         for (Map.Entry<String, ParticleCurve> entry : effect.curves.entrySet()) {
             ParticleCurve curve = entry.getValue();
@@ -113,7 +113,7 @@ public class ParticlePreset {
             }
         }
         this.vars = table;
-        ModLoader.postEvent(new ParticlePresetLoadedEvent(effect, this));
+        ModLoader.postEvent(new ParticlePresetLoadedEvent(this));
     }
 
     public <T> void setTicket(Class<T> clazz, T value) {

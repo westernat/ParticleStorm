@@ -31,6 +31,7 @@ import java.util.regex.Pattern;
 
 import static org.mesdag.particlestorm.data.molang.compiler.MolangQueries.applyPrefixAliases;
 
+@SuppressWarnings("unchecked")
 public class MolangParser {
     private static final Pattern EXPRESSION_FORMAT = Pattern.compile("^[\\w\\s_+-/*%^&|<>=!?:.,()']+$");
     private static final Pattern WHITESPACE = Pattern.compile("\\s");

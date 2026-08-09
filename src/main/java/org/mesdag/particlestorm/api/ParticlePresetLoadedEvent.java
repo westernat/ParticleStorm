@@ -6,16 +6,14 @@ import org.mesdag.particlestorm.data.DefinedParticleEffect;
 import org.mesdag.particlestorm.particle.ParticlePreset;
 
 public class ParticlePresetLoadedEvent extends Event implements IModBusEvent {
-    private final DefinedParticleEffect effect;
     private final ParticlePreset preset;
 
-    public ParticlePresetLoadedEvent(DefinedParticleEffect effect, ParticlePreset preset) {
-        this.effect = effect;
+    public ParticlePresetLoadedEvent(ParticlePreset preset) {
         this.preset = preset;
     }
 
     public DefinedParticleEffect getEffect() {
-        return effect;
+        return preset.effect;
     }
 
     public ParticlePreset getPreset() {
