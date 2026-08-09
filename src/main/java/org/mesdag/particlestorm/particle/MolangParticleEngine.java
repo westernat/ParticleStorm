@@ -1,6 +1,5 @@
 package org.mesdag.particlestorm.particle;
 
-import com.google.common.collect.EvictingQueue;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.gson.JsonParseException;
@@ -10,9 +9,11 @@ import com.mojang.blaze3d.vertex.BufferUploader;
 import com.mojang.blaze3d.vertex.MeshData;
 import com.mojang.blaze3d.vertex.Tesselator;
 import com.mojang.serialization.JsonOps;
+import it.unimi.dsi.fastutil.Hash;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
-import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
+import it.unimi.dsi.fastutil.objects.Object2ObjectLinkedOpenHashMap;
+import it.unimi.dsi.fastutil.objects.Object2ObjectOpenCustomHashMap;
 import it.unimi.dsi.fastutil.objects.ObjectIterator;
 import it.unimi.dsi.fastutil.objects.Reference2ObjectOpenHashMap;
 import net.minecraft.CrashReport;
@@ -65,7 +66,17 @@ public final class MolangParticleEngine implements PreparableReloadListener {
     private Map<ResourceLocation, EmitterPreset> id2Emitter = ImmutableMap.of();
 
     private final Int2ObjectOpenHashMap<ParticleEmitter> emitters = new Int2ObjectOpenHashMap<>();
-    private final Object2ObjectOpenHashMap<Entity, EvictingQueue<ParticleEmitter>> tracker = new Object2ObjectOpenHashMap<>();
+    private final Object2ObjectOpenCustomHashMap<Entity, Object2ObjectLinkedOpenHashMap<ResourceLocation, ParticleEmitter>> tracker = new Object2ObjectOpenCustomHashMap<>(new Hash.Strategy<>() {
+        @Override
+        public int hashCode(Entity o) {
+            return o.getUUID().hashCode();
+        }
+
+        @Override
+        public boolean equals(Entity a, Entity b) {
+            return a.getUUID().equals(b.getUUID());
+        }
+    });
     private final Int2ObjectOpenHashMap<Queue<IMolangParticleInstance>> particlesForEmitter = new Int2ObjectOpenHashMap<>();
     private final Queue<IMolangParticleInstance> particlesToAdd = new ArrayDeque<>();
     private final Reference2ObjectOpenHashMap<ParticleRenderType, Queue<IMolangParticleInstance>> groupedParticles = new Reference2ObjectOpenHashMap<>();
@@ -128,10 +139,10 @@ public final class MolangParticleEngine implements PreparableReloadListener {
         if (!tracker.isEmpty()) {
             var iterator = tracker.object2ObjectEntrySet().fastIterator();
             while (iterator.hasNext()) {
-                Map.Entry<Entity, EvictingQueue<ParticleEmitter>> entry = iterator.next();
+                var entry = iterator.next();
                 if (entry.getKey().isRemoved()) {
                     iterator.remove();
-                } else if (entry.getValue().removeIf(ParticleEmitter::isRemoved) && entry.getValue().isEmpty()) {
+                } else if (entry.getValue().values().removeIf(ParticleEmitter::isRemoved) && entry.getValue().isEmpty()) {
                     iterator.remove();
                 }
             }
@@ -245,12 +256,15 @@ public final class MolangParticleEngine implements PreparableReloadListener {
     }
 
     public boolean addTrackedEmitter(Entity entity, ResourceLocation particleId) {
-        EvictingQueue<ParticleEmitter> queue = tracker.computeIfAbsent(entity, e -> EvictingQueue.create(PSClientConfigs.maxTrackersPerEntity));
-        if (!queue.isEmpty() && queue.stream().anyMatch(emitter -> particleId.equals(emitter.particleId))) return false;
+        var queue = tracker.computeIfAbsent(entity, e -> new Object2ObjectLinkedOpenHashMap<>());
+        if (!queue.isEmpty() && queue.containsKey(particleId)) return false;
         ParticleEmitter emitter = new ParticleEmitter(entity.level(), entity.position(), particleId);
         addEmitter(emitter);
         emitter.attachEntity(entity);
-        queue.add(emitter);
+        queue.put(particleId, emitter);
+        if (queue.size() > PSClientConfigs.maxTrackersPerEntity) {
+            queue.removeFirst();
+        }
         return true;
     }
 

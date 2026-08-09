@@ -13,7 +13,7 @@ import java.util.Map;
 @Mixin(targets = "software.bernie.geckolib.cache.object.GeoBone", remap = false)
 public abstract class GeoBoneMixin implements IPSGeoBone {
     @Unique
-    private Map<String, LocatorValue> particlestorm$locators;
+    private @Nullable Map<String, LocatorValue> particlestorm$locators;
 
     @Override
     public @Nullable Map<String, LocatorValue> particlestorm$getLocators() {
@@ -21,7 +21,7 @@ public abstract class GeoBoneMixin implements IPSGeoBone {
     }
 
     @Override
-    public void particlestorm$setLocators(Map<String, LocatorValue> locators) {
+    public void particlestorm$setLocators(@Nullable Map<String, LocatorValue> locators) {
         this.particlestorm$locators = locators;
     }
 }

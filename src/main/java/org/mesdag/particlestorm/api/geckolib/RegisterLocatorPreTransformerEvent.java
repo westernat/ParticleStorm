@@ -57,9 +57,9 @@ public class RegisterLocatorPreTransformerEvent extends Event implements IModBus
             case BlockEntity blockEntity -> blockEntityTransformers.getOrDefault(blockEntity.getType(), Transformer::defaultTransformer);
             case Item ignored -> singletonTransformers.getOrDefault(animatable.getAnimatableInstanceCache(), Transformer::defaultTransformer);
             case ParticleStormGeoReplacedEntity ignored -> singletonTransformers.getOrDefault(animatable.getAnimatableInstanceCache(), Transformer::replacedEntityTransformer);
-            default -> null;
+            default -> Transformer::defaultTransformer;
         };
-        return transformer == null ? Transformer::defaultTransformer : (Transformer<T>) transformer;
+        return (Transformer<T>) transformer;
     }
 
     @FunctionalInterface

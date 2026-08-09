@@ -9,6 +9,7 @@
     "client": [
         "BlockEntityMixin",
         "ClientLevelMixin",
+        "DebugScreenOverlayMixin",
         "EntityMixin",
         "LivingEntityMixin",
         "MinecraftMixin",

@@ -309,7 +309,9 @@ public abstract sealed class EmitterShape implements IEmitterComponent permits E
 
         @Override
         protected void initializeParticle(MolangInstance instance, Vector3f position, Vector3f speed) {
-            EntityDimensions dimensions = instance.getAttachedEntity().getDimensions(instance.getAttachedEntity().getPose());
+            Entity attachedEntity = instance.getAttachedEntity();
+            assert attachedEntity != null : "attach entity could not be null";
+            EntityDimensions dimensions = attachedEntity.getDimensions(attachedEntity.getPose());
             Vector3f n = new Vector3f(dimensions.width(), dimensions.height(), dimensions.width()).mul(0.5F);
             RandomSource random = instance.getLevel().random;
             position.x = Mth.nextFloat(random, -n.x, n.x);
@@ -468,7 +470,7 @@ public abstract sealed class EmitterShape implements IEmitterComponent permits E
                     MathHelper.applyEuler(MathHelper.getRandomEuler(instance.getLevel().random), speed.set(1, 0, 0));
                 } else {
                     speed.set(position);
-                    if (speed.lengthSquared() != 0.0F) {
+                    if (speed.x != 0.0F || speed.y != 0.0F || speed.z != 0.0F) {
                         speed.normalize();
                     }
                     if (this == INWARDS) speed.negate();

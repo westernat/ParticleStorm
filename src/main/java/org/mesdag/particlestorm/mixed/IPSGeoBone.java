@@ -9,7 +9,7 @@ import java.util.Map;
 public interface IPSGeoBone {
     @Nullable Map<String, LocatorValue> particlestorm$getLocators();
 
-    void particlestorm$setLocators(Map<String, LocatorValue> locators);
+    void particlestorm$setLocators(@Nullable Map<String, LocatorValue> locators);
 
     static IPSGeoBone of(GeoBone geoBone) {
         return (IPSGeoBone) geoBone;
