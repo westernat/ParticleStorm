@@ -24,6 +24,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.particle.ParticleRenderType;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.renderer.GameRenderer;
+import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.culling.Frustum;
 import net.minecraft.client.renderer.texture.TextureManager;
 import net.minecraft.core.particles.ParticleGroup;
@@ -41,6 +42,7 @@ import net.minecraft.world.level.Level;
 import net.neoforged.fml.ModLoader;
 import org.jetbrains.annotations.Nullable;
 import org.lwjgl.opengl.GL11;
+import org.mesdag.particlestorm.PSClientConfigs;
 import org.mesdag.particlestorm.PSGameClient;
 import org.mesdag.particlestorm.ParticleStorm;
 import org.mesdag.particlestorm.api.*;
@@ -165,8 +167,11 @@ public final class MolangParticleEngine implements PreparableReloadListener {
         }
     }
 
-    public void renderParticles(TextureManager textureManager, Camera camera, float partialTick, Frustum frustum, Predicate<ParticleRenderType> renderTypePredicate) {
+    public void renderParticles(LightTexture lightTexture, TextureManager textureManager, Camera camera, float partialTick, Frustum frustum, Predicate<ParticleRenderType> renderTypePredicate) {
         if (groupedParticles.isEmpty()) return;
+        if (RenderSystem.getShaderTexture(2) == 0) {
+            lightTexture.turnOnLightLayer();
+        }
         boolean cull = GL11.glIsEnabled(GL11.GL_CULL_FACE);
         if (cull) {
             RenderSystem.disableCull();
@@ -240,7 +245,7 @@ public final class MolangParticleEngine implements PreparableReloadListener {
     }
 
     public boolean addTrackedEmitter(Entity entity, ResourceLocation particleId) {
-        EvictingQueue<ParticleEmitter> queue = tracker.computeIfAbsent(entity, e -> EvictingQueue.create(16));
+        EvictingQueue<ParticleEmitter> queue = tracker.computeIfAbsent(entity, e -> EvictingQueue.create(PSClientConfigs.maxTrackersPerEntity));
         if (!queue.isEmpty() && queue.stream().anyMatch(emitter -> particleId.equals(emitter.particleId))) return false;
         ParticleEmitter emitter = new ParticleEmitter(entity.level(), entity.position(), particleId);
         addEmitter(emitter);

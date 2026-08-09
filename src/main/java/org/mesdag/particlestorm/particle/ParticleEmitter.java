@@ -13,6 +13,7 @@ import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
+import org.mesdag.particlestorm.ParticleStorm;
 import org.mesdag.particlestorm.api.IEmitterComponent;
 import org.mesdag.particlestorm.api.MolangInstance;
 import org.mesdag.particlestorm.data.component.EmitterLifetime;
@@ -29,6 +30,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class ParticleEmitter implements MolangInstance {
+    public static final String TYPE_KEY = "type";
+    public static final ResourceLocation TYPE = ParticleStorm.asResource("default");
+
+    public final ResourceLocation type;
     public ResourceLocation particleId;
     public MolangExp expression;
 
@@ -74,7 +79,8 @@ public class ParticleEmitter implements MolangInstance {
     public boolean hideOutline;
     private transient boolean removed;
 
-    public ParticleEmitter(Level level, Vec3 pos, ResourceLocation particleId, MolangExp expression) {
+    public ParticleEmitter(ResourceLocation type, Level level, Vec3 pos, ResourceLocation particleId, MolangExp expression) {
+        this.type = type;
         this.level = level;
         setPos(pos);
         this.posO = pos;
@@ -85,11 +91,22 @@ public class ParticleEmitter implements MolangInstance {
         init();
     }
 
+    public ParticleEmitter(Level level, Vec3 pos, ResourceLocation particleId, MolangExp expression) {
+        this(TYPE, level, pos, particleId, expression);
+    }
+
     public ParticleEmitter(Level level, Vec3 pos, ResourceLocation particleId) {
         this(level, pos, particleId, MolangExp.EMPTY);
     }
 
     public ParticleEmitter(Level level, CompoundTag tag) {
+        ResourceLocation type;
+        try {
+            type = ResourceLocation.parse(tag.getString(TYPE_KEY));
+        } catch (Exception e) {
+            type = TYPE;
+        }
+        this.type = type;
         this.level = level;
         deserialize(tag);
         this.invTickRate = 1.0F / level.tickRateManager().tickrate();
@@ -97,6 +114,7 @@ public class ParticleEmitter implements MolangInstance {
     }
 
     public ParticleEmitter(ParticleEmitter parent, ParticleEffect effect) {
+        this.type = parent.type;
         this.level = parent.level;
         setPos(parent.pos);
         this.posO = pos;
@@ -178,14 +196,7 @@ public class ParticleEmitter implements MolangInstance {
     protected void initVars() {
         if (expression != null && !expression.initialized()) {
             expression.compile(new MolangParser(vars));
-//            MathValue variable = expression.getVariable();
-//            List<VariableAssignment> toInit = new ArrayList<>();
-//            if (variable != null && !MathHelper.forAssignment(vars.table, toInit, variable)) {
-//                MathHelper.forCompound(vars.table, toInit, variable);
-//            }
-//            MathHelper.redirect(toInit, vars);
         }
-//        MathHelper.redirect(preset.assignments, vars);
     }
 
     protected void createComponents() {
@@ -338,6 +349,13 @@ public class ParticleEmitter implements MolangInstance {
         this.emitterRandom4 = tag.getFloat("emitterRandom4");
         this.posO = this.pos = new Vec3(tag.getDouble("posX"), tag.getDouble("posY"), tag.getDouble("posZ"));
         this.hideOutline = tag.getBoolean("hideOutline");
+    }
+
+    public final CompoundTag serialize() {
+        CompoundTag tag = new CompoundTag();
+        tag.putString(TYPE_KEY, type.toString());
+        serialize(tag);
+        return tag;
     }
 
     public void serialize(CompoundTag tag) {

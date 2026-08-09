@@ -69,7 +69,9 @@ public abstract sealed class EmitterShape implements IEmitterComponent permits E
         instance.setEmitter(emitter);
 
         ParticlePreset particlePreset = instance.getPreset();
-//        MathHelper.redirect(particlePreset.assignments, instance.getVars());
+        if (particlePreset.initialization != null) {
+            particlePreset.initialization.perRenderExpression().calculate(instance);
+        }
 
         Vector3f position = new Vector3f();
         Vector3f speed = new Vector3f();

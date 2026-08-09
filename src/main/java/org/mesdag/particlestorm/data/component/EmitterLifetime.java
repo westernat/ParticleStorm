@@ -133,9 +133,9 @@ public abstract sealed class EmitterLifetime implements IEmitterComponent permit
                 Queue<IMolangParticleInstance> queue = MolangParticleEngine.INSTANCE.getParticlesForEmitter(emitter);
                 if (queue != null) {
                     for (IMolangParticleInstance instance : queue) {
-                        FloatMolangExp exp = instance.getPreset().perUpdateExpression;
-                        if (exp == null) continue;
-                        exp.calculate(instance);
+                        ParticleInitialization initialization = instance.getPreset().initialization;
+                        if (initialization == null) continue;
+                        initialization.perUpdateExpression().calculate(instance);
                     }
                 }
             }

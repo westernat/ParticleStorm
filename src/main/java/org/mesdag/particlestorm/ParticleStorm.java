@@ -54,7 +54,6 @@ public final class ParticleStorm {
     );
 
     public ParticleStorm(IEventBus bus, ModContainer container) {
-        PSClientConfigs.register(container);
         REGISTER.register(bus);
         registerGeoTest(bus);
         bus.addListener(ParticleStorm::registerPayloadHandlers);

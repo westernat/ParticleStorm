@@ -17,12 +17,15 @@ import net.minecraft.client.renderer.texture.TextureManager;
 import net.minecraft.util.Mth;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.ModLoader;
 import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.event.config.ModConfigEvent;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
 import net.neoforged.neoforge.client.event.*;
-import org.jetbrains.annotations.ApiStatus;
+import net.neoforged.neoforge.client.gui.ConfigurationScreen;
+import net.neoforged.neoforge.client.gui.IConfigScreenFactory;
 import org.mesdag.particlestorm.api.*;
 import org.mesdag.particlestorm.api.geckolib.GeckoLibHelper;
 import org.mesdag.particlestorm.data.component.*;
@@ -30,16 +33,15 @@ import org.mesdag.particlestorm.data.event.*;
 import org.mesdag.particlestorm.particle.MolangParticleEngine;
 import org.mesdag.particlestorm.particle.MolangParticleInstance;
 import org.mesdag.particlestorm.particle.ParticleEmitter;
+import org.mesdag.particlestorm.particle.attach.EmitterAttachHandler;
 
 import java.io.IOException;
 import java.util.Queue;
 
 @SuppressWarnings("deprecation")
+@Mod(value = ParticleStorm.MODID, dist = Dist.CLIENT)
 @EventBusSubscriber(modid = ParticleStorm.MODID, value = Dist.CLIENT)
 public final class PSGameClient {
-    @Deprecated(forRemoval = true, since = "1.3.0")
-    @ApiStatus.ScheduledForRemoval(inVersion = "1.4.0")
-    public static final MolangParticleEngine LOADER = MolangParticleEngine.INSTANCE;
     public static final ParticleRenderType PARTICLE_ADD = new ParticleRenderType() {
         @Override
         public BufferBuilder begin(Tesselator tesselator, TextureManager textureManager) {
@@ -77,6 +79,11 @@ public final class PSGameClient {
         return particleNoDiscard;
     }
 
+    public PSGameClient(ModContainer container) {
+        PSClientConfigs.register(container);
+        container.registerExtensionPoint(IConfigScreenFactory.class, ConfigurationScreen::new);
+    }
+
     @SubscribeEvent
     public static void registerShaders(RegisterShadersEvent event) throws IOException {
         event.registerShader(new ShaderInstance(event.getResourceProvider(), ParticleStorm.asResource("particle_no_discard"), DefaultVertexFormat.PARTICLE), instance -> particleNoDiscard = instance);
@@ -106,14 +113,21 @@ public final class PSGameClient {
     @SubscribeEvent
     public static void clientNetwork$LoggingOut(ClientPlayerNetworkEvent.LoggingOut event) {
         MolangParticleEngine.INSTANCE.removeAll();
+        EmitterAttachHandler.clearEmitters();
     }
 
     @SubscribeEvent
-    public static void tick(ClientTickEvent.Pre event) {
+    public static void clientTick$Pre(ClientTickEvent.Pre event) {
         Minecraft minecraft = Minecraft.getInstance();
         LocalPlayer player = minecraft.player;
         if (player != null && !minecraft.isPaused() && player.clientLevel.tickRateManager().runsNormally()) {
             MolangParticleEngine.INSTANCE.tick(minecraft, player);
+            if (PSClientConfigs.emitterAutoRemoveIntervalTick <= 1 || player.clientLevel.getGameTime() % PSClientConfigs.emitterAutoRemoveIntervalTick == 0) {
+                Camera camera = minecraft.gameRenderer.getMainCamera();
+                if (camera.isInitialized()) {
+                    EmitterAttachHandler.tick(camera);
+                }
+            }
         }
     }
 
@@ -153,6 +167,7 @@ public final class PSGameClient {
     public static void reload(RegisterClientReloadListenersEvent event) {
         registerComponents();
         registerEventNodes();
+        RegisterCustomEmitterTypeEvent.postEvent();
         event.registerReloadListener(MolangParticleEngine.INSTANCE);
     }
 
@@ -221,6 +236,7 @@ public final class PSGameClient {
             if (ParticleStorm.GECKOLIB_LOADED) {
                 GeckoLibHelper.postEvent();
             }
+            EmitterAttachHandler.postEvent();
         });
     }
 }

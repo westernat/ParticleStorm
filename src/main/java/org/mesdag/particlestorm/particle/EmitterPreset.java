@@ -8,9 +8,7 @@ import org.mesdag.particlestorm.data.molang.MolangExp;
 import org.mesdag.particlestorm.data.molang.VariableTable;
 import org.mesdag.particlestorm.data.molang.compiler.MolangParser;
 import org.mesdag.particlestorm.data.molang.compiler.value.Variable;
-import org.mesdag.particlestorm.data.molang.compiler.value.VariableAssignment;
 
-import java.util.ArrayList;
 import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
@@ -20,7 +18,6 @@ public class EmitterPreset {
     public final List<IEmitterComponent> components;
     public final Map<String, Map<String, IEventNode>> events;
     public final VariableTable vars;
-    public final List<VariableAssignment> assignments;
     public EmitterRate.Type emitterRateType = EmitterRate.Type.MANUAL;
     public boolean localPosition = false;
     public boolean localRotation = false;
@@ -33,7 +30,6 @@ public class EmitterPreset {
         this.events = events;
         VariableTable table = new VariableTable(addDefaultVariables(), null);
         MolangParser parser = new MolangParser(table);
-        List<VariableAssignment> toInit = new ArrayList<>();
         boolean lifeTime = false;
         boolean rate = false;
         boolean shape = false;
@@ -64,15 +60,10 @@ public class EmitterPreset {
             }
             for (MolangExp exp : component.getAllMolangExp()) {
                 exp.compile(parser);
-//                MathValue variable = exp.getVariable();
-//                if (variable != null && !MathHelper.forAssignment(table.table, toInit, variable)) {
-//                    MathHelper.forCompound(table.table, toInit, variable);
-//                }
             }
         }
 
         this.vars = table;
-        this.assignments = toInit;
     }
 
     private static Hashtable<String, Variable> addDefaultVariables() {

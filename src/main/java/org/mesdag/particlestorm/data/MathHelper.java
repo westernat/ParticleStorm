@@ -76,33 +76,4 @@ public class MathHelper {
                 Math.fma(2 * (xy + zw) * k, dest.x, Math.fma((yy - xx - zz + ww) * k, dest.y, (2 * (yz - xw) * k) * dest.z)),
                 Math.fma(2 * (xz - yw) * k, dest.x, Math.fma(2 * (yz + xw) * k, dest.y, ((zz - xx - yy + ww) * k) * dest.z)));
     }
-
-//    public static boolean forAssignment(Map<String, Variable> table, List<VariableAssignment> toInit, MathValue value) {
-//        if (value instanceof VariableAssignment assignment) {
-//            Variable variable = assignment.variable();
-//            table.put(variable.name(), variable);
-//            toInit.add(assignment);
-//            return true;
-//        }
-//        return false;
-//    }
-//
-//    public static void forCompound(Map<String, Variable> table, List<VariableAssignment> toInit, MathValue variable) {
-//        if (variable instanceof CompoundValue(MathValue[] subValues)) {
-//            for (MathValue value : subValues) {
-//                forAssignment(table, toInit, value);
-//            }
-//        }
-//    }
-//
-//    public static void redirect(List<VariableAssignment> toInit, VariableTable vars) {
-//        for (VariableAssignment assignment : toInit) {
-//            // 重定向，防止因找不到变量而爆栈
-//            Variable variable = new Variable(assignment.variable().name(), assignment.value());
-//            if (!assignment.variable().isMutable()) {
-//                variable.markImmutable();
-//            }
-//            vars.setValue(variable.name(), variable);
-//        }
-//    }
 }
