@@ -10,11 +10,11 @@ import java.util.ArrayList;
 
 @Mixin(DebugScreenOverlay.class)
 public abstract class DebugScreenOverlayMixin {
-    @ModifyExpressionValue(method = "getGameInformation",at= @At(value = "INVOKE", target = "Lcom/google/common/collect/Lists;newArrayList([Ljava/lang/Object;)Ljava/util/ArrayList;"))
+    @ModifyExpressionValue(method = "getGameInformation", at = @At(value = "INVOKE", target = "Lcom/google/common/collect/Lists;newArrayList([Ljava/lang/Object;)Ljava/util/ArrayList;"))
     private ArrayList<String> modifyParticleCount(ArrayList<String> original) {
         original.add(
-                "MolangParticle: " + MolangParticleEngine.INSTANCE.totalParticleCount() + ". " +
-                "ParticleEmitter: " + MolangParticleEngine.INSTANCE.totalEmitterCount()
+                "MolangParticle: " + MolangParticleEngine.INSTANCE.totalParticleCount() +
+                        ". ParticleEmitter: " + MolangParticleEngine.INSTANCE.totalEmitterCount()
         );
         return original;
     }

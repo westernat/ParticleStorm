@@ -9,7 +9,7 @@ tasks.named('wrapper', Wrapper).configure {
     distributionType = Wrapper.DistributionType.BIN
 }
 
-version = mod_version + "+" + minecraft_version
+version = mod_version
 group = mod_group_id
 
 sourceSets.main.resources {
@@ -22,7 +22,7 @@ sourceSets.main.resources {
 }
 
 base {
-    archivesName = "ParticleStorm-neoforge"
+    archivesName = "ParticleStorm-neoforge+${minecraft_version}"
 }
 
 java.toolchain.languageVersion = JavaLanguageVersion.of(21)
@@ -126,6 +126,7 @@ publishing {
     publications {
         register('mavenJava', MavenPublication) {
             from components.java
+            artifactId = "ParticleStorm-neoforge+${minecraft_version}"
         }
     }
     repositories {
