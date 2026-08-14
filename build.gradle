@@ -126,7 +126,7 @@ publishing {
     publications {
         register('mavenJava', MavenPublication) {
             from components.java
-            artifactId = "ParticleStorm-neoforge+${minecraft_version}"
+            artifactId = "ParticleStorm-neoforge-${minecraft_version}"
         }
     }
     repositories {
