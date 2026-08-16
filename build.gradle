@@ -22,7 +22,7 @@ sourceSets.main.resources {
 }
 
 base {
-    archivesName = "ParticleStorm-neoforge+${minecraft_version}"
+    archivesName = "ParticleStorm-neoforge-${minecraft_version}"
 }
 
 java.toolchain.languageVersion = JavaLanguageVersion.of(21)
