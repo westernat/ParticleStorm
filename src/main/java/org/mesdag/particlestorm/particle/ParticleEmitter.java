@@ -11,7 +11,7 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.Nullable;
-import org.joml.Matrix4f;
+import org.joml.Matrix4x3f;
 import org.joml.Vector3f;
 import org.mesdag.particlestorm.ParticleStorm;
 import org.mesdag.particlestorm.api.IEmitterComponent;
@@ -37,7 +37,7 @@ public class ParticleEmitter implements MolangInstance {
     public ResourceLocation particleId;
     public MolangExp expression;
 
-    private transient Matrix4f localSpace;
+    private transient Matrix4x3f localSpace;
 
     protected transient EmitterPreset preset;
     protected transient VariableTable vars;
@@ -283,15 +283,15 @@ public class ParticleEmitter implements MolangInstance {
         return localSpace != null;
     }
 
-    public final Matrix4f getLocalSpace() {
+    public final Matrix4x3f getLocalSpace() {
         return localSpace;
     }
 
-    public final void setLocalSpace(@Nullable Matrix4f space) {
+    public final void setLocalSpace(@Nullable Matrix4x3f space) {
         setLocalSpace(space, true);
     }
 
-    public final void setLocalSpace(@Nullable Matrix4f space, boolean updatePos) {
+    public final void setLocalSpace(@Nullable Matrix4x3f space, boolean updatePos) {
         this.localSpace = space;
         if (updatePos) {
             updatePos(getX(), getY(), getZ());

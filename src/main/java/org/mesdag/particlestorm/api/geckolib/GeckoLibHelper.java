@@ -1,6 +1,5 @@
 package org.mesdag.particlestorm.api.geckolib;
 
-import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.datafixers.DSL;
 import it.unimi.dsi.fastutil.ints.IntIterator;
 import net.minecraft.core.registries.Registries;
@@ -18,7 +17,7 @@ import net.neoforged.neoforge.client.event.EntityRenderersEvent;
 import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import org.jetbrains.annotations.Nullable;
-import org.joml.Quaternionf;
+import org.joml.Matrix4x3f;
 import org.mesdag.particlestorm.ParticleStorm;
 import org.mesdag.particlestorm.data.molang.MolangExp;
 import org.mesdag.particlestorm.data.molang.VariableTable;
@@ -96,7 +95,7 @@ public final class GeckoLibHelper {
             case BlockEntity entity1 when entity1.getLevel() != null -> {
                 entity = null;
                 blockEntity = entity1;
-                variableTable = ((IPSBlockEntity) blockEntity).particlestorm$getVariableTable();
+                variableTable = IPSBlockEntity.of(blockEntity).particlestorm$getVariableTable();
                 level = blockEntity.getLevel();
             }
             case null, default -> {
@@ -121,7 +120,7 @@ public final class GeckoLibHelper {
                 double[] offset = getLocatorOffset(locator);
                 double[] rotation = getLocatorRotation(locator);
                 LocatorState state = cache.particlestorm$getLocatorState(locator);
-                state.px = (float) (offset[0] * 0.0625);
+                state.px = -(float) (offset[0] * 0.0625);
                 state.py = (float) (offset[1] * 0.0625);
                 state.pz = (float) (offset[2] * 0.0625);
                 state.rx = (float) Math.toRadians(rotation[0]);
@@ -148,26 +147,22 @@ public final class GeckoLibHelper {
         }
     }
 
-    private static final PoseStack poseStack = new PoseStack();
-    private static final Quaternionf quaternion = new Quaternionf();
+    private static final Matrix4x3f mat = new Matrix4x3f();
 
     public static void transformLocator(GeoBone bone, GeoAnimatable animatable, float partialTick) {
         Map<String, LocatorValue> locators = IPSGeoBone.of(bone).particlestorm$getLocators();
         if (locators == null || locators.isEmpty()) return;
-        poseStack.pushPose();
-        RegisterLocatorPreTransformerEvent.getTransformer(animatable).transform(bone, animatable, poseStack, partialTick);
+        mat.identity();
+        RegisterLocatorPreTransformerEvent.getTransformer(animatable).transform(bone, animatable, mat, partialTick);
         IPSAnimatableInstanceCache cache = IPSAnimatableInstanceCache.of(animatable.getAnimatableInstanceCache());
         for (LocatorValue locator : locators.values()) {
             ParticleEmitter emitter = MolangParticleEngine.INSTANCE.getEmitter(cache.particlestorm$getCachedId().getInt(locator));
             if (emitter == null || emitter.isRemoved()) continue;
             LocatorState state = cache.particlestorm$getLocatorState(locator);
-            poseStack.pushPose();
-            poseStack.mulPose(quaternion.rotationXYZ(state.rx, state.ry, state.rz));
-            poseStack.translate(-state.px, state.py, state.pz);
-            emitter.setLocalSpace(poseStack.last().pose(), false);
-            poseStack.popPose();
+            emitter.setLocalSpace(new Matrix4x3f(mat)
+                    .rotateXYZ(state.rx, state.ry, state.rz)
+                    .translate(state.px, state.py, state.pz), false);
         }
-        poseStack.popPose();
     }
 
     public static class LocatorState {
