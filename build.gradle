@@ -17,7 +17,7 @@ version = mod_version
 group = mod_group_id
 
 base {
-    archivesName = "ParticleStorm-neoforge-${minecraft_version}"
+    archivesName = "ParticleStorm-forge-${minecraft_version}"
 }
 
 java.toolchain.languageVersion = JavaLanguageVersion.of(17)
@@ -150,7 +150,7 @@ publishing {
     publications {
         register('mavenJava', MavenPublication) {
             from components.java
-            artifactId = "ParticleStorm-neoforge-${minecraft_version}"
+            artifactId = "ParticleStorm-forge-${minecraft_version}"
         }
     }
     repositories {
