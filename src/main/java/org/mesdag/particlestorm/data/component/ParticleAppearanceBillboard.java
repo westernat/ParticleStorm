@@ -228,11 +228,11 @@ public record ParticleAppearanceBillboard(FloatMolangExp2 size, FaceCameraMode f
     ///
     /// @param texturewidth
     /// @param textureheight Specifies the assumed texture width/height, defaults to 1<p>
-    ///                                                                                                                                                    When set to 1, UV's work just like normalized UV's<p>
-    ///                                                                                                                                                    When set to the texture width/height, this works like texels
+    ///                      When set to 1, UV's work just like normalized UV's<p>
+    ///                      When set to the texture width/height, this works like texels
     /// @param uv
     /// @param uvSize        Assuming the specified texture width and height, use these uv coordinates.<p>
-    ///                                                                                                                                                    Evaluated every frame
+    ///                      Evaluated every frame                                                                                                                                            Evaluated every frame
     public record UV(int texturewidth, int textureheight, FloatMolangExp2 uv, FloatMolangExp2 uvSize, Flipbook flipbook) {
         public static final UV EMPTY = new UV(1, 1, FloatMolangExp2.ZERO, FloatMolangExp2.ZERO, Flipbook.EMPTY);
         public static final Codec<UV> CODEC = RecordCodecBuilder.create(instance -> instance.group(

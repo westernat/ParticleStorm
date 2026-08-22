@@ -1,5 +1,6 @@
 package org.mesdag.particlestorm.data.curve;
 
+import com.mojang.datafixers.util.Either;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.util.Tuple;
@@ -16,10 +17,10 @@ public final class ParticleCurve {
             CurveType.CODEC.fieldOf("type").orElse(CurveType.LINEAR).forGetter(curve -> curve.type),
             FloatMolangExp.CODEC.fieldOf("input").forGetter(curve -> curve.input),
             FloatMolangExp.CODEC.fieldOf("horizontal_range").orElse(FloatMolangExp.ONE).forGetter(curve -> curve.horizontalRange),
-            CurveType.CODEC.dispatchMap(
-                    nodes -> nodes.isLeft ? CurveType.BEZIER_CHAIN : CurveType.LINEAR,
-                    curveType -> curveType == CurveType.BEZIER_CHAIN ? CurveNodes.MAP_CODEC.fieldOf("nodes") : CurveNodes.LIST_CODEC.fieldOf("nodes")
-            ).forGetter(curve -> curve.nodes)
+            Codec.either(CurveNodes.MAP_CODEC, CurveNodes.LIST_CODEC).xmap(
+                    either -> either.left().orElse(either.right().orElseThrow()),
+                    nodes -> nodes.isLeft ? Either.left(nodes) : Either.right(nodes)
+            ).fieldOf("nodes").forGetter(curve -> curve.nodes)
     ).apply(instance, ParticleCurve::new));
     public static final Tuple<Float, CurveNode> FIRST = new Tuple<>(0.0F, new CurveNode(0.0F, 0.0F));
     public static final Tuple<Float, CurveNode> LAST = new Tuple<>(1.0F, new CurveNode(0.0F, 0.0F));
