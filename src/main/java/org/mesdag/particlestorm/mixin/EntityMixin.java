@@ -3,14 +3,14 @@ package org.mesdag.particlestorm.mixin;
 import net.minecraft.world.entity.Entity;
 import org.mesdag.particlestorm.data.molang.VariableTable;
 import org.mesdag.particlestorm.data.molang.compiler.value.Variable;
-import org.mesdag.particlestorm.mixed.IEntity;
+import org.mesdag.particlestorm.mixed.IPSEntity;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 
 import java.util.Hashtable;
 
 @Mixin(Entity.class)
-public abstract class EntityMixin implements IEntity {
+public abstract class EntityMixin implements IPSEntity {
     @Unique
     private VariableTable particlestorm$variableTable;
 

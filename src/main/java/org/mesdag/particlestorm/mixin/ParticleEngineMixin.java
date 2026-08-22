@@ -8,7 +8,7 @@ import net.minecraft.resources.ResourceLocation;
 import org.mesdag.particlestorm.ParticleStorm;
 import org.mesdag.particlestorm.api.RegisterCustomParticleTypeEvent;
 import org.mesdag.particlestorm.data.DefinedParticleEffect;
-import org.mesdag.particlestorm.mixed.IParticleEngine;
+import org.mesdag.particlestorm.mixed.IPSParticleEngine;
 import org.mesdag.particlestorm.particle.ExtendMutableSpriteSet;
 import org.mesdag.particlestorm.particle.MolangParticleEngine;
 import org.spongepowered.asm.mixin.Final;
@@ -22,7 +22,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import java.util.Map;
 
 @Mixin(ParticleEngine.class)
-public abstract class ParticleEngineMixin implements IParticleEngine {
+public abstract class ParticleEngineMixin implements IPSParticleEngine {
     @Shadow
     @Final
     private Map<ResourceLocation, ParticleEngine.MutableSpriteSet> spriteSets;
@@ -35,9 +35,9 @@ public abstract class ParticleEngineMixin implements IParticleEngine {
         if (particlestorm$preparations != null && spriteSets.get(ParticleStorm.MOLANG.getId()) instanceof ExtendMutableSpriteSet spriteSet) {
             spriteSet.clear();
             int i = 0;
+            TextureAtlasSprite missing = particlestorm$preparations.missing();
+            spriteSet.bindMissing(missing);
             for (Map.Entry<ResourceLocation, DefinedParticleEffect> entry : MolangParticleEngine.INSTANCE.id2Effect().entrySet()) {
-                TextureAtlasSprite missing = particlestorm$preparations.missing();
-                spriteSet.bindMissing(missing);
                 ResourceLocation texture = entry.getValue().description.parameters().bindTexture(i);
                 spriteSet.addSprite(particlestorm$preparations.regions().getOrDefault(texture, missing));
                 i++;

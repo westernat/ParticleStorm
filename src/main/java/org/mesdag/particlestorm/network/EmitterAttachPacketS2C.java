@@ -26,7 +26,6 @@ public record EmitterAttachPacketS2C(int particleId, int entityId) {
     }
 
     public static void sendToClient(ServerPlayer player, int particleId, Entity entity) {
-        ParticleStorm.CHANNEL.send(PacketDistributor.PLAYER.with(() -> player),
-                new EmitterAttachPacketS2C(particleId, entity.getId()));
+        ParticleStorm.CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), new EmitterAttachPacketS2C(particleId, entity.getId()));
     }
 }

@@ -35,11 +35,23 @@ public interface IMolangParticleInstance extends MolangInstance {
 
     Vector3f getInitialSpeed();
 
-    void setXRot(float x);
+    void setXRot(float x, boolean o);
 
-    void setYRot(float y);
+    default void setXRot(float x) {
+        setXRot(x, false);
+    }
 
-    void setZRot(float z);
+    void setYRot(float y, boolean o);
+
+    default void setYRot(float y) {
+        setYRot(y, false);
+    }
+
+    void setZRot(float z, boolean o);
+
+    default void setZRot(float z) {
+        setZRot(z, false);
+    }
 
     void setZRotD(float delta);
 
@@ -101,7 +113,7 @@ public interface IMolangParticleInstance extends MolangInstance {
 
     double getZ();
 
-    void setPosO(double x, double y, double z);
+    void setPos(double x, double y, double z, boolean o);
 
     void setColor(float red, float green, float blue, float alpha);
 
@@ -114,19 +126,20 @@ public interface IMolangParticleInstance extends MolangInstance {
     boolean isDiscarded();
 
     // region default
-    default void moveDirectly(double x, double y, double z) {
-        AABB aabb = self().getBoundingBox();
+    default void moveDirectly(double dx, double dy, double dz) {
         float radius = getCollisionRadius();
-        AABB newBox = new AABB(
-                aabb.minX - radius + x,
-                aabb.minY - radius + y,
-                aabb.minZ - radius + z,
-                aabb.maxX + radius + x,
-                aabb.maxY + radius + y,
-                aabb.maxZ + radius + z
-        );
-        self().setBoundingBox(newBox);
-        self().setPos(newBox.minX + (newBox.maxX - newBox.minX) / 2.0, newBox.minY, newBox.minZ + (newBox.maxZ - newBox.minZ) / 2.0);
+        double px = getX() + dx;
+        double py = getY() + dy;
+        double pz = getZ() + dz;
+        self().setBoundingBox(new AABB(
+                px - radius,
+                py,
+                pz - radius,
+                px + radius,
+                py + radius + radius,
+                pz + radius
+        ));
+        self().setLocationFromBoundingbox();
     }
 
     @Override

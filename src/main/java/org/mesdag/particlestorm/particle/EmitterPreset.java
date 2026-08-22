@@ -1,38 +1,35 @@
 package org.mesdag.particlestorm.particle;
 
 import net.minecraft.core.particles.ParticleType;
+import net.minecraftforge.fml.ModLoader;
+import org.jetbrains.annotations.Nullable;
+import org.mesdag.particlestorm.api.EmitterPresetLoadedEvent;
 import org.mesdag.particlestorm.api.IEmitterComponent;
 import org.mesdag.particlestorm.api.IEventNode;
-import org.mesdag.particlestorm.data.MathHelper;
 import org.mesdag.particlestorm.data.component.*;
 import org.mesdag.particlestorm.data.molang.MolangExp;
 import org.mesdag.particlestorm.data.molang.VariableTable;
-import org.mesdag.particlestorm.data.molang.compiler.MathValue;
 import org.mesdag.particlestorm.data.molang.compiler.MolangParser;
 import org.mesdag.particlestorm.data.molang.compiler.value.Variable;
-import org.mesdag.particlestorm.data.molang.compiler.value.VariableAssignment;
 
-import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
 
 public class EmitterPreset {
-    public final ParticleType<?> type;
-    public final List<IEmitterComponent> components;
-    public final Map<String, Map<String, IEventNode>> events;
-    public final VariableTable vars;
-    public final List<VariableAssignment> assignments;
+    public ParticleType<?> type;
+    public List<IEmitterComponent> components;
+    public Map<String, Map<String, IEventNode>> events;
+    public VariableTable vars;
     public EmitterRate.Type emitterRateType = EmitterRate.Type.MANUAL;
     public boolean localPosition = false;
     public boolean localRotation = false;
     public boolean localVelocity = false;
     public EmitterLifetimeEvents lifetimeEvents;
 
-    @Deprecated
-    public EmitterPreset(MolangParticleOption option, List<IEmitterComponent> components, Map<String, Map<String, IEventNode>> events) {
-        this(option.getType(), components, events);
-    }
+    /// For custom preset data
+    protected Map<Class<?>, Object> tickets;
 
     public EmitterPreset(ParticleType<?> type, List<IEmitterComponent> components, Map<String, Map<String, IEventNode>> events) {
         this.type = type;
@@ -40,30 +37,32 @@ public class EmitterPreset {
         this.events = events;
         VariableTable table = new VariableTable(addDefaultVariables(), null);
         MolangParser parser = new MolangParser(table);
-        List<VariableAssignment> toInit = new ArrayList<>();
         boolean lifeTime = false;
         boolean rate = false;
         boolean shape = false;
         for (IEmitterComponent component : components) {
             if (component instanceof EmitterLifetime) {
-                if (lifeTime) throw new IllegalArgumentException("Duplicate emitter lifetime component");
-                else lifeTime = true;
+                if (lifeTime) {
+                    throw new IllegalArgumentException("Duplicate emitter lifetime component");
+                }
+                lifeTime = true;
             } else if (component instanceof EmitterRate) {
                 if (rate) {
                     throw new IllegalArgumentException("Duplicate emitter rate component");
+                }
+                rate = true;
+                if (component instanceof EmitterRate.Instant) {
+                    this.emitterRateType = EmitterRate.Type.INSTANT;
+                } else if (component instanceof EmitterRate.Steady) {
+                    this.emitterRateType = EmitterRate.Type.STEADY;
                 } else {
-                    rate = true;
-                    if (component instanceof EmitterRate.Instant) {
-                        this.emitterRateType = EmitterRate.Type.INSTANT;
-                    } else if (component instanceof EmitterRate.Steady) {
-                        this.emitterRateType = EmitterRate.Type.STEADY;
-                    } else {
-                        this.emitterRateType = EmitterRate.Type.MANUAL;
-                    }
+                    this.emitterRateType = EmitterRate.Type.MANUAL;
                 }
             } else if (component instanceof EmitterShape) {
-                if (shape) throw new IllegalArgumentException("Duplicate emitter shape component");
-                else shape = true;
+                if (shape) {
+                    throw new IllegalArgumentException("Duplicate emitter shape component");
+                }
+                shape = true;
             } else if (component instanceof EmitterLocalSpace localSpace) {
                 this.localPosition = localSpace.position();
                 this.localRotation = localSpace.rotation();
@@ -73,15 +72,21 @@ public class EmitterPreset {
             }
             for (MolangExp exp : component.getAllMolangExp()) {
                 exp.compile(parser);
-                MathValue variable = exp.getVariable();
-                if (variable != null && !MathHelper.forAssignment(table.table, toInit, variable)) {
-                    MathHelper.forCompound(table.table, toInit, variable);
-                }
             }
         }
 
         this.vars = table;
-        this.assignments = toInit;
+        ModLoader.get().postEvent(new EmitterPresetLoadedEvent(this));
+    }
+
+    public <T> void setTicket(Class<T> clazz, T value) {
+        if (tickets == null) this.tickets = new HashMap<>();
+        tickets.put(clazz, value);
+    }
+
+    @SuppressWarnings("unchecked")
+    public <T> @Nullable T getTicket(Class<T> clazz) {
+        return tickets == null ? null : (T) tickets.get(clazz);
     }
 
     private static Hashtable<String, Variable> addDefaultVariables() {

@@ -6,12 +6,12 @@ import software.bernie.geckolib.loading.json.raw.LocatorValue;
 
 import java.util.Map;
 
-public interface IGeoBone {
+public interface IPSGeoBone {
     @Nullable Map<String, LocatorValue> particlestorm$getLocators();
 
-    void particlestorm$setLocators(Map<String, LocatorValue> locators);
+    void particlestorm$setLocators(@Nullable Map<String, LocatorValue> locators);
 
-    static IGeoBone of(GeoBone geoBone) {
-        return (IGeoBone) geoBone;
+    static IPSGeoBone of(GeoBone geoBone) {
+        return (IPSGeoBone) geoBone;
     }
 }

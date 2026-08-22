@@ -9,6 +9,7 @@ import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
 import net.minecraft.util.StringRepresentable;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntityDimensions;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
@@ -68,7 +69,9 @@ public abstract sealed class EmitterShape implements IEmitterComponent permits E
         instance.setEmitter(emitter);
 
         ParticlePreset particlePreset = instance.getPreset();
-        MathHelper.redirect(particlePreset.assignments, instance.getVars());
+        if (particlePreset.initialization != null) {
+            particlePreset.initialization.perRenderExpression().calculate(instance);
+        }
 
         Vector3f position = new Vector3f();
         Vector3f speed = new Vector3f();
@@ -95,8 +98,7 @@ public abstract sealed class EmitterShape implements IEmitterComponent permits E
         }
 
         instance.setParticleSpeed(speed.x, speed.y, speed.z);
-        instance.setPos(position.x, position.y, position.z);
-        instance.setPosO(position.x, position.y, position.z);
+        instance.setPos(position.x, position.y, position.z, true);
         instance.setParticleGroup(emitter.particleGroup);
 
         for (IParticleComponent component : particlePreset.effect.orderedParticleComponents) {
@@ -160,6 +162,10 @@ public abstract sealed class EmitterShape implements IEmitterComponent permits E
             );
         }
 
+        private static final Vector3f y = new Vector3f(0, 1, 0);
+        private static final Vector3f v = new Vector3f();
+        private static final Quaternionf q = new Quaternionf();
+
         @Override
         protected void initializeParticle(MolangInstance instance, Vector3f position, Vector3f speed) {
             position.set(offset.calculate(instance));
@@ -170,7 +176,7 @@ public abstract sealed class EmitterShape implements IEmitterComponent permits E
             position.z += sp * Mth.sin(op);
             float[] lp = planeNormal.plane.calculate(instance);
             if (!Arrays.equals(lp, PlaneNormal.YN)) {
-                MathHelper.applyQuaternion(MathHelper.setFromUnitVectors(new Vector3f(0, 1, 0), new Vector3f(lp), new Quaternionf()), position);
+                MathHelper.applyQuaternion(MathHelper.setFromUnitVectors(y, v.set(lp), q.identity()), position);
             }
             direction.apply(instance, this, position, speed);
         }
@@ -304,7 +310,9 @@ public abstract sealed class EmitterShape implements IEmitterComponent permits E
 
         @Override
         protected void initializeParticle(MolangInstance instance, Vector3f position, Vector3f speed) {
-            var dimensions = instance.getAttachedEntity().getDimensions(instance.getAttachedEntity().getPose());
+            Entity attachedEntity = instance.getAttachedEntity();
+            assert attachedEntity != null : "attach entity could not be null";
+            EntityDimensions dimensions = attachedEntity.getDimensions(attachedEntity.getPose());
             Vector3f n = new Vector3f(dimensions.width, dimensions.height, dimensions.width).mul(0.5F);
             RandomSource random = instance.getLevel().random;
             position.x = Mth.nextFloat(random, -n.x, n.x);
@@ -466,7 +474,7 @@ public abstract sealed class EmitterShape implements IEmitterComponent permits E
                     MathHelper.applyEuler(MathHelper.getRandomEuler(instance.getLevel().random), speed.set(1, 0, 0));
                 } else {
                     speed.set(position);
-                    if (speed.lengthSquared() != 0.0F) {
+                    if (speed.x != 0.0F || speed.y != 0.0F || speed.z != 0.0F) {
                         speed.normalize();
                     }
                     if (this == INWARDS) speed.negate();

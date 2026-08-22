@@ -75,6 +75,10 @@ public class MolangParser {
         this.table = table;
     }
 
+    public VariableTable table() {
+        return table;
+    }
+
     public boolean isFunctionRegistered(String name) {
         return FUNCTION_FACTORIES.containsKey(name);
     }
@@ -321,10 +325,10 @@ public class MolangParser {
                 continue;
 
             if (operator == Operator.ASSIGN_VARIABLE) {
-                if (!(parseSymbols(symbols.subList(0, i)) instanceof Variable v))
+                if (!(parseSymbols(symbols.subList(0, i)) instanceof Variable v)) {
                     throw new IllegalArgumentException("Attempted to assign a value to a non-variable");
-
-                return new VariableAssignment(v, parseSymbols(symbols.subList(i + 1, symbolCount)));
+                }
+                return new VariableAssignment(v.name(), parseSymbols(symbols.subList(i + 1, symbolCount)));
             }
 
             if (lastOperator == null || !operator.takesPrecedenceOver(lastOperator)) {
@@ -403,16 +407,6 @@ public class MolangParser {
         return buildFunction(name, args.toArray(new MathValue[0]));
     }
 
-    @Deprecated(forRemoval = true)
-    public static boolean isOperativeSymbol(char symbol) {
-        return isOperativeSymbol(String.valueOf(symbol));
-    }
-
-    @Deprecated(forRemoval = true)
-    public static boolean isOperativeSymbol(String symbol) {
-        return Operator.isOperator(symbol) || symbol.equals("?") || symbol.equals(":");
-    }
-
     public static boolean isNumeric(String string) {
         return NUMERIC.matcher(string).matches();
     }
@@ -421,15 +415,10 @@ public class MolangParser {
         return Operator.getOperatorFor(op).orElseThrow(() -> new IllegalArgumentException("Unknown operator symbol '" + op + "'"));
     }
 
-    @Deprecated(forRemoval = true)
-    protected static boolean isQueryOrFunctionName(String string) {
-        return !isNumeric(string) && !isOperativeSymbol(string);
-    }
-
     protected boolean isLikelyVariable(String string) {
-        if (MolangQueries.isExistingVariable(string))
+        if (MolangQueries.isExistingVariable(string)) {
             return true;
-
+        }
         return !isNumeric(string) && !isFunctionRegistered(string) && !Operator.isOperator(string) && !string.equals("?") && !string.equals(":");
     }
 }

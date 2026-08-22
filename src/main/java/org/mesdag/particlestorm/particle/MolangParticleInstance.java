@@ -21,7 +21,7 @@ import org.mesdag.particlestorm.api.IMolangParticleInstance;
 import org.mesdag.particlestorm.api.IParticleComponent;
 import org.mesdag.particlestorm.data.component.ParticleMotionCollision;
 import org.mesdag.particlestorm.data.molang.VariableTable;
-import org.mesdag.particlestorm.mixed.ITextureAtlasSprite;
+import org.mesdag.particlestorm.mixed.IPSTextureAtlasSprite;
 
 import java.util.List;
 import java.util.Optional;
@@ -29,8 +29,8 @@ import java.util.Optional;
 public class MolangParticleInstance extends TextureSheetParticle implements IMolangParticleInstance {
     protected final ParticlePreset preset;
     protected ParticleVariableTable vars;
-    protected final float originX;
-    protected final float originY;
+    protected final float invOx;
+    protected final float invOy;
 
     protected Vector3f acceleration = new Vector3f();
     protected Vector3f facingDirection = new Vector3f();
@@ -71,8 +71,8 @@ public class MolangParticleInstance extends TextureSheetParticle implements IMol
         this.quadSize = 0; // as collision radius
         this.preset = preset;
         setSprite(sprites.get(preset.effect.description.parameters().getTextureIndex()));
-        this.originX = ((ITextureAtlasSprite) sprite).particlestorm$getOriginX();
-        this.originY = ((ITextureAtlasSprite) sprite).particlestorm$getOriginY();
+        this.invOx = ((IPSTextureAtlasSprite) sprite).particlestorm$getInvOx();
+        this.invOy = ((IPSTextureAtlasSprite) sprite).particlestorm$getInvOy();
         this.scaleU = sprite.contents().width() * preset.invTextureWidth;
         this.scaleV = sprite.contents().height() * preset.invTextureHeight;
 
@@ -120,18 +120,27 @@ public class MolangParticleInstance extends TextureSheetParticle implements IMol
     }
 
     @Override
-    public void setXRot(float x) {
+    public void setXRot(float x, boolean o) {
         this.xRot = x;
+        if (o) {
+            this.xRotO = x;
+        }
     }
 
     @Override
-    public void setYRot(float y) {
+    public void setYRot(float y, boolean o) {
         this.yRot = y;
+        if (o) {
+            this.yRotO = y;
+        }
     }
 
     @Override
-    public void setZRot(float z) {
+    public void setZRot(float z, boolean o) {
         this.roll = z;
+        if (o) {
+            this.oRoll = z;
+        }
     }
 
     @Override
@@ -285,21 +294,13 @@ public class MolangParticleInstance extends TextureSheetParticle implements IMol
     }
 
     @Override
-    public void setPosO(double x, double y, double z) {
-        this.xo = x;
-        this.yo = y;
-        this.zo = z;
-    }
-
-    /// @see MolangParticleInstance#setZRot(float)
-    /// @deprecated
-    public void setRoll(float roll) {
-        this.roll = roll;
-    }
-
-    @Deprecated
-    public float getRoll() {
-        return roll;
+    public void setPos(double x, double y, double z, boolean o) {
+        setPos(x, y, z);
+        if (o) {
+            this.xo = x;
+            this.yo = y;
+            this.zo = z;
+        }
     }
 
     @Override
@@ -311,10 +312,10 @@ public class MolangParticleInstance extends TextureSheetParticle implements IMol
     @Override
     public void setUV(float u, float v, float w, float h) {
         if (UV == null) this.UV = new float[4];
-        this.UV[0] = u / originX;
-        this.UV[1] = v / originY;
-        this.UV[2] = (u + w) / originX;
-        this.UV[3] = (v + h) / originY;
+        this.UV[0] = u * invOx;
+        this.UV[1] = v * invOy;
+        this.UV[2] = (u + w) * invOx;
+        this.UV[3] = (v + h) * invOy;
     }
 
     @Override
@@ -399,49 +400,48 @@ public class MolangParticleInstance extends TextureSheetParticle implements IMol
         }
     }
 
-    protected static final Quaternionf quaternionf = new Quaternionf();
-    protected static final Vector3f vector3f = new Vector3f();
+    protected static final Quaternionf q = new Quaternionf();
+    protected static final Vector3f vec = new Vector3f();
 
     // 在render前调用
     @Override
     public boolean isVisible(Camera camera, Frustum frustum, float partialTick) {
         Vec3 camPos = camera.getPosition();
         if (emitter.isLocalSpace()) {
-            emitter.local2World(vector3f.set(
+            emitter.local2World(vec.set(
                     (float) Mth.lerp(partialTick, xo, x),
                     (float) Mth.lerp(partialTick, yo, y),
                     (float) Mth.lerp(partialTick, zo, z)
             ), partialTick);
             float size = Math.max(billboardSize[0], billboardSize[1]);
             boolean inFrustum = frustum.cubeInFrustum(
-                    vector3f.x - size,
-                    vector3f.y - size,
-                    vector3f.z - size,
-                    vector3f.x + size,
-                    vector3f.y + size,
-                    vector3f.z + size
+                    vec.x - size,
+                    vec.y - size,
+                    vec.z - size,
+                    vec.x + size,
+                    vec.y + size,
+                    vec.z + size
             );
-            vector3f.sub((float) camPos.x, (float) camPos.y, (float) camPos.z);
+            vec.sub((float) camPos.x, (float) camPos.y, (float) camPos.z);
             return inFrustum;
         }
-        vector3f.set(
+        vec.set(
                 (float) (Mth.lerp(partialTick, xo, x) - camPos.x),
-                (float) (Mth.lerp(partialTick, yo, y) - camPos.y),
+                (float) (Mth.lerp(partialTick, yo, y) - camPos.y) + 1.0e-4f, // add an epsilon to fix the z-flash
                 (float) (Mth.lerp(partialTick, zo, z) - camPos.z)
         );
-        float size = Math.max(billboardSize[0], billboardSize[1]);
-        return frustum.cubeInFrustum(x - size, y - size, z - size, x + size, y + size, z + size);
+        return IMolangParticleInstance.super.isVisible(camera, frustum, partialTick);
     }
 
     // 在isVisible后调用
     @Override
     public void render(VertexConsumer buffer, Camera camera, float partialTicks) {
-        quaternionf.identity();
-        getFacingCameraMode().setRotation(this, quaternionf, camera, partialTicks);
-        if (xRot != 0.0F) quaternionf.rotateX(Mth.lerp(partialTicks, xRotO, xRot));
-        if (yRot != 0.0F) quaternionf.rotateY(Mth.lerp(partialTicks, yRotO, yRot));
-        if (roll != 0.0F) quaternionf.rotateZ(Mth.lerp(partialTicks, oRoll, roll));
-        renderRotatedQuad(buffer, vector3f.x, vector3f.y, vector3f.z, partialTicks);
+        q.identity();
+        getFacingCameraMode().setRotation(this, q, camera, partialTicks);
+        if (xRot != 0.0F) q.rotateX(Mth.lerp(partialTicks, xRotO, xRot));
+        if (yRot != 0.0F) q.rotateY(Mth.lerp(partialTicks, yRotO, yRot));
+        if (roll != 0.0F) q.rotateZ(Mth.lerp(partialTicks, oRoll, roll));
+        renderRotatedQuad(buffer, vec.x, vec.y, vec.z, partialTicks);
     }
 
     protected void renderRotatedQuad(VertexConsumer buffer, float x, float y, float z, float partialTicks) {
@@ -467,13 +467,16 @@ public class MolangParticleInstance extends TextureSheetParticle implements IMol
             float v,
             int packedLight
     ) {
-        vector3f.set(xOffset * billboardSize[0], yOffset * billboardSize[1], 0.0F).rotate(quaternionf).add(x, y, z);
-        buffer.vertex(vector3f.x(), vector3f.y(), vector3f.z()).uv(u, v).color(rCol, gCol, bCol, alpha).uv2(packedLight).endVertex();
+        vec.set(xOffset * billboardSize[0], yOffset * billboardSize[1], 0.0F).rotate(q).add(x, y, z);
+        buffer.vertex(vec.x(), vec.y(), vec.z()).uv(u, v).color(rCol, gCol, bCol, alpha).uv2(packedLight).endVertex();
     }
 
     @Override
     public void move(double x, double y, double z) {
-        if (stoppedByCollision) return;
+        if (stoppedByCollision) {
+            collisionEvent();
+            return;
+        }
 
         double d0 = x;
         double d1 = y;
@@ -481,12 +484,12 @@ public class MolangParticleInstance extends TextureSheetParticle implements IMol
         if (hasPhysics && hasCollision && (x != 0.0 || y != 0.0 || z != 0.0) && Mth.lengthSquared(x, y, z) < MAXIMUM_COLLISION_VELOCITY_SQUARED) {
             AABB aabb = getBoundingBox();
             if (emitter.isLocalSpace()) {
-                emitter.local2World(vector3f.set(aabb.minX, aabb.minY, aabb.minZ), 1);
-                float mx = vector3f.x;
-                float my = vector3f.y;
-                float mz = vector3f.z;
-                emitter.local2World(vector3f.set(aabb.maxX, aabb.maxY, aabb.maxZ), 1);
-                aabb = new AABB(mx, my, mz, vector3f.x, vector3f.y, vector3f.z);
+                emitter.local2World(vec.set(aabb.minX, aabb.minY, aabb.minZ), 1);
+                float mx = vec.x;
+                float my = vec.y;
+                float mz = vec.z;
+                emitter.local2World(vec.set(aabb.maxX, aabb.maxY, aabb.maxZ), 1);
+                aabb = new AABB(mx, my, mz, vec.x, vec.y, vec.z);
             }
             Vec3 vec3 = Entity.collideBoundingBox(null, new Vec3(x, y, z), aabb, level, List.of());
             if (x != vec3.x) {
@@ -515,21 +518,30 @@ public class MolangParticleInstance extends TextureSheetParticle implements IMol
             this.onGround = d1 != y && d1 < 0.0;
 
             if (onGround || (d0 != x || d2 != z)) {
-                if (!preset.collisionEvents.isEmpty()) {
-                    for (ParticleMotionCollision.Event event : preset.collisionEvents) {
-                        float tickSpeed = event.minSpeed() * getInvTickRate();
-                        if (tickSpeed * tickSpeed < Mth.lengthSquared(xd, yd, zd)) {
-                            for (IEventNode node : preset.effect.events.get(event.event()).values()) {
-                                node.execute(this);
-                            }
-                        }
-                    }
-                }
+                collisionEvent();
                 if (expireOnContact) {
                     remove();
                 }
             }
         }
+    }
+
+    protected void collisionEvent() {
+        if (preset.collisionEvents.isEmpty()) return;
+        for (ParticleMotionCollision.Event event : preset.collisionEvents) {
+            float tickSpeed = event.minSpeed() * getInvTickRate();
+            if (tickSpeed * tickSpeed < Mth.lengthSquared(xd, yd, zd)) {
+                for (IEventNode node : preset.effect.events.get(event.event()).values()) {
+                    node.execute(this);
+                }
+            }
+        }
+    }
+
+    @Override
+    public void setParticleSpeed(double xd, double yd, double zd) {
+        if (stoppedByCollision) return;
+        super.setParticleSpeed(xd, yd, zd);
     }
 
     @Override

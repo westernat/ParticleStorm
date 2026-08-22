@@ -15,7 +15,7 @@ public record ParticleInitialization(FloatMolangExp perRenderExpression, FloatMo
     public static final ResourceLocation ID = ResourceLocation.withDefaultNamespace("particle_initialization");
     public static final Codec<ParticleInitialization> CODEC = RecordCodecBuilder.create(instance -> instance.group(
             FloatMolangExp.CODEC.optionalFieldOf("per_render_expression", FloatMolangExp.ZERO).forGetter(ParticleInitialization::perRenderExpression),
-            FloatMolangExp.CODEC.optionalFieldOf("per_update_expression", FloatMolangExp.ZERO).forGetter(ParticleInitialization::perRenderExpression)
+            FloatMolangExp.CODEC.optionalFieldOf("per_update_expression", FloatMolangExp.ZERO).forGetter(ParticleInitialization::perUpdateExpression)
     ).apply(instance, ParticleInitialization::new));
 
     @Override
@@ -33,10 +33,9 @@ public record ParticleInitialization(FloatMolangExp perRenderExpression, FloatMo
         perRenderExpression.calculate(instance);
     }
 
+    /// invoked through[EmitterShape#emittingParticle]
     @Override
-    public void apply(IMolangParticleInstance instance) {
-        perRenderExpression.calculate(instance);
-    }
+    public void apply(IMolangParticleInstance instance) {}
 
     @Override
     public boolean requireUpdate() {
@@ -45,7 +44,7 @@ public record ParticleInitialization(FloatMolangExp perRenderExpression, FloatMo
 
     @Override
     public int order() {
-        return 400;
+        return 800;
     }
 
     @Override

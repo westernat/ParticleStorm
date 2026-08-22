@@ -30,6 +30,7 @@ import org.mesdag.particlestorm.data.event.*;
 import org.mesdag.particlestorm.particle.MolangParticleEngine;
 import org.mesdag.particlestorm.particle.MolangParticleInstance;
 import org.mesdag.particlestorm.particle.ParticleEmitter;
+import org.mesdag.particlestorm.particle.attach.EmitterAttachHandler;
 
 import java.io.IOException;
 import java.util.Queue;
@@ -117,10 +118,62 @@ public final class PSGameClient {
         }
     }
 
+    public static void clientNetwork$LoggingOut(ClientPlayerNetworkEvent.LoggingOut event) {
+        MolangParticleEngine.INSTANCE.removeAll();
+        EmitterAttachHandler.clearEmitters();
+    }
+
+    public static void clientTick$Pre(TickEvent.ClientTickEvent event) {
+        if (event.phase != TickEvent.Phase.START) return;
+        Minecraft minecraft = Minecraft.getInstance();
+        LocalPlayer player = minecraft.player;
+        if (player != null && !minecraft.isPaused()) {
+            MolangParticleEngine.INSTANCE.tick(minecraft, player);
+            if (PSClientConfigs.emitterAutoRemoveIntervalTick <= 1 || player.clientLevel.getGameTime() % PSClientConfigs.emitterAutoRemoveIntervalTick == 0) {
+                Camera camera = minecraft.gameRenderer.getMainCamera();
+                if (camera.isInitialized()) {
+                    EmitterAttachHandler.tick(camera);
+                }
+            }
+        }
+    }
+
+    public static void renderLevelStage(RenderLevelStageEvent event) {
+        if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_PARTICLES) return;
+        if (!PSClientConfigs.showEmitterOutline) return;
+        Minecraft minecraft = Minecraft.getInstance();
+        if (!minecraft.getEntityRenderDispatcher().shouldRenderHitBoxes()) return;
+        PoseStack poseStack = event.getPoseStack();
+        MultiBufferSource.BufferSource bufferSource = minecraft.renderBuffers().bufferSource();
+        Camera camera = event.getCamera();
+        double camX = camera.getPosition().x;
+        double camY = camera.getPosition().y;
+        double camZ = camera.getPosition().z;
+        float partialTick = event.getPartialTick();
+        var iterator = MolangParticleEngine.INSTANCE.getEmitters();
+        while (iterator.hasNext()) {
+            ParticleEmitter emitter = iterator.next().getValue();
+            if (emitter.hideOutline) continue;
+            double x = Mth.lerp(partialTick, emitter.posO.x, emitter.getX());
+            double y = Mth.lerp(partialTick, emitter.posO.y, emitter.getY());
+            double z = Mth.lerp(partialTick, emitter.posO.z, emitter.getZ());
+            DebugRenderer.renderFloatingText(poseStack, bufferSource, emitter.particleId.toString(), x, y + 0.5, z, 0xFFFFFF);
+            DebugRenderer.renderFloatingText(poseStack, bufferSource, "id: " + emitter.id, x, y + 0.3, z, 0xFFFFFF);
+            Queue<IMolangParticleInstance> queue = MolangParticleEngine.INSTANCE.getParticlesForEmitter(emitter);
+            int count = queue == null ? 0 : queue.size();
+            DebugRenderer.renderFloatingText(poseStack, bufferSource, "particles: " + count, x, y + 0.1, z, count >= emitter.particleGroup.getLimit() ? 0xFF0000 : 0xFFFFFF);
+            poseStack.pushPose();
+            poseStack.translate(x - camX, y - camY, z - camZ);
+            LevelRenderer.renderLineBox(poseStack, bufferSource.getBuffer(RenderType.lines()), -0.5, -0.5, -0.5, 0.5, 0.5, 0.5, 0, 1, 0, 1);
+            poseStack.popPose();
+        }
+    }
+
     @SubscribeEvent
     public static void reload(RegisterClientReloadListenersEvent event) {
         registerComponents();
         registerEventNodes();
+        RegisterCustomEmitterTypeEvent.postEvent();
         event.registerReloadListener(MolangParticleEngine.INSTANCE);
     }
 
@@ -189,58 +242,7 @@ public final class PSGameClient {
             if (ParticleStorm.GECKOLIB_LOADED) {
                 GeckoLibHelper.postEvent();
             }
-            RegisterCustomEmitterTypeEvent.postEvent();
+            EmitterAttachHandler.postEvent();
         });
-    }
-
-    @Mod.EventBusSubscriber(modid = ParticleStorm.MODID, value = Dist.CLIENT, bus = Mod.EventBusSubscriber.Bus.FORGE)
-    public static final class ForgeEvents {
-        @SubscribeEvent
-        public static void clientNetwork$LoggingOut(ClientPlayerNetworkEvent.LoggingOut event) {
-            MolangParticleEngine.INSTANCE.removeAll();
-        }
-
-        @SubscribeEvent
-        public static void tick(TickEvent.ClientTickEvent event) {
-            if (event.phase != TickEvent.Phase.START) return;
-            Minecraft minecraft = Minecraft.getInstance();
-            LocalPlayer player = minecraft.player;
-            if (player != null && !minecraft.isPaused()) {
-                MolangParticleEngine.INSTANCE.tick(minecraft, player);
-            }
-        }
-
-        @SubscribeEvent
-        public static void renderLevelStage(RenderLevelStageEvent event) {
-            if (event.getStage() == RenderLevelStageEvent.Stage.AFTER_PARTICLES) {
-                Minecraft minecraft = Minecraft.getInstance();
-                Camera camera = event.getCamera();
-                float partialTick = event.getPartialTick();
-                if (PSClientConfigs.showEmitterOutline && minecraft.getEntityRenderDispatcher().shouldRenderHitBoxes()) {
-                    PoseStack poseStack = event.getPoseStack();
-                    MultiBufferSource.BufferSource bufferSource = minecraft.renderBuffers().bufferSource();
-                    double camX = camera.getPosition().x;
-                    double camY = camera.getPosition().y;
-                    double camZ = camera.getPosition().z;
-                    var iterator = MolangParticleEngine.INSTANCE.getEmitters();
-                    while (iterator.hasNext()) {
-                        ParticleEmitter emitter = iterator.next().getValue();
-                        if (emitter.hideOutline) continue;
-                        double x = Mth.lerp(partialTick, emitter.posO.x, emitter.getX());
-                        double y = Mth.lerp(partialTick, emitter.posO.y, emitter.getY());
-                        double z = Mth.lerp(partialTick, emitter.posO.z, emitter.getZ());
-                        DebugRenderer.renderFloatingText(poseStack, bufferSource, emitter.particleId.toString(), x, y + 0.5, z, 0xFFFFFF);
-                        DebugRenderer.renderFloatingText(poseStack, bufferSource, "id: " + emitter.id, x, y + 0.3, z, 0xFFFFFF);
-                        Queue<IMolangParticleInstance> queue = MolangParticleEngine.INSTANCE.getParticlesForEmitter(emitter);
-                        int count = queue == null ? 0 : queue.size();
-                        DebugRenderer.renderFloatingText(poseStack, bufferSource, "particles: " + count, x, y + 0.1, z, count >= emitter.particleGroup.getLimit() ? 0xFF0000 : 0xFFFFFF);
-                        poseStack.pushPose();
-                        poseStack.translate(x - camX, y - camY, z - camZ);
-                        LevelRenderer.renderLineBox(poseStack, bufferSource.getBuffer(RenderType.lines()), -0.5, -0.5, -0.5, 0.5, 0.5, 0.5, 0, 1, 0, 1);
-                        poseStack.popPose();
-                    }
-                }
-            }
-        }
     }
 }

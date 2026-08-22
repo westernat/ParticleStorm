@@ -40,13 +40,11 @@ public record EmitterCreationPacketS2C(ResourceLocation id, Vector3f pos, Molang
 
     public static void sendToAll(ResourceLocation id, Vector3f pos, MolangExp expression, @Nullable Entity entity) {
         if (ServerLifecycleHooks.getCurrentServer() != null) {
-            ParticleStorm.CHANNEL.send(PacketDistributor.ALL.noArg(),
-                    new EmitterCreationPacketS2C(id, pos, expression, entity == null ? -1 : entity.getId()));
+            ParticleStorm.CHANNEL.send(PacketDistributor.ALL.noArg(), new EmitterCreationPacketS2C(id, pos, expression, entity == null ? -1 : entity.getId()));
         }
     }
 
     public static void sendToClient(ServerPlayer player, ResourceLocation id, Vector3f pos, MolangExp expression, @Nullable Entity entity) {
-        ParticleStorm.CHANNEL.send(PacketDistributor.PLAYER.with(() -> player),
-                new EmitterCreationPacketS2C(id, pos, expression, entity == null ? -1 : entity.getId()));
+        ParticleStorm.CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), new EmitterCreationPacketS2C(id, pos, expression, entity == null ? -1 : entity.getId()));
     }
 }

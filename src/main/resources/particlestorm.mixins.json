@@ -8,6 +8,8 @@
     ],
     "client": [
         "BlockEntityMixin",
+        "ClientLevelMixin",
+        "DebugScreenOverlayMixin",
         "EntityMixin",
         "LevelRenderMixin",
         "ParticleEngineMixin",

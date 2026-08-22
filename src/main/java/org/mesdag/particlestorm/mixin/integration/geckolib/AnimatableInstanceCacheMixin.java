@@ -4,7 +4,7 @@ import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import org.mesdag.particlestorm.api.geckolib.GeckoLibHelper;
-import org.mesdag.particlestorm.mixed.IAnimatableInstanceCache;
+import org.mesdag.particlestorm.mixed.IPSAnimatableInstanceCache;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Pseudo;
 import org.spongepowered.asm.mixin.Unique;
@@ -14,7 +14,7 @@ import java.util.Map;
 
 @Pseudo
 @Mixin(targets = "software.bernie.geckolib.core.animatable.instance.AnimatableInstanceCache", remap = false)
-public abstract class AnimatableInstanceCacheMixin implements IAnimatableInstanceCache {
+public abstract class AnimatableInstanceCacheMixin implements IPSAnimatableInstanceCache {
     @Unique
     private Object2IntMap<LocatorValue> particlestorm$cachedId;
     @Unique

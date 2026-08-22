@@ -12,6 +12,7 @@ import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
+import net.minecraftforge.fml.loading.FMLEnvironment;
 import net.minecraftforge.fml.loading.LoadingModList;
 import net.minecraftforge.network.NetworkRegistry;
 import net.minecraftforge.network.PacketDistributor;
@@ -76,9 +77,15 @@ public final class ParticleStorm {
     );
 
     public ParticleStorm(FMLJavaModLoadingContext context) {
-        PSClientConfigs.register(context.getContainer());
-        REGISTER.register(context.getModEventBus());
-        registerGeoTest(context.getModEventBus());
+        IEventBus eventBus = context.getModEventBus();
+        if (FMLEnvironment.dist.isClient()) {
+            PSClientConfigs.register(context);
+            MinecraftForge.EVENT_BUS.addListener(PSGameClient::clientNetwork$LoggingOut);
+            MinecraftForge.EVENT_BUS.addListener(PSGameClient::clientTick$Pre);
+            MinecraftForge.EVENT_BUS.addListener(PSGameClient::renderLevelStage);
+        }
+        REGISTER.register(eventBus);
+        registerGeoTest(eventBus);
         registerNetwork();
         MinecraftForge.EVENT_BUS.addListener(ParticleStorm::registerCommands);
         MinecraftForge.EVENT_BUS.addListener(ParticleStorm::playerLoggedIn);
@@ -117,8 +124,7 @@ public final class ParticleStorm {
             if (data.contains(KEY)) {
                 CompoundTag emitters = data.getCompound(KEY);
                 for (String emitterId : emitters.getAllKeys()) {
-                    CHANNEL.send(PacketDistributor.PLAYER.with(() -> player),
-                            new EmitterSynchronizePacket(Integer.parseInt(emitterId), emitters.getCompound(emitterId)));
+                    CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), new EmitterSynchronizePacket(Integer.parseInt(emitterId), emitters.getCompound(emitterId)));
                 }
             }
         }

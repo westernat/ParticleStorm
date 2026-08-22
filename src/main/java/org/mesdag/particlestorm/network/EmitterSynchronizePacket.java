@@ -44,9 +44,7 @@ public record EmitterSynchronizePacket(int id, CompoundTag tag) {
     }
 
     public static void syncToServer(ParticleEmitter emitter) {
-        CompoundTag tag = new CompoundTag();
-        emitter.serialize(tag);
-        ParticleStorm.CHANNEL.sendToServer(new EmitterSynchronizePacket(emitter.id, tag));
+        ParticleStorm.CHANNEL.sendToServer(new EmitterSynchronizePacket(emitter.id, emitter.serialize()));
     }
 
     public static void syncToClient(ServerPlayer player, int id) {

@@ -1,9 +1,8 @@
 package org.mesdag.particlestorm.api.geckolib;
 
-import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.datafixers.DSL;
 import it.unimi.dsi.fastutil.ints.IntIterator;
-import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
@@ -18,7 +17,7 @@ import net.minecraftforge.fml.ModLoader;
 import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.RegistryObject;
 import org.jetbrains.annotations.Nullable;
-import org.joml.Quaternionf;
+import org.joml.Matrix4x3f;
 import org.mesdag.particlestorm.ParticleStorm;
 import org.mesdag.particlestorm.data.molang.MolangExp;
 import org.mesdag.particlestorm.data.molang.VariableTable;
@@ -39,8 +38,8 @@ public final class GeckoLibHelper {
     static RegistryObject<BlockEntityType<TestBlock.Entity>> TEST_ENTITY;
 
     public static void registerStuffs(IEventBus bus) {
-        DeferredRegister<Block> BLOCK = DeferredRegister.create(BuiltInRegistries.BLOCK.key(), ParticleStorm.MODID);
-        DeferredRegister<BlockEntityType<?>> ENTITY = DeferredRegister.create(BuiltInRegistries.BLOCK_ENTITY_TYPE.key(), ParticleStorm.MODID);
+        DeferredRegister<Block> BLOCK = DeferredRegister.create(Registries.BLOCK, ParticleStorm.MODID);
+        DeferredRegister<BlockEntityType<?>> ENTITY = DeferredRegister.create(Registries.BLOCK_ENTITY_TYPE, ParticleStorm.MODID);
         RegistryObject<Block> TEST = BLOCK.register("test_block", TestBlock::new);
         TEST_ENTITY = ENTITY.register("test_entity", () -> BlockEntityType.Builder.of(TestBlock.Entity::new, TEST.get()).build(DSL.remainderType()));
         BLOCK.register(bus);
@@ -72,10 +71,10 @@ public final class GeckoLibHelper {
 
     /// @return true means failed to add emitter
     public static boolean processParticleEffect(@Nullable GeoAnimatable animatable, AnimationController<?> controller, ParticleKeyframeData keyframeData) {
-        List<GeoBone> bones = IAnimationController.of(controller).particlestorm$getBonesWhichHasLocators();
+        List<GeoBone> bones = IPSAnimationController.of(controller).particlestorm$getBonesWhichHasLocators();
         if (bones.isEmpty()) return true;
 
-        IParticleKeyframeData iData = IParticleKeyframeData.of(keyframeData);
+        IPSParticleKeyframeData iData = IPSParticleKeyframeData.of(keyframeData);
         Entity entity;
         BlockEntity blockEntity;
         VariableTable variableTable;
@@ -83,26 +82,26 @@ public final class GeckoLibHelper {
         if (animatable instanceof Entity entity1) {
             entity = entity1;
             blockEntity = null;
-            variableTable = IEntity.of(entity).particlestorm$getVariableTable();
+            variableTable = IPSEntity.of(entity).particlestorm$getVariableTable();
             level = entity.level();
         } else if (animatable instanceof ParticleStormGeoReplacedEntity withCurrentEntity && withCurrentEntity.getCurrentEntity() != null) {
             entity = withCurrentEntity.getCurrentEntity();
             blockEntity = null;
-            variableTable = IEntity.of(entity).particlestorm$getVariableTable();
+            variableTable = IPSEntity.of(entity).particlestorm$getVariableTable();
             level = entity.level();
         } else if (animatable instanceof BlockEntity entity1 && entity1.getLevel() != null) {
             entity = null;
             blockEntity = entity1;
-            variableTable = ((IBlockEntity) blockEntity).particlestorm$getVariableTable();
+            variableTable = IPSBlockEntity.of(blockEntity).particlestorm$getVariableTable();
             level = blockEntity.getLevel();
         } else {
             return true;
         }
         ResourceLocation particle = iData.particlestorm$getParticle();
         MolangExp expression = iData.particlestorm$getExpression(variableTable);
-        IAnimatableInstanceCache cache = IAnimatableInstanceCache.of(animatable.getAnimatableInstanceCache());
+        IPSAnimatableInstanceCache cache = IPSAnimatableInstanceCache.of(animatable.getAnimatableInstanceCache());
         for (GeoBone bone : bones) {
-            LocatorValue locator = IGeoBone.of(bone).particlestorm$getLocators().get(keyframeData.getLocator());
+            LocatorValue locator = IPSGeoBone.of(bone).particlestorm$getLocators().get(keyframeData.getLocator());
             if (locator == null) continue;
 
             ParticleEmitter current = MolangParticleEngine.INSTANCE.getEmitter(cache.particlestorm$getCachedId().getInt(locator));
@@ -114,11 +113,11 @@ public final class GeckoLibHelper {
                 MolangParticleEngine.INSTANCE.addEmitter(emitter);
                 cache.particlestorm$getCachedId().put(locator, emitter.id);
                 emitter.attachEntity(entity);
-                emitter.attachedBlock = blockEntity;
+                emitter.attachBlock(blockEntity);
                 double[] offset = getLocatorOffset(locator);
                 double[] rotation = getLocatorRotation(locator);
                 LocatorState state = cache.particlestorm$getLocatorState(locator);
-                state.px = (float) (offset[0] * 0.0625);
+                state.px = -(float) (offset[0] * 0.0625);
                 state.py = (float) (offset[1] * 0.0625);
                 state.pz = (float) (offset[2] * 0.0625);
                 state.rx = (float) Math.toRadians(rotation[0]);
@@ -137,7 +136,7 @@ public final class GeckoLibHelper {
 
     public static void removeEmittersWhenAnimationChange(AnimationController.State animationState, AnimatableInstanceCache animatableInstanceCache) {
         if (animationState == AnimationController.State.TRANSITIONING) {
-            IntIterator iterator = IAnimatableInstanceCache.of(animatableInstanceCache).particlestorm$getCachedId().values().iterator();
+            IntIterator iterator = IPSAnimatableInstanceCache.of(animatableInstanceCache).particlestorm$getCachedId().values().iterator();
             while (iterator.hasNext()) {
                 MolangParticleEngine.INSTANCE.removeEmitter(iterator.nextInt(), false);
                 iterator.remove();
@@ -145,25 +144,22 @@ public final class GeckoLibHelper {
         }
     }
 
-    private static final Quaternionf quaternion = new Quaternionf();
+    private static final Matrix4x3f mat = new Matrix4x3f();
 
-    public static void transformLocator(PoseStack poseStack, GeoBone bone, GeoAnimatable animatable, float partialTick) {
-        Map<String, LocatorValue> locators = IGeoBone.of(bone).particlestorm$getLocators();
+    public static void transformLocator(GeoBone bone, GeoAnimatable animatable, float partialTick) {
+        Map<String, LocatorValue> locators = IPSGeoBone.of(bone).particlestorm$getLocators();
         if (locators == null || locators.isEmpty()) return;
-        poseStack.pushPose();
-        RegisterLocatorPreTransformerEvent.getTransformer(animatable).transform(bone, animatable, poseStack, partialTick);
-        IAnimatableInstanceCache cache = IAnimatableInstanceCache.of(animatable.getAnimatableInstanceCache());
+        mat.identity();
+        RegisterLocatorPreTransformerEvent.getTransformer(animatable).transform(bone, animatable, mat, partialTick);
+        IPSAnimatableInstanceCache cache = IPSAnimatableInstanceCache.of(animatable.getAnimatableInstanceCache());
         for (LocatorValue locator : locators.values()) {
             ParticleEmitter emitter = MolangParticleEngine.INSTANCE.getEmitter(cache.particlestorm$getCachedId().getInt(locator));
             if (emitter == null || emitter.isRemoved()) continue;
             LocatorState state = cache.particlestorm$getLocatorState(locator);
-            poseStack.pushPose();
-            poseStack.mulPose(quaternion.rotationXYZ(state.rx, state.ry, state.rz));
-            poseStack.translate(-state.px, state.py, state.pz);
-            emitter.parentSpace = poseStack.last().pose();
-            poseStack.popPose();
+            emitter.setLocalSpace(new Matrix4x3f(mat)
+                    .rotateXYZ(state.rx, state.ry, state.rz)
+                    .translate(state.px, state.py, state.pz), false);
         }
-        poseStack.popPose();
     }
 
     public static class LocatorState {
