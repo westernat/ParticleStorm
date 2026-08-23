@@ -101,10 +101,12 @@ public abstract sealed class EmitterRate implements IEmitterComponent permits Em
         @Override
         public void apply(ParticleEmitter emitter) {
             float calculated = spawnRate.calculate(emitter);
-            float tickrate = emitter.level.tickRateManager().tickrate();
-            emitter.spawnDuration = Math.max((int) (tickrate / calculated), 1);
+            float tickrate = 20.0F;
             if (emitter.spawnRate != calculated) {
-                emitter.spawnRate = emitter.spawnDuration == 1 ? (int) (calculated / tickrate) : 1;
+                float ratePerTick = calculated / tickrate;
+                int perTick = (int) ratePerTick;
+                emitter.spawnRate = perTick;
+                emitter.spawnChance = ratePerTick - perTick;
                 int limit = (int) maxParticles.calculate(emitter);
                 if (emitter.particleGroup == null) {
                     emitter.particleGroup = new MutableParticleGroup(limit);

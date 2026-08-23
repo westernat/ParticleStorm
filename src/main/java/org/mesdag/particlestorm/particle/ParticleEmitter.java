@@ -62,7 +62,7 @@ public class ParticleEmitter implements MolangInstance {
     public transient int activeTime;
     public transient int fullLoopTime;
     public transient MutableParticleGroup particleGroup;
-    public transient int spawnDuration = 1;
+    public transient float spawnChance;
     public transient int spawnRate;
     public transient boolean spawned;
     protected transient Entity attached;
