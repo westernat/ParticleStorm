@@ -105,7 +105,6 @@ public abstract sealed class EmitterRate implements IEmitterComponent permits Em
             if (emitter.spawnRate != calculated) {
                 float ratePerTick = calculated / tickrate;
                 int perTick = (int) ratePerTick;
-                emitter.spawnDuration = 1;
                 emitter.spawnRate = perTick;
                 emitter.spawnChance = ratePerTick - perTick;
                 int limit = (int) maxParticles.calculate(emitter);
