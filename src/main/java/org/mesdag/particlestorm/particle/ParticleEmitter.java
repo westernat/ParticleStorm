@@ -64,6 +64,8 @@ public class ParticleEmitter implements MolangInstance {
     public transient MutableParticleGroup particleGroup;
     public transient int spawnDuration = 1;
     public transient int spawnRate;
+    /// The probability of spawning one extra particle per tick, i.e. the fractional part of spawn_rate / 20. Only used by EmitterRate.Steady; defaults to 0.
+    public transient float spawnChance;
     public transient boolean spawned;
     protected transient Entity attached;
     protected transient BlockEntity attachedBlock;

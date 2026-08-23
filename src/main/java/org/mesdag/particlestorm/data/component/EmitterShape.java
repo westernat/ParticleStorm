@@ -42,7 +42,11 @@ public abstract sealed class EmitterShape implements IEmitterComponent permits E
     public void update(ParticleEmitter emitter) {
         if (emitter.spawned) return;
         if (emitter.spawnDuration <= 1 || emitter.age % emitter.spawnDuration == 0) {
-            for (int num = 0; num < emitter.spawnRate; num++) {
+            int count = emitter.spawnRate;
+            if (emitter.spawnChance > 0.0F && emitter.level.random.nextFloat() < emitter.spawnChance) {
+                count++;
+            }
+            for (int num = 0; num < count; num++) {
                 if (hasSpaceInParticleLimit(emitter)) {
                     emittingParticle(emitter);
                 }
