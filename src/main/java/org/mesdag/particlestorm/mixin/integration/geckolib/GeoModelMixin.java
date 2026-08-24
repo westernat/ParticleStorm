@@ -22,7 +22,7 @@ public abstract class GeoModelMixin<T extends GeoAnimatable> {
             @Local(argsOnly = true) T animatable,
             @Local(name = "processor") AnimationProcessor<T> processor
     ) {
-        float partialTick = Minecraft.getInstance().getPartialTick();
+        float partialTick = Minecraft.getInstance().getFrameTime();
         for (CoreGeoBone bone : processor.getRegisteredBones()) {
             if (bone instanceof GeoBone geoBone) {
                 GeckoLibHelper.transformLocator(geoBone, animatable, partialTick);
