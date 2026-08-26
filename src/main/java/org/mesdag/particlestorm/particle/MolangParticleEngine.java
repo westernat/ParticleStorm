@@ -47,6 +47,7 @@ import org.mesdag.particlestorm.PSClientConfigs;
 import org.mesdag.particlestorm.PSGameClient;
 import org.mesdag.particlestorm.ParticleStorm;
 import org.mesdag.particlestorm.api.*;
+import org.mesdag.particlestorm.api.geckolib.GeckoLibHelper;
 import org.mesdag.particlestorm.data.DefinedParticleEffect;
 import org.mesdag.particlestorm.network.EmitterRemovalPacket;
 import org.mesdag.particlestorm.network.EmitterSynchronizePacket;
@@ -106,6 +107,9 @@ public final class MolangParticleEngine implements PreparableReloadListener {
                         particleComponent.initialize(player.clientLevel);
                     }
                 }
+            }
+            if (ParticleStorm.GECKOLIB_LOADED) {
+                GeckoLibHelper.run();
             }
             removeAll();
             this.initialized = true;
@@ -196,7 +200,7 @@ public final class MolangParticleEngine implements PreparableReloadListener {
             Queue<IMolangParticleInstance> queue = entry.getValue();
             if (queue.isEmpty()) continue;
 
-            RenderSystem.setShader(!ParticleStorm.IRIS_LOADED && type == PSGameClient.PARTICLE_BLEND
+            RenderSystem.setShader(!ParticleStorm.IRIS_LOADED && type.isTranslucent()
                     ? PSGameClient::getParticleNoDiscardShader
                     : GameRenderer::getParticleShader);
             BufferBuilder builder = type.begin(tesselator, textureManager);
@@ -298,10 +302,10 @@ public final class MolangParticleEngine implements PreparableReloadListener {
         ParticleEmitter removed = emitters.remove(id);
         if (removed != null) {
             removed.onRemove();
+            allocator.release(id);
+            particlesForEmitter.remove(id);
+            if (sync) EmitterRemovalPacket.sendToServer(id);
         }
-        allocator.release(id);
-        particlesForEmitter.remove(id);
-        if (sync) EmitterRemovalPacket.sendToServer(id);
         return removed;
     }
 

@@ -76,7 +76,7 @@ public enum FaceCameraMode implements SingleQuadParticle.FacingCameraMode {
         }
     },
     DIRECTION_Z {
-        private static final Vector3f defaultDir = new Vector3f(0, 0, 1);
+        private static final Vector3f defaultDir = new Vector3f(0, 0, -1);
         private static final Quaternionf dirRot = new Quaternionf();
 
         @Override

@@ -401,32 +401,33 @@ public class MolangParticleInstance extends TextureSheetParticle implements IMol
         }
     }
 
-    protected static final Quaternionf q = new Quaternionf();
-    protected static final Vector3f vec = new Vector3f();
+    protected static final Quaternionf worldRot = new Quaternionf();
+    protected static final Quaternionf localRot = new Quaternionf();
+    protected static final Vector3f pos = new Vector3f();
 
     // 在render前调用
     @Override
     public boolean isVisible(Camera camera, Frustum frustum, float partialTick) {
         Vec3 camPos = camera.getPosition();
         if (emitter.isLocalSpace()) {
-            emitter.local2World(vec.set(
+            emitter.local2World(pos.set(
                     (float) Mth.lerp(partialTick, xo, x),
                     (float) Mth.lerp(partialTick, yo, y),
                     (float) Mth.lerp(partialTick, zo, z)
             ), partialTick);
             float size = Math.max(billboardSize[0], billboardSize[1]);
             boolean inFrustum = frustum.cubeInFrustum(
-                    vec.x - size,
-                    vec.y - size,
-                    vec.z - size,
-                    vec.x + size,
-                    vec.y + size,
-                    vec.z + size
+                    pos.x - size,
+                    pos.y - size,
+                    pos.z - size,
+                    pos.x + size,
+                    pos.y + size,
+                    pos.z + size
             );
-            vec.sub((float) camPos.x, (float) camPos.y, (float) camPos.z);
+            pos.sub((float) camPos.x, (float) camPos.y, (float) camPos.z);
             return inFrustum;
         }
-        vec.set(
+        pos.set(
                 (float) (Mth.lerp(partialTick, xo, x) - camPos.x),
                 (float) (Mth.lerp(partialTick, yo, y) - camPos.y) + 1.0e-4f, // add an epsilon to fix the z-flash
                 (float) (Mth.lerp(partialTick, zo, z) - camPos.z)
@@ -437,12 +438,15 @@ public class MolangParticleInstance extends TextureSheetParticle implements IMol
     // 在isVisible后调用
     @Override
     public void render(VertexConsumer buffer, Camera camera, float partialTicks) {
-        q.identity();
-        getFacingCameraMode().setRotation(this, q, camera, partialTicks);
-        if (xRot != 0.0F) q.rotateX(Mth.lerp(partialTicks, xRotO, xRot));
-        if (yRot != 0.0F) q.rotateY(Mth.lerp(partialTicks, yRotO, yRot));
-        if (roll != 0.0F) q.rotateZ(Mth.lerp(partialTicks, oRoll, roll));
-        renderRotatedQuad(buffer, q, vec.x, vec.y, vec.z, partialTicks);
+        getFacingCameraMode().setRotation(this, worldRot, camera, partialTicks);
+        if (xRot != 0.0F) worldRot.rotateX(Mth.lerp(partialTicks, xRotO, xRot));
+        if (yRot != 0.0F) worldRot.rotateY(Mth.lerp(partialTicks, yRotO, yRot));
+        if (roll != 0.0F) worldRot.rotateZ(Mth.lerp(partialTicks, oRoll, roll));
+        if (emitter.isLocalSpace() && emitter.getPreset().localRotation) {
+            emitter.getLocalSpace().getNormalizedRotation(localRot);
+            worldRot.premul(localRot);
+        }
+        renderRotatedQuad(buffer, worldRot, pos.x, pos.y, pos.z, partialTicks);
     }
 
     @Override
@@ -464,8 +468,8 @@ public class MolangParticleInstance extends TextureSheetParticle implements IMol
 
     @Override
     protected void renderVertex(VertexConsumer buffer, Quaternionf quaternion, float x, float y, float z, float xOffset, float yOffset, float quadSize, float u, float v, int packedLight) {
-        vec.set(xOffset * billboardSize[0], yOffset * billboardSize[1], 0.0F).rotate(quaternion).add(x, y, z);
-        buffer.addVertex(vec.x(), vec.y(), vec.z()).setUv(u, v).setColor(rCol, gCol, bCol, alpha).setLight(packedLight);
+        pos.set(xOffset * billboardSize[0], yOffset * billboardSize[1], 0.0F).rotate(quaternion).add(x, y, z);
+        buffer.addVertex(pos.x(), pos.y(), pos.z()).setUv(u, v).setColor(rCol, gCol, bCol, alpha).setLight(packedLight);
     }
 
     @Override
@@ -487,12 +491,12 @@ public class MolangParticleInstance extends TextureSheetParticle implements IMol
         if (hasPhysics && hasCollision && (x != 0.0 || y != 0.0 || z != 0.0) && Mth.lengthSquared(x, y, z) < MAXIMUM_COLLISION_VELOCITY_SQUARED) {
             AABB aabb = getBoundingBox();
             if (emitter.isLocalSpace()) {
-                emitter.local2World(vec.set(aabb.minX, aabb.minY, aabb.minZ), 1);
-                float mx = vec.x;
-                float my = vec.y;
-                float mz = vec.z;
-                emitter.local2World(vec.set(aabb.maxX, aabb.maxY, aabb.maxZ), 1);
-                aabb = new AABB(mx, my, mz, vec.x, vec.y, vec.z);
+                emitter.local2World(pos.set(aabb.minX, aabb.minY, aabb.minZ), 1);
+                float mx = pos.x;
+                float my = pos.y;
+                float mz = pos.z;
+                emitter.local2World(pos.set(aabb.maxX, aabb.maxY, aabb.maxZ), 1);
+                aabb = new AABB(mx, my, mz, pos.x, pos.y, pos.z);
             }
             Vec3 vec3 = Entity.collideBoundingBox(null, new Vec3(x, y, z), aabb, level, List.of());
             if (x != vec3.x) {

@@ -1,7 +1,11 @@
 package org.mesdag.particlestorm.api.geckolib;
 
 import com.mojang.datafixers.DSL;
+import com.mojang.datafixers.util.Either;
+import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.ints.IntIterator;
+import it.unimi.dsi.fastutil.ints.IntList;
+import it.unimi.dsi.fastutil.objects.Object2ObjectMap;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.Entity;
@@ -31,6 +35,7 @@ import software.bernie.geckolib.animation.keyframe.event.data.ParticleKeyframeDa
 import software.bernie.geckolib.cache.object.GeoBone;
 import software.bernie.geckolib.loading.json.raw.LocatorValue;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -75,28 +80,26 @@ public final class GeckoLibHelper {
         if (bones.isEmpty()) return true;
 
         IPSParticleKeyframeData iData = IPSParticleKeyframeData.of(keyframeData);
-        Entity entity;
-        BlockEntity blockEntity;
+        Either<Entity, BlockEntity> either;
         VariableTable variableTable;
         Level level;
         switch (animatable) {
-            case Entity entity1 -> {
-                entity = entity1;
-                blockEntity = null;
+            case Entity entity -> {
+                either = Either.left(entity);
                 variableTable = IPSEntity.of(entity).particlestorm$getVariableTable();
                 level = entity.level();
             }
-            case ParticleStormGeoReplacedEntity withCurrentEntity when withCurrentEntity.getCurrentEntity() != null -> {
-                entity = withCurrentEntity.getCurrentEntity();
-                blockEntity = null;
+            case WithCurrentEntity withCurrentEntity -> {
+                Entity entity = withCurrentEntity.getCurrentEntity();
+                if (entity == null) return true;
+                either = Either.left(entity);
                 variableTable = IPSEntity.of(entity).particlestorm$getVariableTable();
                 level = entity.level();
             }
-            case BlockEntity entity1 when entity1.getLevel() != null -> {
-                entity = null;
-                blockEntity = entity1;
-                variableTable = IPSBlockEntity.of(blockEntity).particlestorm$getVariableTable();
-                level = blockEntity.getLevel();
+            case BlockEntity entity when entity.getLevel() != null -> {
+                either = Either.right(entity);
+                variableTable = IPSBlockEntity.of(entity).particlestorm$getVariableTable();
+                level = entity.getLevel();
             }
             case null, default -> {
                 return true;
@@ -108,42 +111,51 @@ public final class GeckoLibHelper {
         for (GeoBone bone : bones) {
             LocatorValue locator = IPSGeoBone.of(bone).particlestorm$getLocators().get(keyframeData.getLocator());
             if (locator == null) continue;
-
-            ParticleEmitter current = MolangParticleEngine.INSTANCE.getEmitter(cache.particlestorm$getCachedId().getInt(locator));
-            if (current == null || current.isRemoved() || !particle.equals(current.particleId)) {
-                Vec3 pos = entity == null ? blockEntity.getBlockPos().getBottomCenter() : entity.position();
-                ParticleEmitter emitter = new ParticleEmitter(level, pos, particle, expression);
-                MolangParticleEngine.INSTANCE.addEmitter(emitter);
-                cache.particlestorm$getCachedId().put(locator, emitter.id);
-                emitter.attachEntity(entity);
-                emitter.attachBlock(blockEntity);
-                double[] offset = getLocatorOffset(locator);
-                double[] rotation = getLocatorRotation(locator);
-                LocatorState state = cache.particlestorm$getLocatorState(locator);
-                state.px = -(float) (offset[0] * 0.0625);
-                state.py = (float) (offset[1] * 0.0625);
-                state.pz = (float) (offset[2] * 0.0625);
-                state.rx = (float) Math.toRadians(rotation[0]);
-                state.ry = (float) Math.toRadians(rotation[1]);
-                state.rz = (float) Math.toRadians(rotation[2]);
+            Object2ObjectMap<LocatorValue, IntList> ids = cache.particlestorm$getCachedId();
+            IntList integers = ids.computeIfAbsent(locator, l -> new IntArrayList());
+            if (integers.isEmpty()) {
+                createNeoOne(either, level, particle, expression, integers, locator, cache);
+            } else {
+                IntIterator ii = integers.intIterator();
+                while (ii.hasNext()) {
+                    ParticleEmitter current = MolangParticleEngine.INSTANCE.getEmitter(ii.nextInt());
+                    if (current == null || current.isRemoved() || !particle.equals(current.particleId)) {
+                        createNeoOne(either, level, particle, expression, integers, locator, cache);
+                    }
+                }
             }
         }
         return false;
     }
 
+    private static void createNeoOne(Either<Entity, BlockEntity> either, Level level, ResourceLocation particle, MolangExp expression, IntList integers, LocatorValue locator, IPSAnimatableInstanceCache cache) {
+        Vec3 pos = either.map(Entity::position, entity -> entity.getBlockPos().getBottomCenter());
+        ParticleEmitter emitter = new ParticleEmitter(level, pos, particle, expression);
+        MolangParticleEngine.INSTANCE.addEmitter(emitter);
+        integers.add(emitter.id);
+        either.ifLeft(emitter::attachEntity).ifRight(emitter::attachBlock);
+        if (cache.particlestorm$getLocatorState(locator) == null) {
+            cache.particlestorm$createLocatorState(locator);
+        }
+    }
+
     public static void setCurrentEntity(GeoAnimatable animatable, @Nullable Entity entity) {
-        if (animatable instanceof ParticleStormGeoReplacedEntity withCurrentEntity) {
+        if (animatable instanceof WithCurrentEntity withCurrentEntity) {
             withCurrentEntity.setCurrentEntity(entity);
         }
     }
 
     public static void removeEmittersWhenAnimationChange(AnimationController.State animationState, AnimatableInstanceCache animatableInstanceCache) {
         if (animationState == AnimationController.State.TRANSITIONING) {
-            IntIterator iterator = IPSAnimatableInstanceCache.of(animatableInstanceCache).particlestorm$getCachedId().values().iterator();
-            while (iterator.hasNext()) {
-                MolangParticleEngine.INSTANCE.removeEmitter(iterator.nextInt(), false);
-                iterator.remove();
+            Object2ObjectMap<LocatorValue, IntList> ids = IPSAnimatableInstanceCache.of(animatableInstanceCache).particlestorm$getCachedId();
+            if (ids.isEmpty()) return;
+            for (IntList integers : ids.values()) {
+                IntIterator ii = integers.intIterator();
+                while (ii.hasNext()) {
+                    MolangParticleEngine.INSTANCE.removeEmitter(ii.nextInt(), false);
+                }
             }
+            ids.clear();
         }
     }
 
@@ -156,17 +168,50 @@ public final class GeckoLibHelper {
         RegisterLocatorPreTransformerEvent.getTransformer(animatable).transform(bone, animatable, mat, partialTick);
         IPSAnimatableInstanceCache cache = IPSAnimatableInstanceCache.of(animatable.getAnimatableInstanceCache());
         for (LocatorValue locator : locators.values()) {
-            ParticleEmitter emitter = MolangParticleEngine.INSTANCE.getEmitter(cache.particlestorm$getCachedId().getInt(locator));
-            if (emitter == null || emitter.isRemoved()) continue;
-            LocatorState state = cache.particlestorm$getLocatorState(locator);
-            emitter.setLocalSpace(new Matrix4x3f(mat)
-                    .rotateXYZ(state.rx, state.ry, state.rz)
-                    .translate(state.px, state.py, state.pz), false);
+            IntList integers = cache.particlestorm$getCachedId().get(locator);
+            if (integers == null || integers.isEmpty()) continue;
+            IntIterator iter = integers.intIterator();
+            while (iter.hasNext()) {
+                ParticleEmitter emitter = MolangParticleEngine.INSTANCE.getEmitter(iter.nextInt());
+                if (emitter == null || emitter.isRemoved()) continue;
+                LocatorState state = cache.particlestorm$getLocatorState(locator);
+                if (state == null) continue;
+                emitter.setLocalSpace(new Matrix4x3f(mat)
+                        .rotateXYZ(state.rx, state.ry, state.rz)
+                        .translate(state.px, state.py, state.pz), true);
+            }
+        }
+    }
+
+    private static final List<Runnable> runners = new ArrayList<>();
+
+    public static void addRunner(Runnable runner) {
+        runners.add(runner);
+    }
+
+    public static void clearRunners() {
+        runners.clear();
+    }
+
+    public static void run() {
+        for (Runnable runner : runners) {
+            runner.run();
         }
     }
 
     public static class LocatorState {
         float px, py, pz;
         float rx, ry, rz;
+
+        public void init(LocatorValue locator) {
+            double[] offset = GeckoLibHelper.getLocatorOffset(locator);
+            double[] rotation = GeckoLibHelper.getLocatorRotation(locator);
+            this.px = -(float) (offset[0] * 0.0625);
+            this.py = (float) (offset[1] * 0.0625);
+            this.pz = (float) (offset[2] * 0.0625);
+            this.rx = (float) Math.toRadians(rotation[0]);
+            this.ry = (float) Math.toRadians(rotation[1]);
+            this.rz = (float) Math.toRadians(rotation[2]);
+        }
     }
 }

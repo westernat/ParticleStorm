@@ -217,16 +217,6 @@ public class ParticleEmitter implements MolangInstance {
         this.invTickRate = 1.0F / level.tickRateManager().tickrate();
         this.moveDistO = moveDist;
         this.posO = pos;
-        for (IEmitterComponent component : components) {
-            if (active || component instanceof EmitterLifetime.Looping) {
-                component.update(this);
-            }
-        }
-        this.age++;
-
-        if (!posO.equals(pos)) {
-            this.moveDist += (float) pos.subtract(posO).length();
-        }
 
         if (attached != null) {
             if (attached.isRemoved()) {
@@ -241,6 +231,17 @@ public class ParticleEmitter implements MolangInstance {
             }
             BlockPos bp = attachedBlock.getBlockPos();
             updatePos(bp.getX() + 0.5, bp.getY(), bp.getZ() + 0.5);
+        }
+
+        for (IEmitterComponent component : components) {
+            if (active || component instanceof EmitterLifetime.Looping) {
+                component.update(this);
+            }
+        }
+        this.age++;
+
+        if (!posO.equals(pos)) {
+            this.moveDist += (float) pos.subtract(posO).length();
         }
 
         if (afterParentInit != null && parent != null) {
@@ -294,7 +295,15 @@ public class ParticleEmitter implements MolangInstance {
     public final void setLocalSpace(@Nullable Matrix4x3f space, boolean updatePos) {
         this.localSpace = space;
         if (updatePos) {
-            updatePos(getX(), getY(), getZ());
+            // 以附着实体/方块位置为基准（与tick一致），保证重复调用不会累加localSpace的平移
+            if (attached != null) {
+                updatePos(attached.getX(), attached.getY(), attached.getZ());
+            } else if (attachedBlock != null) {
+                BlockPos bp = attachedBlock.getBlockPos();
+                updatePos(bp.getX() + 0.5, bp.getY(), bp.getZ() + 0.5);
+            } else {
+                updatePos(getX(), getY(), getZ());
+            }
         }
     }
 

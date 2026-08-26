@@ -3,11 +3,13 @@ package org.mesdag.particlestorm.data.component;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.world.phys.Vec3;
+import org.joml.Vector3f;
 import org.mesdag.particlestorm.api.IMolangParticleInstance;
 import org.mesdag.particlestorm.api.IParticleComponent;
 import org.mesdag.particlestorm.data.molang.FloatMolangExp;
 import org.mesdag.particlestorm.data.molang.FloatMolangExp3;
 import org.mesdag.particlestorm.data.molang.MolangExp;
+import org.mesdag.particlestorm.particle.ParticleEmitter;
 
 import java.util.List;
 
@@ -44,18 +46,32 @@ public record ParticleMotionParametric(FloatMolangExp3 relativePosition, FloatMo
         );
     }
 
+    private static final Vector3f vec = new Vector3f();
+
     @Override
     public void update(IMolangParticleInstance instance) {
         if (relativePosition != FloatMolangExp3.ZERO) {
-            float[] pos = relativePosition.calculate(instance);
-            Vec3 position = instance.getEmitter().getPosition();
-            instance.self().setPos(position.x + pos[0], position.y + pos[1], position.z + pos[2]);
+            vec.set(relativePosition.calculate(instance));
+            ParticleEmitter emitter = instance.getEmitter();
+            if (emitter.isLocalSpace()) {
+                if (!emitter.getPreset().localPosition) {
+                    vec.mulDirection(emitter.getLocalSpace());
+                    Vec3 emitterPos = emitter.getPosition();
+                    vec.add((float) emitterPos.x, (float) emitterPos.y, (float) emitterPos.z);
+                }
+            } else {
+                Vec3 emitterPos = emitter.getPosition();
+                vec.add((float) emitterPos.x, (float) emitterPos.y, (float) emitterPos.z);
+            }
+            instance.self().setPos(vec.x, vec.y, vec.z);
         }
-        if (direction != FloatMolangExp3.ZERO) { // todo
-            float[] dir = direction.calculate(instance);
-            instance.self().setParticleSpeed(dir[0], dir[1], dir[2]);
+        if (direction != FloatMolangExp3.ZERO) {
+            vec.set(direction.calculate(instance)).normalize();
+            instance.self().setParticleSpeed(vec.x, vec.y, vec.z);
         }
-        instance.setZRot(rotation.calculate(instance));
+        if (rotation != FloatMolangExp.ZERO) {
+            instance.setZRot(rotation.calculate(instance));
+        }
     }
 
     @Override
