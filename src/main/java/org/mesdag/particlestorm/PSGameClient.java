@@ -115,7 +115,7 @@ public final class PSGameClient {
         MolangParticleEngine.INSTANCE.removeAll();
         EmitterAttachHandler.clearEmitters();
         if (ParticleStorm.GECKOLIB_LOADED) {
-            GeckoLibHelper.clearRunners();
+            GeckoLibHelper.clearReloadCallbacks();
         }
     }
 

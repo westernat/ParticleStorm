@@ -26,7 +26,7 @@ public abstract class AnimatableInstanceCacheMixin implements IPSAnimatableInsta
 
     @Inject(method = "<init>", at = @At("TAIL"))
     private void addRunner(CallbackInfo ci) {
-        GeckoLibHelper.addRunner(() -> {
+        GeckoLibHelper.addReloadCallback(() -> {
             if (particlestorm$cachedId != null) particlestorm$cachedId.clear();
             if (particlestorm$transform != null) particlestorm$transform.clear();
         });
@@ -45,9 +45,7 @@ public abstract class AnimatableInstanceCacheMixin implements IPSAnimatableInsta
         if (particlestorm$transform == null) {
             this.particlestorm$transform = new Object2ObjectOpenHashMap<>();
         }
-        GeckoLibHelper.LocatorState state = new GeckoLibHelper.LocatorState();
-        state.init(locator);
-        particlestorm$transform.put(locator, state);
+        particlestorm$transform.put(locator, new GeckoLibHelper.LocatorState(locator));
     }
 
     @Override

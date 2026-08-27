@@ -60,20 +60,6 @@ public final class GeckoLibHelper {
         ModLoader.postEvent(new RegisterLocatorPreTransformerEvent());
     }
 
-    public static double[] getLocatorOffset(LocatorValue locatorValue) {
-        if (locatorValue.locatorClass() == null) {
-            return locatorValue.values();
-        }
-        return locatorValue.locatorClass().offset();
-    }
-
-    public static double[] getLocatorRotation(LocatorValue locatorValue) {
-        if (locatorValue.locatorClass() == null) {
-            return new double[3];
-        }
-        return locatorValue.locatorClass().rotation();
-    }
-
     /// @return true means failed to add emitter
     public static boolean processParticleEffect(@Nullable GeoAnimatable animatable, AnimationController<?> controller, ParticleKeyframeData keyframeData) {
         List<GeoBone> bones = IPSAnimationController.of(controller).particlestorm$getBonesWhichHasLocators();
@@ -145,9 +131,9 @@ public final class GeckoLibHelper {
         }
     }
 
-    public static void removeEmittersWhenAnimationChange(AnimationController.State animationState, AnimatableInstanceCache animatableInstanceCache) {
-        if (animationState == AnimationController.State.TRANSITIONING) {
-            Object2ObjectMap<LocatorValue, IntList> ids = IPSAnimatableInstanceCache.of(animatableInstanceCache).particlestorm$getCachedId();
+    public static void removeEmittersWhenAnimationChange(AnimationController.State state, AnimatableInstanceCache cache) {
+        if (state == AnimationController.State.TRANSITIONING) {
+            Object2ObjectMap<LocatorValue, IntList> ids = IPSAnimatableInstanceCache.of(cache).particlestorm$getCachedId();
             if (ids.isEmpty()) return;
             for (IntList integers : ids.values()) {
                 IntIterator ii = integers.intIterator();
@@ -185,33 +171,47 @@ public final class GeckoLibHelper {
 
     private static final List<Runnable> runners = new ArrayList<>();
 
-    public static void addRunner(Runnable runner) {
+    public static void addReloadCallback(Runnable runner) {
         runners.add(runner);
     }
 
-    public static void clearRunners() {
+    public static void clearReloadCallbacks() {
         runners.clear();
     }
 
-    public static void run() {
+    public static void afterReload() {
         for (Runnable runner : runners) {
             runner.run();
         }
     }
 
     public static class LocatorState {
-        float px, py, pz;
-        float rx, ry, rz;
+        private final float px, py, pz;
+        private final float rx, ry, rz;
 
-        public void init(LocatorValue locator) {
-            double[] offset = GeckoLibHelper.getLocatorOffset(locator);
-            double[] rotation = GeckoLibHelper.getLocatorRotation(locator);
+        public LocatorState(LocatorValue locator) {
+            double[] offset = getLocatorOffset(locator);
+            double[] rotation = getLocatorRotation(locator);
             this.px = -(float) (offset[0] * 0.0625);
             this.py = (float) (offset[1] * 0.0625);
             this.pz = (float) (offset[2] * 0.0625);
             this.rx = (float) Math.toRadians(rotation[0]);
             this.ry = (float) Math.toRadians(rotation[1]);
             this.rz = (float) Math.toRadians(rotation[2]);
+        }
+
+        private static double[] getLocatorOffset(LocatorValue locatorValue) {
+            if (locatorValue.locatorClass() == null) {
+                return locatorValue.values();
+            }
+            return locatorValue.locatorClass().offset();
+        }
+
+        private static double[] getLocatorRotation(LocatorValue locatorValue) {
+            if (locatorValue.locatorClass() == null) {
+                return new double[3];
+            }
+            return locatorValue.locatorClass().rotation();
         }
     }
 }

@@ -109,7 +109,7 @@ public final class MolangParticleEngine implements PreparableReloadListener {
                 }
             }
             if (ParticleStorm.GECKOLIB_LOADED) {
-                GeckoLibHelper.run();
+                GeckoLibHelper.afterReload();
             }
             removeAll();
             this.initialized = true;
