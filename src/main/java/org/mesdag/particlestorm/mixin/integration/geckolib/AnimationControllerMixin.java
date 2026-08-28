@@ -38,6 +38,11 @@ public abstract class AnimationControllerMixin<T extends GeoAnimatable> implemen
         return Objects.requireNonNullElse(particlestorm$bonesWhichHasLocators, List.of());
     }
 
+    @Inject(method = "<init>(Lsoftware/bernie/geckolib/core/animatable/GeoAnimatable;Ljava/lang/String;ILsoftware/bernie/geckolib/core/animation/AnimationController$AnimationStateHandler;)V", at = @At("TAIL"))
+    private void addRunner(CallbackInfo ci) {
+        GeckoLibHelper.addReloadCallback(() -> this.particlestorm$bonesWhichHasLocators = null);
+    }
+
     @Override
     public void particlestorm$setBonesWhichHasLocators(Collection<GeoBone> registeredBones) {
         if (particlestorm$bonesWhichHasLocators == null) {

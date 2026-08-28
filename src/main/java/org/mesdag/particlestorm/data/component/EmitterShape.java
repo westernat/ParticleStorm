@@ -86,6 +86,7 @@ public abstract sealed class EmitterShape implements IEmitterComponent permits E
 
         if (emitter.isLocalSpace()) {
             if (!emitter.getPreset().localPosition) {
+                position.mulDirection(emitter.getLocalSpace());
                 Vec3 emitterPos = emitter.getPosition();
                 position.add((float) emitterPos.x, (float) emitterPos.y, (float) emitterPos.z);
             }

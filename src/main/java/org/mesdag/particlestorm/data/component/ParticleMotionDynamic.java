@@ -3,6 +3,7 @@ package org.mesdag.particlestorm.data.component;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.util.Mth;
 import org.joml.Vector3f;
 import org.mesdag.particlestorm.api.IMolangParticleInstance;
 import org.mesdag.particlestorm.api.IParticleComponent;
@@ -69,23 +70,26 @@ public record ParticleMotionDynamic(
 
     @Override
     public void apply(IMolangParticleInstance instance) {
-        float invTickRate = instance.getInvTickRate();
-        float tickRate = 20.0F;
+        float iit = 1 / instance.getInvTickRate();
+        float it2 = Mth.square(instance.getInvTickRate());
 
-        Vector3f acceleration = instance.getAcceleration();
-        acceleration.set(linerAcceleration.calculate(instance));
-        float c = -linearDragCoefficient.calculate(instance);
-        double xd = instance.getXd();
-        double yd = instance.getYd();
-        double zd = instance.getZd();
-        acceleration.add(c * (float) xd * tickRate, c * (float) yd * tickRate, c * (float) zd * tickRate);
-        float v = invTickRate * invTickRate;
-        instance.self().setParticleSpeed(
-                xd + acceleration.x * v,
-                yd + acceleration.y * v,
-                zd + acceleration.z * v
-        );
-        instance.setZRotD((rotationAcceleration.calculate(instance) - rotationDragCoefficient.calculate(instance) * instance.getZRotD() * tickRate) * v);
+        if (linerAcceleration != FloatMolangExp3.ZERO && linearDragCoefficient != FloatMolangExp.ZERO) {
+            Vector3f acceleration = instance.getAcceleration();
+            acceleration.set(linerAcceleration.calculate(instance));
+            float c = -linearDragCoefficient.calculate(instance);
+            double xd = instance.getXd();
+            double yd = instance.getYd();
+            double zd = instance.getZd();
+            acceleration.add(c * (float) xd * iit, c * (float) yd * iit, c * (float) zd * iit);
+            instance.self().setParticleSpeed(
+                    xd + acceleration.x * it2,
+                    yd + acceleration.y * it2,
+                    zd + acceleration.z * it2
+            );
+        }
+        if (rotationAcceleration != FloatMolangExp.ZERO && rotationDragCoefficient != FloatMolangExp.ZERO) {
+            instance.setZRotD((rotationAcceleration.calculate(instance) - rotationDragCoefficient.calculate(instance) * instance.getZRotD() * iit) * it2);
+        }
     }
 
     @Override

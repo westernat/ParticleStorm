@@ -121,6 +121,9 @@ public final class PSGameClient {
     public static void clientNetwork$LoggingOut(ClientPlayerNetworkEvent.LoggingOut event) {
         MolangParticleEngine.INSTANCE.removeAll();
         EmitterAttachHandler.clearEmitters();
+        if (ParticleStorm.GECKOLIB_LOADED) {
+            GeckoLibHelper.clearReloadCallbacks();
+        }
     }
 
     public static void clientTick$Pre(TickEvent.ClientTickEvent event) {
