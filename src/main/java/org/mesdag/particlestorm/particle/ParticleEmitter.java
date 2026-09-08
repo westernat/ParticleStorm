@@ -143,7 +143,7 @@ public class ParticleEmitter implements MolangInstance {
         addParent(parent);
         createVars();
         for (String name : effect.sharedVars()) {
-            Variable variable = parent.getVars().table.get(name);
+            Variable variable = parent.getVars().getVariable(name);
             if (variable == null) throw new IllegalArgumentException("Shared vars must defined in parent directly!");
             vars.table.put(name, variable);
         }
@@ -196,6 +196,7 @@ public class ParticleEmitter implements MolangInstance {
     protected void initVars() {
         if (expression != null && !expression.initialized()) {
             expression.compile(new MolangParser(vars));
+            expression.calculate(this);
         }
     }
 
