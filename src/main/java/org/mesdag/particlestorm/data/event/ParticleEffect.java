@@ -6,26 +6,27 @@ import com.mojang.serialization.codecs.RecordCodecBuilder;
 import io.netty.buffer.ByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.util.ByIdMap;
 import net.minecraft.util.StringRepresentable;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Vector3f;
+import org.mesdag.particlestorm.PSGameClient;
 import org.mesdag.particlestorm.api.IEventNode;
 import org.mesdag.particlestorm.api.IMolangParticleInstance;
 import org.mesdag.particlestorm.api.MolangInstance;
+import org.mesdag.particlestorm.api.RegisterCustomEmitterTypeEvent;
 import org.mesdag.particlestorm.data.molang.MolangExp;
 import org.mesdag.particlestorm.data.molang.compiler.MolangQueries;
-import org.mesdag.particlestorm.particle.MolangParticleEngine;
 import org.mesdag.particlestorm.particle.ParticleEmitter;
 
 import java.util.List;
 import java.util.Locale;
 import java.util.function.IntFunction;
 
-public record ParticleEffect(ResourceLocation effect, Type type, MolangExp preEffectExpression, List<String> sharedVars) implements IEventNode {
+public record ParticleEffect(Identifier effect, Type type, MolangExp preEffectExpression, List<String> sharedVars) implements IEventNode {
     public static final MapCodec<ParticleEffect> CODEC = RecordCodecBuilder.mapCodec(instance -> instance.group(
-            ResourceLocation.CODEC.fieldOf("effect").forGetter(ParticleEffect::effect),
+            Identifier.CODEC.fieldOf("effect").forGetter(ParticleEffect::effect),
             Type.CODEC.fieldOf("type").forGetter(ParticleEffect::type),
             MolangExp.CODEC.fieldOf("pre_effect_expression").orElse(MolangExp.EMPTY).forGetter(ParticleEffect::preEffectExpression),
             Codec.STRING.listOf().lenientOptionalFieldOf("shared_vars", List.of()).forGetter(ParticleEffect::sharedVars)
@@ -34,21 +35,21 @@ public record ParticleEffect(ResourceLocation effect, Type type, MolangExp preEf
         return new ParticleEffect(rl, t, e, l);
     }));
 
-    public ParticleEffect(ResourceLocation effect, Type type, MolangExp preEffectExpression) {
+    public ParticleEffect(Identifier effect, Type type, MolangExp preEffectExpression) {
         this(effect, type, preEffectExpression, List.of());
     }
 
-    private static final Vector3f vector3f = new Vector3f();
+    private static final Vector3f VECTOR = new Vector3f();
 
     @Override
     public void execute(MolangInstance instance) {
-        ParticleEmitter emitter = new ParticleEmitter(instance.getEmitter(), this);
-        if (instance instanceof IMolangParticleInstance p) {
-            p.getEmitter().local2World(vector3f.set((float) p.getX(), (float) p.getY(), (float) p.getZ()), 1);
-            emitter.setPos(new Vec3(vector3f.x, vector3f.y, vector3f.z));
+        ParticleEmitter emitter = RegisterCustomEmitterTypeEvent.create(instance.getEmitter(), this);
+        if (instance instanceof IMolangParticleInstance particle) {
+            particle.getEmitter().local2World(VECTOR.set((float) particle.getX(), (float) particle.getY(), (float) particle.getZ()), 1.0F);
+            emitter.setPos(new Vec3(VECTOR.x, VECTOR.y, VECTOR.z));
             emitter.posO = emitter.getPosition();
         }
-        MolangParticleEngine.INSTANCE.addEmitter(emitter, false);
+        PSGameClient.LOADER.addEmitter(emitter, false);
     }
 
     @Override

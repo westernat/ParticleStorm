@@ -47,8 +47,12 @@ public record ParticleMotionParametric(FloatMolangExp3 relativePosition, FloatMo
     @Override
     public void update(IMolangParticleInstance instance) {
         float[] pos = relativePosition.calculate(instance);
-        Vec3 position = instance.getEmitter().getPosition();
-        instance.self().setPos(position.x + pos[0], position.y + pos[1], position.z + pos[2]);
+        if (instance.getEmitter().isLocalSpace() && instance.getEmitter().getPreset().localPosition) {
+            instance.self().setPos(pos[0], pos[1], pos[2]);
+        } else {
+            Vec3 emitterPos = instance.getEmitter().getPosition();
+            instance.self().setPos(emitterPos.x + pos[0], emitterPos.y + pos[1], emitterPos.z + pos[2]);
+        }
         if (direction != FloatMolangExp3.ZERO) {
             float[] dir = direction.calculate(instance);
             instance.self().setParticleSpeed(dir[0], dir[1], dir[2]);

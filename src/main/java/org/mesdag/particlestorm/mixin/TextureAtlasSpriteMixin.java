@@ -2,7 +2,7 @@ package org.mesdag.particlestorm.mixin;
 
 import net.minecraft.client.renderer.texture.SpriteContents;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import org.mesdag.particlestorm.mixed.ITextureAtlasSprite;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
@@ -28,8 +28,8 @@ public abstract class TextureAtlasSpriteMixin implements ITextureAtlasSprite {
     }
 
     @Inject(method = "<init>", at = @At("TAIL"))
-    private void storeOrigin(ResourceLocation atlasLocation, SpriteContents contents, int originX, int originY, int x, int y, CallbackInfo ci) {
-        this.particlestorm$originX = originX;
-        this.particlestorm$originY = originY;
+    private void storeOrigin(Identifier atlasLocation, SpriteContents contents, int atlasWidth, int atlasHeight, int x, int y, int padding, CallbackInfo ci) {
+        this.particlestorm$originX = atlasWidth;
+        this.particlestorm$originY = atlasHeight;
     }
 }

@@ -2,7 +2,7 @@ package org.mesdag.particlestorm.data.molang.compiler;
 
 import com.mojang.datafixers.util.Either;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
-import net.minecraft.Util;
+import net.minecraft.util.Util;
 import org.jetbrains.annotations.Nullable;
 import org.mesdag.particlestorm.data.molang.VariableTable;
 import org.mesdag.particlestorm.data.molang.compiler.function.MathFunction;
@@ -31,8 +31,9 @@ import java.util.regex.Pattern;
 
 import static org.mesdag.particlestorm.data.molang.compiler.MolangQueries.applyPrefixAliases;
 
+@SuppressWarnings("unchecked")
 public class MolangParser {
-    private static final Pattern EXPRESSION_FORMAT = Pattern.compile("^[\\w\\s_+-/*%^&|<>=!?:.,()']+$");
+    private static final Pattern EXPRESSION_FORMAT = Pattern.compile("^[\\w\\s_+-/*%^&|<>=!?:.,()'#]+$");
     private static final Pattern WHITESPACE = Pattern.compile("\\s");
     private static final Pattern NUMERIC = Pattern.compile("^-?\\d+(\\.\\d+)?$");
     private static final String MOLANG_RETURN = "return ";
@@ -287,7 +288,7 @@ public class MolangParser {
                 return new BooleanNegate(compileSingleValue(Either.left(string.substring(1))));
 
             if (isNumeric(string))
-                return new Constant(Float.parseFloat(string));
+                return new Constant(Double.parseDouble(string));
 
             if (string.startsWith("'") && string.endsWith("'"))
                 return new StringValue(string.substring(1, string.length() - 1));
@@ -427,6 +428,9 @@ public class MolangParser {
     }
 
     protected boolean isLikelyVariable(String string) {
+        if (string.startsWith("'") && string.endsWith("'"))
+            return false;
+
         if (MolangQueries.isExistingVariable(string))
             return true;
 

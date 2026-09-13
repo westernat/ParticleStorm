@@ -1,7 +1,6 @@
 package org.mesdag.particlestorm.data;
 
 import com.mojang.serialization.*;
-import net.neoforged.neoforge.common.util.NeoForgeExtraCodecs;
 
 import java.util.Arrays;
 import java.util.Objects;
@@ -24,7 +23,7 @@ public class DuplicateFieldDecoder {
         String[] names = new String[alias.length + 1];
         names[0] = defaultName;
         System.arraycopy(alias, 0, names, 1, alias.length);
-        return NeoForgeExtraCodecs.aliasedFieldOf(codec, names);
+        return new AliasFieldCodec<>(codec, names);
     }
 
     public static <T> MapCodec<Optional<T>> optionalFieldOf(Codec<T> codec, String... names) {
@@ -86,6 +85,36 @@ public class DuplicateFieldDecoder {
                     "names='" + Arrays.toString(names) + '\'' +
                     ", elementCodec=" + elementCodec +
                     '}';
+        }
+    }
+
+    public static class AliasFieldCodec<A> extends MapCodec<A> {
+        private final Codec<A> elementCodec;
+        private final String[] names;
+
+        public AliasFieldCodec(Codec<A> elementCodec, String[] names) {
+            this.elementCodec = elementCodec;
+            this.names = Arrays.stream(names).distinct().toArray(String[]::new);
+        }
+
+        @Override
+        public <T> DataResult<A> decode(DynamicOps<T> ops, MapLike<T> input) {
+            for (String name : names) {
+                T t = input.get(name);
+                if (t == null) continue;
+                return elementCodec.parse(ops, t);
+            }
+            return DataResult.error(() -> "Missing field: " + names[0]);
+        }
+
+        @Override
+        public <T> RecordBuilder<T> encode(A input, DynamicOps<T> ops, RecordBuilder<T> prefix) {
+            return prefix.add(names[0], elementCodec.encodeStart(ops, input));
+        }
+
+        @Override
+        public <T> Stream<T> keys(DynamicOps<T> ops) {
+            return Arrays.stream(names).map(ops::createString);
         }
     }
 }

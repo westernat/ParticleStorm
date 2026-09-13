@@ -1,17 +1,16 @@
 package org.mesdag.particlestorm.network;
 
 import io.netty.buffer.ByteBuf;
-import net.minecraft.network.chat.Component;
+import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
-import net.neoforged.neoforge.network.PacketDistributor;
-import net.neoforged.neoforge.network.handling.IPayloadContext;
+import org.mesdag.particlestorm.PSGameClient;
 import org.mesdag.particlestorm.ParticleStorm;
-import org.mesdag.particlestorm.particle.MolangParticleEngine;
 import org.mesdag.particlestorm.particle.ParticleEmitter;
 
 public record EmitterAttachPacketS2C(int particleId, int entityId) implements CustomPacketPayload {
@@ -27,23 +26,16 @@ public record EmitterAttachPacketS2C(int particleId, int entityId) implements Cu
         return TYPE;
     }
 
-    public void handle(IPayloadContext context) {
-        context.enqueueWork(() -> {
-            Player player = context.player();
-            if (player.isLocalPlayer()) {
-                ParticleEmitter emitter = MolangParticleEngine.INSTANCE.getEmitter(particleId);
-                Entity entity;
-                if (emitter != null && (entity = player.level().getEntity(entityId)) != null) {
-                    emitter.attachEntity(entity);
-                }
-            }
-        }).exceptionally(e -> {
-            context.disconnect(Component.translatable("neoforge.network.invalid_flow", e.getMessage()));
-            return null;
-        });
+    public static void handleClient(EmitterAttachPacketS2C payload, ClientPlayNetworking.Context context) {
+        Player player = context.player();
+        ParticleEmitter emitter = PSGameClient.LOADER.getEmitter(payload.particleId);
+        Entity entity;
+        if (emitter != null && (entity = player.level().getEntity(payload.entityId)) != null) {
+            emitter.attachEntity(entity);
+        }
     }
 
     public static void sendToClient(ServerPlayer serverPlayer, int particleId, Entity entity) {
-        PacketDistributor.sendToPlayer(serverPlayer, new EmitterAttachPacketS2C(particleId, entity.getId()));
+        ServerPlayNetworking.send(serverPlayer, new EmitterAttachPacketS2C(particleId, entity.getId()));
     }
 }

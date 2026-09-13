@@ -4,7 +4,7 @@ import com.mojang.serialization.Codec;
 import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.util.ExtraCodecs;
 import net.minecraft.util.Mth;
 import net.minecraft.util.StringRepresentable;
@@ -20,7 +20,7 @@ import java.util.List;
 import java.util.Locale;
 
 public record ParticleAppearanceBillboard(FloatMolangExp2 size, FaceCameraMode faceCameraMode, Direction direction, UV uv) implements IParticleComponent {
-    public static final ResourceLocation ID = ResourceLocation.withDefaultNamespace("particle_appearance_billboard");
+    public static final Identifier ID = Identifier.withDefaultNamespace("particle_appearance_billboard");
     public static final Codec<ParticleAppearanceBillboard> CODEC = RecordCodecBuilder.create(instance -> instance.group(
             FloatMolangExp2.CODEC.fieldOf("size").forGetter(ParticleAppearanceBillboard::size),
             DuplicateFieldDecoder.fieldOf(FaceCameraMode.CODEC, "face_camera_mode", "facing_camera_mode").forGetter(ParticleAppearanceBillboard::faceCameraMode),
@@ -56,9 +56,12 @@ public record ParticleAppearanceBillboard(FloatMolangExp2 size, FaceCameraMode f
         if (flipbook == UV.Flipbook.EMPTY) {
             updateSimpleUV(instance);
         } else if (flipbook.stretchToLifetime) {
-            updateFlipbookUV(instance);
             instance.setMaxFrame((int) flipbook.maxFrame.calculate(instance));
-            instance.setCurrentFrame(instance.getMaxFrame() * instance.getAge() / instance.self().getLifetime());
+            int lifetime = instance.self().getLifetime();
+            instance.setCurrentFrame(lifetime > 0
+                    ? Math.min(instance.getMaxFrame() - 1, instance.getMaxFrame() * instance.getAge() / lifetime)
+                    : 0);
+            updateFlipbookUV(instance);
         } else {
             float gameTime = (float) ((int) instance.getLevel().getGameTime() & 0b11111111);
             if (gameTime % (instance.getLevel().tickRateManager().tickrate() / flipbook.framesPerSecond) < 1.0F) {
@@ -96,10 +99,11 @@ public record ParticleAppearanceBillboard(FloatMolangExp2 size, FaceCameraMode f
         if (faceCameraMode.isDirection()) {
             if (direction.mode == Direction.Mode.CUSTOM_DIRECTION) {
                 float[] values = direction.customDirection.calculate(instance);
-                instance.setXRot(values[0]);
-                instance.setYRot(values[1]);
-                instance.setZRot(values[2]);
-            } else if (direction.minSpeedThreshold > 0.0F && Mth.lengthSquared(instance.getXd(), instance.getYd(), instance.getZd()) > instance.getPreset().minSpeedThresholdSqr) {
+                instance.getFacingDirection().set(values[0], values[1], values[2]);
+                if (instance.getFacingDirection().lengthSquared() > Mth.EPSILON) {
+                    instance.getFacingDirection().normalize();
+                }
+            } else if (Mth.lengthSquared(instance.getXd(), instance.getYd(), instance.getZd()) > instance.getPreset().minSpeedThresholdSqr) {
                 instance.getFacingDirection().set(instance.getXd(), instance.getYd(), instance.getZd()).normalize();
             }
         }
@@ -121,7 +125,7 @@ public record ParticleAppearanceBillboard(FloatMolangExp2 size, FaceCameraMode f
         float[] size = uv.uvSize.calculate(instance);
         int x = sprite.getX();
         int y = sprite.getY();
-        instance.setUV(x + base[0], y + base[1], size[0] * instance.getScaleU(), size[1] * instance.getScaleV());
+        instance.setUV(x + base[0] * instance.getScaleU(), y + base[1] * instance.getScaleV(), size[0] * instance.getScaleU(), size[1] * instance.getScaleV());
     }
 
     private void updateFlipbookUV(IMolangParticleInstance instance) {
@@ -132,7 +136,7 @@ public record ParticleAppearanceBillboard(FloatMolangExp2 size, FaceCameraMode f
         float v = instance.getUvStep()[1] * instance.getCurrentFrame();
         int x = sprite.getX();
         int y = sprite.getY();
-        instance.setUV(x + base[0] + u, y + base[1] + v, instance.getUvSize()[0], instance.getUvSize()[1]);
+        instance.setUV(x + base[0] * instance.getScaleU() + u, y + base[1] * instance.getScaleV() + v, instance.getUvSize()[0], instance.getUvSize()[1]);
     }
 
     @Override

@@ -2,10 +2,10 @@ package org.mesdag.particlestorm.data.component;
 
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
+import net.minecraft.core.particles.ParticleLimit;
 import org.mesdag.particlestorm.api.IEmitterComponent;
 import org.mesdag.particlestorm.data.molang.FloatMolangExp;
 import org.mesdag.particlestorm.data.molang.MolangExp;
-import org.mesdag.particlestorm.particle.MutableParticleGroup;
 import org.mesdag.particlestorm.particle.ParticleEmitter;
 
 import java.util.List;
@@ -53,7 +53,7 @@ public abstract sealed class EmitterRate implements IEmitterComponent permits Em
             if (emitter.spawnRate != limit) {
                 emitter.spawnRate = limit;
                 if (emitter.particleGroup == null) {
-                    emitter.particleGroup = new MutableParticleGroup(16384);
+                    emitter.particleGroup = new ParticleLimit(16384);
                 }
             }
         }
@@ -106,11 +106,7 @@ public abstract sealed class EmitterRate implements IEmitterComponent permits Em
             if (emitter.spawnRate != calculated) {
                 emitter.spawnRate = emitter.spawnDuration == 1 ? (int) (calculated / tickrate) : 1;
                 int limit = (int) maxParticles.calculate(emitter);
-                if (emitter.particleGroup == null) {
-                    emitter.particleGroup = new MutableParticleGroup(limit);
-                } else {
-                    emitter.particleGroup.setLimit(limit);
-                }
+                emitter.particleGroup = new ParticleLimit(limit);
             }
         }
 
@@ -151,12 +147,8 @@ public abstract sealed class EmitterRate implements IEmitterComponent permits Em
         @Override
         public void apply(ParticleEmitter emitter) {
             int limit = (int) maxParticles.calculate(emitter);
-            if (emitter.particleGroup == null) {
-                emitter.particleGroup = new MutableParticleGroup(limit);
-            } else {
-                emitter.particleGroup.setLimit(limit);
-            }
-            emitter.spawnRate = limit;
+            emitter.particleGroup = new ParticleLimit(limit);
+            emitter.spawnRate = 1;
         }
 
         @Override

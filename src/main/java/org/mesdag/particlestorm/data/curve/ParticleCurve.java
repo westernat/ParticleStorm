@@ -48,8 +48,10 @@ public final class ParticleCurve {
         if (CurveType.BEZIER_CHAIN == type) a = 1.0F;
         if (a == 0.0F) i = 0.0F;
         else i = i / a;
+        i = Mth.clamp(i, 0.0F, 1.0F);
         switch (type) {
             case CATMULL_ROM -> {
+                if (nodes.length() == 0) return 0.0F;
                 SplineCurve curve = cachedCurves.get(name);
                 if (curve == null) {
                     FloatArrayList points = new FloatArrayList();
@@ -64,11 +66,17 @@ public final class ParticleCurve {
                 return curve.getPoint(u);
             }
             case LINEAR -> {
+                List<FloatMolangExp> floatMolangExps = nodes.either.right().get();
                 int c = nodes.length() - 1;
+                if (c <= 0) {
+                    return floatMolangExps.isEmpty() ? 0.0F : floatMolangExps.get(0).calculate(instance);
+                }
                 i *= c;
                 int o = Mth.floor(i);
+                if (o >= c) {
+                    return floatMolangExps.get(c).calculate(instance);
+                }
                 float s = i % 1;
-                List<FloatMolangExp> floatMolangExps = nodes.either.right().get();
                 float calculate = floatMolangExps.get(o).calculate(instance);
                 float l = floatMolangExps.get(o + 1).calculate(instance) - calculate;
                 return calculate + l * s;
@@ -87,8 +95,9 @@ public final class ParticleCurve {
             }
             case BEZIER_CHAIN -> {
                 ArrayList<Tuple<Float, CurveNode>> e = nodes.nodeList;
+                if (e.isEmpty()) return 0.0F;
                 int index = 0;
-                while (index < e.size() && !(e.get(index).getA() > index)) index++;
+                while (index < e.size() && !(e.get(index).getA() > i)) index++;
                 Tuple<Float, CurveNode> r = index == 0 ? FIRST : e.get(index - 1);
                 Tuple<Float, CurveNode> s = index == e.size() ? LAST : e.get(index);
                 float rTime = r.getA();

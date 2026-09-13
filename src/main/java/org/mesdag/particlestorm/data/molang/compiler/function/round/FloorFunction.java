@@ -1,15 +1,17 @@
 package org.mesdag.particlestorm.data.molang.compiler.function.round;
 
-import net.minecraft.util.Mth;
 import org.mesdag.particlestorm.api.MolangInstance;
 import org.mesdag.particlestorm.data.molang.compiler.MathValue;
 import org.mesdag.particlestorm.data.molang.compiler.function.MathFunction;
 
-/// [MathFunction] value supplier
-///
-/// **Contract:**
-///
-/// Returns the largest value that is less than or equal to the input value and is equal to an integer
+/**
+ * {@link MathFunction} value supplier
+ *
+ * <p>
+ * <b>Contract:</b>
+ * <br>
+ * Returns the largest value that is less than or equal to the input value and is equal to an integer
+ */
 public final class FloorFunction extends MathFunction {
     private final MathValue value;
 
@@ -25,8 +27,8 @@ public final class FloorFunction extends MathFunction {
     }
 
     @Override
-    public float compute(MolangInstance instance) {
-        return Mth.floor(this.value.get(instance));
+    public double compute(MolangInstance instance) {
+        return Math.floor(this.value.get(instance));
     }
 
     @Override

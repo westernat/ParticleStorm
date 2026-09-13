@@ -18,10 +18,6 @@ public record EmitterInitialization(MolangExp creationExpression, MolangExp perU
             MolangExp.CODEC.fieldOf("per_update_expression").orElse(MolangExp.EMPTY).forGetter(EmitterInitialization::perUpdateExpression)
     ).apply(instance, EmitterInitialization::new));
 
-    public EmitterInitialization {
-        creationExpression.markImmutable();
-    }
-
     @Override
     public Codec<EmitterInitialization> codec() {
         return CODEC;
@@ -33,13 +29,13 @@ public record EmitterInitialization(MolangExp creationExpression, MolangExp perU
     }
 
     @Override
-    public void update(ParticleEmitter emitter) {
-        perUpdateExpression.calculate(emitter);
+    public void update(ParticleEmitter entity) {
+        perUpdateExpression.calculate(entity);
     }
 
     @Override
-    public void apply(ParticleEmitter emitter) {
-        creationExpression.calculate(emitter);
+    public void apply(ParticleEmitter entity) {
+        creationExpression.calculate(entity);
     }
 
     @Override

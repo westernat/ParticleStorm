@@ -34,7 +34,7 @@ public final class NodeMolangExp extends MolangExp implements IEventNode {
         return log;
     }
 
-    private static final Vector3f vector3f = new Vector3f();
+    private static final Vector3f POSITION = new Vector3f();
 
     @Override
     public void execute(MolangInstance instance) {
@@ -45,13 +45,14 @@ public final class NodeMolangExp extends MolangExp implements IEventNode {
         if (variable != null) {
             double v = variable.get(instance);
             if (log) {
-                if (instance instanceof IMolangParticleInstance p) {
-                    p.getEmitter().local2World(vector3f.set((float) p.getX(), (float) p.getY(), (float) p.getZ()), 1);
+                if (instance instanceof IMolangParticleInstance particle) {
+                    POSITION.set((float) particle.getX(), (float) particle.getY(), (float) particle.getZ());
+                    particle.getEmitter().local2World(POSITION, 1.0F);
                 } else {
                     Vec3 pos = instance.getPosition();
-                    vector3f.set(pos.x, pos.y, pos.z);
+                    POSITION.set((float) pos.x, (float) pos.y, (float) pos.z);
                 }
-                ParticleStorm.LOGGER.info("{}[{},{},{}]: {}={}", instance.getIdentity(), vector3f.x, vector3f.y, vector3f.z, expStr, v);
+                ParticleStorm.LOGGER.info("{}[{},{},{}]: {}={}", instance.getIdentity(), POSITION.x, POSITION.y, POSITION.z, expStr, v);
             }
         }
     }

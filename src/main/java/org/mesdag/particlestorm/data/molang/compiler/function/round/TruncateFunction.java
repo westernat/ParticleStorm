@@ -4,11 +4,14 @@ import org.mesdag.particlestorm.api.MolangInstance;
 import org.mesdag.particlestorm.data.molang.compiler.MathValue;
 import org.mesdag.particlestorm.data.molang.compiler.function.MathFunction;
 
-/// [MathFunction] value supplier
-///
-/// **Contract:**
-///
-/// Returns the closest value that is equal to the input value or closer to zero, and is equal to an integer
+/**
+ * {@link MathFunction} value supplier
+ *
+ * <p>
+ * <b>Contract:</b>
+ * <br>
+ * Returns the closest value that is equal to the input value or closer to zero, and is equal to an integer
+ */
 public final class TruncateFunction extends MathFunction {
     private final MathValue value;
 
@@ -24,8 +27,8 @@ public final class TruncateFunction extends MathFunction {
     }
 
     @Override
-    public float compute(MolangInstance instance) {
-        return (int) this.value.get(instance);
+    public double compute(MolangInstance instance) {
+        return (long)this.value.get(instance);
     }
 
     @Override
@@ -35,6 +38,6 @@ public final class TruncateFunction extends MathFunction {
 
     @Override
     public MathValue[] getArgs() {
-        return new MathValue[]{this.value};
+        return new MathValue[] {this.value};
     }
 }
