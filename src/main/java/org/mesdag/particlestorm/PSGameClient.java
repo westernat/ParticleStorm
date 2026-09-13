@@ -34,6 +34,7 @@ import org.mesdag.particlestorm.api.RegisterCustomComponentEvent;
 import org.mesdag.particlestorm.api.RegisterCustomEmitterTypeEvent;
 import org.mesdag.particlestorm.api.RegisterCustomEventNodeEvent;
 import org.mesdag.particlestorm.api.RegisterCustomParticleTypeEvent;
+import org.mesdag.particlestorm.compat.iris.IrisParticlePipelines;
 import org.mesdag.particlestorm.data.component.*;
 import org.mesdag.particlestorm.data.event.*;
 import org.mesdag.particlestorm.mixin.DebugScreenEntriesAccessor;
@@ -79,6 +80,9 @@ public final class PSGameClient implements ClientModInitializer {
 
     @Override
     public void onInitializeClient() {
+        if (FabricLoader.getInstance().isModLoaded("iris")) {
+            IrisParticlePipelines.register();
+        }
         PSClientConfigs.onLoad();
         registerComponents();
         registerEventNodes();

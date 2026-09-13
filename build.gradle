@@ -20,6 +20,12 @@ fabricApi {
 }
 
 repositories {
+    exclusiveContent {
+        forRepository {
+            maven { url = 'https://api.modrinth.com/maven' }
+        }
+        filter { includeModule('maven.modrinth', 'iris') }
+    }
     // Add repositories to retrieve artifacts from in here.
     // You should only use this when depending on other mods because
     // Loom adds the essential maven repositories to download Minecraft and libraries from automatically.
@@ -42,6 +48,7 @@ dependencies {
     implementation "net.fabricmc:fabric-loader:${project.loader_version}"
     implementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
     compileOnly "com.geckolib:geckolib-fabric-${minecraft_version}:${geckolib_version}"
+    compileOnly('maven.modrinth:iris:1.11.3+26.1-fabric') { transitive = false }
 }
 
 processResources {
