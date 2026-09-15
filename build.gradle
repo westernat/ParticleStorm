@@ -6,9 +6,6 @@ plugins {
     id 'net.neoforged.moddev.legacyforge' version '2.0.141'
 }
 
-import groovy.json.JsonOutput
-import groovy.json.JsonSlurper
-
 tasks.named('wrapper', Wrapper).configure {
     distributionType = Wrapper.DistributionType.BIN
 }
@@ -182,16 +179,28 @@ tasks.register('patchRefmap') {
             return
         }
 
-        def json = new JsonSlurper().parse(refmapFile) as Map
-        def lambdaMapping = 'Lnet/minecraft/client/particle/ParticleEngine;m_244715_(Lnet/minecraft/util/profiling/ProfilerFiller;Ljava/util/concurrent/CompletableFuture;Ljava/util/concurrent/CompletableFuture;Ljava/lang/Void;)V'
-        def key = 'org/mesdag/particlestorm/mixin/ParticleEngineMixin'
-        def methodName = 'lambda$reload$9'
+        def json = new groovy.json.JsonSlurper().parse(refmapFile) as Map
 
-        json.mappings[key][methodName] = lambdaMapping
-        json.data.searge[key][methodName] = lambdaMapping
+        def insertRefMap = { String m, String meth, String map ->
+            if (!json.mappings[m]) json.mappings[m] = [:]
+            if (!json.data.searge[m]) json.data.searge[m] = [:]
+            json.mappings[m][meth] = map
+            json.data.searge[m][meth] = map
+        }
 
-        refmapFile.text = JsonOutput.prettyPrint(JsonOutput.toJson(json))
-        logger.lifecycle('Patched refmap with lambda$reload$9 mapping')
+        insertRefMap(
+                'org/mesdag/particlestorm/mixin/ParticleEngineMixin',
+                'lambda$reload$9',
+                'Lnet/minecraft/client/particle/ParticleEngine;m_244715_(Lnet/minecraft/util/profiling/ProfilerFiller;Ljava/util/concurrent/CompletableFuture;Ljava/util/concurrent/CompletableFuture;Ljava/lang/Void;)V'
+        )
+        insertRefMap(
+                'org.mesdag.particlestorm.mixin.integration.geckolib.GeoReplacedEntityRendererMixin',
+                'render',
+                'Lsoftware/bernie/geckolib/renderer/GeoReplacedEntityRenderer;m_7392_(Lnet/minecraft/world/entity/Entity;FFLcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/MultiBufferSource;I)V'
+        )
+
+        refmapFile.text = groovy.json.JsonOutput.prettyPrint(groovy.json.JsonOutput.toJson(json))
+        logger.lifecycle('Patched refmap')
     }
 }
 

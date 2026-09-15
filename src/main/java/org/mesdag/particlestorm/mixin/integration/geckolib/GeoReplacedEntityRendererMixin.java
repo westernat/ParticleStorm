@@ -19,6 +19,7 @@ public abstract class GeoReplacedEntityRendererMixin<E extends Entity, T extends
     @Final
     protected T animatable;
 
+    /// \@Inject target 'render' in @Pseudo mixin will not be obfuscated
     @Inject(method = "render", at = @At(value = "INVOKE", target = "Lsoftware/bernie/geckolib/renderer/GeoReplacedEntityRenderer;defaultRender(Lcom/mojang/blaze3d/vertex/PoseStack;Lsoftware/bernie/geckolib/core/animatable/GeoAnimatable;Lnet/minecraft/client/renderer/MultiBufferSource;Lnet/minecraft/client/renderer/RenderType;Lcom/mojang/blaze3d/vertex/VertexConsumer;FFI)V"))
     private void setCurrentEntity(CallbackInfo ci, @Local(argsOnly = true) E entity) {
         GeckoLibHelper.setCurrentEntity(animatable, entity);
