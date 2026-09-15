@@ -23,7 +23,7 @@ public interface IComponent {
 
     List<MolangExp> getAllMolangExp();
 
-    /// @return <= 0 means early initialize
+    /// @return order < 0 means early initialize and no update
     default int order() {
         return 1000;
     }

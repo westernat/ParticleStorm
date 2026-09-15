@@ -10,7 +10,6 @@ import org.mesdag.particlestorm.api.IEventNode;
 import org.mesdag.particlestorm.api.IMolangParticleInstance;
 import org.mesdag.particlestorm.api.MolangInstance;
 import org.mesdag.particlestorm.data.molang.MolangExp;
-import org.mesdag.particlestorm.data.molang.compiler.MolangParser;
 
 import java.util.function.Function;
 
@@ -23,6 +22,7 @@ public final class NodeMolangExp extends MolangExp implements IEventNode {
             either -> either.map(Function.identity(), s -> new NodeMolangExp(s, false)),
             e -> e.log ? Either.right(e.expStr) : Either.left(e)
     );
+
     private final boolean log;
 
     public NodeMolangExp(String expStr, boolean log) {
@@ -38,11 +38,7 @@ public final class NodeMolangExp extends MolangExp implements IEventNode {
 
     @Override
     public void execute(MolangInstance instance) {
-        if (variable == null && !expStr.isEmpty() && !expStr.isBlank()) {
-            MolangParser parser = new MolangParser(instance.getVars());
-            this.variable = parser.compileMolang(expStr);
-        }
-        if (variable != null) {
+        if (initialized()) {
             double v = variable.get(instance);
             if (log) {
                 if (instance instanceof IMolangParticleInstance p) {

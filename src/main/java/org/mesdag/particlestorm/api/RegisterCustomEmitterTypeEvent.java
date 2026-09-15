@@ -1,42 +1,46 @@
 package org.mesdag.particlestorm.api;
 
+import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.Tag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.Level;
 import net.neoforged.bus.api.Event;
 import net.neoforged.fml.ModLoader;
 import net.neoforged.fml.event.IModBusEvent;
+import org.mesdag.particlestorm.data.event.ParticleEffect;
 import org.mesdag.particlestorm.particle.ParticleEmitter;
+import org.mesdag.particlestorm.particle.attach.WithBlockParticleEmitter;
 
-import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
 import java.util.function.BiFunction;
 
 public class RegisterCustomEmitterTypeEvent extends Event implements IModBusEvent {
-    public static final String TYPE_KEY = "type";
-    private static Map<ResourceLocation, BiFunction<Level, CompoundTag, ? extends ParticleEmitter>> map;
+    private static final Map<ResourceLocation, BiFunction<Level, CompoundTag, ? extends ParticleEmitter>> fromNbt = new Object2ObjectOpenHashMap<>();
+    private static final Map<ResourceLocation, BiFunction<ParticleEmitter, ParticleEffect, ? extends ParticleEmitter>> fromEffect = new Object2ObjectOpenHashMap<>();
 
     private RegisterCustomEmitterTypeEvent() {}
 
     public static void postEvent() {
-        map = new HashMap<>();
-        ModLoader.postEvent(new RegisterCustomEmitterTypeEvent());
+        if (fromNbt.isEmpty()) {
+            RegisterCustomEmitterTypeEvent event = new RegisterCustomEmitterTypeEvent();
+            event.register(WithBlockParticleEmitter.TYPE, WithBlockParticleEmitter::new, WithBlockParticleEmitter::new);
+//            event.register(PresetVarsParticleEmitter.TYPE, PresetVarsParticleEmitter::new, PresetVarsParticleEmitter::new);
+            ModLoader.postEvent(event);
+        }
     }
 
-    public <E extends ParticleEmitter> void register(ResourceLocation id, BiFunction<Level, CompoundTag, E> factory) {
-        map.put(id, factory);
+    public <E extends ParticleEmitter> void register(ResourceLocation type, BiFunction<Level, CompoundTag, E> nbt, BiFunction<ParticleEmitter, ParticleEffect, E> effect) {
+        if (fromNbt.put(type, nbt) != null) {
+            throw new IllegalStateException("Duplicated emitter type: " + type);
+        }
+        fromEffect.put(type, effect);
     }
 
     public static ParticleEmitter create(Level level, CompoundTag tag) {
-        if (tag.contains(TYPE_KEY, Tag.TAG_STRING)) {
-            ResourceLocation id = ResourceLocation.tryParse(Objects.requireNonNull(tag.get(TYPE_KEY)).getAsString());
-            BiFunction<Level, CompoundTag, ? extends ParticleEmitter> factory = map.get(id);
-            if (factory != null) {
-                return factory.apply(level, tag);
-            }
-        }
-        return new ParticleEmitter(level, tag);
+        return fromNbt.getOrDefault(ResourceLocation.tryParse(tag.getString(ParticleEmitter.TYPE_KEY)), ParticleEmitter::new).apply(level, tag);
+    }
+
+    public static ParticleEmitter create(ParticleEmitter parent, ParticleEffect effect) {
+        return fromEffect.getOrDefault(parent.type, ParticleEmitter::new).apply(parent, effect);
     }
 }

@@ -1,7 +1,6 @@
 package org.mesdag.particlestorm.network;
 
 import io.netty.buffer.ByteBuf;
-import net.minecraft.network.chat.Component;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
@@ -22,7 +21,6 @@ import org.mesdag.particlestorm.particle.ParticleEmitter;
 
 public record EmitterCreationPacketS2C(ResourceLocation id, Vector3f pos, MolangExp expression, int entityId) implements CustomPacketPayload {
     public static final Type<EmitterCreationPacketS2C> TYPE = new Type<>(ParticleStorm.asResource("emitter_creation"));
-
     public static final StreamCodec<ByteBuf, EmitterCreationPacketS2C> STREAM_CODEC = StreamCodec.composite(
             ResourceLocation.STREAM_CODEC, EmitterCreationPacketS2C::id,
             ByteBufCodecs.VECTOR3F, EmitterCreationPacketS2C::pos,
@@ -44,11 +42,8 @@ public record EmitterCreationPacketS2C(ResourceLocation id, Vector3f pos, Molang
                 if (entityId > 0) {
                     emitter.attachEntity(player.level().getEntity(entityId));
                 }
-                MolangParticleEngine.INSTANCE.addEmitter(emitter, false);
+                MolangParticleEngine.INSTANCE.addEmitter(emitter);
             }
-        }).exceptionally(e -> {
-            context.disconnect(Component.translatable("neoforge.network.invalid_flow", e.getMessage()));
-            return null;
         });
     }
 

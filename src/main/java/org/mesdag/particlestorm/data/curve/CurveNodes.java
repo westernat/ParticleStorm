@@ -13,11 +13,11 @@ import java.util.Map;
 public final class CurveNodes {
     public static final Codec<CurveNodes> MAP_CODEC = Codec.unboundedMap(Codec.STRING, CurveNode.CODEC).xmap(
             map -> new CurveNodes(Either.left(map)),
-            nodes -> nodes.either.left().get()
+            nodes -> nodes.either.left().orElseThrow()
     );
     public static final Codec<CurveNodes> LIST_CODEC = Codec.list(FloatMolangExp.CODEC).xmap(
             list -> new CurveNodes(Either.right(list)),
-            nodes -> nodes.either.right().get()
+            nodes -> nodes.either.right().orElseThrow()
     );
 
     public final Either<Map<String, CurveNode>, List<FloatMolangExp>> either;
@@ -39,7 +39,6 @@ public final class CurveNodes {
     }
 
     public int length() {
-        if (isLeft) return either.left().get().size();
-        return either.right().get().size();
+        return either.map(Map::size, List::size);
     }
 }

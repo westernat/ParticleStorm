@@ -4,7 +4,6 @@ import com.mojang.datafixers.util.Either;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.util.ExtraCodecs;
 import net.minecraft.util.Mth;
 import org.mesdag.particlestorm.api.IMolangParticleInstance;
 import org.mesdag.particlestorm.api.IParticleComponent;
@@ -103,7 +102,7 @@ public record ParticleMotionCollision(
     public record Event(String event, float minSpeed) {
         public static final Codec<Event> CODEC = RecordCodecBuilder.create(instance -> instance.group(
                 Codec.STRING.fieldOf("event").forGetter(Event::event),
-                ExtraCodecs.POSITIVE_FLOAT.fieldOf("min_speed").orElse(2.0F).forGetter(Event::minSpeed)
+                Codec.FLOAT.lenientOptionalFieldOf("min_speed", 2.0F).forGetter(Event::minSpeed)
         ).apply(instance, Event::new));
 
         @Override

@@ -1,7 +1,7 @@
 package org.mesdag.particlestorm.mixin.integration.geckolib;
 
 import com.llamalad7.mixinextras.sugar.Local;
-import org.mesdag.particlestorm.mixed.IGeoBone;
+import org.mesdag.particlestorm.mixed.IPSGeoBone;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Pseudo;
 import org.spongepowered.asm.mixin.injection.At;
@@ -15,6 +15,6 @@ import software.bernie.geckolib.loading.object.BoneStructure;
 public abstract class BakedModelFactory$BuiltinMixin {
     @Inject(method = "constructBone", at = @At("RETURN"))
     private void addLocators(CallbackInfoReturnable<GeoBone> cir, @Local(argsOnly = true) BoneStructure boneStructure) {
-        IGeoBone.of(cir.getReturnValue()).particlestorm$setLocators(boneStructure.self().locators());
+        IPSGeoBone.of(cir.getReturnValue()).particlestorm$setLocators(boneStructure.self().locators());
     }
 }

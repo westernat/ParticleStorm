@@ -2,10 +2,10 @@ package org.mesdag.particlestorm.mixed;
 
 import net.minecraft.client.particle.ParticleEngine;
 
-public interface IParticleEngine {
+public interface IPSParticleEngine {
     void particlestorm$bindSprites();
 
-    static IParticleEngine of(ParticleEngine engine) {
-        return (IParticleEngine) engine;
+    static IPSParticleEngine of(ParticleEngine engine) {
+        return (IPSParticleEngine) engine;
     }
 }

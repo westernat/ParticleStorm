@@ -2,7 +2,7 @@ package org.mesdag.particlestorm.mixin;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.particle.ParticleEngine;
-import org.mesdag.particlestorm.mixed.IParticleEngine;
+import org.mesdag.particlestorm.mixed.IPSParticleEngine;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -19,6 +19,6 @@ public abstract class MinecraftMixin {
 
     @Inject(method = "onResourceLoadFinished", at = @At("TAIL"))
     private void onLoaded(@Coerce Object gameLoadCookie, CallbackInfo ci) {
-        IParticleEngine.of(particleEngine).particlestorm$bindSprites();
+        IPSParticleEngine.of(particleEngine).particlestorm$bindSprites();
     }
 }

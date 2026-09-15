@@ -1,9 +1,8 @@
 package org.mesdag.particlestorm.data.curve;
 
+import com.mojang.datafixers.util.Either;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
-import it.unimi.dsi.fastutil.floats.FloatArrayList;
-import net.minecraft.util.Mth;
 import net.minecraft.util.Tuple;
 import org.mesdag.particlestorm.api.MolangInstance;
 import org.mesdag.particlestorm.data.molang.FloatMolangExp;
@@ -18,10 +17,10 @@ public final class ParticleCurve {
             CurveType.CODEC.fieldOf("type").orElse(CurveType.LINEAR).forGetter(curve -> curve.type),
             FloatMolangExp.CODEC.fieldOf("input").forGetter(curve -> curve.input),
             FloatMolangExp.CODEC.fieldOf("horizontal_range").orElse(FloatMolangExp.ONE).forGetter(curve -> curve.horizontalRange),
-            CurveType.CODEC.dispatchMap(
-                    nodes -> nodes.isLeft ? CurveType.BEZIER_CHAIN : CurveType.LINEAR,
-                    curveType -> curveType == CurveType.BEZIER_CHAIN ? CurveNodes.MAP_CODEC.fieldOf("nodes") : CurveNodes.LIST_CODEC.fieldOf("nodes")
-            ).forGetter(curve -> curve.nodes)
+            Codec.either(CurveNodes.MAP_CODEC, CurveNodes.LIST_CODEC).xmap(
+                    either -> either.left().orElse(either.right().orElseThrow()),
+                    nodes -> nodes.isLeft ? Either.left(nodes) : Either.right(nodes)
+            ).fieldOf("nodes").forGetter(curve -> curve.nodes)
     ).apply(instance, ParticleCurve::new));
     public static final Tuple<Float, CurveNode> FIRST = new Tuple<>(0.0F, new CurveNode(0.0F, 0.0F));
     public static final Tuple<Float, CurveNode> LAST = new Tuple<>(1.0F, new CurveNode(0.0F, 0.0F));
@@ -52,11 +51,12 @@ public final class ParticleCurve {
             case CATMULL_ROM -> {
                 SplineCurve curve = cachedCurves.get(name);
                 if (curve == null) {
-                    FloatArrayList points = new FloatArrayList();
-                    for (FloatMolangExp exp : nodes.either.right().get()) {
-                        points.add(exp.calculate(instance));
+                    List<FloatMolangExp> nodez = nodes.either.right().orElseThrow();
+                    float[] points = new float[nodez.size()];
+                    for (int j = 0; j < points.length; j++) {
+                        points[j] = nodez.get(j).calculate(instance);
                     }
-                    curve = new SplineCurve.CatMullRom(points.toFloatArray());
+                    curve = new SplineCurve.CatMullRom(points);
                     cachedCurves.put(name, curve);
                 }
                 int c = nodes.length() - 3;
@@ -66,21 +66,22 @@ public final class ParticleCurve {
             case LINEAR -> {
                 int c = nodes.length() - 1;
                 i *= c;
-                int o = Mth.floor(i);
+                int o = Math.max(0, (int) i);
                 float s = i % 1;
-                List<FloatMolangExp> floatMolangExps = nodes.either.right().get();
-                float calculate = floatMolangExps.get(o).calculate(instance);
-                float l = floatMolangExps.get(o + 1).calculate(instance) - calculate;
+                List<FloatMolangExp> nodez = nodes.either.right().orElseThrow();
+                float calculate = nodez.get(o).calculate(instance);
+                float l = nodez.get(o + 1).calculate(instance) - calculate;
                 return calculate + l * s;
             }
             case BEZIER -> {
                 SplineCurve curve = cachedCurves.get(name);
                 if (curve == null) {
-                    FloatArrayList points = new FloatArrayList();
-                    for (FloatMolangExp exp : nodes.either.right().get()) {
-                        points.add(exp.calculate(instance));
+                    List<FloatMolangExp> nodez = nodes.either.right().orElseThrow();
+                    float[] points = new float[nodez.size()];
+                    for (int j = 0; j < points.length; j++) {
+                        points[j] = nodez.get(j).calculate(instance);
                     }
-                    curve = new SplineCurve.Bezier(points.toFloatArray());
+                    curve = new SplineCurve.Bezier(points);
                     cachedCurves.put(name, curve);
                 }
                 return curve.getPoint(i);

@@ -5,8 +5,8 @@ import com.llamalad7.mixinextras.sugar.Local;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.Logger;
 import org.mesdag.particlestorm.api.geckolib.GeckoLibHelper;
-import org.mesdag.particlestorm.mixed.IAnimationController;
-import org.mesdag.particlestorm.mixed.IGeoBone;
+import org.mesdag.particlestorm.mixed.IPSAnimationController;
+import org.mesdag.particlestorm.mixed.IPSGeoBone;
 import org.spongepowered.asm.mixin.*;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -24,7 +24,7 @@ import java.util.Objects;
 
 @Pseudo
 @Mixin(targets = "software.bernie.geckolib.animation.AnimationController", remap = false)
-public abstract class AnimationControllerMixin<T extends GeoAnimatable> implements IAnimationController {
+public abstract class AnimationControllerMixin<T extends GeoAnimatable> implements IPSAnimationController {
     @Shadow
     @Final
     protected T animatable;
@@ -39,11 +39,16 @@ public abstract class AnimationControllerMixin<T extends GeoAnimatable> implemen
         return Objects.requireNonNullElse(particlestorm$bonesWhichHasLocators, List.of());
     }
 
+    @Inject(method = "<init>(Lsoftware/bernie/geckolib/animatable/GeoAnimatable;Ljava/lang/String;ILsoftware/bernie/geckolib/animation/AnimationController$AnimationStateHandler;)V", at = @At("TAIL"))
+    private void addRunner(CallbackInfo ci) {
+        GeckoLibHelper.addReloadCallback(() -> this.particlestorm$bonesWhichHasLocators = null);
+    }
+
     @Override
     public void particlestorm$setBonesWhichHasLocators(Collection<GeoBone> registeredBones) {
         if (particlestorm$bonesWhichHasLocators == null) {
             this.particlestorm$bonesWhichHasLocators = registeredBones.stream().filter(bone -> {
-                Map<String, LocatorValue> locators = IGeoBone.of(bone).particlestorm$getLocators();
+                Map<String, LocatorValue> locators = IPSGeoBone.of(bone).particlestorm$getLocators();
                 return locators != null && !locators.isEmpty();
             }).toList();
         }

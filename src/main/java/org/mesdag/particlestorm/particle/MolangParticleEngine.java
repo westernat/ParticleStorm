@@ -1,6 +1,5 @@
 package org.mesdag.particlestorm.particle;
 
-import com.google.common.collect.EvictingQueue;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.gson.JsonParseException;
@@ -10,9 +9,11 @@ import com.mojang.blaze3d.vertex.BufferUploader;
 import com.mojang.blaze3d.vertex.MeshData;
 import com.mojang.blaze3d.vertex.Tesselator;
 import com.mojang.serialization.JsonOps;
+import it.unimi.dsi.fastutil.Hash;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
-import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
+import it.unimi.dsi.fastutil.objects.Object2ObjectLinkedOpenHashMap;
+import it.unimi.dsi.fastutil.objects.Object2ObjectOpenCustomHashMap;
 import it.unimi.dsi.fastutil.objects.ObjectIterator;
 import it.unimi.dsi.fastutil.objects.Reference2ObjectOpenHashMap;
 import net.minecraft.CrashReport;
@@ -24,6 +25,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.particle.ParticleRenderType;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.renderer.GameRenderer;
+import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.culling.Frustum;
 import net.minecraft.client.renderer.texture.TextureManager;
 import net.minecraft.core.particles.ParticleGroup;
@@ -40,9 +42,12 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.Level;
 import net.neoforged.fml.ModLoader;
 import org.jetbrains.annotations.Nullable;
+import org.lwjgl.opengl.GL11;
+import org.mesdag.particlestorm.PSClientConfigs;
 import org.mesdag.particlestorm.PSGameClient;
 import org.mesdag.particlestorm.ParticleStorm;
 import org.mesdag.particlestorm.api.*;
+import org.mesdag.particlestorm.api.geckolib.GeckoLibHelper;
 import org.mesdag.particlestorm.data.DefinedParticleEffect;
 import org.mesdag.particlestorm.network.EmitterRemovalPacket;
 import org.mesdag.particlestorm.network.EmitterSynchronizePacket;
@@ -62,7 +67,17 @@ public final class MolangParticleEngine implements PreparableReloadListener {
     private Map<ResourceLocation, EmitterPreset> id2Emitter = ImmutableMap.of();
 
     private final Int2ObjectOpenHashMap<ParticleEmitter> emitters = new Int2ObjectOpenHashMap<>();
-    private final Object2ObjectOpenHashMap<Entity, EvictingQueue<ParticleEmitter>> tracker = new Object2ObjectOpenHashMap<>();
+    private final Object2ObjectOpenCustomHashMap<Entity, Object2ObjectLinkedOpenHashMap<ResourceLocation, ParticleEmitter>> tracker = new Object2ObjectOpenCustomHashMap<>(new Hash.Strategy<>() {
+        @Override
+        public int hashCode(Entity o) {
+            return o.getUUID().hashCode();
+        }
+
+        @Override
+        public boolean equals(Entity a, Entity b) {
+            return a.getUUID().equals(b.getUUID());
+        }
+    });
     private final Int2ObjectOpenHashMap<Queue<IMolangParticleInstance>> particlesForEmitter = new Int2ObjectOpenHashMap<>();
     private final Queue<IMolangParticleInstance> particlesToAdd = new ArrayDeque<>();
     private final Reference2ObjectOpenHashMap<ParticleRenderType, Queue<IMolangParticleInstance>> groupedParticles = new Reference2ObjectOpenHashMap<>();
@@ -92,6 +107,9 @@ public final class MolangParticleEngine implements PreparableReloadListener {
                         particleComponent.initialize(player.clientLevel);
                     }
                 }
+            }
+            if (ParticleStorm.GECKOLIB_LOADED) {
+                GeckoLibHelper.afterReload();
             }
             removeAll();
             this.initialized = true;
@@ -125,10 +143,10 @@ public final class MolangParticleEngine implements PreparableReloadListener {
         if (!tracker.isEmpty()) {
             var iterator = tracker.object2ObjectEntrySet().fastIterator();
             while (iterator.hasNext()) {
-                Map.Entry<Entity, EvictingQueue<ParticleEmitter>> entry = iterator.next();
+                var entry = iterator.next();
                 if (entry.getKey().isRemoved()) {
                     iterator.remove();
-                } else if (entry.getValue().removeIf(ParticleEmitter::isRemoved) && entry.getValue().isEmpty()) {
+                } else if (entry.getValue().values().removeIf(ParticleEmitter::isRemoved) && entry.getValue().isEmpty()) {
                     iterator.remove();
                 }
             }
@@ -164,8 +182,15 @@ public final class MolangParticleEngine implements PreparableReloadListener {
         }
     }
 
-    public void renderParticles(TextureManager textureManager, Camera camera, float partialTick, Frustum frustum, Predicate<ParticleRenderType> renderTypePredicate) {
+    public void renderParticles(LightTexture lightTexture, TextureManager textureManager, Camera camera, float partialTick, Frustum frustum, Predicate<ParticleRenderType> renderTypePredicate) {
         if (groupedParticles.isEmpty()) return;
+        if (RenderSystem.getShaderTexture(2) == 0) {
+            lightTexture.turnOnLightLayer();
+        }
+        boolean cull = GL11.glIsEnabled(GL11.GL_CULL_FACE);
+        if (cull) {
+            RenderSystem.disableCull();
+        }
         Tesselator tesselator = Tesselator.getInstance();
         var iterator = groupedParticles.reference2ObjectEntrySet().fastIterator();
         while (iterator.hasNext()) {
@@ -175,7 +200,7 @@ public final class MolangParticleEngine implements PreparableReloadListener {
             Queue<IMolangParticleInstance> queue = entry.getValue();
             if (queue.isEmpty()) continue;
 
-            RenderSystem.setShader(!ParticleStorm.IRIS_LOADED && type == PSGameClient.PARTICLE_BLEND
+            RenderSystem.setShader(!ParticleStorm.IRIS_LOADED && type.isTranslucent()
                     ? PSGameClient::getParticleNoDiscardShader
                     : GameRenderer::getParticleShader);
             BufferBuilder builder = type.begin(tesselator, textureManager);
@@ -188,7 +213,7 @@ public final class MolangParticleEngine implements PreparableReloadListener {
                     } catch (Throwable e) {
                         CrashReport report = CrashReport.forThrowable(e, "Rendering Molang Particle");
                         CrashReportCategory category = report.addCategory("Molang Particle being rendered");
-                        category.setDetail("Particle Id", () -> instance.getEmitter().particleId.toString());
+                        category.setDetail("Molang Particle Id", () -> instance.getEmitter().particleId.toString());
                         throw new ReportedException(report);
                     }
                 }
@@ -197,6 +222,9 @@ public final class MolangParticleEngine implements PreparableReloadListener {
             if (mesh != null) {
                 BufferUploader.drawWithShader(mesh);
             }
+        }
+        if (cull) {
+            RenderSystem.enableCull();
         }
     }
 
@@ -232,12 +260,15 @@ public final class MolangParticleEngine implements PreparableReloadListener {
     }
 
     public boolean addTrackedEmitter(Entity entity, ResourceLocation particleId) {
-        EvictingQueue<ParticleEmitter> queue = tracker.computeIfAbsent(entity, e -> EvictingQueue.create(16));
-        if (!queue.isEmpty() && queue.stream().anyMatch(emitter -> particleId.equals(emitter.particleId))) return false;
+        var queue = tracker.computeIfAbsent(entity, e -> new Object2ObjectLinkedOpenHashMap<>());
+        if (!queue.isEmpty() && queue.containsKey(particleId)) return false;
         ParticleEmitter emitter = new ParticleEmitter(entity.level(), entity.position(), particleId);
-        addEmitter(emitter, false);
+        addEmitter(emitter);
         emitter.attachEntity(entity);
-        queue.add(emitter);
+        queue.put(particleId, emitter);
+        if (queue.size() > PSClientConfigs.maxTrackersPerEntity) {
+            queue.removeFirst();
+        }
         return true;
     }
 
@@ -271,10 +302,10 @@ public final class MolangParticleEngine implements PreparableReloadListener {
         ParticleEmitter removed = emitters.remove(id);
         if (removed != null) {
             removed.onRemove();
+            allocator.release(id);
+            particlesForEmitter.remove(id);
+            if (sync) EmitterRemovalPacket.sendToServer(id);
         }
-        allocator.release(id);
-        particlesForEmitter.remove(id);
-        if (sync) EmitterRemovalPacket.sendToServer(id);
         return removed;
     }
 

@@ -41,15 +41,17 @@ public abstract sealed class EmitterShape implements IEmitterComponent permits E
     @Override
     public void update(ParticleEmitter emitter) {
         if (emitter.spawned) return;
-        if (emitter.spawnDuration <= 1 || emitter.age % emitter.spawnDuration == 0) {
-            for (int num = 0; num < emitter.spawnRate; num++) {
-                if (hasSpaceInParticleLimit(emitter)) {
-                    emittingParticle(emitter);
-                }
+        int count = emitter.spawnRate;
+        if (emitter.spawnChance > 0.0F && emitter.level.random.nextFloat() < emitter.spawnChance) {
+            count++;
+        }
+        for (int num = 0; num < count; num++) {
+            if (hasSpaceInParticleLimit(emitter)) {
+                emittingParticle(emitter);
             }
-            if (emitter.getPreset().emitterRateType == EmitterRate.Type.INSTANT) {
-                emitter.spawned = true;
-            }
+        }
+        if (emitter.getPreset().emitterRateType == EmitterRate.Type.INSTANT) {
+            emitter.spawned = true;
         }
     }
 
@@ -69,7 +71,9 @@ public abstract sealed class EmitterShape implements IEmitterComponent permits E
         instance.setEmitter(emitter);
 
         ParticlePreset particlePreset = instance.getPreset();
-        MathHelper.redirect(particlePreset.assignments, instance.getVars());
+        if (particlePreset.initialization != null) {
+            particlePreset.initialization.perRenderExpression().calculate(instance);
+        }
 
         Vector3f position = new Vector3f();
         Vector3f speed = new Vector3f();
@@ -82,6 +86,7 @@ public abstract sealed class EmitterShape implements IEmitterComponent permits E
 
         if (emitter.isLocalSpace()) {
             if (!emitter.getPreset().localPosition) {
+                position.mulDirection(emitter.getLocalSpace());
                 Vec3 emitterPos = emitter.getPosition();
                 position.add((float) emitterPos.x, (float) emitterPos.y, (float) emitterPos.z);
             }
@@ -96,8 +101,7 @@ public abstract sealed class EmitterShape implements IEmitterComponent permits E
         }
 
         instance.setParticleSpeed(speed.x, speed.y, speed.z);
-        instance.setPos(position.x, position.y, position.z);
-        instance.setPosO(position.x, position.y, position.z);
+        instance.setPos(position.x, position.y, position.z, true);
         instance.setParticleGroup(emitter.particleGroup);
 
         for (IParticleComponent component : particlePreset.effect.orderedParticleComponents) {
@@ -161,6 +165,9 @@ public abstract sealed class EmitterShape implements IEmitterComponent permits E
             );
         }
 
+        private static final Vector3f v = new Vector3f();
+        private static final Quaternionf q = new Quaternionf();
+
         @Override
         protected void initializeParticle(MolangInstance instance, Vector3f position, Vector3f speed) {
             position.set(offset.calculate(instance));
@@ -171,7 +178,7 @@ public abstract sealed class EmitterShape implements IEmitterComponent permits E
             position.z += sp * Mth.sin(op);
             float[] lp = planeNormal.plane.calculate(instance);
             if (!Arrays.equals(lp, PlaneNormal.YN)) {
-                MathHelper.applyQuaternion(MathHelper.setFromUnitVectors(Mth.Y_AXIS, new Vector3f(lp), new Quaternionf()), position);
+                MathHelper.applyQuaternion(MathHelper.setFromUnitVectors(Mth.Y_AXIS, v.set(lp), q.identity()), position);
             }
             direction.apply(instance, this, position, speed);
         }
@@ -305,7 +312,9 @@ public abstract sealed class EmitterShape implements IEmitterComponent permits E
 
         @Override
         protected void initializeParticle(MolangInstance instance, Vector3f position, Vector3f speed) {
-            EntityDimensions dimensions = instance.getAttachedEntity().getDimensions(instance.getAttachedEntity().getPose());
+            Entity attachedEntity = instance.getAttachedEntity();
+            assert attachedEntity != null : "attach entity could not be null";
+            EntityDimensions dimensions = attachedEntity.getDimensions(attachedEntity.getPose());
             Vector3f n = new Vector3f(dimensions.width(), dimensions.height(), dimensions.width()).mul(0.5F);
             RandomSource random = instance.getLevel().random;
             position.x = Mth.nextFloat(random, -n.x, n.x);
@@ -464,7 +473,7 @@ public abstract sealed class EmitterShape implements IEmitterComponent permits E
                     MathHelper.applyEuler(MathHelper.getRandomEuler(instance.getLevel().random), speed.set(1, 0, 0));
                 } else {
                     speed.set(position);
-                    if (speed.lengthSquared() != 0.0F) {
+                    if (speed.x != 0.0F || speed.y != 0.0F || speed.z != 0.0F) {
                         speed.normalize();
                     }
                     if (this == INWARDS) speed.negate();
