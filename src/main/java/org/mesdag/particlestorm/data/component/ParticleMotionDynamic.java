@@ -73,7 +73,7 @@ public record ParticleMotionDynamic(
         float iit = 1 / instance.getInvTickRate();
         float it2 = Mth.square(instance.getInvTickRate());
 
-        if (linerAcceleration != FloatMolangExp3.ZERO && linearDragCoefficient != FloatMolangExp.ZERO) {
+        if (linerAcceleration != FloatMolangExp3.ZERO || linearDragCoefficient != FloatMolangExp.ZERO) {
             Vector3f acceleration = instance.getAcceleration();
             acceleration.set(linerAcceleration.calculate(instance));
             float c = -linearDragCoefficient.calculate(instance);
@@ -87,7 +87,7 @@ public record ParticleMotionDynamic(
                     zd + acceleration.z * it2
             );
         }
-        if (rotationAcceleration != FloatMolangExp.ZERO && rotationDragCoefficient != FloatMolangExp.ZERO) {
+        if (rotationAcceleration != FloatMolangExp.ZERO || rotationDragCoefficient != FloatMolangExp.ZERO) {
             instance.setZRotD((rotationAcceleration.calculate(instance) - rotationDragCoefficient.calculate(instance) * instance.getZRotD() * iit) * it2);
         }
     }
