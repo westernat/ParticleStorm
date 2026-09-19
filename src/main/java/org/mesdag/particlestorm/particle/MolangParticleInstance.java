@@ -454,10 +454,10 @@ public class MolangParticleInstance extends TextureSheetParticle implements IMol
         float v0 = getV0();
         float v1 = getV1();
         int color = getLightColor(partialTicks);
-        renderVertex(buffer, x, y, z, -1.0F, -1.0F, u0, v0, color);
-        renderVertex(buffer, x, y, z, -1.0F, 1.0F, u0, v1, color);
-        renderVertex(buffer, x, y, z, 1.0F, 1.0F, u1, v1, color);
-        renderVertex(buffer, x, y, z, 1.0F, -1.0F, u1, v0, color);
+        renderVertex(buffer, x, y, z, -1.0F, -1.0F, u1, v1, color);
+        renderVertex(buffer, x, y, z, -1.0F, 1.0F, u1, v0, color);
+        renderVertex(buffer, x, y, z, 1.0F, 1.0F, u0, v0, color);
+        renderVertex(buffer, x, y, z, 1.0F, -1.0F, u0, v1, color);
     }
 
     protected void renderVertex(
