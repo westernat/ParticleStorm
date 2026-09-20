@@ -1,6 +1,7 @@
 package org.mesdag.particlestorm.network;
 
 import io.netty.buffer.ByteBuf;
+import net.minecraft.client.Minecraft;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
@@ -41,7 +42,10 @@ public record EmitterSynchronizePacket(int id, CompoundTag tag) implements Custo
     }
 
     public static void syncToServer(ParticleEmitter emitter) {
-        ClientPacketDistributor.sendToServer(new EmitterSynchronizePacket(emitter.id, emitter.serialize()));
+        var connection = Minecraft.getInstance().getConnection();
+        if (connection != null && connection.hasChannel(TYPE)) {
+            ClientPacketDistributor.sendToServer(new EmitterSynchronizePacket(emitter.id, emitter.serialize()));
+        }
     }
 
     public static void syncToClient(ServerPlayer player, int id) {

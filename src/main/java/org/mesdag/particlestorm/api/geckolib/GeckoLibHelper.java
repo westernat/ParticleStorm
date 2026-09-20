@@ -259,7 +259,7 @@ public final class GeckoLibHelper {
         } else if (animatable instanceof BlockEntity blockEntityAnimatable && blockEntityAnimatable.getLevel() != null) {
             blockEntity = blockEntityAnimatable;
             level = blockEntity.getLevel();
-            basePos = Vec3.atBottomCenterOf(blockEntity.getBlockPos());
+            basePos = blockEntity.getBlockPos().getBottomCenter();
             variableTable = IBlockEntity.of(blockEntity).particlestorm$getVariableTable();
         } else if (Minecraft.getInstance().level != null) {
             level = Minecraft.getInstance().level;

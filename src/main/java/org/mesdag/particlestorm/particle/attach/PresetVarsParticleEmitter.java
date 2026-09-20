@@ -8,7 +8,6 @@ import org.mesdag.particlestorm.ParticleStorm;
 import org.mesdag.particlestorm.data.molang.MolangExp;
 import org.mesdag.particlestorm.data.molang.compiler.value.Variable;
 
-/// Emitter created with caller supplied Molang variables, e.g. from {@link EmitterAttachHandler#addEmitter}.
 public class PresetVarsParticleEmitter extends IgnoreRangeParticleEmitter {
     public static final Identifier TYPE = ParticleStorm.asResource("preset_vars");
 

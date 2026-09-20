@@ -4,7 +4,7 @@ import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import it.unimi.dsi.fastutil.floats.FloatArrayList;
 import net.minecraft.util.Mth;
-import org.mesdag.particlestorm.data.Tuple;
+import net.minecraft.util.Tuple;
 import org.mesdag.particlestorm.api.MolangInstance;
 import org.mesdag.particlestorm.data.molang.FloatMolangExp;
 

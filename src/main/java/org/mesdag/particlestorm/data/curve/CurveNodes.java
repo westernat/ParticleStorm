@@ -2,7 +2,7 @@ package org.mesdag.particlestorm.data.curve;
 
 import com.mojang.datafixers.util.Either;
 import com.mojang.serialization.Codec;
-import org.mesdag.particlestorm.data.Tuple;
+import net.minecraft.util.Tuple;
 import org.mesdag.particlestorm.data.molang.FloatMolangExp;
 
 import java.util.ArrayList;

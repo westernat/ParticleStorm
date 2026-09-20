@@ -1,6 +1,7 @@
 package org.mesdag.particlestorm.mixin;
 
 import net.minecraft.client.particle.Particle;
+import org.mesdag.particlestorm.PSGameClient;
 import org.mesdag.particlestorm.api.IMolangParticleInstance;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
@@ -19,6 +20,7 @@ public class ParticleMixin {
         particlestorm$removalCounted = true;
         if (this instanceof IMolangParticleInstance instance && instance.getEmitter() != null) {
             instance.getEmitter().onRemoved();
+            PSGameClient.LOADER.unregisterParticle(instance);
         }
     }
 }

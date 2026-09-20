@@ -8,7 +8,6 @@ import org.mesdag.particlestorm.data.event.ParticleEffect;
 import org.mesdag.particlestorm.data.molang.MolangExp;
 import org.mesdag.particlestorm.particle.ParticleEmitter;
 
-/// Emitter that may opt out of the distance based auto-removal handled by {@link EmitterAttachHandler}.
 public abstract class IgnoreRangeParticleEmitter extends ParticleEmitter {
     public final boolean ignoreRange;
 
@@ -19,7 +18,7 @@ public abstract class IgnoreRangeParticleEmitter extends ParticleEmitter {
 
     public IgnoreRangeParticleEmitter(Level level, CompoundTag tag) {
         super(level, tag);
-        this.ignoreRange = tag.getBoolean("ignoreRange").orElse(false);
+        this.ignoreRange = tag.getBooleanOr("ignoreRange", false);
     }
 
     public IgnoreRangeParticleEmitter(ParticleEmitter parent, ParticleEffect effect) {

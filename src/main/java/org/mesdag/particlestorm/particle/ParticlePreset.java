@@ -12,7 +12,6 @@ import org.mesdag.particlestorm.api.MolangInstance;
 import org.mesdag.particlestorm.api.ParticlePresetLoadedEvent;
 import org.mesdag.particlestorm.data.DefinedParticleEffect;
 import org.mesdag.particlestorm.data.component.*;
-import org.mesdag.particlestorm.data.description.DescriptionMaterial;
 import org.mesdag.particlestorm.data.curve.ParticleCurve;
 import org.mesdag.particlestorm.data.event.NodeMolangExp;
 import org.mesdag.particlestorm.data.molang.FloatMolangExp;
@@ -21,7 +20,10 @@ import org.mesdag.particlestorm.data.molang.VariableTable;
 import org.mesdag.particlestorm.data.molang.compiler.MolangParser;
 import org.mesdag.particlestorm.data.molang.compiler.value.Variable;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.Hashtable;
+import java.util.List;
+import java.util.Map;
 
 import static org.mesdag.particlestorm.data.molang.compiler.MolangQueries.applyPrefixAliases;
 
@@ -36,9 +38,9 @@ public class ParticlePreset {
     public float invTextureWidth;
     public float invTextureHeight;
     public boolean motionDynamic;
+    public @Nullable ParticleInitialization initialization;
 
     public VariableTable vars;
-    public @Nullable ParticleInitialization initialization;
 
     /// For custom preset data
     protected Map<Class<?>, Object> tickets;
@@ -69,17 +71,13 @@ public class ParticlePreset {
         this.environmentLighting = effect.components.containsValue(ParticleAppearanceLighting.INSTANCE);
         this.lifeTimeEvents = (ParticleLifeTimeEvents) effect.components.get(ParticleLifeTimeEvents.ID);
         ParticleMotionCollision motionCollision = (ParticleMotionCollision) effect.components.get(ParticleMotionCollision.ID);
-        this.motionDynamic = effect.components.containsKey(ParticleMotionDynamic.ID);
-
         VariableTable table = new VariableTable(addDefaultVariables(), null);
         MolangParser parser = new MolangParser(table);
         if (motionCollision != null) {
             this.collisionEvents = motionCollision.events();
             for (ParticleMotionCollision.Event event : collisionEvents) {
                 Map<String, IEventNode> nodes = effect.events.get(event.event());
-                if (nodes == null) {
-                    throw new IllegalStateException("Unknown event id: " + event.event());
-                }
+                if (nodes == null) continue;
                 for (IEventNode node : nodes.values()) {
                     if (node instanceof NodeMolangExp exp) {
                         exp.compile(parser);
@@ -87,6 +85,9 @@ public class ParticlePreset {
                 }
             }
         }
+        this.motionDynamic = effect.components.containsKey(ParticleMotionDynamic.ID);
+        this.initialization = (ParticleInitialization) effect.components.get(ParticleInitialization.ID);
+
         for (Map.Entry<String, ParticleCurve> entry : effect.curves.entrySet()) {
             ParticleCurve curve = entry.getValue();
             curve.input.compile(parser);
@@ -107,7 +108,6 @@ public class ParticlePreset {
             }
         }
         this.vars = table;
-        this.initialization = (ParticleInitialization) effect.components.get(ParticleInitialization.ID);
         ModLoader.postEvent(new ParticlePresetLoadedEvent(this));
     }
 

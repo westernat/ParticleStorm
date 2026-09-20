@@ -3,6 +3,7 @@ package org.mesdag.particlestorm.data.component;
 import com.mojang.datafixers.util.Either;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.particle.Particle;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
@@ -136,8 +137,9 @@ public abstract sealed class EmitterShape implements IEmitterComponent permits E
             }
             instance.setComponents(particlePreset.effect.orderedParticleComponentsWhichRequireUpdate);
             if (!particlePreset.motionDynamic) instance.setParticleSpeed(0.0, 0.0, 0.0);
-            MolangParticleEngine.INSTANCE.addParticle(instance);
+            Minecraft.getInstance().particleEngine.add(instance);
             emitter.onAdded();
+            MolangParticleEngine.INSTANCE.registerParticle(emitter, instance);
             if (instance instanceof MolangParticleInstance molang) {
                 PSDiagnostics.infoFirstN("particle-created:" + emitter.id, 12, "particle created runtimeId={} particle={} state={}", emitter.id, emitter.particleId, molang.diagnosticSummary());
             } else {
@@ -227,7 +229,7 @@ public abstract sealed class EmitterShape implements IEmitterComponent permits E
             position.z += sp * Mth.sin(op);
             float[] lp = planeNormal.plane.calculate(instance);
             if (!Arrays.equals(lp, PlaneNormal.YN)) {
-                MathHelper.applyQuaternion(MathHelper.setFromUnitVectors(new Vector3f(Mth.Y_AXIS), new Vector3f(lp), new Quaternionf()), position);
+                MathHelper.applyQuaternion(MathHelper.setFromUnitVectors(Mth.Y_AXIS, new Vector3f(lp), new Quaternionf()), position);
             }
             direction.apply(instance, this, position, speed);
         }
@@ -362,7 +364,9 @@ public abstract sealed class EmitterShape implements IEmitterComponent permits E
         @Override
         protected void initializeParticle(MolangInstance instance, Vector3f position, Vector3f speed) {
             Entity attachedEntity = instance.getAttachedEntity();
-            assert attachedEntity != null : "attach entity could not be null";
+            if (attachedEntity == null) {
+                throw new IllegalStateException("EmitterShape.EntityAABB requires an attached entity, but the emitter is not bound to any entity");
+            }
             EntityDimensions dimensions = attachedEntity.getDimensions(attachedEntity.getPose());
             Vector3f n = new Vector3f(dimensions.width(), dimensions.height(), dimensions.width()).mul(0.5F);
             RandomSource random = instance.getLevel().getRandom();

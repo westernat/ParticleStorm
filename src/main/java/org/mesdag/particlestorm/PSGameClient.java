@@ -65,7 +65,7 @@ public final class PSGameClient {
                 .withLocation(ParticleStorm.asResource("pipeline/additive_particle"))
                 .withColorTargetState(new ColorTargetState(BlendFunction.LIGHTNING))
                 .withCull(true)
-                .withDepthStencilState(new DepthStencilState(CompareOp.GREATER_THAN_OR_EQUAL, false))
+                .withDepthStencilState(new DepthStencilState(CompareOp.LESS_THAN_OR_EQUAL, false))
                 .build();
         PARTICLE_ADD = new SingleQuadParticle.Layer(
                 true,
@@ -79,7 +79,7 @@ public final class PSGameClient {
                 .withFragmentShader(ParticleStorm.asResource("core/particle_no_discard"))
                 .withColorTargetState(new ColorTargetState(BlendFunction.TRANSLUCENT))
                 .withCull(true)
-                .withDepthStencilState(new DepthStencilState(CompareOp.GREATER_THAN_OR_EQUAL, false))
+                .withDepthStencilState(new DepthStencilState(CompareOp.LESS_THAN_OR_EQUAL, false))
                 .build();
         PARTICLE_BLEND = new SingleQuadParticle.Layer(
                 true,
@@ -158,7 +158,7 @@ public final class PSGameClient {
         try {
             for (ParticleEmitter emitter : LOADER.getEmitters()) {
                 Vec3 pos = emitter.pos;
-                int particleCount = emitter.particleGroup == null ? 0 : minecraft.particleEngine.trackedParticleCounts.getInt(emitter.particleGroup);
+                int particleCount = emitter.activeParticleCount;
                 int limit = emitter.particleGroup == null ? 0 : emitter.particleGroup.limit();
                 int countColor = limit > 0 && particleCount >= limit ? 0xFFFF0000 : 0xFFFFFFFF;
 

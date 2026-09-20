@@ -12,8 +12,6 @@ import org.mesdag.particlestorm.data.event.ParticleEffect;
 import org.mesdag.particlestorm.data.molang.MolangExp;
 import org.mesdag.particlestorm.particle.ParticleEmitter;
 
-/// Emitter attached to a block position; removes itself when the block state changes away from the
-/// one it was attached to.
 public class WithBlockParticleEmitter extends IgnoreRangeParticleEmitter {
     public static final Identifier TYPE = ParticleStorm.asResource("with_block");
 
@@ -26,7 +24,7 @@ public class WithBlockParticleEmitter extends IgnoreRangeParticleEmitter {
 
     public WithBlockParticleEmitter(Level level, CompoundTag tag) {
         super(level, tag);
-        initBlock(level, pos, tag.getBoolean("ignoreSameBlock").orElse(false));
+        initBlock(level, pos, tag.getBooleanOr("ignoreSameBlock", false));
     }
 
     public WithBlockParticleEmitter(ParticleEmitter parent, ParticleEffect effect) {
@@ -67,6 +65,12 @@ public class WithBlockParticleEmitter extends IgnoreRangeParticleEmitter {
         if (blockData != null) {
             tag.putBoolean("ignoreSameBlock", blockData.ignoreSameBlock);
         }
+    }
+
+    @Override
+    public void deserialize(CompoundTag tag) {
+        super.deserialize(tag);
+
     }
 
     public record BlockData(BlockPos pos, BlockState state, boolean ignoreSameBlock) {}

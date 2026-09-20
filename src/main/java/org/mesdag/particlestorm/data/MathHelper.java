@@ -76,5 +76,4 @@ public class MathHelper {
                 Math.fma(2 * (xy + zw) * k, dest.x, Math.fma((yy - xx - zz + ww) * k, dest.y, (2 * (yz - xw) * k) * dest.z)),
                 Math.fma(2 * (xz - yw) * k, dest.x, Math.fma(2 * (yz + xw) * k, dest.y, ((zz - xx - yy + ww) * k) * dest.z)));
     }
-
 }

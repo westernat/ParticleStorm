@@ -13,8 +13,8 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
-import net.neoforged.fml.ModLoader;
 import org.jetbrains.annotations.Nullable;
+import net.neoforged.fml.ModLoader;
 import org.mesdag.particlestorm.PSClientConfigs;
 import org.mesdag.particlestorm.ParticleStorm;
 import org.mesdag.particlestorm.api.AttachEmitterToBlockEvent;
@@ -29,9 +29,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 
-/// Client-side routing of block animate ticks to ParticleStorm emitters, plus distance based
-/// auto-removal of attached emitters. Fired once per client session through
-/// {@link AttachEmitterToBlockEvent} on the mod event bus.
 public final class EmitterAttachHandler {
     public static final Map<BlockPos, ObjectBooleanPair<WithBlockParticleEmitter>> attachedToBlockEmitters = new Object2ObjectOpenHashMap<>(64);
     public static final Queue<IgnoreRangeParticleEmitter> ignoreRangeEmitters = new ArrayDeque<>(64);
@@ -162,16 +159,16 @@ public final class EmitterAttachHandler {
         @Override
         public @Nullable WithBlockParticleEmitter apply(Level level, BlockPos pos, BlockState state) {
             if (disabled) return null;
-            return new WithBlockParticleEmitter(level, new Vec3(pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5), particleId, expression.apply(level, pos, state), ignoreSameBlock, ignoreRange);
+            return new WithBlockParticleEmitter(level, pos.getCenter(), particleId, expression.apply(level, pos, state), ignoreSameBlock, ignoreRange);
         }
 
         public static class Wrapped extends AttachData {
-            private final static Identifier defaultParticle = ParticleStorm.asResource("blend");
+            private static final Identifier DEFAULT_PARTICLE = ParticleStorm.asResource("blend");
 
             private final Function3<Level, BlockPos, BlockState, @Nullable WithBlockParticleEmitter> factory;
 
             public Wrapped(Function3<Level, BlockPos, BlockState, @Nullable WithBlockParticleEmitter> factory, boolean ignoreSameBlock, boolean allowsVanilla, boolean ignoreRange) {
-                super(defaultParticle, MolangExp.EMPTY, ignoreSameBlock, allowsVanilla, ignoreRange);
+                super(DEFAULT_PARTICLE, MolangExp.EMPTY, ignoreSameBlock, allowsVanilla, ignoreRange);
                 this.factory = factory;
             }
 

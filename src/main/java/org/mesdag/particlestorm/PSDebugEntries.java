@@ -10,7 +10,7 @@ import net.minecraft.world.level.chunk.LevelChunk;
 import net.neoforged.neoforge.client.event.RegisterDebugEntriesEvent;
 import org.mesdag.particlestorm.particle.MolangParticleEngine;
 
-/// F3 debug entries (26.2 DebugScreenEntries API): live Molang particle and ParticleStorm emitter counts.
+/// F3 debug entry for live Molang particle and ParticleStorm emitter counts.
 public final class PSDebugEntries {
     public static final Identifier MOLANG = ParticleStorm.asResource("molang_particles");
 

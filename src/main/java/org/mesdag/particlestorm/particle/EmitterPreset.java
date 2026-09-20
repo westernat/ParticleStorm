@@ -18,10 +18,10 @@ import java.util.List;
 import java.util.Map;
 
 public class EmitterPreset {
-    public final ParticleType<?> type;
-    public final List<IEmitterComponent> components;
-    public final Map<String, Map<String, IEventNode>> events;
-    public final VariableTable vars;
+    public ParticleType<?> type;
+    public List<IEmitterComponent> components;
+    public Map<String, Map<String, IEventNode>> events;
+    public VariableTable vars;
     public EmitterRate.Type emitterRateType = EmitterRate.Type.MANUAL;
     public boolean localPosition = false;
     public boolean localRotation = false;
@@ -47,25 +47,22 @@ public class EmitterPreset {
         boolean shape = false;
         for (IEmitterComponent component : components) {
             if (component instanceof EmitterLifetime) {
-                if (lifeTime) {
-                    throw new IllegalArgumentException("Duplicate emitter lifetime component");
-                }
-                lifeTime = true;
+                if (lifeTime) throw new IllegalArgumentException("Duplicate emitter lifetime component");
+                else lifeTime = true;
             } else if (component instanceof EmitterRate) {
                 if (rate) {
                     throw new IllegalArgumentException("Duplicate emitter rate component");
-                }
-                rate = true;
-                switch (component) {
-                    case EmitterRate.Instant ignored -> this.emitterRateType = EmitterRate.Type.INSTANT;
-                    case EmitterRate.Steady ignored -> this.emitterRateType = EmitterRate.Type.STEADY;
-                    default -> this.emitterRateType = EmitterRate.Type.MANUAL;
+                } else {
+                    rate = true;
+                    switch (component) {
+                        case EmitterRate.Instant ignored -> this.emitterRateType = EmitterRate.Type.INSTANT;
+                        case EmitterRate.Steady ignored -> this.emitterRateType = EmitterRate.Type.STEADY;
+                        default -> this.emitterRateType = EmitterRate.Type.MANUAL;
+                    }
                 }
             } else if (component instanceof EmitterShape) {
-                if (shape) {
-                    throw new IllegalArgumentException("Duplicate emitter shape component");
-                }
-                shape = true;
+                if (shape) throw new IllegalArgumentException("Duplicate emitter shape component");
+                else shape = true;
             } else if (component instanceof EmitterLocalSpace(boolean position, boolean rotation, boolean velocity)) {
                 this.localPosition = position;
                 this.localRotation = rotation;

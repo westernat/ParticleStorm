@@ -10,6 +10,7 @@ import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.bus.api.IEventBus;
+import net.neoforged.api.distmarker.Dist;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.neoforge.common.NeoForge;
@@ -30,7 +31,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.function.Function;
 
-@Mod(ParticleStorm.MODID)
+@Mod(value = ParticleStorm.MODID, dist = Dist.CLIENT)
 public final class ParticleStorm {
     public static final String MODID = "particlestorm";
     public static final Logger LOGGER = LoggerFactory.getLogger("ParticleStorm");
@@ -68,7 +69,7 @@ public final class ParticleStorm {
         // handlers; a type cannot be registered twice, so bidirectional payloads use
         // playBidirectional with a null client handler. Handlers run on the default main
         // thread: no explicit HandlerThread.NETWORK / enqueueWork is used.
-        event.registrar("1")
+        event.registrar("1").optional()
                 .playToClient(EmitterCreationPacketS2C.TYPE, EmitterCreationPacketS2C.STREAM_CODEC)
                 .playToClient(EmitterAttachPacketS2C.TYPE, EmitterAttachPacketS2C.STREAM_CODEC)
                 .playBidirectional(EmitterRemovalPacket.TYPE, EmitterRemovalPacket.STREAM_CODEC, EmitterRemovalPacket::handleServer, null)

@@ -1,6 +1,7 @@
 package org.mesdag.particlestorm.network;
 
 import io.netty.buffer.ByteBuf;
+import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
@@ -42,7 +43,10 @@ public record EmitterRemovalPacket(int id) implements CustomPacketPayload {
     }
 
     public static void sendToServer(int id) {
-        ClientPacketDistributor.sendToServer(new EmitterRemovalPacket(id));
+        var connection = Minecraft.getInstance().getConnection();
+        if (connection != null && connection.hasChannel(TYPE)) {
+            ClientPacketDistributor.sendToServer(new EmitterRemovalPacket(id));
+        }
     }
 
     public static void sendToClient(ServerPlayer player, int id) {

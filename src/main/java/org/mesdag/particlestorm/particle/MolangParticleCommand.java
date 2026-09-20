@@ -21,6 +21,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
+import org.mesdag.particlestorm.PSGameClient;
 import org.mesdag.particlestorm.PSDiagnostics;
 import org.mesdag.particlestorm.data.molang.MolangExp;
 import org.mesdag.particlestorm.network.EmitterAttachPacketS2C;
@@ -44,7 +45,7 @@ public class MolangParticleCommand {
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
         dispatcher.register(Commands.literal("particlestorm").requires(Commands.hasPermission(Commands.LEVEL_GAMEMASTERS))
                 .then(Commands.literal("add").then(Commands.argument("particle", IdentifierArgument.id()).suggests((context, builder) ->
-                        SharedSuggestionProvider.suggestResource(MolangParticleEngine.INSTANCE.suggestibleParticleIds(), builder)
+                        SharedSuggestionProvider.suggestResource(PSGameClient.LOADER.suggestibleParticleIds(), builder)
                 ).executes(context -> sendParticle(
                                 context.getSource(),
                                 IdentifierArgument.getId(context, "particle"),
@@ -124,7 +125,7 @@ public class MolangParticleCommand {
     }
 
     private static CompletableFuture<Suggestions> suggestEmitterIds(CommandContext<CommandSourceStack> context, SuggestionsBuilder builder) {
-        for (ParticleEmitter emitter : MolangParticleEngine.INSTANCE.getEmitters()) {
+        for (ParticleEmitter emitter : PSGameClient.LOADER.getEmitters()) {
             builder.suggest(emitter.id);
         }
         if (builder.getRemaining().isEmpty()) {
@@ -162,7 +163,7 @@ public class MolangParticleCommand {
     }
 
     private static int sendParticle(CommandSourceStack source, Identifier particle, Vec3 pos, MolangExp expression, @Nullable Entity entity, Collection<ServerPlayer> viewers) throws CommandSyntaxException {
-        Identifier resolved = MolangParticleEngine.INSTANCE.resolveParticleId(particle);
+        Identifier resolved = PSGameClient.LOADER.resolveParticleId(particle);
         if (resolved == null) {
             throw ERROR_UNKNOWN_PARTICLE.create(particle);
         }

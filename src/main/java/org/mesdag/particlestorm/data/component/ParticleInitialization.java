@@ -51,7 +51,6 @@ public record ParticleInitialization(FloatMolangExp perRenderExpression, FloatMo
     public String toString() {
         return "ParticleInitialization{" +
                 "perRenderExpression=" + perRenderExpression +
-                ", perUpdateExpression=" + perUpdateExpression +
                 '}';
     }
 }

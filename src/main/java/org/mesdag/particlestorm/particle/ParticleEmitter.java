@@ -107,13 +107,8 @@ public class ParticleEmitter implements MolangInstance {
     }
 
     public ParticleEmitter(Level level, CompoundTag tag) {
-        Identifier type;
-        try {
-            type = Identifier.parse(tag.getString(TYPE_KEY).orElse(""));
-        } catch (Exception e) {
-            type = TYPE;
-        }
-        this.type = type;
+        Identifier type = Identifier.tryParse(tag.getStringOr(TYPE_KEY, ""));
+        this.type = type == null ? TYPE : type;
         this.level = level;
         deserialize(tag);
         this.invTickRate = 1.0F / level.tickRateManager().tickrate();
@@ -391,6 +386,13 @@ public class ParticleEmitter implements MolangInstance {
         );
     }
 
+    public final CompoundTag serialize() {
+        CompoundTag tag = new CompoundTag();
+        tag.putString(TYPE_KEY, type.toString());
+        serialize(tag);
+        return tag;
+    }
+
     public void serialize(CompoundTag compound) {
         compound.putString("particleId", particleId.toString());
         compound.putString("expression", expression.getExpStr());
@@ -404,13 +406,6 @@ public class ParticleEmitter implements MolangInstance {
         compound.putFloat("rotX", rot.x);
         compound.putFloat("rotY", rot.y);
         compound.putFloat("rotZ", rot.z);
-    }
-
-    public final CompoundTag serialize() {
-        CompoundTag tag = new CompoundTag();
-        tag.putString(TYPE_KEY, type.toString());
-        serialize(tag);
-        return tag;
     }
 
     public double getX() {
