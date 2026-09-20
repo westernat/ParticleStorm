@@ -3,7 +3,7 @@ package org.mesdag.particlestorm.data.component;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.resources.Identifier;
-import net.minecraft.util.Tuple;
+import com.mojang.datafixers.util.Pair;
 import org.mesdag.particlestorm.ParticleStorm;
 import org.mesdag.particlestorm.api.IEventNode;
 import org.mesdag.particlestorm.api.IMolangParticleInstance;
@@ -31,7 +31,7 @@ public final class ParticleLifeTimeEvents implements IParticleComponent {
     public final List<String> expirationEvent;
     public final Map<String, List<String>> timeline;
 
-    public final List<Tuple<Function<Integer, Boolean>, List<String>>> sortedTimeline;
+    public final List<Pair<Function<Integer, Boolean>, List<String>>> sortedTimeline;
 
     /// @param creationEvent   Fires when the particle is created
     /// @param expirationEvent Fires when the particle expires (does not wait for particles to expire too)
@@ -43,9 +43,9 @@ public final class ParticleLifeTimeEvents implements IParticleComponent {
 
         this.sortedTimeline = new ArrayList<>();
         timeline.entrySet().stream()
-                .map(entry -> new Tuple<>(Float.parseFloat(entry.getKey()), entry.getValue()))
-                .sorted(Comparator.comparing(Tuple::getA))
-                .forEachOrdered(tuple -> sortedTimeline.add(new Tuple<>(time -> time >= tuple.getA() * 20, tuple.getB())));
+                .map(entry -> Pair.of(Float.parseFloat(entry.getKey()), entry.getValue()))
+                .sorted(Comparator.comparing(Pair::getFirst))
+                .forEachOrdered(tuple -> sortedTimeline.add(Pair.of(time -> time >= tuple.getFirst() * 20, tuple.getSecond())));
     }
 
     @Override
@@ -61,10 +61,10 @@ public final class ParticleLifeTimeEvents implements IParticleComponent {
     @Override
     public void update(IMolangParticleInstance instance) {
         for (int i = instance.getLastTimeline(); i < sortedTimeline.size(); i++) {
-            Tuple<Function<Integer, Boolean>, List<String>> tuple = sortedTimeline.get(i);
-            if (tuple.getA().apply(instance.getAge())) {
+            Pair<Function<Integer, Boolean>, List<String>> tuple = sortedTimeline.get(i);
+            if (tuple.getFirst().apply(instance.getAge())) {
                 instance.setLastTimeline(i + 1);
-                executes(instance, tuple.getB());
+                executes(instance, tuple.getSecond());
                 break;
             }
         }

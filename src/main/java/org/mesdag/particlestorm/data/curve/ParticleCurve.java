@@ -4,7 +4,7 @@ import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import it.unimi.dsi.fastutil.floats.FloatArrayList;
 import net.minecraft.util.Mth;
-import net.minecraft.util.Tuple;
+import com.mojang.datafixers.util.Pair;
 import org.mesdag.particlestorm.api.MolangInstance;
 import org.mesdag.particlestorm.data.molang.FloatMolangExp;
 
@@ -23,8 +23,8 @@ public final class ParticleCurve {
                     curveType -> curveType == CurveType.BEZIER_CHAIN ? CurveNodes.MAP_CODEC.fieldOf("nodes") : CurveNodes.LIST_CODEC.fieldOf("nodes")
             ).forGetter(curve -> curve.nodes)
     ).apply(instance, ParticleCurve::new));
-    public static final Tuple<Float, CurveNode> FIRST = new Tuple<>(0.0F, new CurveNode(0.0F, 0.0F));
-    public static final Tuple<Float, CurveNode> LAST = new Tuple<>(1.0F, new CurveNode(0.0F, 0.0F));
+    public static final Pair<Float, CurveNode> FIRST = Pair.of(0.0F, new CurveNode(0.0F, 0.0F));
+    public static final Pair<Float, CurveNode> LAST = Pair.of(1.0F, new CurveNode(0.0F, 0.0F));
     public static final float ONE_THREE = 1.0F / 3.0F;
     public final CurveType type;
     public final FloatMolangExp input;
@@ -94,16 +94,16 @@ public final class ParticleCurve {
                 return curve.getPoint(i);
             }
             case BEZIER_CHAIN -> {
-                ArrayList<Tuple<Float, CurveNode>> e = nodes.nodeList;
+                ArrayList<Pair<Float, CurveNode>> e = nodes.nodeList;
                 if (e.isEmpty()) return 0.0F;
                 int index = 0;
-                while (index < e.size() && !(e.get(index).getA() > i)) index++;
-                Tuple<Float, CurveNode> r = index == 0 ? FIRST : e.get(index - 1);
-                Tuple<Float, CurveNode> s = index == e.size() ? LAST : e.get(index);
-                float rTime = r.getA();
-                float o = s.getA() - rTime;
-                CurveNode rNode = r.getB();
-                CurveNode sNode = s.getB();
+                while (index < e.size() && !(e.get(index).getFirst() > i)) index++;
+                Pair<Float, CurveNode> r = index == 0 ? FIRST : e.get(index - 1);
+                Pair<Float, CurveNode> s = index == e.size() ? LAST : e.get(index);
+                float rTime = r.getFirst();
+                float o = s.getFirst() - rTime;
+                CurveNode rNode = r.getSecond();
+                CurveNode sNode = s.getSecond();
                 float v0 = rNode.value();
                 float v1 = rNode.value() + rNode.slope() * ONE_THREE;
                 float v2 = sNode.value() - sNode.slope() * ONE_THREE;

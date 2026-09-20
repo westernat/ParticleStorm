@@ -61,7 +61,7 @@ public final class PSGameClient implements ClientModInitializer {
                     .withLocation(ParticleStorm.asResource("pipeline/additive_particle"))
                     .withColorTargetState(new ColorTargetState(BlendFunction.LIGHTNING))
                     .withCull(true)
-                    .withDepthStencilState(new DepthStencilState(CompareOp.LESS_THAN_OR_EQUAL, false))
+                    .withDepthStencilState(new DepthStencilState(CompareOp.GREATER_THAN_OR_EQUAL, false))
                     .build()
             )
     );
@@ -73,7 +73,7 @@ public final class PSGameClient implements ClientModInitializer {
                     .withFragmentShader(ParticleStorm.asResource("core/particle_no_discard"))
                     .withColorTargetState(new ColorTargetState(BlendFunction.TRANSLUCENT))
                     .withCull(true)
-                    .withDepthStencilState(new DepthStencilState(CompareOp.LESS_THAN_OR_EQUAL, false))
+                    .withDepthStencilState(new DepthStencilState(CompareOp.GREATER_THAN_OR_EQUAL, false))
                     .build()
             )
     );
@@ -114,7 +114,7 @@ public final class PSGameClient implements ClientModInitializer {
         } else if (!minecraft.isPaused() && localPlayer.level().tickRateManager().runsNormally()) {
             LOADER.tick(localPlayer);
             if (PSClientConfigs.emitterAutoRemoveIntervalTick <= 1 || localPlayer.level().getGameTime() % PSClientConfigs.emitterAutoRemoveIntervalTick == 0) {
-                Camera camera = minecraft.gameRenderer.getMainCamera();
+                Camera camera = minecraft.gameRenderer.mainCamera();
                 if (camera.isInitialized()) {
                     EmitterAttachHandler.tick(camera);
                 }

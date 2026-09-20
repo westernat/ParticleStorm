@@ -1,5 +1,5 @@
 plugins {
-    id 'net.fabricmc.fabric-loom' version '1.17.0-alpha.14'
+    id 'net.fabricmc.fabric-loom' version '1.17.20'
     id 'maven-publish'
 }
 
@@ -48,7 +48,7 @@ dependencies {
     implementation "net.fabricmc:fabric-loader:${project.loader_version}"
     implementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
     compileOnly "com.geckolib:geckolib-fabric-${minecraft_version}:${geckolib_version}"
-    compileOnly('maven.modrinth:iris:1.11.3+26.1-fabric') { transitive = false }
+    compileOnly('maven.modrinth:iris:1.11.4+26.2-fabric') { transitive = false }
 }
 
 processResources {

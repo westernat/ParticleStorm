@@ -542,7 +542,7 @@ public class MolangParticleInstance extends SingleQuadParticle implements IMolan
                 emitter.local2World(renderPosition.set((float) aabb.maxX, (float) aabb.maxY, (float) aabb.maxZ), 1.0F);
                 aabb = new AABB(minX, minY, minZ, renderPosition.x, renderPosition.y, renderPosition.z);
             }
-            Vec3 vec3 = Entity.collideBoundingBox(null, new Vec3(x, y, z), aabb, level, List.of());
+            Vec3 vec3 = Entity.collideBoundingBox((Entity) null, new Vec3(x, y, z), aabb, level, List.of());
             if (x != vec3.x) {
                 this.xd = -Mth.sign(xd) * (Math.abs(xd) - collisionDrag) * coefficientOfRestitution;
             }

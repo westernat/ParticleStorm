@@ -2,7 +2,7 @@ package org.mesdag.particlestorm.data.curve;
 
 import com.mojang.datafixers.util.Either;
 import com.mojang.serialization.Codec;
-import net.minecraft.util.Tuple;
+import com.mojang.datafixers.util.Pair;
 import org.mesdag.particlestorm.data.molang.FloatMolangExp;
 
 import java.util.ArrayList;
@@ -23,7 +23,7 @@ public final class CurveNodes {
     public final Either<Map<String, CurveNode>, List<FloatMolangExp>> either;
     public final boolean isLeft;
 
-    public final ArrayList<Tuple<Float, CurveNode>> nodeList;
+    public final ArrayList<Pair<Float, CurveNode>> nodeList;
 
     public CurveNodes(Either<Map<String, CurveNode>, List<FloatMolangExp>> either) {
         this.either = either;
@@ -32,8 +32,8 @@ public final class CurveNodes {
         this.nodeList = new ArrayList<>();
         if (isLeft) {
             either.left().get().entrySet().stream()
-                    .map(entry -> new Tuple<>(Float.parseFloat(entry.getKey()), entry.getValue()))
-                    .sorted(Comparator.comparing(Tuple::getA))
+                    .map(entry -> Pair.of(Float.parseFloat(entry.getKey()), entry.getValue()))
+                    .sorted(Comparator.comparing(Pair::getFirst))
                     .forEachOrdered(nodeList::add);
         }
     }

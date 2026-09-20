@@ -2,7 +2,7 @@ package org.mesdag.particlestorm.data.component;
 
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
-import net.minecraft.util.Tuple;
+import com.mojang.datafixers.util.Pair;
 import org.mesdag.particlestorm.ParticleStorm;
 import org.mesdag.particlestorm.api.IEmitterComponent;
 import org.mesdag.particlestorm.api.IEventNode;
@@ -35,8 +35,8 @@ public final class EmitterLifetimeEvents implements IEmitterComponent {
     public final Map<String, List<String>> travelDistanceEvents;
     public final List<LoopingTravelDistanceEvent> loopingTravelDistanceEvents;
 
-    public final List<Tuple<Function<Integer, Boolean>, List<String>>> sortedTimeline;
-    public final List<Tuple<Function<Float, Boolean>, List<String>>> sortedTravelDistance;
+    public final List<Pair<Function<Integer, Boolean>, List<String>>> sortedTimeline;
+    public final List<Pair<Function<Float, Boolean>, List<String>>> sortedTravelDistance;
 
     /// @param creationEvent               Fires when the emitter is created
     /// @param expirationEvent             Fires when the emitter expires (does not wait for particles to expire too)
@@ -55,14 +55,14 @@ public final class EmitterLifetimeEvents implements IEmitterComponent {
 
         this.sortedTimeline = new ArrayList<>();
         timeline.entrySet().stream()
-                .map(entry -> new Tuple<>(Float.parseFloat(entry.getKey()), entry.getValue()))
-                .sorted(Comparator.comparing(Tuple::getA))
-                .forEachOrdered(tuple -> sortedTimeline.add(new Tuple<>(time -> time >= tuple.getA() * 20, tuple.getB())));
+                .map(entry -> Pair.of(Float.parseFloat(entry.getKey()), entry.getValue()))
+                .sorted(Comparator.comparing(Pair::getFirst))
+                .forEachOrdered(tuple -> sortedTimeline.add(Pair.of(time -> time >= tuple.getFirst() * 20, tuple.getSecond())));
         this.sortedTravelDistance = new ArrayList<>();
         travelDistanceEvents.entrySet().stream()
-                .map(entry -> new Tuple<>(Float.parseFloat(entry.getKey()), entry.getValue()))
-                .sorted(Comparator.comparing(Tuple::getA))
-                .forEachOrdered(tuple -> sortedTravelDistance.add(new Tuple<>(dist -> dist >= tuple.getA(), tuple.getB())));
+                .map(entry -> Pair.of(Float.parseFloat(entry.getKey()), entry.getValue()))
+                .sorted(Comparator.comparing(Pair::getFirst))
+                .forEachOrdered(tuple -> sortedTravelDistance.add(Pair.of(dist -> dist >= tuple.getFirst(), tuple.getSecond())));
     }
 
     @Override
@@ -78,19 +78,19 @@ public final class EmitterLifetimeEvents implements IEmitterComponent {
     @Override
     public void update(ParticleEmitter emitter) {
         for (int i = emitter.lastTimeline; i < sortedTimeline.size(); i++) {
-            Tuple<Function<Integer, Boolean>, List<String>> tuple = sortedTimeline.get(i);
-            if (tuple.getA().apply(emitter.age)) {
+            Pair<Function<Integer, Boolean>, List<String>> tuple = sortedTimeline.get(i);
+            if (tuple.getFirst().apply(emitter.age)) {
                 emitter.lastTimeline = i + 1;
-                executes(emitter, tuple.getB());
+                executes(emitter, tuple.getSecond());
                 break;
             }
         }
         if (emitter.moveDist == emitter.moveDistO) return;
         for (int i = emitter.lastTravelDist; i < sortedTravelDistance.size(); i++) {
-            Tuple<Function<Float, Boolean>, List<String>> tuple = sortedTravelDistance.get(i);
-            if (tuple.getA().apply(emitter.moveDist)) {
+            Pair<Function<Float, Boolean>, List<String>> tuple = sortedTravelDistance.get(i);
+            if (tuple.getFirst().apply(emitter.moveDist)) {
                 emitter.lastTravelDist = i + 1;
-                executes(emitter, tuple.getB());
+                executes(emitter, tuple.getSecond());
                 break;
             }
         }

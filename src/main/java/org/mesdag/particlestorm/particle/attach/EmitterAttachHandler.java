@@ -158,7 +158,7 @@ public final class EmitterAttachHandler {
         @Override
         public @Nullable WithBlockParticleEmitter apply(Level level, BlockPos pos, BlockState state) {
             if (disabled) return null;
-            return new WithBlockParticleEmitter(level, pos.getCenter(), particleId, expression.apply(level, pos, state), ignoreSameBlock, ignoreRange);
+            return new WithBlockParticleEmitter(level, Vec3.atCenterOf(pos), particleId, expression.apply(level, pos, state), ignoreSameBlock, ignoreRange);
         }
 
         public static class Wrapped extends AttachData {
