@@ -63,40 +63,40 @@ public final class PSClientConfigs {
 
         debug = Boolean.parseBoolean(properties.getProperty(DEBUG, "false"));
         showEmitterOutline = Boolean.parseBoolean(properties.getProperty(SHOW_EMITTER_OUTLINE, "true"));
-        maxTrackersPerEntity = getInt(properties, MAX_TRACKERS_PER_ENTITY, 64, 0, 16384);
-        emitterLimit = getInt(properties, EMITTER_LIMIT, 50, 20, 1000);
-        fpsThreshold = getInt(properties, FPS_THRESHOLD, 30, 10, 260);
         allowsVanillaParticleWhenReachLimit = Boolean.parseBoolean(properties.getProperty(ALLOWS_VANILLA_PARTICLE_WHEN_REACH_LIMIT, "false"));
-        emitterAutoRemoveIntervalTick = getInt(properties, EMITTER_AUTO_REMOVE_INTERVAL_TICK, 1, 1, 1200);
-        emitterAutoRemoveMinimumDistance = getInt(properties, EMITTER_AUTO_REMOVE_MINIMUM_DISTANCE, 32, 16, 256);
-        emitterAutoRemoveAttenuationDistance = getInt(properties, EMITTER_AUTO_REMOVE_ATTENUATION_DISTANCE, 16, 0, 64);
-        emitterAutoRemoveAttenuationCoefficient = getDouble(properties, EMITTER_AUTO_REMOVE_ATTENUATION_COEFFICIENT, 0.25, 0.0, 1.0);
+        maxTrackersPerEntity = parseInt(properties, MAX_TRACKERS_PER_ENTITY, 64, 0, 16384);
+        emitterLimit = parseInt(properties, EMITTER_LIMIT, 50, 20, 1000);
+        fpsThreshold = parseInt(properties, FPS_THRESHOLD, 30, 10, 260);
+        emitterAutoRemoveIntervalTick = parseInt(properties, EMITTER_AUTO_REMOVE_INTERVAL_TICK, 1, 1, 1200);
+        emitterAutoRemoveMinimumDistance = parseInt(properties, EMITTER_AUTO_REMOVE_MINIMUM_DISTANCE, 32, 16, 256);
+        emitterAutoRemoveAttenuationDistance = parseInt(properties, EMITTER_AUTO_REMOVE_ATTENUATION_DISTANCE, 16, 0, 64);
+        emitterAutoRemoveAttenuationCoefficient = parseDouble(properties, EMITTER_AUTO_REMOVE_ATTENUATION_COEFFICIENT, 0.25, 0.0, 1.0);
     }
 
-    private static int getInt(Properties properties, String key, int defaultValue, int min, int max) {
+    private static int parseInt(Properties properties, String key, int defaultValue, int min, int max) {
         try {
             int value = Integer.parseInt(properties.getProperty(key, Integer.toString(defaultValue)));
             if (value < min || value > max) {
-                ParticleStorm.LOGGER.warn("Invalid integer config '{}' = {}, using default {} (allowed range {}-{})", key, value, defaultValue, min, max);
+                ParticleStorm.LOGGER.warn("Value {} for config '{}' is out of range [{}, {}], using default {}", value, key, min, max, defaultValue);
                 return defaultValue;
             }
             return value;
         } catch (NumberFormatException exception) {
-            ParticleStorm.LOGGER.warn("Invalid integer config '{}', using default {} (allowed range {}-{})", key, defaultValue, min, max);
+            ParticleStorm.LOGGER.warn("Invalid integer for config '{}', using default {}", key, defaultValue);
             return defaultValue;
         }
     }
 
-    private static double getDouble(Properties properties, String key, double defaultValue, double min, double max) {
+    private static double parseDouble(Properties properties, String key, double defaultValue, double min, double max) {
         try {
             double value = Double.parseDouble(properties.getProperty(key, Double.toString(defaultValue)));
-            if (value < min || value > max) {
-                ParticleStorm.LOGGER.warn("Invalid numeric config '{}' = {}, using default {} (allowed range {}-{})", key, value, defaultValue, min, max);
+            if (Double.isNaN(value) || value < min || value > max) {
+                ParticleStorm.LOGGER.warn("Value {} for config '{}' is out of range [{}, {}], using default {}", value, key, min, max, defaultValue);
                 return defaultValue;
             }
             return value;
         } catch (NumberFormatException exception) {
-            ParticleStorm.LOGGER.warn("Invalid numeric config '{}', using default {} (allowed range {}-{})", key, defaultValue, min, max);
+            ParticleStorm.LOGGER.warn("Invalid number for config '{}', using default {}", key, defaultValue);
             return defaultValue;
         }
     }

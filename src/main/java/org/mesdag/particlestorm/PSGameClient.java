@@ -20,6 +20,7 @@ import net.minecraft.world.phys.Vec3;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.fml.ModList;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
 import net.neoforged.neoforge.client.event.AddClientReloadListenersEvent;
 import net.neoforged.neoforge.client.event.RegisterParticleProvidersEvent;
@@ -32,6 +33,7 @@ import org.mesdag.particlestorm.api.RegisterCustomComponentEvent;
 import org.mesdag.particlestorm.api.RegisterCustomEmitterTypeEvent;
 import org.mesdag.particlestorm.api.RegisterCustomEventNodeEvent;
 import org.mesdag.particlestorm.api.RegisterCustomParticleTypeEvent;
+import org.mesdag.particlestorm.compat.iris.IrisParticlePipelines;
 import org.mesdag.particlestorm.data.component.*;
 import org.mesdag.particlestorm.data.event.*;
 import org.mesdag.particlestorm.network.EmitterAttachPacketS2C;
@@ -110,6 +112,9 @@ public final class PSGameClient {
 
     @SubscribeEvent
     public static void fmlClientSetup(FMLClientSetupEvent event) {
+        if (ModList.get().isLoaded("iris")) {
+            IrisParticlePipelines.register();
+        }
         // Mirrors the Fabric client initializer order: register codecs/event nodes/defaults once
         // during client setup, before the reload listener starts parsing particle definitions.
         registerComponents();
@@ -126,7 +131,7 @@ public final class PSGameClient {
         } else if (!minecraft.isPaused() && localPlayer.level().tickRateManager().runsNormally()) {
             LOADER.tick(localPlayer);
             if (PSClientConfigs.emitterAutoRemoveIntervalTick <= 1 || localPlayer.level().getGameTime() % PSClientConfigs.emitterAutoRemoveIntervalTick == 0) {
-                Camera camera = minecraft.gameRenderer.mainCamera();
+                Camera camera = minecraft.gameRenderer.getMainCamera();
                 if (camera.isInitialized()) {
                     EmitterAttachHandler.tick(camera);
                 }

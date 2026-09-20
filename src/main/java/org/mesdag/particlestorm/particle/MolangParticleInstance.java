@@ -18,7 +18,6 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
-import net.minecraft.world.phys.shapes.CollisionContext;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Quaternionf;
@@ -543,7 +542,7 @@ public class MolangParticleInstance extends SingleQuadParticle implements IMolan
                 emitter.local2World(renderPosition.set((float) aabb.maxX, (float) aabb.maxY, (float) aabb.maxZ), 1.0F);
                 aabb = new AABB(minX, minY, minZ, renderPosition.x, renderPosition.y, renderPosition.z);
             }
-            Vec3 vec3 = Entity.collideBoundingBox(CollisionContext.positionContext(this.y), new Vec3(x, y, z), aabb, level, List.of());
+            Vec3 vec3 = Entity.collideBoundingBox(null, new Vec3(x, y, z), aabb, level, List.of());
             if (x != vec3.x) {
                 this.xd = -Mth.sign(xd) * (Math.abs(xd) - collisionDrag) * coefficientOfRestitution;
             }

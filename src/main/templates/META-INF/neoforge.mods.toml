@@ -1,4 +1,4 @@
-# ParticleStorm NeoForge 26.2 metadata. Placeholder values are expanded by the
+# ParticleStorm NeoForge 26.1.2 metadata. Placeholder values are expanded by the
 # generateModMetadata task from gradle.properties at build time.
 modLoader = "javafml" #mandatory
 loaderVersion = "${loader_version_range}" #mandatory
