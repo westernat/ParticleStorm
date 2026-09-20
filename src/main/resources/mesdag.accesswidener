@@ -1,4 +1,4 @@
-accessWidener v2 official
+accessWidener v2 named
 accessible field net/minecraft/client/particle/Particle stoppedByCollision Z
 accessible field net/minecraft/client/particle/Particle MAXIMUM_COLLISION_VELOCITY_SQUARED D
 accessible method net/minecraft/client/particle/Particle setLocationFromBoundingbox ()V

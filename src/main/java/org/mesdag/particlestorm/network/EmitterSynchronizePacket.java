@@ -48,7 +48,7 @@ public record EmitterSynchronizePacket(int id, CompoundTag tag) implements Custo
     public static void syncToClient(ServerPlayer player, int id) {
         CompoundTag emitters = getEmitterData(player, false);
         if (emitters.contains(Integer.toString(id))) {
-            ServerPlayNetworking.send(player, new EmitterSynchronizePacket(id, emitters.getCompoundOrEmpty(Integer.toString(id))));
+            ServerPlayNetworking.send(player, new EmitterSynchronizePacket(id, emitters.getCompound(Integer.toString(id))));
         } else {
             ParticleStorm.LOGGER.warn("No persisted emitter {} for player {}", id, player.getGameProfile());
         }
@@ -56,9 +56,9 @@ public record EmitterSynchronizePacket(int id, CompoundTag tag) implements Custo
 
     public static void syncSavedEmitters(ServerPlayer player) {
         CompoundTag emitters = getEmitterData(player, false);
-        for (String id : emitters.keySet()) {
+        for (String id : emitters.getAllKeys()) {
             try {
-                ServerPlayNetworking.send(player, new EmitterSynchronizePacket(Integer.parseInt(id), emitters.getCompoundOrEmpty(id)));
+                ServerPlayNetworking.send(player, new EmitterSynchronizePacket(Integer.parseInt(id), emitters.getCompound(id)));
             } catch (NumberFormatException exception) {
                 ParticleStorm.LOGGER.warn("Invalid persisted emitter id '{}' for player {}", id, player.getGameProfile());
             }
@@ -70,6 +70,6 @@ public record EmitterSynchronizePacket(int id, CompoundTag tag) implements Custo
         if (!persistentData.contains(KEY) && create) {
             persistentData.put(KEY, new CompoundTag());
         }
-        return persistentData.getCompoundOrEmpty(KEY);
+        return persistentData.getCompound(KEY);
     }
 }

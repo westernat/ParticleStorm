@@ -3,7 +3,7 @@ package org.mesdag.particlestorm.data.molang.compiler.function.misc;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
-import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
@@ -26,9 +26,9 @@ public final class IsBlockFunction extends MathFunction {
             String value = stringValue.value();
             if (value.startsWith("#")) {
                 this.block = Optional.empty();
-                this.tag = Optional.of(TagKey.create(Registries.BLOCK, Identifier.parse(value.substring(1))));
+                this.tag = Optional.of(TagKey.create(Registries.BLOCK, ResourceLocation.parse(value.substring(1))));
             } else {
-                this.block = BuiltInRegistries.BLOCK.get(Identifier.parse(value)).map(holder -> holder.value());
+                this.block = Optional.of(BuiltInRegistries.BLOCK.get(ResourceLocation.parse(value)));
                 this.tag = Optional.empty();
             }
         } else {

@@ -1,7 +1,5 @@
 package org.mesdag.particlestorm.mixin.integration.geckolib;
 
-import com.geckolib.animatable.GeoAnimatable;
-import net.minecraft.client.renderer.entity.state.EntityRenderState;
 import net.minecraft.world.entity.Entity;
 import org.mesdag.particlestorm.api.geckolib.GeckoLibHelper;
 import org.spongepowered.asm.mixin.Final;
@@ -11,21 +9,24 @@ import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import software.bernie.geckolib.animatable.GeoAnimatable;
 
 @Pseudo
-@Mixin(targets = "com.geckolib.renderer.GeoReplacedEntityRenderer", remap = false)
-public abstract class GeoReplacedEntityRendererMixin<T extends GeoAnimatable, E extends Entity, R extends EntityRenderState> {
+@Mixin(targets = "software.bernie.geckolib.renderer.GeoReplacedEntityRenderer", remap = false)
+public abstract class GeoReplacedEntityRendererMixin<E extends Entity, T extends GeoAnimatable> {
     @Shadow
     @Final
     protected T animatable;
+    @Shadow
+    protected E currentEntity;
 
-    @Inject(method = "extractRenderState", at = @At("HEAD"))
-    private void particlestorm$setCurrentEntity(E entity, R renderState, float partialTick, CallbackInfo ci) {
-        GeckoLibHelper.setCurrentEntity(animatable, entity);
+    @Inject(method = "preRender", at = @At("HEAD"))
+    private void setCurrentEntity(CallbackInfo ci) {
+        GeckoLibHelper.setCurrentEntity(animatable, currentEntity);
     }
 
-    @Inject(method = "extractRenderState", at = @At("RETURN"))
-    private void particlestorm$clearCurrentEntity(E entity, R renderState, float partialTick, CallbackInfo ci) {
+    @Inject(method = "doPostRenderCleanup", at = @At("TAIL"))
+    private void cleanup(CallbackInfo ci) {
         GeckoLibHelper.setCurrentEntity(animatable, null);
     }
 }

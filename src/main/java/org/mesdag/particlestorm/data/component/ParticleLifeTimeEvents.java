@@ -2,7 +2,7 @@ package org.mesdag.particlestorm.data.component;
 
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
-import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Tuple;
 import org.mesdag.particlestorm.ParticleStorm;
 import org.mesdag.particlestorm.api.IEventNode;
@@ -21,7 +21,7 @@ import java.util.function.Function;
 ///
 /// All events can be either an array or a string
 public final class ParticleLifeTimeEvents implements IParticleComponent {
-    public static final Identifier ID = Identifier.withDefaultNamespace("particle_lifetime_events");
+    public static final ResourceLocation ID = ResourceLocation.withDefaultNamespace("particle_lifetime_events");
     public static final Codec<ParticleLifeTimeEvents> CODEC = RecordCodecBuilder.create(instance -> instance.group(
             ParticleStorm.STRING_LIST_CODEC.fieldOf("creation_event").orElseGet(List::of).forGetter(events -> events.creationEvent),
             ParticleStorm.STRING_LIST_CODEC.fieldOf("expiration_event").orElseGet(List::of).forGetter(events -> events.expirationEvent),

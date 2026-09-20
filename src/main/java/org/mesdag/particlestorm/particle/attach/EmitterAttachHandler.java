@@ -7,7 +7,7 @@ import it.unimi.dsi.fastutil.objects.ObjectBooleanPair;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
-import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
@@ -94,7 +94,7 @@ public final class EmitterAttachHandler {
         }
     }
 
-    public static boolean addEmitter(Level level, Vec3 pos, Identifier particle, Variable... variables) {
+    public static boolean addEmitter(Level level, Vec3 pos, ResourceLocation particle, Variable... variables) {
         if (ableToAddEmitter()) {
             PresetVarsParticleEmitter emitter = new PresetVarsParticleEmitter(level, pos, particle, false, variables);
             MolangParticleEngine.INSTANCE.addEmitter(emitter);
@@ -116,7 +116,7 @@ public final class EmitterAttachHandler {
     }
 
     public static boolean isFarAwayFromCamera(Camera camera, IgnoreRangeParticleEmitter emitter) {
-        double v = camera.position().distanceToSqr(emitter.getPosition());
+        double v = camera.getPosition().distanceToSqr(emitter.getPosition());
         if (v < Mth.square(PSClientConfigs.emitterAutoRemoveMinimumDistance)) return false;
         v = Math.sqrt(v) - PSClientConfigs.emitterAutoRemoveMinimumDistance;
         double c = 0;
@@ -136,13 +136,13 @@ public final class EmitterAttachHandler {
 
     public static class AttachData implements Function3<Level, BlockPos, BlockState, @Nullable WithBlockParticleEmitter> {
         public boolean disabled = false;
-        public final Identifier particleId;
+        public final ResourceLocation particleId;
         public final Function3<Level, BlockPos, BlockState, MolangExp> expression;
         public final boolean ignoreSameBlock;
         public final boolean allowsVanilla;
         public final boolean ignoreRange;
 
-        public AttachData(Identifier particleId, Function3<Level, BlockPos, BlockState, MolangExp> expression, boolean ignoreSameBlock, boolean allowsVanilla, boolean ignoreRange) {
+        public AttachData(ResourceLocation particleId, Function3<Level, BlockPos, BlockState, MolangExp> expression, boolean ignoreSameBlock, boolean allowsVanilla, boolean ignoreRange) {
             this.particleId = particleId;
             this.expression = expression;
             this.ignoreSameBlock = ignoreSameBlock;
@@ -150,7 +150,7 @@ public final class EmitterAttachHandler {
             this.ignoreRange = ignoreRange;
         }
 
-        public AttachData(Identifier particleId, MolangExp expression, boolean ignoreSameBlock, boolean allowsVanilla, boolean ignoreRange) {
+        public AttachData(ResourceLocation particleId, MolangExp expression, boolean ignoreSameBlock, boolean allowsVanilla, boolean ignoreRange) {
             this(particleId, (level, pos, state) -> expression, ignoreSameBlock, allowsVanilla, ignoreRange);
         }
 
@@ -162,7 +162,7 @@ public final class EmitterAttachHandler {
         }
 
         public static class Wrapped extends AttachData {
-            private static final Identifier DEFAULT_PARTICLE = ParticleStorm.asResource("blend");
+            private static final ResourceLocation DEFAULT_PARTICLE = ParticleStorm.asResource("blend");
 
             private final Function3<Level, BlockPos, BlockState, @Nullable WithBlockParticleEmitter> factory;
 

@@ -25,7 +25,7 @@ public enum FaceCameraMode implements SingleQuadParticle.FacingCameraMode {
 
         @Override
         public void setRotation(IMolangParticleInstance instance, Quaternionf quaternion, Camera camera, float partialTick) {
-            Vector3f xd = camera.position().toVector3f().sub(
+            Vector3f xd = camera.getPosition().toVector3f().sub(
                     (float) instance.getX(),
                     (float) instance.getY(),
                     (float) instance.getZ()
@@ -112,7 +112,7 @@ public enum FaceCameraMode implements SingleQuadParticle.FacingCameraMode {
         @Override
         public void setRotation(IMolangParticleInstance instance, Quaternionf quaternion, Camera camera, float partialTick) {
             MathHelper.setFromUnitVectors(X, instance.getFacingDirection(), quaternion);
-            Vec3 pos = camera.position();
+            Vec3 pos = camera.getPosition();
             t.set(
                     pos.x - instance.getX(),
                     pos.y - instance.getY(),

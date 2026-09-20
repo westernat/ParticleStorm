@@ -2,27 +2,27 @@
   "required": true,
   "minVersion": "0.8",
   "package": "org.mesdag.particlestorm.mixin",
-  "compatibilityLevel": "JAVA_25",
+  "compatibilityLevel": "JAVA_21",
   "mixins": [
   ],
   "client": [
     "BlockEntityMixin",
     "ClientLevelMixin",
-    "DebugScreenEntriesAccessor",
+    "DebugScreenOverlayMixin",
     "EntityMixin",
     "LivingEntityMixin",
-    "PlayerMixin",
-    "TextureAtlasSpriteMixin",
-    "ParticleAccessor",
-    "ParticleMixin",
     "ParticleEngineAccessor",
-    "QuadParticleGroupMixin",
+    "ParticleMixin",
+    "PlayerMixin",
+    "ParticleEngineMixin",
+    "TextureAtlasSpriteMixin",
     "integration.geckolib.AnimationControllerMixin",
-    "integration.geckolib.AnimationTimelineMixin",
-    "integration.geckolib.GeoLocatorMixin",
+    "integration.geckolib.AnimationProcessorMixin",
+    "integration.geckolib.BakedModelFactory$BuiltinMixin",
+    "integration.geckolib.GeoBoneMixin",
+    "integration.geckolib.GeoModelMixin",
     "integration.geckolib.GeoReplacedEntityRendererMixin",
-    "integration.geckolib.MolangQueriesMixin",
-    "integration.geckolib.RenderPassInfoMixin"
+    "integration.geckolib.MolangQueriesMixin"
   ],
   "injectors": {
     "defaultRequire": 1

@@ -47,7 +47,6 @@ public class ExtendMutableSpriteSet implements SpriteSet {
         return sprites.get(random.nextInt(sprites.size()));
     }
 
-    @Override
     public TextureAtlasSprite first() {
         return sprites.isEmpty() ? missing : sprites.getFirst();
     }

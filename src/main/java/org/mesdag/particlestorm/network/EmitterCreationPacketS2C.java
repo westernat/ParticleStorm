@@ -6,7 +6,7 @@ import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
@@ -19,12 +19,12 @@ import org.mesdag.particlestorm.ParticleStorm;
 import org.mesdag.particlestorm.data.molang.MolangExp;
 import org.mesdag.particlestorm.particle.ParticleEmitter;
 
-public record EmitterCreationPacketS2C(Identifier id, Vector3f pos, MolangExp expression, int entityId) implements CustomPacketPayload {
+public record EmitterCreationPacketS2C(ResourceLocation id, Vector3f pos, MolangExp expression, int entityId) implements CustomPacketPayload {
     public static final Type<EmitterCreationPacketS2C> TYPE = new Type<>(ParticleStorm.asResource("emitter_creation"));
     private static final StreamCodec<ByteBuf, Vector3f> VECTOR3F_CODEC = ByteBufCodecs.VECTOR3F.map(Vector3f::new, value -> value);
 
     public static final StreamCodec<ByteBuf, EmitterCreationPacketS2C> STREAM_CODEC = StreamCodec.composite(
-            Identifier.STREAM_CODEC, EmitterCreationPacketS2C::id,
+            ResourceLocation.STREAM_CODEC, EmitterCreationPacketS2C::id,
             VECTOR3F_CODEC, EmitterCreationPacketS2C::pos,
             MolangExp.STREAM_CODEC, EmitterCreationPacketS2C::expression,
             ByteBufCodecs.VAR_INT, EmitterCreationPacketS2C::entityId,
@@ -38,7 +38,7 @@ public record EmitterCreationPacketS2C(Identifier id, Vector3f pos, MolangExp ex
 
     public static void handleClient(EmitterCreationPacketS2C payload, ClientPlayNetworking.Context context) {
         Player player = context.player();
-        Identifier resolved = PSGameClient.LOADER.resolveParticleId(payload.id);
+        ResourceLocation resolved = PSGameClient.LOADER.resolveParticleId(payload.id);
         if (resolved == null) {
             PSDiagnostics.warn("ignoring unknown particle id from network requested={} knownIds={}", payload.id, PSGameClient.LOADER.suggestibleParticleIds());
             return;
@@ -79,7 +79,7 @@ public record EmitterCreationPacketS2C(Identifier id, Vector3f pos, MolangExp ex
         }
     }
 
-    public static void sendToAll(Identifier id, Vector3f pos, MolangExp expression, @Nullable Entity entity) {
+    public static void sendToAll(ResourceLocation id, Vector3f pos, MolangExp expression, @Nullable Entity entity) {
         if (entity != null && entity.level().getServer() != null) {
             for (ServerPlayer player : entity.level().getServer().getPlayerList().getPlayers()) {
                 sendToClient(player, id, pos, expression, entity);
@@ -87,7 +87,7 @@ public record EmitterCreationPacketS2C(Identifier id, Vector3f pos, MolangExp ex
         }
     }
 
-    public static void sendToClient(ServerPlayer player, Identifier id, Vector3f pos, MolangExp expression, @Nullable Entity entity) {
+    public static void sendToClient(ServerPlayer player, ResourceLocation id, Vector3f pos, MolangExp expression, @Nullable Entity entity) {
         PSDiagnostics.infoFirstN("packet-send:" + id, 32, "server sending emitter packet viewer={} particle={} pos=({}, {}, {}) expression={} entity={}",
                 player.getScoreboardName(),
                 id,

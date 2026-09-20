@@ -5,13 +5,12 @@ import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.particle.Particle;
 import net.minecraft.client.particle.ParticleProvider;
 import net.minecraft.client.particle.ParticleRenderType;
-import net.minecraft.client.particle.SingleQuadParticle;
+import net.minecraft.client.particle.TextureSheetParticle;
+import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.client.renderer.culling.Frustum;
-import net.minecraft.client.renderer.state.level.QuadParticleRenderState;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
-import net.minecraft.core.particles.ParticleLimit;
-import net.minecraft.resources.Identifier;
-import net.minecraft.util.ARGB;
+import net.minecraft.core.particles.ParticleGroup;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.Entity;
@@ -35,10 +34,9 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
-public class MolangParticleInstance extends SingleQuadParticle implements IMolangParticleInstance {
+public class MolangParticleInstance extends TextureSheetParticle implements IMolangParticleInstance {
     public static final int FULL_LIGHT = 0xF000F0;
     private static final float MIN_RENDER_SIZE = 1.0E-4F;
-    private static final int MAX_RECTANGLE_SEGMENTS = 24;
 
     protected final ParticlePreset preset;
     protected ParticleVariableTable vars;
@@ -77,11 +75,12 @@ public class MolangParticleInstance extends SingleQuadParticle implements IMolan
     protected float[] UV;
 
     protected boolean insideKillPlane;
-    protected ParticleLimit particleGroup;
+    protected ParticleGroup particleGroup;
     protected int lastTimeline = 0;
 
     public MolangParticleInstance(ParticlePreset preset, ClientLevel level, double x, double y, double z, RandomSource random) {
-        super(level, x, y, z, preset.effect.description.parameters().getTexture());
+        super(level, x, y, z);
+        setSprite(preset.effect.description.parameters().getTexture());
         this.friction = 1.0F;
         this.preset = preset;
         this.originX = ((ITextureAtlasSprite) sprite).particlestorm$getOriginX();
@@ -252,7 +251,7 @@ public class MolangParticleInstance extends SingleQuadParticle implements IMolan
     }
 
     @Override
-    public void setParticleGroup(ParticleLimit group) {
+    public void setParticleGroup(ParticleGroup group) {
         this.particleGroup = group;
     }
 
@@ -413,7 +412,7 @@ public class MolangParticleInstance extends SingleQuadParticle implements IMolan
     }
 
     @Override
-    public void extract(@NotNull QuadParticleRenderState state, @NotNull Camera camera, float partialTicks) {
+    public void render(@NotNull VertexConsumer vertices, @NotNull Camera camera, float partialTicks) {
         Quaternionf quaternionf = new Quaternionf();
         getFacingCameraMode().setRotation(this, quaternionf, camera, partialTicks);
         if (xRot != 0.0F) quaternionf.rotateX(Mth.lerp(partialTicks, xRotO, xRot));
@@ -421,7 +420,7 @@ public class MolangParticleInstance extends SingleQuadParticle implements IMolan
         if (roll != 0.0F) quaternionf.rotateZ(Mth.lerp(partialTicks, oRoll, roll));
 
         if (emitter != null && emitter.isLocalSpace()) {
-            Vec3 camPos = camera.position();
+            Vec3 camPos = camera.getPosition();
             renderPosition.set(
                     (float) Mth.lerp((double) partialTicks, xo, x),
                     (float) Mth.lerp((double) partialTicks, yo, y),
@@ -429,16 +428,16 @@ public class MolangParticleInstance extends SingleQuadParticle implements IMolan
             );
             emitter.local2World(renderPosition, partialTicks);
             renderPosition.sub((float) camPos.x, (float) camPos.y, (float) camPos.z);
-            extractRotatedQuad(state, quaternionf, renderPosition.x, renderPosition.y, renderPosition.z, partialTicks);
+            renderRotatedQuad(vertices, quaternionf, renderPosition.x, renderPosition.y, renderPosition.z, partialTicks);
             return;
         }
-        Vec3 camPos = camera.position();
+        Vec3 camPos = camera.getPosition();
         renderPosition.set(
                 (float) (Mth.lerp(partialTicks, xo, x) - camPos.x),
                 (float) (Mth.lerp(partialTicks, yo, y) - camPos.y) + MIN_RENDER_SIZE,
                 (float) (Mth.lerp(partialTicks, zo, z) - camPos.z)
         );
-        extractRotatedQuad(state, quaternionf, renderPosition.x, renderPosition.y, renderPosition.z, partialTicks);
+        renderRotatedQuad(vertices, quaternionf, renderPosition.x, renderPosition.y, renderPosition.z, partialTicks);
     }
 
     public boolean particlestorm$isVisible(Frustum frustum, float partialTick) {
@@ -459,26 +458,31 @@ public class MolangParticleInstance extends SingleQuadParticle implements IMolan
                     renderPosition.z + size
             ));
         }
-        return frustum.pointInFrustum(x, y, z);
+        return frustum.isVisible(getBoundingBox().inflate(getQuadSize(partialTick)));
     }
 
     @Override
-    protected void extractRotatedQuad(QuadParticleRenderState state, Quaternionf orientation, float x, float y, float z, float partialTick) {
+    protected void renderRotatedQuad(VertexConsumer vertices, Quaternionf orientation, float x, float y, float z, float partialTick) {
         float width = getBillboardWidth(partialTick);
         float height = getBillboardHeight(partialTick);
-        int color = ARGB.colorFromFloat(this.alpha, this.rCol, this.gCol, this.bCol);
-        int light = getLightCoords(partialTick);
-
-        if (width <= MIN_RENDER_SIZE || height <= MIN_RENDER_SIZE || Math.abs(width - height) <= MIN_RENDER_SIZE) {
-            float size = Math.max(width, height);
-            if (size <= MIN_RENDER_SIZE) {
-                size = super.getQuadSize(partialTick);
-            }
-            addBillboardFace(state, orientation, x, y, z, size, getU0(), getU1(), getV0(), getV1(), color, light);
-            return;
+        if (width <= MIN_RENDER_SIZE || height <= MIN_RENDER_SIZE) {
+            width = height = Math.max(width, height);
+            if (width <= MIN_RENDER_SIZE) width = height = super.getQuadSize(partialTick);
         }
+        int light = getLightColor(partialTick);
+        emitVertex(vertices, orientation, x, y, z, width, -height, getU1(), getV1(), light);
+        emitVertex(vertices, orientation, x, y, z, width, height, getU1(), getV0(), light);
+        emitVertex(vertices, orientation, x, y, z, -width, height, getU0(), getV0(), light);
+        emitVertex(vertices, orientation, x, y, z, -width, -height, getU0(), getV1(), light);
+        emitVertex(vertices, orientation, x, y, z, -width, -height, getU0(), getV1(), light);
+        emitVertex(vertices, orientation, x, y, z, -width, height, getU0(), getV0(), light);
+        emitVertex(vertices, orientation, x, y, z, width, height, getU1(), getV0(), light);
+        emitVertex(vertices, orientation, x, y, z, width, -height, getU1(), getV1(), light);
+    }
 
-        addSegmentedRectangularQuad(state, orientation, x, y, z, width, height, color, light);
+    private void emitVertex(VertexConsumer vertices, Quaternionf orientation, float x, float y, float z, float horizontal, float vertical, float u, float v, int light) {
+        Vector3f point = new Vector3f(horizontal, vertical, 0.0F).rotate(orientation).add(x, y, z);
+        vertices.addVertex(point.x, point.y, point.z).setUv(u, v).setColor(rCol, gCol, bCol, alpha).setLight(light);
     }
 
     private float getBillboardWidth(float partialTick) {
@@ -487,40 +491,6 @@ public class MolangParticleInstance extends SingleQuadParticle implements IMolan
 
     private float getBillboardHeight(float partialTick) {
         return billboardSize == null || billboardSize.length < 2 ? super.getQuadSize(partialTick) : Math.abs(billboardSize[1]);
-    }
-
-    private void addSegmentedRectangularQuad(QuadParticleRenderState state, Quaternionf orientation, float x, float y, float z, float width, float height, int color, int light) {
-        boolean splitWidth = width >= height;
-        float major = splitWidth ? width : height;
-        float minor = splitWidth ? height : width;
-        int segments = Math.max(1, Math.min(MAX_RECTANGLE_SEGMENTS, (int) Math.ceil(major / Math.max(minor, MIN_RENDER_SIZE))));
-        Vector3f axis = new Vector3f(splitWidth ? 1.0F : 0.0F, splitWidth ? 0.0F : 1.0F, 0.0F).rotate(orientation);
-
-        float u0 = getU0();
-        float u1 = getU1();
-        float v0 = getV0();
-        float v1 = getV1();
-        float startOffset = -major + minor;
-        float endOffset = major - minor;
-
-        for (int segment = 0; segment < segments; segment++) {
-            float segmentStart = (float) segment / segments;
-            float segmentEnd = (float) (segment + 1) / segments;
-            float offset = segments == 1 ? 0.0F : Mth.lerp((float) segment / (segments - 1), startOffset, endOffset);
-            float segmentU0 = splitWidth ? Mth.lerp(segmentStart, u0, u1) : u0;
-            float segmentU1 = splitWidth ? Mth.lerp(segmentEnd, u0, u1) : u1;
-            float segmentV0 = splitWidth ? v0 : Mth.lerp(segmentStart, v0, v1);
-            float segmentV1 = splitWidth ? v1 : Mth.lerp(segmentEnd, v0, v1);
-
-            addBillboardFace(state, orientation, x + axis.x * offset, y + axis.y * offset, z + axis.z * offset, minor, segmentU0, segmentU1, segmentV0, segmentV1, color, light);
-        }
-    }
-
-    private void addBillboardFace(QuadParticleRenderState state, Quaternionf orientation, float x, float y, float z, float size, float u0, float u1, float v0, float v1, int color, int light) {
-        SingleQuadParticle.Layer layer = getLayer();
-        state.add(layer, x, y, z, orientation.x, orientation.y, orientation.z, orientation.w, size, u0, u1, v0, v1, color, light);
-        Quaternionf back = new Quaternionf(orientation).rotateY(Mth.PI);
-        state.add(layer, x, y, z, back.x, back.y, back.z, back.w, size, u1, u0, v0, v1, color, light);
     }
 
     @Override
@@ -598,13 +568,8 @@ public class MolangParticleInstance extends SingleQuadParticle implements IMolan
     }
 
     @Override
-    public @NotNull ParticleRenderType getGroup() {
-        return preset.renderType == null ? ParticleRenderType.NO_RENDER : ParticleRenderType.SINGLE_QUADS;
-    }
-
-    @Override
-    protected @NotNull Layer getLayer() {
-        return preset.renderType == null ? Layer.OPAQUE : preset.renderType;
+    public @NotNull ParticleRenderType getRenderType() {
+        return preset.renderType;
     }
 
     @Override
@@ -613,17 +578,17 @@ public class MolangParticleInstance extends SingleQuadParticle implements IMolan
     }
 
     @Override
-    protected int getLightCoords(float partialTick) {
-        return preset.environmentLighting ? super.getLightCoords(partialTick) : FULL_LIGHT;
+    protected int getLightColor(float partialTick) {
+        return preset.environmentLighting ? super.getLightColor(partialTick) : FULL_LIGHT;
     }
 
     @Override
-    public @NotNull Optional<ParticleLimit> getParticleLimit() {
+    public @NotNull Optional<ParticleGroup> getParticleGroup() {
         return Optional.empty();
     }
 
     @Override
-    public Identifier getIdentity() {
+    public ResourceLocation getIdentity() {
         return preset.effect.description.identifier();
     }
 
@@ -648,8 +613,8 @@ public class MolangParticleInstance extends SingleQuadParticle implements IMolan
                 ",uvSize=" + Arrays.toString(uvSize) +
                 ",uvStep=" + Arrays.toString(uvStep) +
                 ",frame=" + currentFrame + "/" + maxFrame +
-                ",layer=" + getLayer() +
-                ",group=" + getGroup() +
+                ",layer=" + getRenderType() +
+                ",group=" + getRenderType() +
                 ",motionDynamic=" + preset.motionDynamic +
                 ",components=" + components.stream().map(component -> component.getClass().getSimpleName()).toList() +
                 ",flags=" + diagnosticFlags();
@@ -677,8 +642,8 @@ public class MolangParticleInstance extends SingleQuadParticle implements IMolan
 
     public static class Provider implements ParticleProvider<MolangParticleOption> {
         @Override
-        public @Nullable Particle createParticle(@NotNull MolangParticleOption option, @NotNull ClientLevel level, double x, double y, double z, double xSpeed, double ySpeed, double zSpeed, RandomSource random) {
-            return new MolangParticleInstance(option.getPreset(), level, x, y, z, random);
+        public @Nullable Particle createParticle(@NotNull MolangParticleOption option, @NotNull ClientLevel level, double x, double y, double z, double xSpeed, double ySpeed, double zSpeed) {
+            return new MolangParticleInstance(option.getPreset(), level, x, y, z, level.random);
         }
     }
 }

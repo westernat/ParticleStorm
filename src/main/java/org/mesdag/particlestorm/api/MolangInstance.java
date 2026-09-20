@@ -1,7 +1,7 @@
 package org.mesdag.particlestorm.api;
 
 
-import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
@@ -26,7 +26,7 @@ public interface MolangInstance {
 
     double getRandom4();
 
-    Identifier getIdentity();
+    ResourceLocation getIdentity();
 
     Vec3 getPosition();
 

@@ -9,12 +9,12 @@ import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.objects.Object2ObjectLinkedOpenHashMap;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenCustomHashMap;
 import it.unimi.dsi.fastutil.objects.ObjectIterator;
-import net.minecraft.util.Util;
+import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.FileToIdConverter;
-import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.PreparableReloadListener;
 import net.minecraft.server.packs.resources.Resource;
 import net.minecraft.server.packs.resources.ResourceManager;
@@ -49,15 +49,15 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 
 @SuppressWarnings("all")
-public final class MolangParticleEngine implements PreparableReloadListener {
+public final class MolangParticleEngine implements net.fabricmc.fabric.api.resource.IdentifiableResourceReloadListener {
     public static final MolangParticleEngine INSTANCE = new MolangParticleEngine();
-    public static final Identifier RELOADER_ID = ParticleStorm.asResource("reloader");
+    public static final ResourceLocation RELOADER_ID = ParticleStorm.asResource("reloader");
     private static final FileToIdConverter PARTICLE_LISTER = FileToIdConverter.json("particle_definitions");
-    private Map<Identifier, DefinedParticleEffect> id2Effect = new Hashtable<>();
-    private Map<Identifier, ParticlePreset> id2Particle = new Hashtable<>();
-    private Map<Identifier, EmitterPreset> id2Emitter = new Hashtable<>();
+    private Map<ResourceLocation, DefinedParticleEffect> id2Effect = new Hashtable<>();
+    private Map<ResourceLocation, ParticlePreset> id2Particle = new Hashtable<>();
+    private Map<ResourceLocation, EmitterPreset> id2Emitter = new Hashtable<>();
     private final Int2ObjectOpenHashMap<ParticleEmitter> emitters = new Int2ObjectOpenHashMap<>();
-    private final Object2ObjectOpenCustomHashMap<Entity, Object2ObjectLinkedOpenHashMap<Identifier, ParticleEmitter>> tracker = new Object2ObjectOpenCustomHashMap<>(new Hash.Strategy<>() {
+    private final Object2ObjectOpenCustomHashMap<Entity, Object2ObjectLinkedOpenHashMap<ResourceLocation, ParticleEmitter>> tracker = new Object2ObjectOpenCustomHashMap<>(new Hash.Strategy<>() {
         @Override
         public int hashCode(Entity o) {
             return o.getUUID().hashCode();
@@ -76,36 +76,42 @@ public final class MolangParticleEngine implements PreparableReloadListener {
     private MolangParticleEngine() {
     }
 
-    public Map<Identifier, DefinedParticleEffect> id2Effect() {
+    @Override
+    public ResourceLocation getFabricId() {
+        return RELOADER_ID;
+    }
+
+    public Map<ResourceLocation, DefinedParticleEffect> id2Effect() {
         return id2Effect;
     }
 
-    public Map<Identifier, ParticlePreset> id2Particle() {
+    public Map<ResourceLocation, ParticlePreset> id2Particle() {
         return id2Particle;
     }
 
-    public Map<Identifier, EmitterPreset> id2Emitter() {
+    public Map<ResourceLocation, EmitterPreset> id2Emitter() {
         return id2Emitter;
     }
 
-    public @Nullable Identifier resolveParticleId(Identifier id) {
+    public @Nullable ResourceLocation resolveParticleId(ResourceLocation id) {
         if (id2Emitter.containsKey(id)) {
             return id;
         }
-        Identifier normalized = stripParticleSuffix(id);
+        ResourceLocation normalized = stripParticleSuffix(id);
         return id2Emitter.containsKey(normalized) ? normalized : null;
     }
 
-    public boolean containsParticle(Identifier id) {
+    public boolean containsParticle(ResourceLocation id) {
         return resolveParticleId(id) != null;
     }
 
-    public Set<Identifier> suggestibleParticleIds() {
+    public Set<ResourceLocation> suggestibleParticleIds() {
         return new HashSet<>(id2Emitter.keySet());
     }
 
     public void tick(LocalPlayer localPlayer) {
         if (!initialized) {
+            RegisterCustomParticleTypeEvent.bindSprites(id2Effect);
             for (ParticlePreset detail : new HashSet<>(id2Particle.values())) {
                 for (IParticleComponent component : detail.effect.orderedParticleComponents) {
                     component.initialize(localPlayer.level());
@@ -187,8 +193,8 @@ public final class MolangParticleEngine implements PreparableReloadListener {
         addEmitter(emitter, false);
     }
 
-    public boolean addTrackedEmitter(Entity entity, Identifier particleId) {
-        Object2ObjectLinkedOpenHashMap<Identifier, ParticleEmitter> queue = tracker.computeIfAbsent(entity, e -> new Object2ObjectLinkedOpenHashMap<>());
+    public boolean addTrackedEmitter(Entity entity, ResourceLocation particleId) {
+        Object2ObjectLinkedOpenHashMap<ResourceLocation, ParticleEmitter> queue = tracker.computeIfAbsent(entity, e -> new Object2ObjectLinkedOpenHashMap<>());
         if (!queue.isEmpty() && queue.containsKey(particleId)) return false;
         ParticleEmitter emitter = new ParticleEmitter(entity.level(), entity.position(), particleId);
         addEmitter(emitter, false);
@@ -260,12 +266,11 @@ public final class MolangParticleEngine implements PreparableReloadListener {
     }
 
     @Override
-    public CompletableFuture<Void> reload(SharedState sharedState, Executor backgroundExecutor, PreparationBarrier preparationBarrier, Executor gameExecutor) {
-        ResourceManager resourceManager = sharedState.resourceManager();
+    public CompletableFuture<Void> reload(PreparationBarrier preparationBarrier, ResourceManager resourceManager, net.minecraft.util.profiling.ProfilerFiller preparationsProfiler, net.minecraft.util.profiling.ProfilerFiller reloadProfiler, Executor backgroundExecutor, Executor gameExecutor) {
         return CompletableFuture.supplyAsync(() -> PARTICLE_LISTER.listMatchingResources(resourceManager), backgroundExecutor).thenCompose(map -> {
             List<CompletableFuture<LoadedParticle>> list = Lists.newArrayListWithExpectedSize(map.size());
-            for (Map.Entry<Identifier, Resource> entry : map.entrySet()) {
-                Identifier id = PARTICLE_LISTER.fileToId(entry.getKey());
+            for (Map.Entry<ResourceLocation, Resource> entry : map.entrySet()) {
+                ResourceLocation id = PARTICLE_LISTER.fileToId(entry.getKey());
                 list.add(CompletableFuture.supplyAsync(() -> {
                     try (Reader reader = entry.getValue().openAsReader()) {
                         DefinedParticleEffect effect = DefinedParticleEffect.CODEC.parse(JsonOps.INSTANCE, GsonHelper.parse(reader).get("particle_effect")).getOrThrow(JsonParseException::new);
@@ -279,13 +284,13 @@ public final class MolangParticleEngine implements PreparableReloadListener {
             return Util.sequence(list);
         }).thenCompose(preparationBarrier::wait).thenAcceptAsync(effects -> {
             PSDiagnostics.clear();
-            Map<Identifier, DefinedParticleEffect> id2Effect = new Hashtable<>();
-            Map<Identifier, ParticlePreset> id2Particle = new Hashtable<>();
-            Map<Identifier, EmitterPreset> id2Emitter = new Hashtable<>();
+            Map<ResourceLocation, DefinedParticleEffect> id2Effect = new Hashtable<>();
+            Map<ResourceLocation, ParticlePreset> id2Particle = new Hashtable<>();
+            Map<ResourceLocation, EmitterPreset> id2Emitter = new Hashtable<>();
             for (LoadedParticle loaded : effects) {
                 DefinedParticleEffect effect = loaded.effect();
-                Identifier id = effect.description.identifier();
-                Set<Identifier> aliases = new LinkedHashSet<>();
+                ResourceLocation id = effect.description.identifier();
+                Set<ResourceLocation> aliases = new LinkedHashSet<>();
                 aliases.add(id);
                 aliases.add(loaded.fileId());
                 aliases.add(stripParticleSuffix(loaded.fileId()));
@@ -295,7 +300,7 @@ public final class MolangParticleEngine implements PreparableReloadListener {
                         effect.orderedEmitterComponents,
                         effect.events
                 );
-                for (Identifier alias : aliases) {
+                for (ResourceLocation alias : aliases) {
                     registerAlias(id2Effect, id2Particle, id2Emitter, alias, effect, particlePreset, emitterPreset);
                 }
                 PSDiagnostics.info("loaded definition fileId={} identifier={} aliases={} material={} texture={} emitterComponents={} particleComponents={} events={}",
@@ -312,17 +317,16 @@ public final class MolangParticleEngine implements PreparableReloadListener {
             this.id2Effect = id2Effect;
             this.id2Particle = id2Particle;
             this.id2Emitter = id2Emitter;
-            RegisterCustomParticleTypeEvent.bindSprites(id2Effect);
             this.initialized = false;
             ParticleStorm.LOGGER.info("Loaded {} particle definitions with {} usable ids", effects.size(), id2Emitter.size());
         }, gameExecutor);
     }
 
     private static void registerAlias(
-            Map<Identifier, DefinedParticleEffect> id2Effect,
-            Map<Identifier, ParticlePreset> id2Particle,
-            Map<Identifier, EmitterPreset> id2Emitter,
-            Identifier id,
+            Map<ResourceLocation, DefinedParticleEffect> id2Effect,
+            Map<ResourceLocation, ParticlePreset> id2Particle,
+            Map<ResourceLocation, EmitterPreset> id2Emitter,
+            ResourceLocation id,
             DefinedParticleEffect effect,
             ParticlePreset particlePreset,
             EmitterPreset emitterPreset
@@ -337,14 +341,14 @@ public final class MolangParticleEngine implements PreparableReloadListener {
         id2Emitter.put(id, emitterPreset);
     }
 
-    private static Identifier stripParticleSuffix(Identifier id) {
+    private static ResourceLocation stripParticleSuffix(ResourceLocation id) {
         String path = id.getPath();
         if (path.endsWith(".particle")) {
-            return Identifier.fromNamespaceAndPath(id.getNamespace(), path.substring(0, path.length() - ".particle".length()));
+            return ResourceLocation.fromNamespaceAndPath(id.getNamespace(), path.substring(0, path.length() - ".particle".length()));
         }
         return id;
     }
 
-    private record LoadedParticle(Identifier fileId, DefinedParticleEffect effect) {
+    private record LoadedParticle(ResourceLocation fileId, DefinedParticleEffect effect) {
     }
 }

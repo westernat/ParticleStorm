@@ -2,8 +2,6 @@ package org.mesdag.particlestorm.mixin;
 
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.level.storage.ValueInput;
-import net.minecraft.world.level.storage.ValueOutput;
 import org.mesdag.particlestorm.mixed.IPlayerPersistentData;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
@@ -22,14 +20,16 @@ public abstract class PlayerMixin implements IPlayerPersistentData {
     }
 
     @Inject(method = "readAdditionalSaveData", at = @At("TAIL"))
-    private void particlestorm$readPersistentData(ValueInput input, CallbackInfo ci) {
-        this.particlestorm$persistentData = input.read(TAG_KEY, CompoundTag.CODEC).orElseGet(CompoundTag::new);
+    private void particlestorm$readPersistentData(CompoundTag input, CallbackInfo ci) {
+        this.particlestorm$persistentData = input.contains(TAG_KEY, 10)
+                ? input.getCompound(TAG_KEY)
+                : new CompoundTag();
     }
 
     @Inject(method = "addAdditionalSaveData", at = @At("TAIL"))
-    private void particlestorm$writePersistentData(ValueOutput output, CallbackInfo ci) {
+    private void particlestorm$writePersistentData(CompoundTag output, CallbackInfo ci) {
         if (!particlestorm$persistentData.isEmpty()) {
-            output.store(TAG_KEY, CompoundTag.CODEC, particlestorm$persistentData);
+            output.put(TAG_KEY, particlestorm$persistentData);
         }
     }
 }

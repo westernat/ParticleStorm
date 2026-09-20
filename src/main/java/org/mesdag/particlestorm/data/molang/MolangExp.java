@@ -2,7 +2,7 @@ package org.mesdag.particlestorm.data.molang;
 
 import com.mojang.serialization.Codec;
 import io.netty.buffer.ByteBuf;
-import net.minecraft.util.Util;
+import net.minecraft.Util;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import org.mesdag.particlestorm.api.MolangInstance;

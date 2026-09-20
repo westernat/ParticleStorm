@@ -2,12 +2,12 @@ package org.mesdag.particlestorm.data.molang.compiler;
 
 import net.minecraft.client.CameraType;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.particle.ParticleGroup;
+import org.mesdag.particlestorm.mixin.ParticleEngineAccessor;
+import java.util.Queue;
 import net.minecraft.world.level.dimension.DimensionType;
 import org.mesdag.particlestorm.PSGameClient;
 import org.mesdag.particlestorm.api.MolangInstance;
 import org.mesdag.particlestorm.data.molang.compiler.value.Variable;
-import org.mesdag.particlestorm.mixin.ParticleEngineAccessor;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -38,9 +38,7 @@ public final class MolangQueries {
 
     public static int totalParticleCount() {
         return ((ParticleEngineAccessor) Minecraft.getInstance().particleEngine)
-                .particlestorm$getParticles().values().stream()
-                .mapToInt(ParticleGroup::size)
-                .sum();
+                .particlestorm$getParticles().values().stream().mapToInt(Queue::size).sum();
     }
 
     private static void registerQueryVariable(String name, ToDoubleFunction<MolangInstance> value) {
@@ -86,7 +84,7 @@ public final class MolangQueries {
     private static void setDefaultQueryValues() {
         registerQueryVariable("query.cardinal_player_facing", p -> Minecraft.getInstance().player == null ? 0.0 : Minecraft.getInstance().player.getDirection().ordinal());
         registerQueryVariable("query.day", p -> p.getLevel().getGameTime() / 24000d);
-        registerQueryVariable("query.has_cape", p -> Minecraft.getInstance().player == null ? 0.0 : Minecraft.getInstance().player.getSkin().cape() == null ? 0 : 1);
+        registerQueryVariable("query.has_cape", p -> Minecraft.getInstance().player == null ? 0.0 : Minecraft.getInstance().player.getSkin().capeTexture() == null ? 0 : 1);
         registerQueryVariable("query.is_first_person", p -> Minecraft.getInstance().options.getCameraType() == CameraType.FIRST_PERSON ? 1 : 0);
         registerQueryVariable("query.moon_brightness", p -> {
             long phase = Math.floorMod(p.getLevel().getGameTime() / 24000L, 8L);

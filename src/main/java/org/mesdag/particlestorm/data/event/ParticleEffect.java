@@ -6,7 +6,7 @@ import com.mojang.serialization.codecs.RecordCodecBuilder;
 import io.netty.buffer.ByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
-import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.ByIdMap;
 import net.minecraft.util.StringRepresentable;
 import net.minecraft.world.phys.Vec3;
@@ -24,9 +24,9 @@ import java.util.List;
 import java.util.Locale;
 import java.util.function.IntFunction;
 
-public record ParticleEffect(Identifier effect, Type type, MolangExp preEffectExpression, List<String> sharedVars) implements IEventNode {
+public record ParticleEffect(ResourceLocation effect, Type type, MolangExp preEffectExpression, List<String> sharedVars) implements IEventNode {
     public static final MapCodec<ParticleEffect> CODEC = RecordCodecBuilder.mapCodec(instance -> instance.group(
-            Identifier.CODEC.fieldOf("effect").forGetter(ParticleEffect::effect),
+            ResourceLocation.CODEC.fieldOf("effect").forGetter(ParticleEffect::effect),
             Type.CODEC.fieldOf("type").forGetter(ParticleEffect::type),
             MolangExp.CODEC.fieldOf("pre_effect_expression").orElse(MolangExp.EMPTY).forGetter(ParticleEffect::preEffectExpression),
             Codec.STRING.listOf().lenientOptionalFieldOf("shared_vars", List.of()).forGetter(ParticleEffect::sharedVars)
@@ -35,7 +35,7 @@ public record ParticleEffect(Identifier effect, Type type, MolangExp preEffectEx
         return new ParticleEffect(rl, t, e, l);
     }));
 
-    public ParticleEffect(Identifier effect, Type type, MolangExp preEffectExpression) {
+    public ParticleEffect(ResourceLocation effect, Type type, MolangExp preEffectExpression) {
         this(effect, type, preEffectExpression, List.of());
     }
 

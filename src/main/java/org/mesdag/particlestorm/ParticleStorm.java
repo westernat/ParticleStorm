@@ -15,7 +15,7 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceLocation;
 import org.mesdag.particlestorm.network.EmitterAttachPacketS2C;
 import org.mesdag.particlestorm.network.EmitterCreationPacketS2C;
 import org.mesdag.particlestorm.network.EmitterRemovalPacket;
@@ -73,17 +73,17 @@ public final class ParticleStorm implements ModInitializer {
             CustomPacketPayload.Type<T> type,
             StreamCodec<? super RegistryFriendlyByteBuf, T> codec
     ) {
-        PayloadTypeRegistry.clientboundPlay().register(type, codec);
+        PayloadTypeRegistry.playS2C().register(type, codec);
     }
 
     private static <T extends CustomPacketPayload> void registerServerbound(
             CustomPacketPayload.Type<T> type,
             StreamCodec<? super RegistryFriendlyByteBuf, T> codec
     ) {
-        PayloadTypeRegistry.serverboundPlay().register(type, codec);
+        PayloadTypeRegistry.playC2S().register(type, codec);
     }
 
-    public static Identifier asResource(String path) {
-        return Identifier.fromNamespaceAndPath(MODID, path);
+    public static ResourceLocation asResource(String path) {
+        return ResourceLocation.fromNamespaceAndPath(MODID, path);
     }
 }

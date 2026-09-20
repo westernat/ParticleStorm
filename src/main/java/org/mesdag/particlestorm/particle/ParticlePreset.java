@@ -1,7 +1,7 @@
 package org.mesdag.particlestorm.particle;
 
 import com.google.common.collect.Iterables;
-import net.minecraft.client.particle.SingleQuadParticle;
+import net.minecraft.client.particle.ParticleRenderType;
 import net.minecraft.util.Mth;
 import org.jetbrains.annotations.Nullable;
 import org.mesdag.particlestorm.PSGameClient;
@@ -28,7 +28,7 @@ import static org.mesdag.particlestorm.data.molang.compiler.MolangQueries.applyP
 
 public class ParticlePreset {
     public DefinedParticleEffect effect;
-    public SingleQuadParticle.Layer renderType;
+    public ParticleRenderType renderType;
     public FaceCameraMode facingCameraMode;
     public float minSpeedThresholdSqr;
     public boolean environmentLighting;
@@ -47,14 +47,13 @@ public class ParticlePreset {
     public ParticlePreset(DefinedParticleEffect effect) {
         this.effect = effect;
         this.renderType = switch (effect.description.parameters().material()) {
-            case TERRAIN_SHEET -> SingleQuadParticle.Layer.OPAQUE_TERRAIN;
-            case particles_opaque, PARTICLE_SHEET_OPAQUE -> SingleQuadParticle.Layer.OPAQUE;
+            case TERRAIN_SHEET -> ParticleRenderType.TERRAIN_SHEET;
+            case particles_opaque, PARTICLE_SHEET_OPAQUE -> ParticleRenderType.PARTICLE_SHEET_OPAQUE;
             case particles_add -> PSGameClient.PARTICLE_ADD;
             case particles_blend -> PSGameClient.PARTICLE_BLEND;
-            case PARTICLE_SHEET_TRANSLUCENT -> SingleQuadParticle.Layer.TRANSLUCENT;
-            case particles_alpha, PARTICLE_SHEET_LIT -> SingleQuadParticle.Layer.OPAQUE;
-            case CUSTOM -> SingleQuadParticle.Layer.OPAQUE;
-            default -> null;
+            case PARTICLE_SHEET_TRANSLUCENT -> ParticleRenderType.PARTICLE_SHEET_TRANSLUCENT;
+            case particles_alpha, PARTICLE_SHEET_LIT, CUSTOM -> ParticleRenderType.PARTICLE_SHEET_OPAQUE;
+            default -> ParticleRenderType.NO_RENDER;
         };
         if (effect.components.get(ParticleAppearanceBillboard.ID) instanceof ParticleAppearanceBillboard component) {
             this.facingCameraMode = FaceCameraMode.fromComponent(component.faceCameraMode());

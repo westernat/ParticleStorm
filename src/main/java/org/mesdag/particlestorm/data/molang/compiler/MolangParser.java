@@ -2,7 +2,7 @@ package org.mesdag.particlestorm.data.molang.compiler;
 
 import com.mojang.datafixers.util.Either;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
-import net.minecraft.util.Util;
+import net.minecraft.Util;
 import org.jetbrains.annotations.Nullable;
 import org.mesdag.particlestorm.data.molang.VariableTable;
 import org.mesdag.particlestorm.data.molang.compiler.function.MathFunction;

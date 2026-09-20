@@ -4,7 +4,7 @@ import com.mojang.serialization.Codec;
 import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
-import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.ExtraCodecs;
 import net.minecraft.util.Mth;
 import net.minecraft.util.StringRepresentable;
@@ -20,7 +20,7 @@ import java.util.List;
 import java.util.Locale;
 
 public record ParticleAppearanceBillboard(FloatMolangExp2 size, FaceCameraMode faceCameraMode, Direction direction, UV uv) implements IParticleComponent {
-    public static final Identifier ID = Identifier.withDefaultNamespace("particle_appearance_billboard");
+    public static final ResourceLocation ID = ResourceLocation.withDefaultNamespace("particle_appearance_billboard");
     public static final Codec<ParticleAppearanceBillboard> CODEC = RecordCodecBuilder.create(instance -> instance.group(
             FloatMolangExp2.CODEC.fieldOf("size").forGetter(ParticleAppearanceBillboard::size),
             DuplicateFieldDecoder.fieldOf(FaceCameraMode.CODEC, "face_camera_mode", "facing_camera_mode").forGetter(ParticleAppearanceBillboard::faceCameraMode),

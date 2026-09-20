@@ -2,7 +2,7 @@ package org.mesdag.particlestorm.particle.attach;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
@@ -13,18 +13,18 @@ import org.mesdag.particlestorm.data.molang.MolangExp;
 import org.mesdag.particlestorm.particle.ParticleEmitter;
 
 public class WithBlockParticleEmitter extends IgnoreRangeParticleEmitter {
-    public static final Identifier TYPE = ParticleStorm.asResource("with_block");
+    public static final ResourceLocation TYPE = ParticleStorm.asResource("with_block");
 
     protected @Nullable WithBlockParticleEmitter.BlockData blockData;
 
-    public WithBlockParticleEmitter(Level level, Vec3 pos, Identifier particleId, MolangExp expression, boolean ignoreSameBlock, boolean ignoreRange) {
+    public WithBlockParticleEmitter(Level level, Vec3 pos, ResourceLocation particleId, MolangExp expression, boolean ignoreSameBlock, boolean ignoreRange) {
         super(TYPE, level, pos, particleId, expression, ignoreRange);
         initBlock(level, pos, ignoreSameBlock);
     }
 
     public WithBlockParticleEmitter(Level level, CompoundTag tag) {
         super(level, tag);
-        initBlock(level, pos, tag.getBooleanOr("ignoreSameBlock", false));
+        initBlock(level, pos, tag.getBoolean("ignoreSameBlock"));
     }
 
     public WithBlockParticleEmitter(ParticleEmitter parent, ParticleEffect effect) {
