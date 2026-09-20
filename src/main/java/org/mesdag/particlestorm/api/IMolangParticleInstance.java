@@ -163,6 +163,11 @@ public interface IMolangParticleInstance extends MolangInstance {
     }
 
     @Override
+    default @Nullable ParticleEmitterAttachable getAttached() {
+        return getEmitter().getAttached();
+    }
+
+    @Override
     default @Nullable Entity getAttachedEntity() {
         return getEmitter().getAttachedEntity();
     }

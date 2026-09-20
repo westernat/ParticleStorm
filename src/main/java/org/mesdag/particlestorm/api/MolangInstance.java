@@ -30,7 +30,11 @@ public interface MolangInstance {
 
     Vec3 getPosition();
 
-    @Nullable Entity getAttachedEntity();
+    @Nullable ParticleEmitterAttachable getAttached();
+
+    default @Nullable Entity getAttachedEntity() {
+        return getAttached() instanceof Entity entity ? entity : null;
+    }
 
     float getInvTickRate();
 

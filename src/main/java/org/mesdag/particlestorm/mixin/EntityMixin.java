@@ -22,7 +22,7 @@ public abstract class EntityMixin implements IPSEntity {
             Hashtable<String, Variable> table = new Hashtable<>();
             table.put("variable.entity_scale", new Variable("variable.entity_scale", p -> 1));
             this.particlestorm$variableTable = new VariableTable(table, null);
-            MinecraftForge.EVENT_BUS.post(new AddDefaultVariableEvent.Entity(particlestorm$variableTable, (Entity) (Object) this));
+            MinecraftForge.EVENT_BUS.post(new AddDefaultVariableEvent.Entity(particlestorm$variableTable, (net.minecraft.world.entity.Entity) (Object) this));
         }
         return particlestorm$variableTable;
     }
