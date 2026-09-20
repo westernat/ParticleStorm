@@ -45,8 +45,8 @@ public class DuplicateFieldDecoder {
                 T t = input.get(name);
                 if (t == null) continue;
                 DataResult<A> parsed = elementCodec.parse(ops, t);
-                if (parsed.isSuccess()) {
-                    return parsed.map(Optional::of).setPartial(parsed.resultOrPartial());
+                if (parsed.result().isPresent()) {
+                    return parsed.map(Optional::of);
                 }
             }
             return DataResult.success(Optional.empty());

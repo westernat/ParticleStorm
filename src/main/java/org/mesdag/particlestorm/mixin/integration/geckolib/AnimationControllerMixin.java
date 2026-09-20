@@ -1,64 +1,80 @@
 package org.mesdag.particlestorm.mixin.integration.geckolib;
 
-import com.geckolib.animatable.GeoAnimatable;
-import com.geckolib.animatable.manager.AnimatableManager;
-import com.geckolib.animation.AnimationController;
-import com.geckolib.cache.animation.keyframeevent.ParticleKeyframeData;
-import com.geckolib.model.GeoModel;
-import com.geckolib.renderer.base.GeoRenderState;
-import org.jetbrains.annotations.Nullable;
 import org.mesdag.particlestorm.api.geckolib.GeckoLibHelper;
-import org.mesdag.particlestorm.PSDiagnostics;
-import org.spongepowered.asm.mixin.Final;
-import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Pseudo;
-import org.spongepowered.asm.mixin.Shadow;
-import org.spongepowered.asm.mixin.Unique;
+import org.mesdag.particlestorm.mixed.IPSAnimationController;
+import org.mesdag.particlestorm.mixed.IPSGeoBone;
+import org.spongepowered.asm.mixin.*;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
+import software.bernie.geckolib.core.animatable.GeoAnimatable;
+import software.bernie.geckolib.core.animation.AnimationController;
+import software.bernie.geckolib.core.keyframe.event.data.ParticleKeyframeData;
+import software.bernie.geckolib.cache.object.GeoBone;
+import software.bernie.geckolib.core.animatable.model.CoreGeoBone;
+import software.bernie.geckolib.loading.json.raw.LocatorValue;
+
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 
 @Pseudo
-@Mixin(targets = "com.geckolib.animation.AnimationController", remap = false)
-public abstract class AnimationControllerMixin<T extends GeoAnimatable> {
-    @Shadow
-    protected @Nullable AnimationController.KeyframeEventHandler<T, ParticleKeyframeData> particleKeyframeHandler;
+@Mixin(targets = "software.bernie.geckolib.core.animation.AnimationController", remap = false)
+public abstract class AnimationControllerMixin<T extends GeoAnimatable> implements IPSAnimationController {
     @Shadow
     @Final
-    protected String name;
+    protected T animatable;
+    @Shadow
+    protected AnimationController.State animationState;
+    @Shadow
+    protected AnimationController.ParticleKeyframeHandler<T> particleKeyframeHandler;
 
     @Unique
-    private AnimationController.KeyframeEventHandler<T, ParticleKeyframeData> particlestorm$wrappedParticleHandler;
+    private AnimationController.ParticleKeyframeHandler<T> particlestorm$wrappedParticleHandler;
 
-    @Inject(method = "checkControllerState", at = @At("HEAD"))
-    private void particlestorm$ensureParticleHandler(T animatable, GeoRenderState renderState, AnimatableManager<T> manager, GeoModel<T> geoModel, CallbackInfoReturnable<Boolean> cir) {
+    @Unique
+    private List<GeoBone> particlestorm$bonesWhichHasLocators;
+
+    @Override
+    public List<GeoBone> particlestorm$getBonesWhichHasLocators() {
+        return Objects.requireNonNullElse(particlestorm$bonesWhichHasLocators, List.of());
+    }
+
+    @Override
+    public void particlestorm$setBonesWhichHasLocators(Collection<CoreGeoBone> registeredBones) {
+        if (particlestorm$bonesWhichHasLocators == null) {
+            this.particlestorm$bonesWhichHasLocators = registeredBones.stream().filter(GeoBone.class::isInstance).map(GeoBone.class::cast).filter(bone -> {
+                Map<String, LocatorValue> locators = IPSGeoBone.of(bone).particlestorm$getLocators();
+                return locators != null && !locators.isEmpty();
+            }).toList();
+        }
+    }
+
+    @Inject(method = "process", at = @At("HEAD"))
+    private void particlestorm$ensureParticleHandler(CallbackInfo ci) {
         particlestorm$wrapParticleHandler();
     }
 
     @Inject(method = "setParticleKeyframeHandler", at = @At("TAIL"))
-    private void particlestorm$wrapCustomParticleHandler(AnimationController.KeyframeEventHandler<T, ParticleKeyframeData> particleHandler, CallbackInfoReturnable<AnimationController<T>> cir) {
+    private void particlestorm$wrapCustomParticleHandler(AnimationController.ParticleKeyframeHandler<T> handler, CallbackInfoReturnable<AnimationController<T>> cir) {
         particlestorm$wrapParticleHandler();
-    }
-
-    @Inject(method = "initializeNewAnimation", at = @At("HEAD"))
-    private void particlestorm$removeEmitterOnNewAnimation(T animatable, GeoRenderState renderState, GeoModel<T> geoModel, double prevAnimSpeed, int prevTransitionTicks, CallbackInfo ci) {
-        GeckoLibHelper.removeEmitters(renderState);
     }
 
     @Unique
     private void particlestorm$wrapParticleHandler() {
-        if (particleKeyframeHandler == particlestorm$wrappedParticleHandler) {
-            return;
-        }
-
-        AnimationController.KeyframeEventHandler<T, ParticleKeyframeData> original = particleKeyframeHandler;
+        if (particlestorm$wrappedParticleHandler != null && particleKeyframeHandler == particlestorm$wrappedParticleHandler) return;
+        AnimationController.ParticleKeyframeHandler<T> original = particleKeyframeHandler;
         particlestorm$wrappedParticleHandler = event -> {
-            if (original != null) {
-                original.handle(event);
-            }
+            GeckoLibHelper.processParticleEffect(event.getAnimatable(), event.getController(), event.getKeyframeData());
+            if (original != null) original.handle(event);
         };
         particleKeyframeHandler = particlestorm$wrappedParticleHandler;
-        PSDiagnostics.infoOnce("geckolib-animation-controller:" + name, "GeckoLib AnimationController particle handler hooked controller={}", name);
+    }
+
+    @Inject(method = "resetEventKeyFrames", at = @At("HEAD"))
+    private void removeEmitters(CallbackInfo ci) {
+        GeckoLibHelper.removeEmittersWhenAnimationChange(animationState, animatable.getAnimatableInstanceCache());
     }
 }

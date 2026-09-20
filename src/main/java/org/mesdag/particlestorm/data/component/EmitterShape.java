@@ -2,6 +2,7 @@ package org.mesdag.particlestorm.data.component;
 
 import com.mojang.datafixers.util.Either;
 import com.mojang.serialization.Codec;
+import com.mojang.serialization.DataResult;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.particle.Particle;
@@ -229,7 +230,7 @@ public abstract sealed class EmitterShape implements IEmitterComponent permits E
             position.z += sp * Mth.sin(op);
             float[] lp = planeNormal.plane.calculate(instance);
             if (!Arrays.equals(lp, PlaneNormal.YN)) {
-                MathHelper.applyQuaternion(MathHelper.setFromUnitVectors(Mth.Y_AXIS, new Vector3f(lp), new Quaternionf()), position);
+                MathHelper.applyQuaternion(MathHelper.setFromUnitVectors(new Vector3f(0.0F, 1.0F, 0.0F), new Vector3f(lp), new Quaternionf()), position);
             }
             direction.apply(instance, this, position, speed);
         }
@@ -368,7 +369,7 @@ public abstract sealed class EmitterShape implements IEmitterComponent permits E
                 throw new IllegalStateException("EmitterShape.EntityAABB requires an attached entity, but the emitter is not bound to any entity");
             }
             EntityDimensions dimensions = attachedEntity.getDimensions(attachedEntity.getPose());
-            Vector3f n = new Vector3f(dimensions.width(), dimensions.height(), dimensions.width()).mul(0.5F);
+            Vector3f n = new Vector3f(dimensions.width, dimensions.height, dimensions.width).mul(0.5F);
             RandomSource random = instance.getLevel().getRandom();
             position.x = Mth.nextFloat(random, -n.x, n.x);
             position.y = Mth.nextFloat(random, -n.y, n.y);
@@ -507,7 +508,11 @@ public abstract sealed class EmitterShape implements IEmitterComponent permits E
         public static final Direction INWARDS = new Direction("inwards", FloatMolangExp3.ZERO);
         /// Particle direction away from center of shape
         public static final Direction OUTWARDS = new Direction("outwards", FloatMolangExp3.ZERO);
-        public static final Codec<Direction> DIRECTION_CODEC = StringRepresentable.fromValues(() -> new Direction[]{INWARDS, OUTWARDS});
+        public static final Codec<Direction> DIRECTION_CODEC = Codec.STRING.comapFlatMap(name -> switch (name) {
+            case "inwards" -> DataResult.success(INWARDS);
+            case "outwards" -> DataResult.success(OUTWARDS);
+            default -> DataResult.error(() -> "Unknown emitter direction: " + name);
+        }, Direction::name);
         public static final Codec<Direction> CODEC = Codec.either(DIRECTION_CODEC, FloatMolangExp3.CODEC).xmap(
                 either -> either.map(dir -> dir, list -> new Direction("custom", list)),
                 dir -> dir.direct == FloatMolangExp3.ZERO ? Either.left(dir) : Either.right(dir.direct)

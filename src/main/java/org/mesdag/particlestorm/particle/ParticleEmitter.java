@@ -1,9 +1,9 @@
 package org.mesdag.particlestorm.particle;
 
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.particles.ParticleLimit;
+import net.minecraft.core.particles.ParticleGroup;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.Entity;
@@ -33,10 +33,10 @@ import java.util.List;
 
 public class ParticleEmitter implements MolangInstance {
     public static final String TYPE_KEY = "type";
-    public static final Identifier TYPE = ParticleStorm.asResource("default");
+    public static final ResourceLocation TYPE = ParticleStorm.asResource("default");
 
-    public final Identifier type;
-    public Identifier particleId;
+    public final ResourceLocation type;
+    public ResourceLocation particleId;
     public MolangExp expression;
 
     public transient Matrix4f parentSpace;
@@ -67,7 +67,7 @@ public class ParticleEmitter implements MolangInstance {
     public transient int loopingTime = 0;
     public transient int activeTime = 0;
     public transient int fullLoopTime = 0;
-    public transient ParticleLimit particleGroup;
+    public transient ParticleGroup particleGroup;
     public transient int activeParticleCount = 0;
     public transient int spawnDuration = 1;
     public transient int spawnRate = 0;
@@ -86,7 +86,7 @@ public class ParticleEmitter implements MolangInstance {
     public Vector3f rot = new Vector3f();
     private transient boolean removed = false;
 
-    public ParticleEmitter(Identifier type, Level level, Vec3 pos, Identifier particleId, MolangExp expression) {
+    public ParticleEmitter(ResourceLocation type, Level level, Vec3 pos, ResourceLocation particleId, MolangExp expression) {
         this.type = type;
         this.level = level;
         setPos(pos);
@@ -94,24 +94,24 @@ public class ParticleEmitter implements MolangInstance {
         this.particleId = particleId;
         this.expression = expression;
         updateRandoms(level.getRandom());
-        this.invTickRate = 1.0F / level.tickRateManager().tickrate();
+        this.invTickRate = 1.0F / 20.0F;
         init();
     }
 
-    public ParticleEmitter(Level level, Vec3 pos, Identifier particleId, MolangExp expression) {
+    public ParticleEmitter(Level level, Vec3 pos, ResourceLocation particleId, MolangExp expression) {
         this(TYPE, level, pos, particleId, expression);
     }
 
-    public ParticleEmitter(Level level, Vec3 pos, Identifier particleId) {
+    public ParticleEmitter(Level level, Vec3 pos, ResourceLocation particleId) {
         this(level, pos, particleId, MolangExp.EMPTY);
     }
 
     public ParticleEmitter(Level level, CompoundTag tag) {
-        Identifier type = Identifier.tryParse(tag.getStringOr(TYPE_KEY, ""));
+        ResourceLocation type = ResourceLocation.tryParse(tag.getString(TYPE_KEY));
         this.type = type == null ? TYPE : type;
         this.level = level;
         deserialize(tag);
-        this.invTickRate = 1.0F / level.tickRateManager().tickrate();
+        this.invTickRate = 1.0F / 20.0F;
         init();
     }
 
@@ -123,7 +123,7 @@ public class ParticleEmitter implements MolangInstance {
         this.particleId = effect.effect();
         this.expression = effect.preEffectExpression();
         updateRandoms(level.getRandom());
-        this.invTickRate = 1.0F / level.tickRateManager().tickrate();
+        this.invTickRate = 1.0F / 20.0F;
         this.afterParentInit = () -> {
             switch (effect.type()) {
                 case EMITTER -> {}
@@ -176,8 +176,8 @@ public class ParticleEmitter implements MolangInstance {
     }
 
     protected void createVars() {
-        Identifier requestedId = particleId;
-        Identifier resolvedId = PSGameClient.LOADER.resolveParticleId(particleId);
+        ResourceLocation requestedId = particleId;
+        ResourceLocation resolvedId = PSGameClient.LOADER.resolveParticleId(particleId);
         if (resolvedId != null) {
             this.particleId = resolvedId;
         }
@@ -230,7 +230,7 @@ public class ParticleEmitter implements MolangInstance {
     }
 
     public void tick() {
-        this.invTickRate = 1.0F / level.tickRateManager().tickrate();
+        this.invTickRate = 1.0F / 20.0F;
         this.moveDistO = moveDist;
         this.posO = pos;
         for (IEmitterComponent component : components) {
@@ -344,7 +344,7 @@ public class ParticleEmitter implements MolangInstance {
 
     /// Whether this emitter may spawn another particle. Without a particle group it is unlimited; otherwise bounded by the living particle count of this emitter only.
     public boolean hasSpace() {
-        return particleGroup == null || activeParticleCount < particleGroup.limit();
+        return particleGroup == null || activeParticleCount < particleGroup.getLimit();
     }
 
     /// Must be called once per particle successfully added to the particle engine for this emitter.
@@ -368,21 +368,21 @@ public class ParticleEmitter implements MolangInstance {
     }
 
     public void deserialize(CompoundTag compound) {
-        this.particleId = Identifier.parse(compound.getString("particleId").orElse(""));
-        this.expression = new MolangExp(compound.getString("expression").orElse(""));
-        this.emitterRandom1 = compound.getDouble("emitterRandom1").orElse(0.0);
-        this.emitterRandom2 = compound.getDouble("emitterRandom2").orElse(0.0);
-        this.emitterRandom3 = compound.getDouble("emitterRandom3").orElse(0.0);
-        this.emitterRandom4 = compound.getDouble("emitterRandom4").orElse(0.0);
+        this.particleId = new ResourceLocation(compound.getString("particleId"));
+        this.expression = new MolangExp(compound.getString("expression"));
+        this.emitterRandom1 = compound.getDouble("emitterRandom1");
+        this.emitterRandom2 = compound.getDouble("emitterRandom2");
+        this.emitterRandom3 = compound.getDouble("emitterRandom3");
+        this.emitterRandom4 = compound.getDouble("emitterRandom4");
         this.posO = this.pos = new Vec3(
-                compound.getDouble("posX").orElse(0.0),
-                compound.getDouble("posY").orElse(0.0),
-                compound.getDouble("posZ").orElse(0.0)
+                compound.getDouble("posX"),
+                compound.getDouble("posY"),
+                compound.getDouble("posZ")
         );
         this.rot.set(
-                compound.getFloat("rotX").orElse(0.0F),
-                compound.getFloat("rotY").orElse(0.0F),
-                compound.getFloat("rotZ").orElse(0.0F)
+                compound.getFloat("rotX"),
+                compound.getFloat("rotY"),
+                compound.getFloat("rotZ")
         );
     }
 
@@ -461,7 +461,7 @@ public class ParticleEmitter implements MolangInstance {
     }
 
     @Override
-    public Identifier getIdentity() {
+    public ResourceLocation getIdentity() {
         return particleId;
     }
 

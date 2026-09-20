@@ -20,7 +20,7 @@ public final class ParticleCurve {
             FloatMolangExp.CODEC.fieldOf("horizontal_range").orElse(FloatMolangExp.ONE).forGetter(curve -> curve.horizontalRange),
             CurveType.CODEC.dispatchMap(
                     nodes -> nodes.isLeft ? CurveType.BEZIER_CHAIN : CurveType.LINEAR,
-                    curveType -> curveType == CurveType.BEZIER_CHAIN ? CurveNodes.MAP_CODEC.fieldOf("nodes") : CurveNodes.LIST_CODEC.fieldOf("nodes")
+                    curveType -> curveType == CurveType.BEZIER_CHAIN ? CurveNodes.MAP_CODEC.fieldOf("nodes").codec() : CurveNodes.LIST_CODEC.fieldOf("nodes").codec()
             ).forGetter(curve -> curve.nodes)
     ).apply(instance, ParticleCurve::new));
     public static final Tuple<Float, CurveNode> FIRST = new Tuple<>(0.0F, new CurveNode(0.0F, 0.0F));

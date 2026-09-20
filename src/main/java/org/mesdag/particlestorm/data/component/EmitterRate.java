@@ -2,7 +2,7 @@ package org.mesdag.particlestorm.data.component;
 
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
-import net.minecraft.core.particles.ParticleLimit;
+import net.minecraft.core.particles.ParticleGroup;
 import org.mesdag.particlestorm.api.IEmitterComponent;
 import org.mesdag.particlestorm.data.molang.FloatMolangExp;
 import org.mesdag.particlestorm.data.molang.MolangExp;
@@ -53,7 +53,7 @@ public abstract sealed class EmitterRate implements IEmitterComponent permits Em
             if (emitter.spawnRate != limit) {
                 emitter.spawnRate = limit;
                 if (emitter.particleGroup == null) {
-                    emitter.particleGroup = new ParticleLimit(16384);
+                    emitter.particleGroup = new ParticleGroup(16384);
                 }
             }
         }
@@ -101,12 +101,12 @@ public abstract sealed class EmitterRate implements IEmitterComponent permits Em
         @Override
         public void apply(ParticleEmitter emitter) {
             float calculated = spawnRate.calculate(emitter);
-            float tickrate = emitter.level.tickRateManager().tickrate();
+            float tickrate = 20.0F;
             emitter.spawnDuration = Math.max((int) (tickrate / calculated), 1);
             if (emitter.spawnRate != calculated) {
                 emitter.spawnRate = emitter.spawnDuration == 1 ? (int) (calculated / tickrate) : 1;
                 int limit = (int) maxParticles.calculate(emitter);
-                emitter.particleGroup = new ParticleLimit(limit);
+                emitter.particleGroup = new ParticleGroup(limit);
             }
         }
 
@@ -147,7 +147,7 @@ public abstract sealed class EmitterRate implements IEmitterComponent permits Em
         @Override
         public void apply(ParticleEmitter emitter) {
             int limit = (int) maxParticles.calculate(emitter);
-            emitter.particleGroup = new ParticleLimit(limit);
+            emitter.particleGroup = new ParticleGroup(limit);
             emitter.spawnRate = 1;
         }
 

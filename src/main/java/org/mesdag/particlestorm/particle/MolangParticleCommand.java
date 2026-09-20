@@ -13,10 +13,10 @@ import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.commands.SharedSuggestionProvider;
 import net.minecraft.commands.arguments.EntityArgument;
-import net.minecraft.commands.arguments.IdentifierArgument;
+import net.minecraft.commands.arguments.ResourceLocationArgument;
 import net.minecraft.commands.arguments.coordinates.Vec3Argument;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.phys.Vec3;
@@ -43,12 +43,12 @@ public class MolangParticleCommand {
     private static final List<String> VIEWER_SUGGESTIONS = List.of("@a", "@p", "@s");
 
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
-        dispatcher.register(Commands.literal("particlestorm").requires(Commands.hasPermission(Commands.LEVEL_GAMEMASTERS))
-                .then(Commands.literal("add").then(Commands.argument("particle", IdentifierArgument.id()).suggests((context, builder) ->
+        dispatcher.register(Commands.literal("particlestorm").requires(source -> source.hasPermission(Commands.LEVEL_GAMEMASTERS))
+                .then(Commands.literal("add").then(Commands.argument("particle", ResourceLocationArgument.id()).suggests((context, builder) ->
                         SharedSuggestionProvider.suggestResource(PSGameClient.LOADER.suggestibleParticleIds(), builder)
                 ).executes(context -> sendParticle(
                                 context.getSource(),
-                                IdentifierArgument.getId(context, "particle"),
+                                ResourceLocationArgument.getId(context, "particle"),
                                 context.getSource().getPosition(),
                                 MolangExp.EMPTY,
                                 null,
@@ -57,7 +57,7 @@ public class MolangParticleCommand {
                                 SharedSuggestionProvider.suggest(POSITION_SUGGESTIONS, builder)
                         ).executes(context -> sendParticle(
                                         context.getSource(),
-                                        IdentifierArgument.getId(context, "particle"),
+                                        ResourceLocationArgument.getId(context, "particle"),
                                         Vec3Argument.getVec3(context, "pos"),
                                         MolangExp.EMPTY,
                                         null,
@@ -66,7 +66,7 @@ public class MolangParticleCommand {
                                         SharedSuggestionProvider.suggest(EXPRESSION_SUGGESTIONS, builder)
                                 ).executes(context -> sendParticle(
                                                 context.getSource(),
-                                                IdentifierArgument.getId(context, "particle"),
+                                                ResourceLocationArgument.getId(context, "particle"),
                                                 Vec3Argument.getVec3(context, "pos"),
                                                 new MolangExp(StringArgumentType.getString(context, "expression")),
                                                 null,
@@ -75,7 +75,7 @@ public class MolangParticleCommand {
                                                 SharedSuggestionProvider.suggest(ENTITY_SUGGESTIONS, builder)
                                         ).executes(context -> sendParticle(
                                                         context.getSource(),
-                                                        IdentifierArgument.getId(context, "particle"),
+                                                        ResourceLocationArgument.getId(context, "particle"),
                                                         Vec3Argument.getVec3(context, "pos"),
                                                         new MolangExp(StringArgumentType.getString(context, "expression")),
                                                         EntityArgument.getEntity(context, "attach"),
@@ -84,7 +84,7 @@ public class MolangParticleCommand {
                                                         SharedSuggestionProvider.suggest(VIEWER_SUGGESTIONS, builder)
                                                 ).executes(context -> sendParticle(
                                                                 context.getSource(),
-                                                                IdentifierArgument.getId(context, "particle"),
+                                                                ResourceLocationArgument.getId(context, "particle"),
                                                                 Vec3Argument.getVec3(context, "pos"),
                                                                 new MolangExp(StringArgumentType.getString(context, "expression")),
                                                                 EntityArgument.getEntity(context, "attach"),
@@ -162,8 +162,8 @@ public class MolangParticleCommand {
         }
     }
 
-    private static int sendParticle(CommandSourceStack source, Identifier particle, Vec3 pos, MolangExp expression, @Nullable Entity entity, Collection<ServerPlayer> viewers) throws CommandSyntaxException {
-        Identifier resolved = PSGameClient.LOADER.resolveParticleId(particle);
+    private static int sendParticle(CommandSourceStack source, ResourceLocation particle, Vec3 pos, MolangExp expression, @Nullable Entity entity, Collection<ServerPlayer> viewers) throws CommandSyntaxException {
+        ResourceLocation resolved = PSGameClient.LOADER.resolveParticleId(particle);
         if (resolved == null) {
             throw ERROR_UNKNOWN_PARTICLE.create(particle);
         }

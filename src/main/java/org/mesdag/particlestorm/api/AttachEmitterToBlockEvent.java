@@ -4,7 +4,7 @@ import com.mojang.datafixers.util.Function3;
 import net.fabricmc.fabric.api.event.Event;
 import net.fabricmc.fabric.api.event.EventFactory;
 import net.minecraft.core.BlockPos;
-import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
@@ -44,25 +44,25 @@ public class AttachEmitterToBlockEvent {
         return data;
     }
 
-    public EmitterAttachHandler.AttachData attach(BlockState state, Identifier particleId, MolangExp expression, boolean allowsVanilla, boolean ignoreRange) {
+    public EmitterAttachHandler.AttachData attach(BlockState state, ResourceLocation particleId, MolangExp expression, boolean allowsVanilla, boolean ignoreRange) {
         EmitterAttachHandler.AttachData data = new EmitterAttachHandler.AttachData(particleId, expression, false, allowsVanilla, ignoreRange);
         stateMap.put(state, data);
         return data;
     }
 
-    public EmitterAttachHandler.AttachData attach(BlockState state, Identifier particleId, Function3<Level, BlockPos, BlockState, MolangExp> expression, boolean allowsVanilla, boolean ignoreRange) {
+    public EmitterAttachHandler.AttachData attach(BlockState state, ResourceLocation particleId, Function3<Level, BlockPos, BlockState, MolangExp> expression, boolean allowsVanilla, boolean ignoreRange) {
         EmitterAttachHandler.AttachData data = new EmitterAttachHandler.AttachData(particleId, expression, false, allowsVanilla, ignoreRange);
         stateMap.put(state, data);
         return data;
     }
 
-    public EmitterAttachHandler.AttachData attach(Block block, Identifier particleId, MolangExp expression, boolean allowsVanilla, boolean ignoreRange) {
+    public EmitterAttachHandler.AttachData attach(Block block, ResourceLocation particleId, MolangExp expression, boolean allowsVanilla, boolean ignoreRange) {
         EmitterAttachHandler.AttachData data = new EmitterAttachHandler.AttachData(particleId, expression, true, allowsVanilla, ignoreRange);
         blockMap.put(block, data);
         return data;
     }
 
-    public EmitterAttachHandler.AttachData attach(Block block, Identifier particleId, Function3<Level, BlockPos, BlockState, MolangExp> expression, boolean allowsVanilla, boolean ignoreRange) {
+    public EmitterAttachHandler.AttachData attach(Block block, ResourceLocation particleId, Function3<Level, BlockPos, BlockState, MolangExp> expression, boolean allowsVanilla, boolean ignoreRange) {
         EmitterAttachHandler.AttachData data = new EmitterAttachHandler.AttachData(particleId, expression, true, allowsVanilla, ignoreRange);
         blockMap.put(block, data);
         return data;

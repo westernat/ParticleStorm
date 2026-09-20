@@ -3,7 +3,7 @@ package org.mesdag.particlestorm.data.molang.compiler;
 import it.unimi.dsi.fastutil.chars.CharOpenHashSet;
 import it.unimi.dsi.fastutil.chars.CharSet;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
-import net.minecraft.util.Util;
+import net.minecraft.Util;
 
 import java.util.Arrays;
 import java.util.Map;

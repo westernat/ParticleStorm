@@ -17,7 +17,7 @@ import java.util.function.Function;
 public final class NodeMolangExp extends MolangExp implements IEventNode {
     public static final Codec<NodeMolangExp> DIRECT_CODEC = RecordCodecBuilder.create(instance -> instance.group(
             Codec.STRING.fieldOf("exp").forGetter(NodeMolangExp::getExpStr),
-            Codec.BOOL.lenientOptionalFieldOf("log", false).forGetter(NodeMolangExp::shouldLog)
+            Codec.BOOL.optionalFieldOf("log", false).forGetter(NodeMolangExp::shouldLog)
     ).apply(instance, NodeMolangExp::new));
     public static final Codec<NodeMolangExp> CODEC = Codec.either(DIRECT_CODEC, Codec.STRING).xmap(
             either -> either.map(Function.identity(), s -> new NodeMolangExp(s, false)),

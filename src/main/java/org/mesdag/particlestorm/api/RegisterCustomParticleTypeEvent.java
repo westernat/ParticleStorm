@@ -4,11 +4,10 @@ import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.particle.Particle;
 import net.minecraft.client.renderer.texture.MissingTextureAtlasSprite;
 import net.minecraft.client.renderer.texture.TextureAtlas;
-import net.minecraft.data.AtlasIds;
 import net.minecraft.core.particles.ParticleType;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.client.Minecraft;
-import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceLocation;
 import org.mesdag.particlestorm.PSGameClient;
 import org.mesdag.particlestorm.PSModClient;
 import org.mesdag.particlestorm.data.DefinedParticleEffect;
@@ -37,9 +36,9 @@ public class RegisterCustomParticleTypeEvent {
         PSModClient.registerCustomParticleType(new RegisterCustomParticleTypeEvent());
     }
 
-    public static void bindSprites(Map<Identifier, DefinedParticleEffect> effects) {
+    public static void bindSprites(Map<ResourceLocation, DefinedParticleEffect> effects) {
         SPRITES.clear();
-        TextureAtlas atlas = Minecraft.getInstance().getAtlasManager().getAtlasOrThrow(AtlasIds.PARTICLES);
+        TextureAtlas atlas = ((org.mesdag.particlestorm.mixin.ParticleEngineAccessor) Minecraft.getInstance().particleEngine).particlestorm$getTextureAtlas();
         SPRITES.bindMissing(atlas.getSprite(MissingTextureAtlasSprite.getLocation()));
         for (DefinedParticleEffect effect : effects.values()) {
             SPRITES.addSprite(effect.description.parameters().getTexture());

@@ -3,6 +3,7 @@ package org.mesdag.particlestorm.data.component;
 import com.google.common.collect.ImmutableMap;
 import com.mojang.datafixers.util.Either;
 import com.mojang.serialization.Codec;
+import org.mesdag.particlestorm.data.ParticleCodecs;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.util.Mth;
 import net.minecraft.util.Tuple;
@@ -149,7 +150,7 @@ public record ParticleAppearanceTinting(Color color, ColorField colorField) impl
                         .map(entry -> new Tuple<>(Float.parseFloat(entry.getKey()), entry.getValue()))
                         .sorted(Comparator.comparing(Tuple::getA))
                         .forEachOrdered(list::add);
-                this.range = list.isEmpty() ? 0.0F : list.getLast().getA();
+                this.range = list.isEmpty() ? 0.0F : list.get(list.size() - 1).getA();
             }
 
             @Override
@@ -163,7 +164,7 @@ public record ParticleAppearanceTinting(Color color, ColorField colorField) impl
 
     public record ColorField(FloatMolangExp red, FloatMolangExp green, FloatMolangExp blue, FloatMolangExp alpha) {
         public static final ColorField EMPTY = new ColorField(FloatMolangExp.ZERO, FloatMolangExp.ZERO, FloatMolangExp.ZERO, FloatMolangExp.ZERO);
-        public static final Codec<ColorField> CODEC = Codec.either(Codec.STRING, Codec.list(FloatMolangExp.CODEC, 3, 4)).xmap(
+        public static final Codec<ColorField> CODEC = Codec.either(Codec.STRING, ParticleCodecs.list(FloatMolangExp.CODEC, 3, 4)).xmap(
                 either -> either.map(hex -> {
                     hex = hex.replace("#", "");
                     if (hex.length() != 6 && hex.length() != 8) throw new IllegalArgumentException("The size is not allowed");
@@ -183,7 +184,7 @@ public record ParticleAppearanceTinting(Color color, ColorField colorField) impl
                         b = Integer.parseInt(hex.substring(6, 8), 16) / 255.0F;
                     }
                     return new ColorField(FloatMolangExp.ofConstant(r), FloatMolangExp.ofConstant(g), FloatMolangExp.ofConstant(b), FloatMolangExp.ofConstant(a));
-                }, exps -> new ColorField(exps.getFirst(), exps.get(1), exps.get(2), exps.size() == 4 ? exps.get(3) : FloatMolangExp.ONE)),
+                }, exps -> new ColorField(exps.get(0), exps.get(1), exps.get(2), exps.size() == 4 ? exps.get(3) : FloatMolangExp.ONE)),
                 field -> Either.right(List.of(field.red, field.green, field.blue, field.alpha))
         );
 

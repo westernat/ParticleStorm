@@ -6,23 +6,22 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.texture.MissingTextureAtlasSprite;
 import net.minecraft.client.renderer.texture.TextureAtlas;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
-import net.minecraft.data.AtlasIds;
-import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceLocation;
 import org.mesdag.particlestorm.PSDiagnostics;
 import org.mesdag.particlestorm.ParticleStorm;
 import org.mesdag.particlestorm.mixed.ITextureAtlasSprite;
 
 public class DescriptionParameters {
-    public static final Identifier MISSING_TEXTURE = ParticleStorm.asResource("missing");
+    public static final ResourceLocation MISSING_TEXTURE = ParticleStorm.asResource("missing");
     public static final DescriptionParameters EMPTY = new DescriptionParameters(DescriptionMaterial.CUSTOM, MISSING_TEXTURE);
     public static final Codec<DescriptionParameters> CODEC = RecordCodecBuilder.create(instance -> instance.group(
-            DescriptionMaterial.CODEC.lenientOptionalFieldOf("material", DescriptionMaterial.CUSTOM).orElse(DescriptionMaterial.PARTICLE_SHEET_TRANSLUCENT).forGetter(DescriptionParameters::material),
-            Identifier.CODEC.lenientOptionalFieldOf("texture", MISSING_TEXTURE).forGetter(DescriptionParameters::texture)
+            DescriptionMaterial.CODEC.optionalFieldOf("material", DescriptionMaterial.CUSTOM).orElse(DescriptionMaterial.PARTICLE_SHEET_TRANSLUCENT).forGetter(DescriptionParameters::material),
+            ResourceLocation.CODEC.optionalFieldOf("texture", MISSING_TEXTURE).forGetter(DescriptionParameters::texture)
     ).apply(instance, DescriptionParameters::new));
     private final DescriptionMaterial material;
-    private final Identifier texture;
+    private final ResourceLocation texture;
 
-    public DescriptionParameters(DescriptionMaterial material, Identifier texture) {
+    public DescriptionParameters(DescriptionMaterial material, ResourceLocation texture) {
         this.material = material;
         this.texture = texture;
     }
@@ -31,13 +30,13 @@ public class DescriptionParameters {
         return material;
     }
 
-    public Identifier texture() {
+    public ResourceLocation texture() {
         return texture;
     }
 
     public TextureAtlasSprite getTexture() {
-        TextureAtlas atlas = Minecraft.getInstance().getAtlasManager().getAtlasOrThrow(AtlasIds.PARTICLES);
-        Identifier resolvedTexture = resolveTextureId(atlas, texture);
+        TextureAtlas atlas = ((org.mesdag.particlestorm.mixin.ParticleEngineAccessor) Minecraft.getInstance().particleEngine).particlestorm$getTextureAtlas();
+        ResourceLocation resolvedTexture = resolveTextureId(atlas, texture);
         TextureAtlasSprite sprite = atlas.getSprite(resolvedTexture);
         boolean missing = MissingTextureAtlasSprite.getLocation().equals(sprite.contents().name());
         PSDiagnostics.infoOnce("texture:" + material + ":" + texture, "texture lookup texture={} resolvedTexture={} material={} spriteName={} missing={} spriteSize={}x{} atlasSize={}x{} u0={} u1={} v0={} v1={}",
@@ -58,12 +57,12 @@ public class DescriptionParameters {
         return sprite;
     }
 
-    private static Identifier resolveTextureId(TextureAtlas atlas, Identifier id) {
+    private static ResourceLocation resolveTextureId(TextureAtlas atlas, ResourceLocation id) {
         TextureAtlasSprite sprite = atlas.getSprite(id);
         if (!MissingTextureAtlasSprite.getLocation().equals(sprite.contents().name())) {
             return id;
         }
-        Identifier fallback = bedrockTextureFallback(id);
+        ResourceLocation fallback = bedrockTextureFallback(id);
         if (fallback.equals(id)) {
             return id;
         }
@@ -76,7 +75,7 @@ public class DescriptionParameters {
         return id;
     }
 
-    private static Identifier bedrockTextureFallback(Identifier id) {
+    private static ResourceLocation bedrockTextureFallback(ResourceLocation id) {
         String path = id.getPath();
         if (path.startsWith("textures/particle/")) {
             path = path.substring("textures/particle/".length());
@@ -86,6 +85,6 @@ public class DescriptionParameters {
             return id;
         }
         String namespace = id.getNamespace().equals("minecraft") ? ParticleStorm.MODID : id.getNamespace();
-        return Identifier.fromNamespaceAndPath(namespace, path);
+        return new ResourceLocation(namespace, path);
     }
 }

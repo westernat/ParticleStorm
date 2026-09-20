@@ -2,8 +2,8 @@ package org.mesdag.particlestorm.api;
 
 import net.minecraft.client.particle.Particle;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
-import net.minecraft.core.particles.ParticleLimit;
-import net.minecraft.resources.Identifier;
+import net.minecraft.core.particles.ParticleGroup;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
@@ -80,7 +80,7 @@ public interface IMolangParticleInstance extends MolangInstance {
 
     boolean isInsideKillPlane();
 
-    void setParticleGroup(ParticleLimit group);
+    void setParticleGroup(ParticleGroup group);
 
     void setLastTimeline(int last);
 
@@ -127,7 +127,7 @@ public interface IMolangParticleInstance extends MolangInstance {
     }
 
     @Override
-    default Identifier getIdentity() {
+    default ResourceLocation getIdentity() {
         return getEmitter().particleId;
     }
 

@@ -1,7 +1,6 @@
 package org.mesdag.particlestorm.particle;
 
 import net.minecraft.client.Camera;
-import net.minecraft.client.particle.SingleQuadParticle;
 import net.minecraft.util.Mth;
 import net.minecraft.world.phys.Vec3;
 import org.joml.*;
@@ -9,7 +8,7 @@ import org.mesdag.particlestorm.api.IMolangParticleInstance;
 import org.mesdag.particlestorm.data.MathHelper;
 import org.mesdag.particlestorm.data.component.ParticleAppearanceBillboard;
 
-public enum FaceCameraMode implements SingleQuadParticle.FacingCameraMode {
+public enum FaceCameraMode {
     DO_NOTHING {
         @Override
         public void setRotation(Quaternionf quaternion, Camera camera, float partialTick) {}
@@ -25,7 +24,7 @@ public enum FaceCameraMode implements SingleQuadParticle.FacingCameraMode {
 
         @Override
         public void setRotation(IMolangParticleInstance instance, Quaternionf quaternion, Camera camera, float partialTick) {
-            Vector3f xd = camera.position().toVector3f().sub(
+            Vector3f xd = camera.getPosition().toVector3f().sub(
                     (float) instance.getX(),
                     (float) instance.getY(),
                     (float) instance.getZ()
@@ -112,7 +111,7 @@ public enum FaceCameraMode implements SingleQuadParticle.FacingCameraMode {
         @Override
         public void setRotation(IMolangParticleInstance instance, Quaternionf quaternion, Camera camera, float partialTick) {
             MathHelper.setFromUnitVectors(X, instance.getFacingDirection(), quaternion);
-            Vec3 pos = camera.position();
+            Vec3 pos = camera.getPosition();
             t.set(
                     pos.x - instance.getX(),
                     pos.y - instance.getY(),
@@ -140,6 +139,8 @@ public enum FaceCameraMode implements SingleQuadParticle.FacingCameraMode {
             quaternion.rotationXYZ(0.0F, -Mth.HALF_PI, 0.0F);
         }
     };
+
+    public abstract void setRotation(Quaternionf quaternion, Camera camera, float partialTick);
 
     public void setRotation(IMolangParticleInstance instance, Quaternionf quaternion, Camera camera, float partialTick) {
         setRotation(quaternion, camera, partialTick);

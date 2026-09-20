@@ -9,11 +9,7 @@ import org.mesdag.particlestorm.api.MolangInstance;
 import java.util.*;
 
 public final class EventRandomize implements IEventNode {
-    public static final Codec<EventRandomize> CODEC = Codec.dispatchedMap(Codec.STRING, name -> {
-        Codec<IEventNode> codec = MAP.get(name);
-        if (codec == null) return EventLog.CODEC;
-        return codec;
-    }).listOf().xmap(EventRandomize::new, eventRandomize -> eventRandomize.nodes);
+    public static final Codec<EventRandomize> CODEC = IEventNode.CODEC.listOf().xmap(EventRandomize::new, eventRandomize -> eventRandomize.nodes);
     public final List<Map<String, IEventNode>> nodes;
 
     public final List<Tuple<Float, Map<String, IEventNode>>> sortedNodes;
