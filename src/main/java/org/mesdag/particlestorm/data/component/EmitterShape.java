@@ -41,44 +41,19 @@ public abstract sealed class EmitterShape implements IEmitterComponent permits E
     }
 
     @Override
-    public void update(ParticleEmitter entity) {
-        if (entity.spawned) return;
-        if (entity.spawnDuration <= 1 || entity.age % entity.spawnDuration == 0) {
-            int attempted = 0;
-            int created = 0;
-            int limited = 0;
-            int failed = 0;
-            for (int num = 0; num < entity.spawnRate; num++) {
-                attempted++;
-                if (hasSpaceInParticleLimit(entity)) {
-                    if (emittingParticle(entity)) {
-                        created++;
-                    } else {
-                        failed++;
-                    }
-                } else {
-                    limited++;
-                }
+    public void update(ParticleEmitter emitter) {
+        if (emitter.spawned) return;
+        int count = emitter.spawnRate;
+        if (emitter.spawnChance > 0.0F && emitter.level.getRandom().nextFloat() < emitter.spawnChance) {
+            count++;
+        }
+        for (int num = 0; num < count; num++) {
+            if (hasSpaceInParticleLimit(emitter)) {
+                emittingParticle(emitter);
             }
-            PSDiagnostics.infoFirstN("emitter-spawn-cycle:" + entity.id, 16, "emitter spawn cycle runtimeId={} particle={} age={} active={} rateType={} spawnRate={} spawnDuration={} attempts={} created={} limited={} failed={} alreadySpawned={} particleGroup={} pos={}",
-                    entity.id,
-                    entity.particleId,
-                    entity.age,
-                    entity.active,
-                    entity.getPreset().emitterRateType,
-                    entity.spawnRate,
-                    entity.spawnDuration,
-                    attempted,
-                    created,
-                    limited,
-                    failed,
-                    entity.spawned,
-                    entity.particleGroup,
-                    entity.pos
-            );
-            if (entity.getPreset().emitterRateType == EmitterRate.Type.INSTANT) {
-                entity.spawned = true;
-            }
+        }
+        if (emitter.getPreset().emitterRateType == EmitterRate.Type.INSTANT) {
+            emitter.spawned = true;
         }
     }
 
@@ -115,6 +90,7 @@ public abstract sealed class EmitterShape implements IEmitterComponent permits E
 
             if (emitter.isLocalSpace()) {
                 if (!emitterPreset.localPosition) {
+                    position.mulDirection(emitter.getLocalSpace());
                     Vec3 emitterPos = emitter.getPosition();
                     position.add((float) emitterPos.x, (float) emitterPos.y, (float) emitterPos.z);
                 }

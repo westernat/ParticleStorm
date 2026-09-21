@@ -3,6 +3,7 @@ package org.mesdag.particlestorm.mixin;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.Attributes;
+import org.mesdag.particlestorm.api.AddDefaultVariableEvent;
 import org.mesdag.particlestorm.data.molang.VariableTable;
 import org.mesdag.particlestorm.data.molang.compiler.value.Variable;
 import org.mesdag.particlestorm.mixed.IEntity;
@@ -27,6 +28,7 @@ public abstract class EntityMixin implements IEntity {
                 return 1.0;
             }));
             this.particlestorm$variableTable = new VariableTable(table, null);
+            AddDefaultVariableEvent.EVENT.invoker().onAddDefaultVariables(new AddDefaultVariableEvent.Entity(particlestorm$variableTable, (Entity) (Object) this));
         }
         return particlestorm$variableTable;
     }
