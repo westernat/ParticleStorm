@@ -420,6 +420,10 @@ public class MolangParticleInstance extends SingleQuadParticle implements IMolan
         if (yRot != 0.0F) quaternionf.rotateY(Mth.lerp(partialTicks, yRotO, yRot));
         if (roll != 0.0F) quaternionf.rotateZ(Mth.lerp(partialTicks, oRoll, roll));
 
+        if (emitter != null && emitter.isLocalSpace() && emitter.getPreset().localRotation) {
+            quaternionf.premul(emitter.getLocalSpace().getNormalizedRotation(new Quaternionf()));
+        }
+
         if (emitter != null && emitter.isLocalSpace()) {
             Vec3 camPos = camera.position();
             renderPosition.set(

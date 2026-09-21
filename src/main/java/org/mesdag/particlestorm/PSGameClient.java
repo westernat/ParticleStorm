@@ -35,6 +35,7 @@ import org.mesdag.particlestorm.api.RegisterCustomEmitterTypeEvent;
 import org.mesdag.particlestorm.api.RegisterCustomEventNodeEvent;
 import org.mesdag.particlestorm.api.RegisterCustomParticleTypeEvent;
 import org.mesdag.particlestorm.compat.iris.IrisParticlePipelines;
+import org.mesdag.particlestorm.api.geckolib.GeckoLibHelper;
 import org.mesdag.particlestorm.data.component.*;
 import org.mesdag.particlestorm.data.event.*;
 import org.mesdag.particlestorm.mixin.DebugScreenEntriesAccessor;
@@ -90,6 +91,9 @@ public final class PSGameClient implements ClientModInitializer {
         RegisterCustomEmitterTypeEvent.postEvent();
         registerDebugEntries();
         EmitterAttachHandler.postEvent();
+        if (ParticleStorm.GECKOLIB_LOADED) {
+            GeckoLibHelper.postEvent();
+        }
 
         ParticleProviderRegistry.getInstance().register(ParticleStorm.MOLANG, new MolangParticleInstance.Provider());
         ResourceLoader.get(PackType.CLIENT_RESOURCES).registerReloadListener(MolangParticleEngine.RELOADER_ID, LOADER);
@@ -97,6 +101,9 @@ public final class PSGameClient implements ClientModInitializer {
         ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> {
             LOADER.removeAll();
             EmitterAttachHandler.clearEmitters();
+            if (ParticleStorm.GECKOLIB_LOADED) {
+                GeckoLibHelper.clearReloadCallbacks();
+            }
         });
 
         ClientPlayNetworking.registerGlobalReceiver(EmitterCreationPacketS2C.TYPE, EmitterCreationPacketS2C::handleClient);
