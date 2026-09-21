@@ -44,6 +44,11 @@ public class VariableTable {
         return variable == null ? 0.0 : variable.get(instance);
     }
 
+    public @Nullable Variable getVariable(String name) {
+        Variable variable = table.get(name);
+        return variable != null || parent == null ? variable : parent.getVariable(name);
+    }
+
     public void setValue(String name, ToDoubleFunction<MolangInstance> function) {
         Variable variable = table.get(name);
         if (variable == null) {

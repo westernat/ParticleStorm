@@ -38,7 +38,7 @@ import org.mesdag.particlestorm.api.RegisterCustomComponentEvent;
 import org.mesdag.particlestorm.api.RegisterCustomEmitterTypeEvent;
 import org.mesdag.particlestorm.api.RegisterCustomEventNodeEvent;
 import org.mesdag.particlestorm.api.RegisterCustomParticleTypeEvent;
-import org.mesdag.particlestorm.api.geckolib.RegisterLocatorPreTransformerEvent;
+import org.mesdag.particlestorm.api.geckolib.GeckoLibHelper;
 import org.mesdag.particlestorm.data.component.*;
 import org.mesdag.particlestorm.data.event.*;
 import org.mesdag.particlestorm.network.EmitterAttachPacketS2C;
@@ -127,8 +127,8 @@ public final class PSGameClient implements ClientModInitializer {
         registerEventNodes();
         RegisterCustomEmitterTypeEvent.postEvent();
         EmitterAttachHandler.postEvent();
-        if (FabricLoader.getInstance().isModLoaded("geckolib")) {
-            RegisterLocatorPreTransformerEvent.postEvent();
+        if (ParticleStorm.GECKOLIB_LOADED) {
+            GeckoLibHelper.postEvent();
         }
 
         ResourceManagerHelper.get(PackType.CLIENT_RESOURCES).registerReloadListener(LOADER);
@@ -137,6 +137,9 @@ public final class PSGameClient implements ClientModInitializer {
         ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> {
             LOADER.removeAll();
             EmitterAttachHandler.clearEmitters();
+            if (ParticleStorm.GECKOLIB_LOADED) {
+                GeckoLibHelper.clearReloadCallbacks();
+            }
         });
 
         ClientPlayNetworking.registerGlobalReceiver(EmitterCreationPacketS2C.TYPE, EmitterCreationPacketS2C::handleClient);

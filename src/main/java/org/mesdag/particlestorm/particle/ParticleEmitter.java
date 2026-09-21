@@ -1,6 +1,5 @@
 package org.mesdag.particlestorm.particle;
 
-import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleGroup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
@@ -12,13 +11,14 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
-import org.joml.Matrix4f;
+import org.joml.Matrix4x3f;
 import org.joml.Vector3f;
 import org.mesdag.particlestorm.ParticleStorm;
 import org.mesdag.particlestorm.PSGameClient;
 import org.mesdag.particlestorm.PSDiagnostics;
 import org.mesdag.particlestorm.api.IEmitterComponent;
 import org.mesdag.particlestorm.api.MolangInstance;
+import org.mesdag.particlestorm.api.ParticleEmitterAttachable;
 import org.mesdag.particlestorm.data.component.EmitterLifetime;
 import org.mesdag.particlestorm.data.component.EmitterRate;
 import org.mesdag.particlestorm.data.event.ParticleEffect;
@@ -27,6 +27,7 @@ import org.mesdag.particlestorm.data.molang.VariableTable;
 import org.mesdag.particlestorm.data.molang.compiler.MolangParser;
 import org.mesdag.particlestorm.data.molang.compiler.value.Variable;
 import org.mesdag.particlestorm.mixed.IEntity;
+import org.mesdag.particlestorm.mixed.IBlockEntity;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -39,7 +40,7 @@ public class ParticleEmitter implements MolangInstance {
     public ResourceLocation particleId;
     public MolangExp expression;
 
-    public transient Matrix4f parentSpace;
+    public transient Matrix4x3f parentSpace;
     public transient ParentMode parentMode = ParentMode.WORLD;
     public transient Vec3 offsetPos = Vec3.ZERO;
     public transient Vector3f offsetRot = new Vector3f();
@@ -70,10 +71,12 @@ public class ParticleEmitter implements MolangInstance {
     public transient ParticleGroup particleGroup;
     public transient int activeParticleCount = 0;
     public transient int spawnDuration = 1;
+    public transient float spawnChance;
     public transient int spawnRate = 0;
     public transient boolean spawned = false;
     protected transient Entity attached;
     public transient BlockEntity attachedBlock;
+    private transient ParticleEmitterAttachable attachedCustom;
     public transient int lastTimeline = 0;
     public transient float moveDist = 0.0F;
     public transient float moveDistO = 0.0F;
@@ -128,8 +131,7 @@ public class ParticleEmitter implements MolangInstance {
             switch (effect.type()) {
                 case EMITTER -> {}
                 case EMITTER_BOUND -> {
-                    attachEntity(parent.getAttachedEntity());
-                    this.attachedBlock = parent.attachedBlock;
+                    attach(parent.getAttached());
                     this.offsetPos = parent.offsetPos;
                     this.offsetRot = parent.offsetRot;
                     this.parentPosition = parent.parentPosition;
@@ -149,7 +151,7 @@ public class ParticleEmitter implements MolangInstance {
         addParent(parent);
         createVars();
         for (String name : effect.sharedVars()) {
-            Variable variable = parent.getVars().table.get(name);
+            Variable variable = parent.getVars().getVariable(name);
             if (variable == null) throw new IllegalArgumentException("Shared vars must defined in parent directly!");
             vars.table.put(name, variable);
         }
@@ -158,15 +160,34 @@ public class ParticleEmitter implements MolangInstance {
     }
 
     public void attachEntity(@Nullable Entity entity) {
-        if (entity == null) {
+        attach(entity == null ? null : IEntity.of(entity));
+    }
+
+    public void attachBlock(@Nullable BlockEntity blockEntity) {
+        attach(blockEntity == null ? null : IBlockEntity.of(blockEntity));
+    }
+
+    public void attach(@Nullable ParticleEmitterAttachable attachable) {
+        this.attached = attachable instanceof Entity entity ? entity : null;
+        this.attachedBlock = attachable instanceof BlockEntity blockEntity ? blockEntity : null;
+        this.attachedCustom = attached == null && attachedBlock == null ? attachable : null;
+        if (attachable == null) {
             this.vars = new VariableTable(vars.table, preset.vars);
-            this.attached = null;
         } else {
-            VariableTable parent = IEntity.of(entity).particlestorm$getVariableTable();
+            VariableTable parent = attachable.getVariableTable();
             parent.setParent(preset.vars);
             this.vars = new VariableTable(vars.table, parent);
-            this.attached = entity;
         }
+    }
+
+    public @Nullable BlockEntity getAttachedBlock() {
+        return attachedBlock;
+    }
+
+    @Override
+    public @Nullable ParticleEmitterAttachable getAttached() {
+        return attached != null ? IEntity.of(attached)
+                : attachedBlock != null ? IBlockEntity.of(attachedBlock) : attachedCustom;
     }
 
     protected void init() {
@@ -198,6 +219,7 @@ public class ParticleEmitter implements MolangInstance {
     protected void initVars() {
         if (expression != null && !expression.initialized()) {
             expression.compile(new MolangParser(vars));
+            expression.calculate(this);
         }
     }
 
@@ -233,16 +255,6 @@ public class ParticleEmitter implements MolangInstance {
         this.invTickRate = 1.0F / 20.0F;
         this.moveDistO = moveDist;
         this.posO = pos;
-        for (IEmitterComponent component : components) {
-            if (active || component instanceof EmitterLifetime.Looping) {
-                component.update(this);
-            }
-        }
-        this.age++;
-
-        if (!posO.equals(pos)) {
-            this.moveDist += (float) pos.subtract(posO).length();
-        }
 
         if (attached != null) {
             if (attached.isRemoved()) {
@@ -262,8 +274,9 @@ public class ParticleEmitter implements MolangInstance {
                 }
             }
             this.pos = new Vec3(attached.getX() + rotated.x, attached.getY() + rotated.y, attached.getZ() + rotated.z);
-        } else if (attachedBlock != null) {
-            if (attachedBlock.isRemoved()) {
+        } else if (getAttached() != null) {
+            ParticleEmitterAttachable attachable = getAttached();
+            if (attachable.isDiscarded()) {
                 remove();
                 return;
             }
@@ -279,8 +292,18 @@ public class ParticleEmitter implements MolangInstance {
                     rotated.add(parentPosition);
                 }
             }
-            BlockPos pos1 = attachedBlock.getBlockPos();
-            this.pos = new Vec3(pos1.getX() + 0.5 + rotated.x, pos1.getY() + rotated.y, pos1.getZ() + 0.5 + rotated.z);
+            this.pos = attachable.getPos().add(rotated.x, rotated.y, rotated.z);
+        }
+
+        for (IEmitterComponent component : components) {
+            if (active || component instanceof EmitterLifetime.Looping) {
+                component.update(this);
+            }
+        }
+        this.age++;
+
+        if (!posO.equals(pos)) {
+            this.moveDist += (float) pos.subtract(posO).length();
         }
 
         if (afterParentInit != null && parent != null) {
@@ -318,6 +341,23 @@ public class ParticleEmitter implements MolangInstance {
         return parentSpace != null;
     }
 
+    public final Matrix4x3f getLocalSpace() {
+        return parentSpace;
+    }
+
+    public final void setLocalSpace(@Nullable Matrix4x3f space) {
+        setLocalSpace(space, true);
+    }
+
+    public final void setLocalSpace(@Nullable Matrix4x3f space, boolean updatePos) {
+        this.parentSpace = space;
+        if (updatePos && space != null) {
+            ParticleEmitterAttachable attachable = getAttached();
+            Vec3 base = attachable != null ? attachable.getPos() : pos;
+            this.pos = base.add(space.m30(), space.m31(), space.m32());
+        }
+    }
+
     public void remove() {
         this.removed = true;
     }
@@ -339,7 +379,8 @@ public class ParticleEmitter implements MolangInstance {
     }
 
     public boolean isRemoved() {
-        return removed || (attached != null && attached.isRemoved()) || (attachedBlock != null && attachedBlock.isRemoved());
+        ParticleEmitterAttachable attachable = getAttached();
+        return removed || (attachable != null && attachable.isDiscarded());
     }
 
     /// Whether this emitter may spawn another particle. Without a particle group it is unlimited; otherwise bounded by the living particle count of this emitter only.

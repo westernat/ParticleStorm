@@ -4,7 +4,7 @@ import net.minecraft.world.entity.Entity;
 import org.jetbrains.annotations.Nullable;
 import software.bernie.geckolib.animatable.GeoReplacedEntity;
 
-public interface ParticleStormGeoReplacedEntity extends GeoReplacedEntity {
+public interface WithCurrentEntity {
     @Nullable Entity getCurrentEntity();
 
     void setCurrentEntity(@Nullable Entity entity);

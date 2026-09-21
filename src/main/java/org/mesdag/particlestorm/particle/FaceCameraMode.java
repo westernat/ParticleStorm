@@ -182,6 +182,7 @@ public enum FaceCameraMode {
             return false;
         }
 
+        AXIS_Z.negate();
         setUpAxis(AXIS_Z, AXIS_Y);
         AXIS_X.set(AXIS_Y).cross(AXIS_Z).normalize();
         setFromAxes(quaternion, AXIS_X, AXIS_Y, AXIS_Z);

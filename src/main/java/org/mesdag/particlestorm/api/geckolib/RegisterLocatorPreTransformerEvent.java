@@ -58,7 +58,7 @@ public final class RegisterLocatorPreTransformerEvent {
         entityTransformers.put(entity, transformer);
     }
 
-    public <T extends ParticleStormGeoReplacedEntity> void register(T replacedEntity, Transformer<T> transformer) {
+    public <T extends GeoAnimatable & WithCurrentEntity> void register(T replacedEntity, Transformer<T> transformer) {
         singletonTransformers.put(replacedEntity.getAnimatableInstanceCache(), transformer);
     }
 
@@ -76,7 +76,7 @@ public final class RegisterLocatorPreTransformerEvent {
             transformer = blockEntityTransformers.getOrDefault(blockEntity.getType(), Transformer::defaultTransformer);
         } else if (animatable instanceof Item) {
             transformer = singletonTransformers.getOrDefault(animatable.getAnimatableInstanceCache(), Transformer::defaultTransformer);
-        } else if (animatable instanceof ParticleStormGeoReplacedEntity) {
+        } else if (animatable instanceof WithCurrentEntity) {
             transformer = singletonTransformers.getOrDefault(animatable.getAnimatableInstanceCache(), Transformer::replacedEntityTransformer);
         } else {
             transformer = Transformer::defaultTransformer;
@@ -89,7 +89,7 @@ public final class RegisterLocatorPreTransformerEvent {
         void transform(GeoBone bone, T animatable, PoseStack poseStack, float partialTick);
 
         static void replacedEntityTransformer(GeoBone bone, GeoAnimatable animatable, PoseStack poseStack, float partialTick) {
-            Entity entity = ((ParticleStormGeoReplacedEntity) animatable).getCurrentEntity();
+            Entity entity = ((WithCurrentEntity) animatable).getCurrentEntity();
             if (entity != null) {
                 transformEntity(entity, poseStack, partialTick);
             }
