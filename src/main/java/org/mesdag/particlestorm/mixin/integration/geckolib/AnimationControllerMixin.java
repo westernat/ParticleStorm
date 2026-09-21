@@ -36,6 +36,11 @@ public abstract class AnimationControllerMixin<T extends GeoAnimatable> implemen
     @Unique
     private List<GeoBone> particlestorm$bonesWhichHasLocators;
 
+    @Inject(method = "<init>", at = @At("TAIL"))
+    private void particlestorm$registerReloadCallback(CallbackInfo ci) {
+        GeckoLibHelper.addReloadCallback(() -> particlestorm$bonesWhichHasLocators = null);
+    }
+
     @Override
     public List<GeoBone> particlestorm$getBonesWhichHasLocators() {
         return Objects.requireNonNullElse(particlestorm$bonesWhichHasLocators, List.of());

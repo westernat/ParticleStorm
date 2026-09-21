@@ -7,7 +7,7 @@ version = project.mod_version
 group = project.maven_group
 
 base {
-    archivesName = project.archives_base_name
+    archivesName = "ParticleStorm-fabric-${minecraft_version}"
 }
 loom {
     accessWidenerPath = file("src/main/resources/mesdag.accesswidener")
@@ -86,16 +86,20 @@ jar {
 publishing {
     publications {
         create("mavenJava", MavenPublication) {
-            artifactId = project.archives_base_name
+            artifactId = "ParticleStorm-fabric-${minecraft_version}"
             from components.java
         }
     }
 
     // See https://docs.gradle.org/current/userguide/publishing_maven.html for information on how to set up publishing.
     repositories {
-        // Add repositories to publish to here.
-        // Notice: This block does NOT have the same function as the block in the top level.
-        // The repositories here will be used for publishing your artifact, not for
-        // retrieving dependencies.
+        maven {
+            name = "Confluence"
+            url = version.toString().endsWith("SNAPSHOT") ? "https://maven.confluence.ink/snapshots" : "https://maven.confluence.ink/releases"
+            credentials {
+                username = System.getenv("MAGIC_TEAM_USERNAME")
+                password = System.getenv("MAGIC_TEAM_TOKEN")
+            }
+        }
     }
 }

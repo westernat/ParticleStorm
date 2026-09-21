@@ -5,6 +5,7 @@ import com.mojang.serialization.Codec;
 import com.mojang.serialization.MapCodec;
 import io.netty.buffer.ByteBuf;
 import net.fabricmc.api.ModInitializer;
+import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
@@ -31,6 +32,7 @@ import java.util.function.Function;
 
 public final class ParticleStorm implements ModInitializer {
     public static final String MODID = "particlestorm";
+    public static final boolean GECKOLIB_LOADED = FabricLoader.getInstance().isModLoaded("geckolib");
     public static final Logger LOGGER = LoggerFactory.getLogger("ParticleStorm");
     public static final ParticleType<MolangParticleOption> MOLANG = new ParticleType<>(false) {
         @Override

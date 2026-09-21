@@ -8,7 +8,7 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
-import org.joml.Matrix4f;
+import org.joml.Matrix4x3f;
 import org.joml.Quaternionf;
 import org.mesdag.particlestorm.PSDiagnostics;
 import org.mesdag.particlestorm.data.molang.MolangExp;
@@ -24,19 +24,43 @@ import software.bernie.geckolib.cache.object.GeoBone;
 import software.bernie.geckolib.loading.json.raw.LocatorValue;
 
 import java.util.HashMap;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.WeakHashMap;
 
 public final class GeckoLibHelper {
     private static final Map<AnimatableInstanceCache, Map<LocatorParticleKey, BoundEmitter>> LOCATOR_EMITTERS = new WeakHashMap<>();
 
+    private static final List<Runnable> RELOAD_CALLBACKS = new ArrayList<>();
+
     private GeckoLibHelper() {}
+
+    public static void postEvent() {
+        RegisterLocatorPreTransformerEvent.postEvent();
+    }
+
+    public static void addReloadCallback(Runnable callback) {
+        RELOAD_CALLBACKS.add(callback);
+    }
+
+    public static void clearReloadCallbacks() {
+        RELOAD_CALLBACKS.clear();
+        LOCATOR_EMITTERS.clear();
+    }
+
+    public static void afterReload() {
+        LOCATOR_EMITTERS.clear();
+        for (Runnable callback : List.copyOf(RELOAD_CALLBACKS)) {
+            callback.run();
+        }
+    }
 
     public static void processParticleEffect(@Nullable GeoAnimatable animatable, AnimationController<?> controller, ParticleKeyframeData keyframeData) {
         try {
             if (animatable == null) return;
             Entity entity = animatable instanceof Entity value ? value
-                    : animatable instanceof ParticleStormGeoReplacedEntity replaced ? replaced.getCurrentEntity() : null;
+                    : animatable instanceof WithCurrentEntity replaced ? replaced.getCurrentEntity() : null;
             BlockEntity blockEntity = animatable instanceof BlockEntity value ? value : null;
             Level level = entity != null ? entity.level() : blockEntity != null ? blockEntity.getLevel() : Minecraft.getInstance().level;
             if (level == null) return;
@@ -51,13 +75,13 @@ public final class GeckoLibHelper {
             Map<LocatorParticleKey, BoundEmitter> bindings = LOCATOR_EMITTERS.computeIfAbsent(animatable.getAnimatableInstanceCache(), ignored -> new HashMap<>());
             LocatorParticleKey key = new LocatorParticleKey(locatorName, particleId);
             BoundEmitter current = bindings.get(key);
-            if (current != null && isActive(current.emitter())) return;
+            if (current != null && isActive(current.emitter()) && current.emitter().level == level) return;
             for (GeoBone bone : IPSAnimationController.of(controller).particlestorm$getBonesWhichHasLocators()) {
                 Map<String, LocatorValue> locators = IPSGeoBone.of(bone).particlestorm$getLocators();
                 LocatorValue locator = locators == null ? null : locators.get(locatorName);
                 if (locator == null) continue;
                 ParticleEmitter emitter = createEmitter(level, basePos, particleId, entity, blockEntity);
-                emitter.parentSpace = new Matrix4f();
+                emitter.parentSpace = new Matrix4x3f();
                 bindings.put(key, new BoundEmitter(emitter, bone, locator));
                 return;
             }
@@ -83,7 +107,7 @@ public final class GeckoLibHelper {
     }
 
     public static void setCurrentEntity(GeoAnimatable animatable, @Nullable Entity entity) {
-        if (animatable instanceof ParticleStormGeoReplacedEntity replaced) {
+        if (animatable instanceof WithCurrentEntity replaced) {
             replaced.setCurrentEntity(entity);
         }
     }
@@ -114,7 +138,7 @@ public final class GeckoLibHelper {
                     (float) Math.toRadians(rotation[0]), (float) Math.toRadians(rotation[1]), (float) Math.toRadians(rotation[2])));
             poseStack.translate(-offset[0] / 16.0, offset[1] / 16.0, offset[2] / 16.0);
             ParticleEmitter emitter = bound.emitter();
-            emitter.parentSpace.set(poseStack.last().pose());
+            poseStack.last().pose().get4x3(emitter.parentSpace);
             Vec3 basePos = emitter.getAttachedEntity() != null ? emitter.getAttachedEntity().position()
                     : emitter.attachedBlock != null ? emitter.attachedBlock.getBlockPos().getBottomCenter() : Vec3.ZERO;
             emitter.setPos(basePos.add(emitter.parentSpace.m30(), emitter.parentSpace.m31(), emitter.parentSpace.m32()));
