@@ -32,6 +32,7 @@ import org.mesdag.particlestorm.api.RegisterCustomComponentEvent;
 import org.mesdag.particlestorm.api.RegisterCustomEmitterTypeEvent;
 import org.mesdag.particlestorm.api.RegisterCustomEventNodeEvent;
 import org.mesdag.particlestorm.api.RegisterCustomParticleTypeEvent;
+import org.mesdag.particlestorm.api.geckolib.GeckoLibHelper;
 import org.mesdag.particlestorm.data.component.*;
 import org.mesdag.particlestorm.data.event.*;
 import org.mesdag.particlestorm.network.EmitterAttachPacketS2C;
@@ -116,6 +117,9 @@ public final class PSGameClient {
         registerEventNodes();
         RegisterCustomParticleTypeEvent.registerDefaults();
         EmitterAttachHandler.postEvent();
+        if (ParticleStorm.GECKOLIB_LOADED) {
+            GeckoLibHelper.postEvent();
+        }
     }
 
     public static void tick() {

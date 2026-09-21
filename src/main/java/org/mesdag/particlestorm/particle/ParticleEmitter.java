@@ -12,7 +12,7 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
-import org.joml.Matrix4f;
+import org.joml.Matrix4x3f;
 import org.joml.Vector3f;
 import org.mesdag.particlestorm.ParticleStorm;
 import org.mesdag.particlestorm.PSGameClient;
@@ -39,7 +39,7 @@ public class ParticleEmitter implements MolangInstance {
     public Identifier particleId;
     public MolangExp expression;
 
-    public transient Matrix4f parentSpace;
+    public transient Matrix4x3f parentSpace;
     public transient ParentMode parentMode = ParentMode.WORLD;
     public transient Vec3 offsetPos = Vec3.ZERO;
     public transient Vector3f offsetRot = new Vector3f();
@@ -70,6 +70,7 @@ public class ParticleEmitter implements MolangInstance {
     public transient ParticleLimit particleGroup;
     public transient int activeParticleCount = 0;
     public transient int spawnDuration = 1;
+    public transient float spawnChance;
     public transient int spawnRate = 0;
     public transient boolean spawned = false;
     protected transient Entity attached;
@@ -154,7 +155,7 @@ public class ParticleEmitter implements MolangInstance {
         addParent(parent);
         createVars();
         for (String name : effect.sharedVars()) {
-            Variable variable = parent.getVars().table.get(name);
+            Variable variable = parent.getVars().getVariable(name);
             if (variable == null) throw new IllegalArgumentException("Shared vars must defined in parent directly!");
             vars.table.put(name, variable);
         }
@@ -203,6 +204,7 @@ public class ParticleEmitter implements MolangInstance {
     protected void initVars() {
         if (expression != null && !expression.initialized()) {
             expression.compile(new MolangParser(vars));
+            expression.calculate(this);
         }
     }
 
@@ -238,16 +240,6 @@ public class ParticleEmitter implements MolangInstance {
         this.invTickRate = 1.0F / level.tickRateManager().tickrate();
         this.moveDistO = moveDist;
         this.posO = pos;
-        for (IEmitterComponent component : components) {
-            if (active || component instanceof EmitterLifetime.Looping) {
-                component.update(this);
-            }
-        }
-        this.age++;
-
-        if (!posO.equals(pos)) {
-            this.moveDist += (float) pos.subtract(posO).length();
-        }
 
         if (attached != null) {
             if (attached.isRemoved()) {
@@ -288,6 +280,17 @@ public class ParticleEmitter implements MolangInstance {
             this.pos = new Vec3(pos1.getX() + 0.5 + rotated.x, pos1.getY() + rotated.y, pos1.getZ() + 0.5 + rotated.z);
         }
 
+        for (IEmitterComponent component : components) {
+            if (active || component instanceof EmitterLifetime.Looping) {
+                component.update(this);
+            }
+        }
+        this.age++;
+
+        if (!posO.equals(pos)) {
+            this.moveDist += (float) pos.subtract(posO).length();
+        }
+
         if (afterParentInit != null && parent != null) {
             afterParentInit.run();
             this.afterParentInit = null;
@@ -321,6 +324,25 @@ public class ParticleEmitter implements MolangInstance {
 
     public boolean isLocalSpace() {
         return parentSpace != null;
+    }
+
+    public final Matrix4x3f getLocalSpace() {
+        return parentSpace;
+    }
+
+    public final void setLocalSpace(@Nullable Matrix4x3f space) {
+        setLocalSpace(space, true);
+    }
+
+    public final void setLocalSpace(@Nullable Matrix4x3f space, boolean updatePos) {
+        this.parentSpace = space;
+        if (updatePos && space != null) {
+            Vec3 base = attached != null ? attached.position()
+                    : attachedBlock != null ? new Vec3(attachedBlock.getBlockPos().getX() + 0.5,
+                            attachedBlock.getBlockPos().getY(), attachedBlock.getBlockPos().getZ() + 0.5)
+                    : pos;
+            this.pos = base.add(space.m30(), space.m31(), space.m32());
+        }
     }
 
     public void remove() {

@@ -31,6 +31,7 @@ import org.mesdag.particlestorm.api.IParticleComponent;
 import org.mesdag.particlestorm.api.IntAllocator;
 import org.mesdag.particlestorm.api.RegisterCustomEmitterTypeEvent;
 import org.mesdag.particlestorm.api.RegisterCustomParticleTypeEvent;
+import org.mesdag.particlestorm.api.geckolib.GeckoLibHelper;
 import org.mesdag.particlestorm.data.DefinedParticleEffect;
 import org.mesdag.particlestorm.network.EmitterRemovalPacket;
 import org.mesdag.particlestorm.network.EmitterSynchronizePacket;
@@ -60,12 +61,12 @@ public final class MolangParticleEngine implements PreparableReloadListener {
     private final Object2ObjectOpenCustomHashMap<Entity, Object2ObjectLinkedOpenHashMap<Identifier, ParticleEmitter>> tracker = new Object2ObjectOpenCustomHashMap<>(new Hash.Strategy<>() {
         @Override
         public int hashCode(Entity o) {
-            return o.getUUID().hashCode();
+            return o == null ? 0 : o.getUUID().hashCode();
         }
 
         @Override
         public boolean equals(Entity a, Entity b) {
-            return a.getUUID().equals(b.getUUID());
+            return a == b || a != null && b != null && a.getUUID().equals(b.getUUID());
         }
     });
     private final Int2ObjectOpenHashMap<Queue<IMolangParticleInstance>> particlesForEmitter = new Int2ObjectOpenHashMap<>();
@@ -110,6 +111,9 @@ public final class MolangParticleEngine implements PreparableReloadListener {
                 for (IParticleComponent component : detail.effect.orderedParticleComponents) {
                     component.initialize(localPlayer.level());
                 }
+            }
+            if (ParticleStorm.GECKOLIB_LOADED) {
+                GeckoLibHelper.afterReload();
             }
             removeAll();
             this.initialized = true;
