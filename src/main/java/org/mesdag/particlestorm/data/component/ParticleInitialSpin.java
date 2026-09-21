@@ -32,8 +32,12 @@ public record ParticleInitialSpin(FloatMolangExp rotation, FloatMolangExp rotati
 
     @Override
     public void apply(IMolangParticleInstance instance) {
-        instance.setZRot(rotation.calculate(instance) * Mth.DEG_TO_RAD);
-        instance.setZRotD(rotationRate.calculate(instance) * instance.getInvTickRate() * Mth.DEG_TO_RAD);
+        if (rotation != FloatMolangExp.ZERO) {
+            instance.setZRot(rotation.calculate(instance) * Mth.DEG_TO_RAD);
+        }
+        if (rotationRate != FloatMolangExp.ZERO) {
+            instance.setZRotD(rotationRate.calculate(instance) * instance.getInvTickRate() * Mth.DEG_TO_RAD);
+        }
     }
 
     @Override

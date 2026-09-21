@@ -5,6 +5,9 @@ plugins {
     id 'net.neoforged.moddev' version '2.0.141'
 }
 
+tasks.named('wrapper', Wrapper).configure {
+    distributionType = Wrapper.DistributionType.BIN
+}
 version = mod_version
 group = mod_group_id
 
@@ -25,7 +28,7 @@ repositories {
 }
 
 base {
-    archivesName = mod_id
+    archivesName = "ParticleStorm-neoforge-${minecraft_version}"
 }
 
 java.toolchain.languageVersion = JavaLanguageVersion.of(25)
@@ -107,16 +110,26 @@ sourceSets.main.resources.srcDir generateModMetadata
 // To avoid having to run "generateModMetadata" manually, make it run on every project reload
 neoForge.ideSyncTask generateModMetadata
 
+java.withSourcesJar()
+ext {
+    releasesUrl = "https://maven.confluence.ink/releases"
+    snapshotsUrl = "https://maven.confluence.ink/snapshots"
+}
 publishing {
     publications {
         register('mavenJava', MavenPublication) {
-            artifactId = 'particlestorm-neoforge-26.1.2'
             from components.java
+            artifactId = "ParticleStorm-neoforge-${minecraft_version}"
         }
     }
     repositories {
         maven {
-            url "file://${project.projectDir}/repo"
+            name = "Confluence"
+            url = version.toString().endsWith("SNAPSHOT") ? snapshotsUrl : releasesUrl
+            credentials {
+                username = System.getenv("MAGIC_TEAM_USERNAME")
+                password = System.getenv("MAGIC_TEAM_TOKEN")
+            }
         }
     }
 }
