@@ -1,9 +1,21 @@
 package org.mesdag.particlestorm.api;
 
-import net.neoforged.bus.api.Event;
+import net.fabricmc.fabric.api.event.Event;
+import net.fabricmc.fabric.api.event.EventFactory;
 import org.mesdag.particlestorm.data.molang.VariableTable;
 
-public class AddDefaultVariableEvent extends Event {
+public class AddDefaultVariableEvent {
+    public static final Event<Callback> EVENT = EventFactory.createArrayBacked(Callback.class, listeners -> event -> {
+        for (Callback listener : listeners) {
+            listener.onAddDefaultVariables(event);
+        }
+    });
+
+    @FunctionalInterface
+    public interface Callback {
+        void onAddDefaultVariables(AddDefaultVariableEvent event);
+    }
+
     private final VariableTable table;
 
     public AddDefaultVariableEvent(VariableTable vt) {

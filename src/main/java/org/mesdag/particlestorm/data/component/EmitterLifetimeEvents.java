@@ -2,11 +2,11 @@ package org.mesdag.particlestorm.data.component;
 
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
-import it.unimi.dsi.fastutil.floats.FloatObjectImmutablePair;
-import it.unimi.dsi.fastutil.floats.FloatObjectPair;
+import com.mojang.datafixers.util.Pair;
 import org.mesdag.particlestorm.ParticleStorm;
 import org.mesdag.particlestorm.api.IEmitterComponent;
 import org.mesdag.particlestorm.api.IEventNode;
+import org.mesdag.particlestorm.data.event.EventResolver;
 import org.mesdag.particlestorm.data.molang.MolangExp;
 import org.mesdag.particlestorm.particle.ParticleEmitter;
 
@@ -14,6 +14,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 
 /// Allows for lifetime events on the emitter to trigger certain events.
 ///
@@ -34,8 +35,8 @@ public final class EmitterLifetimeEvents implements IEmitterComponent {
     public final Map<String, List<String>> travelDistanceEvents;
     public final List<LoopingTravelDistanceEvent> loopingTravelDistanceEvents;
 
-    public final List<FloatObjectPair<List<String>>> sortedTimeline;
-    public final List<FloatObjectPair<List<String>>> sortedTravelDistance;
+    public final List<Pair<Function<Integer, Boolean>, List<String>>> sortedTimeline;
+    public final List<Pair<Function<Float, Boolean>, List<String>>> sortedTravelDistance;
 
     /// @param creationEvent               Fires when the emitter is created
     /// @param expirationEvent             Fires when the emitter expires (does not wait for particles to expire too)
@@ -54,14 +55,14 @@ public final class EmitterLifetimeEvents implements IEmitterComponent {
 
         this.sortedTimeline = new ArrayList<>();
         timeline.entrySet().stream()
-                .map(entry -> new FloatObjectImmutablePair<>(Float.parseFloat(entry.getKey()) * 20, entry.getValue()))
-                .sorted(Comparator.comparing(FloatObjectPair::leftFloat))
-                .forEachOrdered(sortedTimeline::add);
+                .map(entry -> Pair.of(Float.parseFloat(entry.getKey()), entry.getValue()))
+                .sorted(Comparator.comparing(Pair::getFirst))
+                .forEachOrdered(tuple -> sortedTimeline.add(Pair.of(time -> time >= tuple.getFirst() * 20, tuple.getSecond())));
         this.sortedTravelDistance = new ArrayList<>();
         travelDistanceEvents.entrySet().stream()
-                .map(entry -> new FloatObjectImmutablePair<>(Float.parseFloat(entry.getKey()), entry.getValue()))
-                .sorted(Comparator.comparing(FloatObjectPair::leftFloat))
-                .forEachOrdered(sortedTravelDistance::add);
+                .map(entry -> Pair.of(Float.parseFloat(entry.getKey()), entry.getValue()))
+                .sorted(Comparator.comparing(Pair::getFirst))
+                .forEachOrdered(tuple -> sortedTravelDistance.add(Pair.of(dist -> dist >= tuple.getFirst(), tuple.getSecond())));
     }
 
     @Override
@@ -77,19 +78,19 @@ public final class EmitterLifetimeEvents implements IEmitterComponent {
     @Override
     public void update(ParticleEmitter emitter) {
         for (int i = emitter.lastTimeline; i < sortedTimeline.size(); i++) {
-            FloatObjectPair<List<String>> pair = sortedTimeline.get(i);
-            if (emitter.age >= pair.leftFloat()) {
+            Pair<Function<Integer, Boolean>, List<String>> tuple = sortedTimeline.get(i);
+            if (tuple.getFirst().apply(emitter.age)) {
                 emitter.lastTimeline = i + 1;
-                executes(emitter, pair.right());
+                executes(emitter, tuple.getSecond());
                 break;
             }
         }
         if (emitter.moveDist == emitter.moveDistO) return;
         for (int i = emitter.lastTravelDist; i < sortedTravelDistance.size(); i++) {
-            FloatObjectPair<List<String>> pair = sortedTravelDistance.get(i);
-            if (emitter.moveDist >= pair.leftFloat()) {
+            Pair<Function<Float, Boolean>, List<String>> tuple = sortedTravelDistance.get(i);
+            if (tuple.getFirst().apply(emitter.moveDist)) {
                 emitter.lastTravelDist = i + 1;
-                executes(emitter, pair.right());
+                executes(emitter, tuple.getSecond());
                 break;
             }
         }
@@ -105,14 +106,11 @@ public final class EmitterLifetimeEvents implements IEmitterComponent {
 
     @Override
     public void apply(ParticleEmitter emitter) {
-        List<ParticleEmitter> children = emitter.getChildren(false);
-        if (children != null) {
-            children.removeIf(child -> {
-                child.parent = null;
-                child.remove();
-                return true;
-            });
-        }
+        emitter.children.removeIf(child -> {
+            child.parent = null;
+            child.remove();
+            return true;
+        });
         executes(emitter, creationEvent);
         emitter.cachedLooping = new float[loopingTravelDistanceEvents.size()];
     }
@@ -138,7 +136,7 @@ public final class EmitterLifetimeEvents implements IEmitterComponent {
 
     private static void executes(ParticleEmitter emitter, List<String> triggers) {
         for (String event : triggers) {
-            for (IEventNode node : emitter.getPreset().events.get(event).values()) {
+            for (IEventNode node : EventResolver.resolve(emitter.getPreset().events, event).values()) {
                 node.execute(emitter);
             }
         }

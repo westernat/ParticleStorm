@@ -1,3 +1,7 @@
 {
-    "commands.particlestorm.remove": "Removed Particle: %s"
+    "commands.particlestorm.add": "Displaying ParticleStorm particle: %s",
+    "commands.particlestorm.failed": "No players were matched",
+    "commands.particlestorm.not_found": "ParticleStorm emitter not found: %s",
+    "commands.particlestorm.remove": "Removed ParticleStorm particle: %s",
+    "commands.particlestorm.unknown_particle": "Unknown ParticleStorm particle: %s"
 }

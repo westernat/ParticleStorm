@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "id": "particlestorm",
+  "version": "${version}",
+  "name": "ParticleStorm",
+  "description": "Uses a Bedrock Edition JSON format for particle effects.",
+  "authors": [
+    "Westernat"
+  ],
+  "contact": {},
+  "license": "LGPL-3.0",
+  "icon": "assets/particlestorm/icon.png",
+  "environment": "client",
+  "accessWidener": "mesdag.accesswidener",
+  "entrypoints": {
+    "client": [
+      "org.mesdag.particlestorm.PSGameClient"
+    ],
+    "main": [
+      "org.mesdag.particlestorm.ParticleStorm"
+    ]
+  },
+  "mixins": [
+    "particlestorm.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=${loader_version}",
+    "fabric-api": "*",
+    "minecraft": "${minecraft_version}"
+  }
+}

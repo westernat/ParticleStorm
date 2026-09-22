@@ -1,11 +1,8 @@
 package org.mesdag.particlestorm.api;
 
-import net.neoforged.bus.api.Event;
-import net.neoforged.fml.event.IModBusEvent;
-
 import java.util.concurrent.Executor;
 
-public abstract class MolangParticleLoadEvent extends Event implements IModBusEvent {
+public abstract class MolangParticleLoadEvent {
     private final Executor executor;
 
     public MolangParticleLoadEvent(Executor executor) {
@@ -16,7 +13,6 @@ public abstract class MolangParticleLoadEvent extends Event implements IModBusEv
         return executor;
     }
 
-    /// In Background Executor {@link net.minecraft.Util#backgroundExecutor()}
     public static class Pre extends MolangParticleLoadEvent {
         public Pre(Executor executor) {
             super(executor);

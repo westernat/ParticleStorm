@@ -5,7 +5,7 @@ import com.mojang.datafixers.util.Either;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.util.Mth;
-import net.minecraft.util.Tuple;
+import com.mojang.datafixers.util.Pair;
 import org.mesdag.particlestorm.api.IMolangParticleInstance;
 import org.mesdag.particlestorm.api.IParticleComponent;
 import org.mesdag.particlestorm.api.MolangInstance;
@@ -42,24 +42,24 @@ public record ParticleAppearanceTinting(Color color, ColorField colorField) impl
         apply(instance);
     }
 
-    private float[] getCalculatedColor(IMolangParticleInstance instance, ArrayList<Tuple<Float, ColorField>> list, float ratio) {
+    private float[] getCalculatedColor(IMolangParticleInstance instance, ArrayList<Pair<Float, ColorField>> list, float ratio) {
         int n = 0;
         for (int index = 0; index < list.size(); index++) {
-            Tuple<Float, ColorField> tuple = list.get(index);
-            if (tuple.getA() <= ratio) {
+            Pair<Float, ColorField> tuple = list.get(index);
+            if (tuple.getFirst() <= ratio) {
                 n = index;
             } else {
                 break;
             }
         }
-        Tuple<Float, ColorField> tuple = list.get(n);
+        Pair<Float, ColorField> tuple = list.get(n);
         if ((n == 0 && list.size() == 1) || n == list.size() - 1) {
-            return tuple.getB().calculate(instance);
+            return tuple.getSecond().calculate(instance);
         }
-        Tuple<Float, ColorField> next = list.get(n + 1);
-        float[] color = tuple.getB().calculate(instance);
-        float[] another = next.getB().calculate(instance);
-        float factor = 1.0F - (ratio - tuple.getA()) / (next.getA() - tuple.getA());
+        Pair<Float, ColorField> next = list.get(n + 1);
+        float[] color = tuple.getSecond().calculate(instance);
+        float[] another = next.getSecond().calculate(instance);
+        float factor = 1.0F - (ratio - tuple.getFirst()) / (next.getFirst() - tuple.getFirst());
         float r = mix(color[0], another[0], factor);
         float g = mix(color[1], another[1], factor);
         float b = mix(color[2], another[2], factor);
@@ -74,8 +74,8 @@ public record ParticleAppearanceTinting(Color color, ColorField colorField) impl
     @Override
     public void apply(IMolangParticleInstance instance) {
         if (color.interpolant.initialized() && !color.gradient.map.isEmpty()) {
-            float interpolant = color.interpolant.calculate(instance);
-            float[] calculated = getCalculatedColor(instance, color.gradient.list, interpolant / color.gradient.range);
+            float interpolant = Mth.clamp(color.interpolant.calculate(instance), 0.0F, 1.0F);
+            float[] calculated = getCalculatedColor(instance, color.gradient.list, interpolant);
             instance.setColor(calculated[0], calculated[1], calculated[2], calculated[3]);
         } else {
             float[] color = colorField.calculate(instance);
@@ -140,16 +140,16 @@ public record ParticleAppearanceTinting(Color color, ColorField colorField) impl
             public final Map<String, ColorField> map;
 
             public final float range;
-            public final ArrayList<Tuple<Float, ColorField>> list;
+            public final ArrayList<Pair<Float, ColorField>> list;
 
             public Gradient(Map<String, ColorField> map) {
                 this.map = map;
                 this.list = new ArrayList<>();
                 map.entrySet().stream()
-                        .map(entry -> new Tuple<>(Float.parseFloat(entry.getKey()), entry.getValue()))
-                        .sorted(Comparator.comparing(Tuple::getA))
+                        .map(entry -> Pair.of(Float.parseFloat(entry.getKey()), entry.getValue()))
+                        .sorted(Comparator.comparing(Pair::getFirst))
                         .forEachOrdered(list::add);
-                this.range = list.isEmpty() ? 0.0F : list.getLast().getA();
+                this.range = list.isEmpty() ? 0.0F : list.getLast().getFirst();
             }
 
             @Override

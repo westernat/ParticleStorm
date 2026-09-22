@@ -42,7 +42,7 @@ public record ParticleInitialSpeed(Either<FloatMolangExp, FloatMolangExp3> speed
 
     @Override
     public int order() {
-        return -100;
+        return -1;
     }
 
     @Override

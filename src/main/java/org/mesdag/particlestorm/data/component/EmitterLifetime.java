@@ -2,8 +2,8 @@ package org.mesdag.particlestorm.data.component;
 
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
-import org.mesdag.particlestorm.api.IEmitterComponent;
 import org.mesdag.particlestorm.api.IMolangParticleInstance;
+import org.mesdag.particlestorm.api.IEmitterComponent;
 import org.mesdag.particlestorm.data.molang.FloatMolangExp;
 import org.mesdag.particlestorm.data.molang.MolangExp;
 import org.mesdag.particlestorm.particle.MolangParticleEngine;
@@ -129,7 +129,7 @@ public abstract sealed class EmitterLifetime implements IEmitterComponent permit
                 for (IEmitterComponent e : emitter.getPreset().components) {
                     e.apply(emitter);
                 }
-                emitter.updateRandoms(emitter.level.random);
+                emitter.updateRandoms(emitter.level.getRandom());
                 Queue<IMolangParticleInstance> queue = MolangParticleEngine.INSTANCE.getParticlesForEmitter(emitter);
                 if (queue != null) {
                     for (IMolangParticleInstance instance : queue) {

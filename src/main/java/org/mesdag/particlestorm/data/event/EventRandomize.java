@@ -2,7 +2,7 @@ package org.mesdag.particlestorm.data.event;
 
 import com.mojang.serialization.Codec;
 import net.minecraft.util.ExtraCodecs;
-import net.minecraft.util.Tuple;
+import com.mojang.datafixers.util.Pair;
 import org.mesdag.particlestorm.api.IEventNode;
 import org.mesdag.particlestorm.api.MolangInstance;
 
@@ -16,9 +16,8 @@ public final class EventRandomize implements IEventNode {
     }).listOf().xmap(EventRandomize::new, eventRandomize -> eventRandomize.nodes);
     public final List<Map<String, IEventNode>> nodes;
 
-    public final List<Tuple<Float, Map<String, IEventNode>>> sortedNodes;
+    public final List<Pair<Float, Map<String, IEventNode>>> sortedNodes;
 
-    @SuppressWarnings({"rawtypes", "unchecked"})
     public EventRandomize(List<Map<String, IEventNode>> nodes) {
         this.nodes = nodes;
 
@@ -34,17 +33,17 @@ public final class EventRandomize implements IEventNode {
             allWeights += weight;
         }
         for (int i = 0; i < nodes.size(); i++) {
-            sortedNodes.add(new Tuple<>(cachedWeight[i] / allWeights, cachedNode[i]));
+            sortedNodes.add(Pair.of(cachedWeight[i] / allWeights, cachedNode[i]));
         }
-        sortedNodes.sort(Comparator.comparing(Tuple::getA));
+        sortedNodes.sort(Comparator.comparing(Pair::getFirst));
     }
 
     @Override
     public void execute(MolangInstance instance) {
-        float random = instance.getLevel().random.nextFloat();
-        for (Tuple<Float, Map<String, IEventNode>> tuple : sortedNodes) {
-            if (random < tuple.getA()) {
-                for (IEventNode node : tuple.getB().values()) {
+        float random = instance.getLevel().getRandom().nextFloat();
+        for (Pair<Float, Map<String, IEventNode>> tuple : sortedNodes) {
+            if (random < tuple.getFirst()) {
+                for (IEventNode node : tuple.getSecond().values()) {
                     node.execute(instance);
                 }
                 break;
