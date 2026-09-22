@@ -1,7 +1,6 @@
 package org.mesdag.particlestorm.api.geckolib;
 
 import com.mojang.datafixers.DSL;
-import com.mojang.datafixers.util.Either;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.ints.IntIterator;
 import it.unimi.dsi.fastutil.ints.IntList;
@@ -10,11 +9,8 @@ import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
-import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
-import net.minecraft.world.phys.Vec3;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModLoader;
 import net.neoforged.neoforge.client.event.EntityRenderersEvent;
@@ -23,9 +19,12 @@ import net.neoforged.neoforge.registries.DeferredRegister;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Matrix4x3f;
 import org.mesdag.particlestorm.ParticleStorm;
+import org.mesdag.particlestorm.api.ParticleEmitterAttachable;
 import org.mesdag.particlestorm.data.molang.MolangExp;
-import org.mesdag.particlestorm.data.molang.VariableTable;
-import org.mesdag.particlestorm.mixed.*;
+import org.mesdag.particlestorm.mixed.IPSAnimatableInstanceCache;
+import org.mesdag.particlestorm.mixed.IPSAnimationController;
+import org.mesdag.particlestorm.mixed.IPSGeoBone;
+import org.mesdag.particlestorm.mixed.IPSParticleKeyframeData;
 import org.mesdag.particlestorm.particle.MolangParticleEngine;
 import org.mesdag.particlestorm.particle.ParticleEmitter;
 import software.bernie.geckolib.animatable.GeoAnimatable;
@@ -66,33 +65,22 @@ public final class GeckoLibHelper {
         if (bones.isEmpty()) return true;
 
         IPSParticleKeyframeData iData = IPSParticleKeyframeData.of(keyframeData);
-        Either<Entity, BlockEntity> either;
-        VariableTable variableTable;
-        Level level;
-        switch (animatable) {
-            case Entity entity -> {
-                either = Either.left(entity);
-                variableTable = IPSEntity.of(entity).particlestorm$getVariableTable();
-                level = entity.level();
-            }
-            case WithCurrentEntity withCurrentEntity -> {
-                Entity entity = withCurrentEntity.getCurrentEntity();
-                if (entity == null) return true;
-                either = Either.left(entity);
-                variableTable = IPSEntity.of(entity).particlestorm$getVariableTable();
-                level = entity.level();
-            }
-            case BlockEntity entity when entity.getLevel() != null -> {
-                either = Either.right(entity);
-                variableTable = IPSBlockEntity.of(entity).particlestorm$getVariableTable();
-                level = entity.getLevel();
-            }
-            case null, default -> {
-                return true;
+        ParticleEmitterAttachable attachable;
+        Object obj = animatable;
+        if (animatable instanceof WithCurrentEntity wit) {
+            Entity entity = wit.getCurrentEntity();
+            if (entity != null) {
+                obj = entity;
             }
         }
+        if (obj instanceof ParticleEmitterAttachable att) {
+            attachable = att;
+            if (att.getLevel() == null) return true;
+        } else {
+            return true;
+        }
         ResourceLocation particle = iData.particlestorm$getParticle();
-        MolangExp expression = iData.particlestorm$getExpression(variableTable);
+        MolangExp expression = iData.particlestorm$getExpression(attachable.getVariableTable());
         IPSAnimatableInstanceCache cache = IPSAnimatableInstanceCache.of(animatable.getAnimatableInstanceCache());
         for (GeoBone bone : bones) {
             LocatorValue locator = IPSGeoBone.of(bone).particlestorm$getLocators().get(keyframeData.getLocator());
@@ -100,13 +88,13 @@ public final class GeckoLibHelper {
             Object2ObjectMap<LocatorValue, IntList> ids = cache.particlestorm$getCachedId();
             IntList integers = ids.computeIfAbsent(locator, l -> new IntArrayList());
             if (integers.isEmpty()) {
-                createNeoOne(either, level, particle, expression, integers, locator, cache);
+                createNeoOne(attachable, particle, expression, integers, locator, cache);
             } else {
                 IntIterator ii = integers.intIterator();
                 while (ii.hasNext()) {
                     ParticleEmitter current = MolangParticleEngine.INSTANCE.getEmitter(ii.nextInt());
                     if (current == null || current.isRemoved() || !particle.equals(current.particleId)) {
-                        createNeoOne(either, level, particle, expression, integers, locator, cache);
+                        createNeoOne(attachable, particle, expression, integers, locator, cache);
                     }
                 }
             }
@@ -114,12 +102,11 @@ public final class GeckoLibHelper {
         return false;
     }
 
-    private static void createNeoOne(Either<Entity, BlockEntity> either, Level level, ResourceLocation particle, MolangExp expression, IntList integers, LocatorValue locator, IPSAnimatableInstanceCache cache) {
-        Vec3 pos = either.map(Entity::position, entity -> entity.getBlockPos().getBottomCenter());
-        ParticleEmitter emitter = new ParticleEmitter(level, pos, particle, expression);
+    private static void createNeoOne(ParticleEmitterAttachable attachable, ResourceLocation particle, MolangExp expression, IntList integers, LocatorValue locator, IPSAnimatableInstanceCache cache) {
+        ParticleEmitter emitter = new ParticleEmitter(attachable.getLevel(), attachable.getPos(), particle, expression);
         MolangParticleEngine.INSTANCE.addEmitter(emitter);
         integers.add(emitter.id);
-        either.ifLeft(emitter::attachEntity).ifRight(emitter::attachBlock);
+        emitter.attach(attachable);
         if (cache.particlestorm$getLocatorState(locator) == null) {
             cache.particlestorm$createLocatorState(locator);
         }

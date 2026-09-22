@@ -3,10 +3,16 @@ package org.mesdag.particlestorm.particle;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
+import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.exceptions.SimpleCommandExceptionType;
+import com.mojang.brigadier.suggestion.Suggestions;
+import com.mojang.brigadier.suggestion.SuggestionsBuilder;
+import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
+import it.unimi.dsi.fastutil.objects.ObjectIterator;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
+import net.minecraft.commands.SharedSuggestionProvider;
 import net.minecraft.commands.arguments.EntityArgument;
 import net.minecraft.commands.arguments.ResourceLocationArgument;
 import net.minecraft.commands.arguments.coordinates.Vec3Argument;
@@ -22,9 +28,15 @@ import org.mesdag.particlestorm.network.EmitterCreationPacketS2C;
 import org.mesdag.particlestorm.network.EmitterRemovalPacket;
 
 import java.util.Collection;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 public class MolangParticleCommand {
     private static final SimpleCommandExceptionType ERROR_FAILED = new SimpleCommandExceptionType(Component.translatable("commands.particle.failed"));
+    private static final List<String> POSITION_SUGGESTIONS = List.of("~ ~ ~", "~ ~1 ~", "~ ~-1 ~", "^ ^ ^", "^ ^ ^1");
+    private static final List<String> EXPRESSION_SUGGESTIONS = List.of("\"\"", "\"v.size=1;\"", "\"v.alpha=1;\"", "\"v.size=1;v.alpha=1;\"");
+    private static final List<String> ENTITY_SUGGESTIONS = List.of("@s", "@p", "@e[limit=1,sort=nearest]");
+    private static final List<String> VIEWER_SUGGESTIONS = List.of("@a", "@p", "@s");
 
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
         dispatcher.register(Commands.literal("particlestorm").requires(sourceStack -> sourceStack.hasPermission(2))
@@ -35,28 +47,36 @@ public class MolangParticleCommand {
                                 MolangExp.EMPTY,
                                 null,
                                 context.getSource().getServer().getPlayerList().getPlayers()
-                        )).then(Commands.argument("pos", Vec3Argument.vec3()).executes(context -> sendParticle(
+                        )).then(Commands.argument("pos", Vec3Argument.vec3()).suggests((context, builder) ->
+                                        SharedSuggestionProvider.suggest(POSITION_SUGGESTIONS, builder)
+                                ).executes(context -> sendParticle(
                                         context.getSource(),
                                         ResourceLocationArgument.getId(context, "particle"),
                                         Vec3Argument.getVec3(context, "pos"),
                                         MolangExp.EMPTY,
                                         null,
                                         context.getSource().getServer().getPlayerList().getPlayers()
-                                )).then(Commands.argument("expression", StringArgumentType.string()).executes(context -> sendParticle(
+                                )).then(Commands.argument("expression", StringArgumentType.string()).suggests((context, builder) ->
+                                                SharedSuggestionProvider.suggest(EXPRESSION_SUGGESTIONS, builder)
+                                        ).executes(context -> sendParticle(
                                                 context.getSource(),
                                                 ResourceLocationArgument.getId(context, "particle"),
                                                 Vec3Argument.getVec3(context, "pos"),
                                                 new MolangExp(StringArgumentType.getString(context, "expression")),
                                                 null,
                                                 context.getSource().getServer().getPlayerList().getPlayers()
-                                        )).then(Commands.argument("attach", EntityArgument.entity()).executes(context -> sendParticle(
+                                        )).then(Commands.argument("attach", EntityArgument.entity()).suggests((context, builder) ->
+                                                        SharedSuggestionProvider.suggest(ENTITY_SUGGESTIONS, builder)
+                                                ).executes(context -> sendParticle(
                                                         context.getSource(),
                                                         ResourceLocationArgument.getId(context, "particle"),
                                                         Vec3Argument.getVec3(context, "pos"),
                                                         new MolangExp(StringArgumentType.getString(context, "expression")),
                                                         EntityArgument.getEntity(context, "attach"),
                                                         context.getSource().getServer().getPlayerList().getPlayers()
-                                                )).then(Commands.argument("viewers", EntityArgument.players()).executes(context -> sendParticle(
+                                                )).then(Commands.argument("viewers", EntityArgument.players()).suggests((context, builder) ->
+                                                                SharedSuggestionProvider.suggest(VIEWER_SUGGESTIONS, builder)
+                                                        ).executes(context -> sendParticle(
                                                                 context.getSource(),
                                                                 ResourceLocationArgument.getId(context, "particle"),
                                                                 Vec3Argument.getVec3(context, "pos"),
@@ -69,20 +89,26 @@ public class MolangParticleCommand {
                                 )
                         )
                 ))
-                .then(Commands.literal("remove").then(Commands.argument("id", IntegerArgumentType.integer(0)).executes(context -> removeParticle(
+                .then(Commands.literal("remove").then(Commands.argument("id", IntegerArgumentType.integer(0)).suggests(MolangParticleCommand::suggestEmitterIds).executes(context -> removeParticle(
                                 IntegerArgumentType.getInteger(context, "id"),
                                 context.getSource().getServer().getPlayerList().getPlayers()
-                        )).then(Commands.argument("viewers", EntityArgument.players()).executes(context -> removeParticle(
+                        )).then(Commands.argument("viewers", EntityArgument.players()).suggests((context, builder) ->
+                                SharedSuggestionProvider.suggest(VIEWER_SUGGESTIONS, builder)
+                        ).executes(context -> removeParticle(
                                         IntegerArgumentType.getInteger(context, "id"),
                                         EntityArgument.getPlayers(context, "viewers")
                                 )
                         ))
                 ))
-                .then(Commands.literal("attach").then(Commands.argument("id", IntegerArgumentType.integer(0)).then(Commands.argument("entity", EntityArgument.entity()).executes(context -> attachEmitter2Entity(
+                .then(Commands.literal("attach").then(Commands.argument("id", IntegerArgumentType.integer(0)).suggests(MolangParticleCommand::suggestEmitterIds).then(Commands.argument("entity", EntityArgument.entity()).suggests((context, builder) ->
+                                SharedSuggestionProvider.suggest(ENTITY_SUGGESTIONS, builder)
+                        ).executes(context -> attachEmitter2Entity(
                                 IntegerArgumentType.getInteger(context, "id"),
                                 EntityArgument.getEntity(context, "entity"),
                                 context.getSource().getServer().getPlayerList().getPlayers()
-                        )).then(Commands.argument("viewers", EntityArgument.players()).executes(context -> attachEmitter2Entity(
+                        )).then(Commands.argument("viewers", EntityArgument.players()).suggests((context, builder) ->
+                                SharedSuggestionProvider.suggest(VIEWER_SUGGESTIONS, builder)
+                        ).executes(context -> attachEmitter2Entity(
                                         IntegerArgumentType.getInteger(context, "id"),
                                         EntityArgument.getEntity(context, "entity"),
                                         EntityArgument.getPlayers(context, "viewers")
@@ -90,6 +116,18 @@ public class MolangParticleCommand {
                         ))
                 )))
         );
+    }
+
+    private static CompletableFuture<Suggestions> suggestEmitterIds(CommandContext<CommandSourceStack> context, SuggestionsBuilder builder) {
+        ObjectIterator<Int2ObjectMap.Entry<ParticleEmitter>> iterator = MolangParticleEngine.INSTANCE.getEmitters();
+        while (iterator.hasNext()) {
+            ParticleEmitter emitter = iterator.next().getValue();
+            builder.suggest(emitter.id);
+        }
+        if (builder.getRemaining().isEmpty()) {
+            builder.suggest(0);
+        }
+        return builder.buildFuture();
     }
 
     private static int attachEmitter2Entity(int id, Entity entity, Collection<ServerPlayer> viewers) throws CommandSyntaxException {

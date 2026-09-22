@@ -6,10 +6,10 @@ import net.minecraft.client.renderer.culling.Frustum;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.core.particles.ParticleGroup;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.entity.Entity;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
+import org.joml.Quaternionf;
 import org.joml.Vector3f;
 import org.mesdag.particlestorm.particle.ParticleEmitter;
 import org.mesdag.particlestorm.particle.ParticlePreset;
@@ -113,6 +113,24 @@ public interface IMolangParticleInstance extends MolangInstance {
 
     double getZ();
 
+    /// 粒子在世界空间中的坐标。
+    ///
+    /// 本地空间粒子（`emitter_local_space` 的 `position` 为 true）的 [MolangInstance#getX] 等是发射器本地坐标，
+    /// 需要先用发射器的变换转换到世界坐标；朝向计算（例如看向摄像机的方向）必须基于世界坐标，
+    /// 否则算出来的方向是错的。
+    default Vector3f getWorldPosition(Vector3f dest, float partialTick) {
+        return dest.set((float) getX(), (float) getY(), (float) getZ());
+    }
+
+    /// 粒子所在空间 -> 世界空间的旋转。
+    ///
+    /// 返回 null 表示粒子的朝向本来就定义在世界空间中（不是本地空间，或未启用 `local_rotation`）。
+    /// [org.mesdag.particlestorm.particle.FaceCameraMode] 需要在这个空间里算朝向，
+    /// 再由 [org.mesdag.particlestorm.particle.MolangParticleInstance#render] 统一绕粒子中心变换到世界空间。
+    default @Nullable Quaternionf getLocalSpaceRotation() {
+        return getEmitter().getLocalSpaceRotation();
+    }
+
     void setPos(double x, double y, double z, boolean o);
 
     void setColor(float red, float green, float blue, float alpha);
@@ -163,8 +181,8 @@ public interface IMolangParticleInstance extends MolangInstance {
     }
 
     @Override
-    default @Nullable Entity getAttachedEntity() {
-        return getEmitter().getAttachedEntity();
+    default @Nullable ParticleEmitterAttachable getAttached() {
+        return getEmitter().getAttached();
     }
 
     @Override
