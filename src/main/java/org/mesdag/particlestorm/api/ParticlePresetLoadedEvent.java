@@ -12,6 +12,7 @@ public class ParticlePresetLoadedEvent extends Event implements IModBusEvent {
         this.preset = preset;
     }
 
+    /// The effect that produced the preset, kept for API compatibility.
     public DefinedParticleEffect getEffect() {
         return preset.effect;
     }

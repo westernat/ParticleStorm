@@ -13,6 +13,7 @@ import org.spongepowered.asm.mixin.injection.At;
 
 @Mixin(ClientLevel.class)
 public abstract class ClientLevelMixin {
+    /// Take over vanilla block ambient particles and let registered emitters handle them instead.
     @WrapWithCondition(method = "doAnimateTick", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/level/block/Block;animateTick(Lnet/minecraft/world/level/block/state/BlockState;Lnet/minecraft/world/level/Level;Lnet/minecraft/core/BlockPos;Lnet/minecraft/util/RandomSource;)V"))
     private boolean takeOver(Block instance, BlockState state, Level level, BlockPos pos, RandomSource random) {
         return EmitterAttachHandler.attachTo(instance, state, level, pos);

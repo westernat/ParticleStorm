@@ -3,7 +3,8 @@ package org.mesdag.particlestorm.data.component;
 import com.mojang.datafixers.util.Either;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
+import net.minecraft.util.ExtraCodecs;
 import net.minecraft.util.Mth;
 import org.mesdag.particlestorm.api.IMolangParticleInstance;
 import org.mesdag.particlestorm.api.IParticleComponent;
@@ -34,15 +35,8 @@ import java.util.function.Function;
 ///                                 Note that this must be less than or equal to 1/2 block
 /// @param expireOnContact          Triggers expiration on contact if true
 /// @param events                   Triggers an event array of individual events
-public record ParticleMotionCollision(
-        BoolMolangExp enabled,
-        float collisionDrag,
-        float coefficientOfRestitution,
-        float collisionRadius,
-        boolean expireOnContact,
-        List<Event> events
-) implements IParticleComponent {
-    public static final ResourceLocation ID = ResourceLocation.withDefaultNamespace("particle_motion_collision");
+public record ParticleMotionCollision(BoolMolangExp enabled, float collisionDrag, float coefficientOfRestitution, float collisionRadius, boolean expireOnContact, List<Event> events) implements IParticleComponent {
+    public static final Identifier ID = Identifier.withDefaultNamespace("particle_motion_collision");
     public static final Codec<ParticleMotionCollision> CODEC = RecordCodecBuilder.create(instance -> instance.group(
             BoolMolangExp.CODEC.lenientOptionalFieldOf("enabled", BoolMolangExp.TRUE).forGetter(ParticleMotionCollision::enabled),
             Codec.FLOAT.lenientOptionalFieldOf("collision_drag", 0.0F).forGetter(ParticleMotionCollision::collisionDrag),
@@ -76,7 +70,6 @@ public record ParticleMotionCollision(
         instance.setCollisionDrag(collisionDrag * instance.getInvTickRate());
         instance.setCoefficientOfRestitution(coefficientOfRestitution);
         instance.setCollisionRadius(Math.max(collisionRadius, Mth.EPSILON));
-        instance.moveDirectly(0, 0, 0);
         instance.setExpireOnContact(expireOnContact);
     }
 
@@ -97,12 +90,14 @@ public record ParticleMotionCollision(
                 '}';
     }
 
-    /// @param event    Triggers the specified event if the conditions are met
-    /// @param minSpeed Optional minimum speed for event triggering
+    /**
+     * @param event    Triggers the specified event if the conditions are met
+     * @param minSpeed Optional minimum speed for event triggering
+     */
     public record Event(String event, float minSpeed) {
         public static final Codec<Event> CODEC = RecordCodecBuilder.create(instance -> instance.group(
                 Codec.STRING.fieldOf("event").forGetter(Event::event),
-                Codec.FLOAT.lenientOptionalFieldOf("min_speed", 2.0F).forGetter(Event::minSpeed)
+                ExtraCodecs.POSITIVE_FLOAT.fieldOf("min_speed").orElse(2.0F).forGetter(Event::minSpeed)
         ).apply(instance, Event::new));
 
         @Override

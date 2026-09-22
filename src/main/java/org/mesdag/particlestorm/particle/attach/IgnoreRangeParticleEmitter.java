@@ -1,7 +1,7 @@
 package org.mesdag.particlestorm.particle.attach;
 
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 import org.mesdag.particlestorm.data.event.ParticleEffect;
@@ -11,14 +11,14 @@ import org.mesdag.particlestorm.particle.ParticleEmitter;
 public abstract class IgnoreRangeParticleEmitter extends ParticleEmitter {
     public final boolean ignoreRange;
 
-    public IgnoreRangeParticleEmitter(ResourceLocation type, Level level, Vec3 pos, ResourceLocation particleId, MolangExp expression, boolean ignoreRange) {
+    public IgnoreRangeParticleEmitter(Identifier type, Level level, Vec3 pos, Identifier particleId, MolangExp expression, boolean ignoreRange) {
         super(type, level, pos, particleId, expression);
         this.ignoreRange = ignoreRange;
     }
 
     public IgnoreRangeParticleEmitter(Level level, CompoundTag tag) {
         super(level, tag);
-        this.ignoreRange = tag.getBoolean("ignoreRange");
+        this.ignoreRange = tag.getBooleanOr("ignoreRange", false);
     }
 
     public IgnoreRangeParticleEmitter(ParticleEmitter parent, ParticleEffect effect) {

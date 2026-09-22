@@ -18,7 +18,6 @@ public final class EventRandomize implements IEventNode {
 
     public final List<Tuple<Float, Map<String, IEventNode>>> sortedNodes;
 
-    @SuppressWarnings({"rawtypes", "unchecked"})
     public EventRandomize(List<Map<String, IEventNode>> nodes) {
         this.nodes = nodes;
 
@@ -41,7 +40,7 @@ public final class EventRandomize implements IEventNode {
 
     @Override
     public void execute(MolangInstance instance) {
-        float random = instance.getLevel().random.nextFloat();
+        float random = instance.getLevel().getRandom().nextFloat();
         for (Tuple<Float, Map<String, IEventNode>> tuple : sortedNodes) {
             if (random < tuple.getA()) {
                 for (IEventNode node : tuple.getB().values()) {

@@ -6,22 +6,19 @@ import com.mojang.serialization.MapCodec;
 import io.netty.buffer.ByteBuf;
 import net.minecraft.core.particles.ParticleType;
 import net.minecraft.core.registries.Registries;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.codec.StreamCodec;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.bus.api.IEventBus;
+import net.neoforged.api.distmarker.Dist;
 import net.neoforged.fml.ModContainer;
+import net.neoforged.fml.ModList;
 import net.neoforged.fml.common.Mod;
-import net.neoforged.fml.loading.LoadingModList;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
-import net.neoforged.neoforge.network.PacketDistributor;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
-import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
-import org.mesdag.particlestorm.api.geckolib.GeckoLibHelper;
 import org.mesdag.particlestorm.network.EmitterAttachPacketS2C;
 import org.mesdag.particlestorm.network.EmitterCreationPacketS2C;
 import org.mesdag.particlestorm.network.EmitterRemovalPacket;
@@ -35,38 +32,50 @@ import java.util.Collections;
 import java.util.List;
 import java.util.function.Function;
 
-import static org.mesdag.particlestorm.network.EmitterSynchronizePacket.KEY;
-
-@Mod(ParticleStorm.MODID)
+@Mod(value = ParticleStorm.MODID, dist = Dist.CLIENT)
 public final class ParticleStorm {
     public static final String MODID = "particlestorm";
     public static final Logger LOGGER = LoggerFactory.getLogger("ParticleStorm");
-    public static final boolean GECKOLIB_LOADED = LoadingModList.get().getModFileById("geckolib") != null;
-    public static final boolean SODIUM_LOADED = LoadingModList.get().getModFileById("sodium") != null;
-    public static final boolean IRIS_LOADED = LoadingModList.get().getModFileById("iris") != null;
-    public static final boolean DEBUG = Boolean.getBoolean("particlestorm.debug") && GECKOLIB_LOADED;
+    public static final boolean GECKOLIB_LOADED = ModList.get().isLoaded("geckolib");
 
     private static final DeferredRegister<ParticleType<?>> REGISTER = DeferredRegister.create(Registries.PARTICLE_TYPE, MODID);
-    public static final DeferredHolder<ParticleType<?>, ParticleType<MolangParticleOption>> MOLANG = registerParticleType(REGISTER, "molang");
+    public static final ParticleType<MolangParticleOption> MOLANG = new ParticleType<>(false) {
+        @Override
+        public MapCodec<MolangParticleOption> codec() {
+            return MolangParticleOption.CODEC;
+        }
+
+        @Override
+        public StreamCodec<ByteBuf, MolangParticleOption> streamCodec() {
+            return MolangParticleOption.STREAM_CODEC;
+        }
+    };
     public static final Codec<List<String>> STRING_LIST_CODEC = Codec.either(Codec.STRING, Codec.STRING.listOf()).xmap(
             either -> either.map(Collections::singletonList, Function.identity()),
             l -> l.size() == 1 ? Either.left(l.getFirst()) : Either.right(l)
     );
 
     public ParticleStorm(IEventBus bus, ModContainer container) {
+        PSClientConfigs.onLoad();
+        REGISTER.register("molang", () -> MOLANG);
         REGISTER.register(bus);
-        registerGeoTest(bus);
         bus.addListener(ParticleStorm::registerPayloadHandlers);
         NeoForge.EVENT_BUS.addListener(ParticleStorm::registerCommands);
         NeoForge.EVENT_BUS.addListener(ParticleStorm::playerLoggedIn);
     }
 
     private static void registerPayloadHandlers(RegisterPayloadHandlersEvent event) {
-        event.registrar("1")
-                .playToClient(EmitterCreationPacketS2C.TYPE, EmitterCreationPacketS2C.STREAM_CODEC, EmitterCreationPacketS2C::handle)
-                .playToClient(EmitterAttachPacketS2C.TYPE, EmitterAttachPacketS2C.STREAM_CODEC, EmitterAttachPacketS2C::handle)
-                .playBidirectional(EmitterRemovalPacket.TYPE, EmitterRemovalPacket.STREAM_CODEC, EmitterRemovalPacket::handle)
-                .playBidirectional(EmitterSynchronizePacket.TYPE, EmitterSynchronizePacket.STREAM_CODEC, EmitterSynchronizePacket::handle)
+        // The common registrar declares payload types and server-side handlers only.
+        // Client-bound types must be declared here (playToClient/playBidirectional) so the
+        // per-side RegisterClientPayloadHandlersEvent (see PSGameClient) can attach client
+        // handlers; a type cannot be registered twice, so bidirectional payloads use
+        // playBidirectional with a null client handler. Handlers run on the default main
+        // thread: no explicit HandlerThread.NETWORK / enqueueWork is used.
+        event.registrar("1").optional()
+                .playToClient(EmitterCreationPacketS2C.TYPE, EmitterCreationPacketS2C.STREAM_CODEC)
+                .playToClient(EmitterAttachPacketS2C.TYPE, EmitterAttachPacketS2C.STREAM_CODEC)
+                .playBidirectional(EmitterRemovalPacket.TYPE, EmitterRemovalPacket.STREAM_CODEC, EmitterRemovalPacket::handleServer, null)
+                .playBidirectional(EmitterSynchronizePacket.TYPE, EmitterSynchronizePacket.STREAM_CODEC, EmitterSynchronizePacket::handleServer, null)
         ;
     }
 
@@ -76,37 +85,11 @@ public final class ParticleStorm {
 
     private static void playerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {
         if (event.getEntity() instanceof ServerPlayer player) {
-            CompoundTag data = player.getPersistentData();
-            if (data.contains(KEY)) {
-                CompoundTag emitters = data.getCompound(KEY);
-                for (String id : emitters.getAllKeys()) {
-                    PacketDistributor.sendToPlayer(player, new EmitterSynchronizePacket(Integer.parseInt(id), emitters.getCompound(id)));
-                }
-            }
+            EmitterSynchronizePacket.syncSavedEmitters(player);
         }
     }
 
-    private static void registerGeoTest(IEventBus bus) {
-        if (DEBUG) {
-            GeckoLibHelper.registerStuffs(bus);
-        }
-    }
-
-    public static ResourceLocation asResource(String path) {
-        return ResourceLocation.fromNamespaceAndPath(MODID, path);
-    }
-
-    public static DeferredHolder<ParticleType<?>, ParticleType<MolangParticleOption>> registerParticleType(DeferredRegister<ParticleType<?>> register, String name) {
-        return register.register(name, () -> new ParticleType<>(false) {
-            @Override
-            public MapCodec<MolangParticleOption> codec() {
-                return MolangParticleOption.CODEC;
-            }
-
-            @Override
-            public StreamCodec<ByteBuf, MolangParticleOption> streamCodec() {
-                return MolangParticleOption.STREAM_CODEC;
-            }
-        });
+    public static Identifier asResource(String path) {
+        return Identifier.fromNamespaceAndPath(MODID, path);
     }
 }

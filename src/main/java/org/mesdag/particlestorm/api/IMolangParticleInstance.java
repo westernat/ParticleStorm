@@ -1,13 +1,10 @@
 package org.mesdag.particlestorm.api;
 
-import net.minecraft.client.Camera;
 import net.minecraft.client.particle.Particle;
-import net.minecraft.client.renderer.culling.Frustum;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
-import net.minecraft.core.particles.ParticleGroup;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.core.particles.ParticleLimit;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Vector3f;
@@ -35,23 +32,11 @@ public interface IMolangParticleInstance extends MolangInstance {
 
     Vector3f getInitialSpeed();
 
-    void setXRot(float x, boolean o);
+    void setXRot(float x);
 
-    default void setXRot(float x) {
-        setXRot(x, false);
-    }
+    void setYRot(float y);
 
-    void setYRot(float y, boolean o);
-
-    default void setYRot(float y) {
-        setYRot(y, false);
-    }
-
-    void setZRot(float z, boolean o);
-
-    default void setZRot(float z) {
-        setZRot(z, false);
-    }
+    void setZRot(float z);
 
     void setZRotD(float delta);
 
@@ -95,7 +80,7 @@ public interface IMolangParticleInstance extends MolangInstance {
 
     boolean isInsideKillPlane();
 
-    void setParticleGroup(ParticleGroup group);
+    void setParticleGroup(ParticleLimit group);
 
     void setLastTimeline(int last);
 
@@ -113,7 +98,7 @@ public interface IMolangParticleInstance extends MolangInstance {
 
     double getZ();
 
-    void setPos(double x, double y, double z, boolean o);
+    void setPosO(double x, double y, double z);
 
     void setColor(float red, float green, float blue, float alpha);
 
@@ -126,19 +111,8 @@ public interface IMolangParticleInstance extends MolangInstance {
     boolean isDiscarded();
 
     // region default
-    default void moveDirectly(double dx, double dy, double dz) {
-        float radius = getCollisionRadius();
-        double px = getX() + dx;
-        double py = getY() + dy;
-        double pz = getZ() + dz;
-        self().setBoundingBox(new AABB(
-                px - radius,
-                py,
-                pz - radius,
-                px + radius,
-                py + radius + radius,
-                pz + radius
-        ));
+    default void moveDirectly(double x, double y, double z) {
+        self().setBoundingBox(self().getBoundingBox().move(x, y, z));
         self().setLocationFromBoundingbox();
     }
 
@@ -153,13 +127,13 @@ public interface IMolangParticleInstance extends MolangInstance {
     }
 
     @Override
-    default ResourceLocation getIdentity() {
+    default Identifier getIdentity() {
         return getEmitter().particleId;
     }
 
     @Override
     default Vec3 getPosition() {
-        return self().getPos();
+        return new Vec3(getX(), getY(), getZ());
     }
 
     @Override
@@ -170,10 +144,6 @@ public interface IMolangParticleInstance extends MolangInstance {
     @Override
     default float getInvTickRate() {
         return getEmitter().invTickRate;
-    }
-
-    default boolean isVisible(Camera camera, Frustum frustum, float partialTick) {
-        return frustum.isVisible(self().getRenderBoundingBox(partialTick));
     }
     // endregion
 }

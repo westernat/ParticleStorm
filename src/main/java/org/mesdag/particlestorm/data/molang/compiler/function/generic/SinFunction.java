@@ -5,11 +5,14 @@ import org.mesdag.particlestorm.api.MolangInstance;
 import org.mesdag.particlestorm.data.molang.compiler.MathValue;
 import org.mesdag.particlestorm.data.molang.compiler.function.MathFunction;
 
-/// [MathFunction] value supplier
-///
-/// **Contract:**
-///
-/// Returns the sine of the input value angle, with the input angle converted to radians
+/**
+ * {@link MathFunction} value supplier
+ *
+ * <p>
+ * <b>Contract:</b>
+ * <br>
+ * Returns the sine of the input value angle, with the input angle converted to radians
+ */
 public final class SinFunction extends MathFunction {
     private final MathValue value;
 
@@ -25,8 +28,8 @@ public final class SinFunction extends MathFunction {
     }
 
     @Override
-    public float compute(MolangInstance instance) {
-        return Mth.sin(value.get(instance) * Mth.DEG_TO_RAD);
+    public double compute(MolangInstance instance) {
+        return Math.sin(this.value.get(instance) * Mth.DEG_TO_RAD);
     }
 
     @Override
