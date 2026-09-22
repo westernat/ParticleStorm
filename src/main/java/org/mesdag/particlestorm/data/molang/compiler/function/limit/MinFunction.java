@@ -4,11 +4,14 @@ import org.mesdag.particlestorm.api.MolangInstance;
 import org.mesdag.particlestorm.data.molang.compiler.MathValue;
 import org.mesdag.particlestorm.data.molang.compiler.function.MathFunction;
 
-/// [MathFunction] value supplier
-///
-/// **Contract:**
-///
-/// Returns the lesser of the two input values
+/**
+ * {@link MathFunction} value supplier
+ *
+ * <p>
+ * <b>Contract:</b>
+ * <br>
+ * Returns the lesser of the two input values
+ */
 public final class MinFunction extends MathFunction {
     private final MathValue valueA;
     private final MathValue valueB;
@@ -26,8 +29,8 @@ public final class MinFunction extends MathFunction {
     }
 
     @Override
-    public float compute(MolangInstance instance) {
-        return Math.min(valueA.get(instance), valueB.get(instance));
+    public double compute(MolangInstance instance) {
+        return Math.min(this.valueA.get(instance), this.valueB.get(instance));
     }
 
     @Override
@@ -37,6 +40,6 @@ public final class MinFunction extends MathFunction {
 
     @Override
     public MathValue[] getArgs() {
-        return new MathValue[] {valueA, valueB};
+        return new MathValue[] {this.valueA, this.valueB};
     }
 }

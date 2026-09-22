@@ -4,13 +4,13 @@ import com.mojang.serialization.Codec;
 import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.util.ExtraCodecs;
 import net.minecraft.util.Mth;
 import net.minecraft.util.StringRepresentable;
-import net.neoforged.neoforge.common.util.NeoForgeExtraCodecs;
 import org.mesdag.particlestorm.api.IMolangParticleInstance;
 import org.mesdag.particlestorm.api.IParticleComponent;
+import org.mesdag.particlestorm.data.DuplicateFieldDecoder;
 import org.mesdag.particlestorm.data.molang.FloatMolangExp;
 import org.mesdag.particlestorm.data.molang.FloatMolangExp2;
 import org.mesdag.particlestorm.data.molang.FloatMolangExp3;
@@ -20,10 +20,10 @@ import java.util.List;
 import java.util.Locale;
 
 public record ParticleAppearanceBillboard(FloatMolangExp2 size, FaceCameraMode faceCameraMode, Direction direction, UV uv) implements IParticleComponent {
-    public static final ResourceLocation ID = ResourceLocation.withDefaultNamespace("particle_appearance_billboard");
+    public static final Identifier ID = Identifier.withDefaultNamespace("particle_appearance_billboard");
     public static final Codec<ParticleAppearanceBillboard> CODEC = RecordCodecBuilder.create(instance -> instance.group(
             FloatMolangExp2.CODEC.fieldOf("size").forGetter(ParticleAppearanceBillboard::size),
-            NeoForgeExtraCodecs.aliasedFieldOf(FaceCameraMode.CODEC, "face_camera_mode", "facing_camera_mode").forGetter(ParticleAppearanceBillboard::faceCameraMode),
+            DuplicateFieldDecoder.fieldOf(FaceCameraMode.CODEC, "face_camera_mode", "facing_camera_mode").forGetter(ParticleAppearanceBillboard::faceCameraMode),
             Direction.CODEC.lenientOptionalFieldOf("direction", Direction.DEFAULT).forGetter(ParticleAppearanceBillboard::direction),
             UV.CODEC.fieldOf("uv").orElse(UV.EMPTY).forGetter(ParticleAppearanceBillboard::uv)
     ).apply(instance, ParticleAppearanceBillboard::new));
@@ -56,9 +56,12 @@ public record ParticleAppearanceBillboard(FloatMolangExp2 size, FaceCameraMode f
         if (flipbook == UV.Flipbook.EMPTY) {
             updateSimpleUV(instance);
         } else if (flipbook.stretchToLifetime) {
-            updateFlipbookUV(instance);
             instance.setMaxFrame((int) flipbook.maxFrame.calculate(instance));
-            instance.setCurrentFrame(instance.getMaxFrame() * instance.getAge() / instance.self().getLifetime());
+            int lifetime = instance.self().getLifetime();
+            instance.setCurrentFrame(lifetime > 0
+                    ? Math.min(instance.getMaxFrame() - 1, instance.getMaxFrame() * instance.getAge() / lifetime)
+                    : 0);
+            updateFlipbookUV(instance);
         } else {
             float gameTime = (float) ((int) instance.getLevel().getGameTime() & 0b11111111);
             if (gameTime % (instance.getLevel().tickRateManager().tickrate() / flipbook.framesPerSecond) < 1.0F) {
@@ -92,17 +95,15 @@ public record ParticleAppearanceBillboard(FloatMolangExp2 size, FaceCameraMode f
         }
     }
 
-    @Override
-    public int order() {
-        return 700; // 比ParticleInitialization早
-    }
-
     private void doFacingCameraMode(IMolangParticleInstance instance) {
         if (faceCameraMode.isDirection()) {
             if (direction.mode == Direction.Mode.CUSTOM_DIRECTION) {
                 float[] values = direction.customDirection.calculate(instance);
-                instance.getFacingDirection().set(values[0], values[1], values[2]).normalize();
-            } else if (Mth.length(instance.getXd(), instance.getYd(), instance.getZd()) >= direction.minSpeedThreshold) {
+                instance.getFacingDirection().set(values[0], values[1], values[2]);
+                if (instance.getFacingDirection().lengthSquared() > Mth.EPSILON) {
+                    instance.getFacingDirection().normalize();
+                }
+            } else if (Mth.lengthSquared(instance.getXd(), instance.getYd(), instance.getZd()) > instance.getPreset().minSpeedThresholdSqr) {
                 instance.getFacingDirection().set(instance.getXd(), instance.getYd(), instance.getZd()).normalize();
             }
         }
@@ -120,14 +121,11 @@ public record ParticleAppearanceBillboard(FloatMolangExp2 size, FaceCameraMode f
     private void updateSimpleUV(IMolangParticleInstance instance) {
         TextureAtlasSprite sprite = instance.getSprite();
         if (sprite == null) return;
-        float[] uvStart = uv.uv.calculate(instance);
-        float[] uvSize = uv.uvSize.calculate(instance);
-        instance.setUV(
-                sprite.getX() + uvStart[0] * instance.getScaleU(),
-                sprite.getY() + uvStart[1] * instance.getScaleV(),
-                uvSize[0] * instance.getScaleU(),
-                uvSize[1] * instance.getScaleV()
-        );
+        float[] base = uv.uv.calculate(instance);
+        float[] size = uv.uvSize.calculate(instance);
+        int x = sprite.getX();
+        int y = sprite.getY();
+        instance.setUV(x + base[0] * instance.getScaleU(), y + base[1] * instance.getScaleV(), size[0] * instance.getScaleU(), size[1] * instance.getScaleV());
     }
 
     private void updateFlipbookUV(IMolangParticleInstance instance) {
@@ -138,7 +136,7 @@ public record ParticleAppearanceBillboard(FloatMolangExp2 size, FaceCameraMode f
         float v = instance.getUvStep()[1] * instance.getCurrentFrame();
         int x = sprite.getX();
         int y = sprite.getY();
-        instance.setUV(x + base[0] + u, y + base[1] + v, instance.getUvSize()[0], instance.getUvSize()[1]);
+        instance.setUV(x + base[0] * instance.getScaleU() + u, y + base[1] * instance.getScaleV() + v, instance.getUvSize()[0], instance.getUvSize()[1]);
     }
 
     @Override
@@ -232,12 +230,12 @@ public record ParticleAppearanceBillboard(FloatMolangExp2 size, FaceCameraMode f
     ///                      When set to the texture width/height, this works like texels
     /// @param uv
     /// @param uvSize        Assuming the specified texture width and height, use these uv coordinates.<p>
-    ///                      Evaluated every frame                                                                                                                                            Evaluated every frame
+    ///                      Evaluated every frame
     public record UV(int texturewidth, int textureheight, FloatMolangExp2 uv, FloatMolangExp2 uvSize, Flipbook flipbook) {
         public static final UV EMPTY = new UV(1, 1, FloatMolangExp2.ZERO, FloatMolangExp2.ZERO, Flipbook.EMPTY);
         public static final Codec<UV> CODEC = RecordCodecBuilder.create(instance -> instance.group(
-                NeoForgeExtraCodecs.aliasedFieldOf(ExtraCodecs.POSITIVE_INT, "texturewidth", "texture_width").orElse(1).forGetter(UV::texturewidth),
-                NeoForgeExtraCodecs.aliasedFieldOf(ExtraCodecs.POSITIVE_INT, "textureheight", "texture_height").orElse(1).forGetter(UV::textureheight),
+                DuplicateFieldDecoder.fieldOf(ExtraCodecs.POSITIVE_INT, "texturewidth", "texture_width").orElse(1).forGetter(UV::texturewidth),
+                DuplicateFieldDecoder.fieldOf(ExtraCodecs.POSITIVE_INT, "textureheight", "texture_height").orElse(1).forGetter(UV::textureheight),
                 FloatMolangExp2.CODEC.fieldOf("uv").orElse(FloatMolangExp2.ZERO).forGetter(UV::uv),
                 FloatMolangExp2.CODEC.fieldOf("uv_size").orElse(FloatMolangExp2.ZERO).forGetter(UV::uvSize),
                 Flipbook.CODEC.fieldOf("flipbook").orElse(Flipbook.EMPTY).forGetter(UV::flipbook)

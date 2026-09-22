@@ -18,10 +18,10 @@ import java.util.List;
 import java.util.Map;
 
 public class EmitterPreset {
-    public ParticleType<?> type;
-    public List<IEmitterComponent> components;
-    public Map<String, Map<String, IEventNode>> events;
-    public VariableTable vars;
+    public final ParticleType<?> type;
+    public final List<IEmitterComponent> components;
+    public final Map<String, Map<String, IEventNode>> events;
+    public final VariableTable vars;
     public EmitterRate.Type emitterRateType = EmitterRate.Type.MANUAL;
     public boolean localPosition = false;
     public boolean localRotation = false;
@@ -30,6 +30,11 @@ public class EmitterPreset {
 
     /// For custom preset data
     protected Map<Class<?>, Object> tickets;
+
+    @Deprecated
+    public EmitterPreset(MolangParticleOption option, List<IEmitterComponent> components, Map<String, Map<String, IEventNode>> events) {
+        this(option.getType(), components, events);
+    }
 
     public EmitterPreset(ParticleType<?> type, List<IEmitterComponent> components, Map<String, Map<String, IEventNode>> events) {
         this.type = type;

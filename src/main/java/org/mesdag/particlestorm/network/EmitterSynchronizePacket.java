@@ -7,14 +7,17 @@ import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
+import net.neoforged.neoforge.client.network.ClientPacketDistributor;
 import net.neoforged.neoforge.network.PacketDistributor;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
+import org.mesdag.particlestorm.PSGameClient;
 import org.mesdag.particlestorm.ParticleStorm;
-import org.mesdag.particlestorm.particle.MolangParticleEngine;
+import org.mesdag.particlestorm.mixed.IPlayerPersistentData;
 import org.mesdag.particlestorm.particle.ParticleEmitter;
 
 public record EmitterSynchronizePacket(int id, CompoundTag tag) implements CustomPacketPayload {
     public static final Type<EmitterSynchronizePacket> TYPE = new Type<>(ParticleStorm.asResource("emitter_synchronize"));
+
     public static final StreamCodec<ByteBuf, EmitterSynchronizePacket> STREAM_CODEC = StreamCodec.composite(
             ByteBufCodecs.INT, p -> p.id,
             ByteBufCodecs.COMPOUND_TAG, p -> p.tag,
@@ -27,35 +30,45 @@ public record EmitterSynchronizePacket(int id, CompoundTag tag) implements Custo
         return TYPE;
     }
 
-    public void handle(IPayloadContext context) {
-        context.enqueueWork(() -> {
-            Player player = context.player();
-            if (player.isLocalPlayer()) {
-                MolangParticleEngine.INSTANCE.loadEmitter(player.level(), id, tag);
-            } else {
-                CompoundTag data = player.getPersistentData();
-                if (data.contains(KEY)) {
-                    data.getCompound(KEY).put(Integer.toString(id), tag);
-                } else {
-                    CompoundTag emitters = new CompoundTag();
-                    emitters.put(Integer.toString(id), tag);
-                    data.put(KEY, emitters);
-                }
-            }
-        });
+    public static void handleClient(EmitterSynchronizePacket payload, IPayloadContext context) {
+        Player player = context.player();
+        PSGameClient.LOADER.loadEmitter(player.level(), payload.id, payload.tag);
+    }
+
+    public static void handleServer(EmitterSynchronizePacket payload, IPayloadContext context) {
+        CompoundTag emitters = getEmitterData(context.player(), true);
+        emitters.put(Integer.toString(payload.id), payload.tag.copy());
     }
 
     public static void syncToServer(ParticleEmitter emitter) {
-        PacketDistributor.sendToServer(new EmitterSynchronizePacket(emitter.id, emitter.serialize()));
+        ClientPacketDistributor.sendToServer(new EmitterSynchronizePacket(emitter.id, emitter.serialize()));
     }
 
     public static void syncToClient(ServerPlayer player, int id) {
-        CompoundTag data = player.getPersistentData();
-        if (data.contains(KEY)) {
-            CompoundTag emitter = data.getCompound(KEY).getCompound(Integer.toString(id));
-            PacketDistributor.sendToPlayer(player, new EmitterSynchronizePacket(id, emitter));
+        CompoundTag emitters = getEmitterData(player, false);
+        if (emitters.contains(Integer.toString(id))) {
+            PacketDistributor.sendToPlayer(player, new EmitterSynchronizePacket(id, emitters.getCompoundOrEmpty(Integer.toString(id))));
         } else {
-            ParticleStorm.LOGGER.warn("No emitters for player: {}", player.getGameProfile());
+            ParticleStorm.LOGGER.warn("No persisted emitter {} for player {}", id, player.getGameProfile());
         }
+    }
+
+    public static void syncSavedEmitters(ServerPlayer player) {
+        CompoundTag emitters = getEmitterData(player, false);
+        for (String id : emitters.keySet()) {
+            try {
+                PacketDistributor.sendToPlayer(player, new EmitterSynchronizePacket(Integer.parseInt(id), emitters.getCompoundOrEmpty(id)));
+            } catch (NumberFormatException exception) {
+                ParticleStorm.LOGGER.warn("Invalid persisted emitter id '{}' for player {}", id, player.getGameProfile());
+            }
+        }
+    }
+
+    public static CompoundTag getEmitterData(Player player, boolean create) {
+        CompoundTag persistentData = IPlayerPersistentData.of(player).particlestorm$getPersistentData();
+        if (!persistentData.contains(KEY) && create) {
+            persistentData.put(KEY, new CompoundTag());
+        }
+        return persistentData.getCompoundOrEmpty(KEY);
     }
 }

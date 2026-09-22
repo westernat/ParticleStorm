@@ -11,6 +11,8 @@ import org.mesdag.particlestorm.particle.attach.EmitterAttachHandler;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 
+/// Redirects vanilla per-block animate ticks to ParticleStorm attached emitters when a mod has
+/// registered an attachment for the block state through AttachEmitterToBlockEvent.
 @Mixin(ClientLevel.class)
 public abstract class ClientLevelMixin {
     @WrapWithCondition(method = "doAnimateTick", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/level/block/Block;animateTick(Lnet/minecraft/world/level/block/state/BlockState;Lnet/minecraft/world/level/Level;Lnet/minecraft/core/BlockPos;Lnet/minecraft/util/RandomSource;)V"))

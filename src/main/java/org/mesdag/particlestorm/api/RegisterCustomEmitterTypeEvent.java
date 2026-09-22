@@ -2,7 +2,7 @@ package org.mesdag.particlestorm.api;
 
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.level.Level;
 import net.neoforged.bus.api.Event;
 import net.neoforged.fml.ModLoader;
@@ -15,8 +15,8 @@ import java.util.Map;
 import java.util.function.BiFunction;
 
 public class RegisterCustomEmitterTypeEvent extends Event implements IModBusEvent {
-    private static final Map<ResourceLocation, BiFunction<Level, CompoundTag, ? extends ParticleEmitter>> fromNbt = new Object2ObjectOpenHashMap<>();
-    private static final Map<ResourceLocation, BiFunction<ParticleEmitter, ParticleEffect, ? extends ParticleEmitter>> fromEffect = new Object2ObjectOpenHashMap<>();
+    private static final Map<Identifier, BiFunction<Level, CompoundTag, ? extends ParticleEmitter>> fromNbt = new Object2ObjectOpenHashMap<>();
+    private static final Map<Identifier, BiFunction<ParticleEmitter, ParticleEffect, ? extends ParticleEmitter>> fromEffect = new Object2ObjectOpenHashMap<>();
 
     private RegisterCustomEmitterTypeEvent() {}
 
@@ -29,7 +29,7 @@ public class RegisterCustomEmitterTypeEvent extends Event implements IModBusEven
         }
     }
 
-    public <E extends ParticleEmitter> void register(ResourceLocation type, BiFunction<Level, CompoundTag, E> nbt, BiFunction<ParticleEmitter, ParticleEffect, E> effect) {
+    public <E extends ParticleEmitter> void register(Identifier type, BiFunction<Level, CompoundTag, E> nbt, BiFunction<ParticleEmitter, ParticleEffect, E> effect) {
         if (fromNbt.put(type, nbt) != null) {
             throw new IllegalStateException("Duplicated emitter type: " + type);
         }
@@ -37,7 +37,7 @@ public class RegisterCustomEmitterTypeEvent extends Event implements IModBusEven
     }
 
     public static ParticleEmitter create(Level level, CompoundTag tag) {
-        return fromNbt.getOrDefault(ResourceLocation.tryParse(tag.getString(ParticleEmitter.TYPE_KEY)), ParticleEmitter::new).apply(level, tag);
+        return fromNbt.getOrDefault(Identifier.tryParse(tag.getString(ParticleEmitter.TYPE_KEY).orElse("")), ParticleEmitter::new).apply(level, tag);
     }
 
     public static ParticleEmitter create(ParticleEmitter parent, ParticleEffect effect) {

@@ -7,7 +7,7 @@ import it.unimi.dsi.fastutil.objects.ObjectBooleanPair;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.util.Mth;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
@@ -23,8 +23,15 @@ import org.mesdag.particlestorm.data.molang.compiler.value.Variable;
 import org.mesdag.particlestorm.particle.MolangParticleEngine;
 import org.mesdag.particlestorm.particle.ParticleEmitter;
 
-import java.util.*;
+import java.util.ArrayDeque;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Queue;
 
+/// Client-side routing of block animate ticks to ParticleStorm emitters, plus distance based
+/// auto-removal of attached emitters. Fired once per client session through
+/// {@link AttachEmitterToBlockEvent} on the mod event bus.
 public final class EmitterAttachHandler {
     public static final Map<BlockPos, ObjectBooleanPair<WithBlockParticleEmitter>> attachedToBlockEmitters = new Object2ObjectOpenHashMap<>(64);
     public static final Queue<IgnoreRangeParticleEmitter> ignoreRangeEmitters = new ArrayDeque<>(64);
@@ -75,7 +82,7 @@ public final class EmitterAttachHandler {
             Iterator<IgnoreRangeParticleEmitter> iterator = ignoreRangeEmitters.iterator();
             while (iterator.hasNext()) {
                 IgnoreRangeParticleEmitter emitter = iterator.next();
-                List<ParticleEmitter> children = emitter.getChildren(false);
+                List<ParticleEmitter> children = emitter.children;
                 if (children != null) {
                     for (ParticleEmitter child : children) {
                         if (child instanceof IgnoreRangeParticleEmitter irpe && shouldRemoveEmitter(camera, irpe)) {
@@ -91,7 +98,7 @@ public final class EmitterAttachHandler {
         }
     }
 
-    public static boolean addEmitter(Level level, Vec3 pos, ResourceLocation particle, Variable... variables) {
+    public static boolean addEmitter(Level level, Vec3 pos, Identifier particle, Variable... variables) {
         if (ableToAddEmitter()) {
             PresetVarsParticleEmitter emitter = new PresetVarsParticleEmitter(level, pos, particle, false, variables);
             MolangParticleEngine.INSTANCE.addEmitter(emitter);
@@ -102,7 +109,7 @@ public final class EmitterAttachHandler {
     }
 
     public static boolean ableToAddEmitter() {
-        return Minecraft.fps > PSClientConfigs.fpsThreshold &&
+        return Minecraft.getInstance().getFps() > PSClientConfigs.fpsThreshold &&
                 attachedToBlockEmitters.size() < PSClientConfigs.emitterLimit;
     }
 
@@ -113,13 +120,13 @@ public final class EmitterAttachHandler {
     }
 
     public static boolean isFarAwayFromCamera(Camera camera, IgnoreRangeParticleEmitter emitter) {
-        double v = camera.getPosition().distanceToSqr(emitter.getPosition());
+        double v = camera.position().distanceToSqr(emitter.getPosition());
         if (v < Mth.square(PSClientConfigs.emitterAutoRemoveMinimumDistance)) return false;
         v = Math.sqrt(v) - PSClientConfigs.emitterAutoRemoveMinimumDistance;
         double c = 0;
         do {
             c += PSClientConfigs.emitterAutoRemoveAttenuationCoefficient;
-            if (emitter.level.random.nextDouble() < c) {
+            if (emitter.level.getRandom().nextDouble() < c) {
                 return true;
             }
             v -= PSClientConfigs.emitterAutoRemoveAttenuationDistance;
@@ -133,13 +140,13 @@ public final class EmitterAttachHandler {
 
     public static class AttachData implements Function3<Level, BlockPos, BlockState, @Nullable WithBlockParticleEmitter> {
         public boolean disabled = false;
-        public final ResourceLocation particleId;
+        public final Identifier particleId;
         public final Function3<Level, BlockPos, BlockState, MolangExp> expression;
         public final boolean ignoreSameBlock;
         public final boolean allowsVanilla;
         public final boolean ignoreRange;
 
-        public AttachData(ResourceLocation particleId, Function3<Level, BlockPos, BlockState, MolangExp> expression, boolean ignoreSameBlock, boolean allowsVanilla, boolean ignoreRange) {
+        public AttachData(Identifier particleId, Function3<Level, BlockPos, BlockState, MolangExp> expression, boolean ignoreSameBlock, boolean allowsVanilla, boolean ignoreRange) {
             this.particleId = particleId;
             this.expression = expression;
             this.ignoreSameBlock = ignoreSameBlock;
@@ -147,7 +154,7 @@ public final class EmitterAttachHandler {
             this.ignoreRange = ignoreRange;
         }
 
-        public AttachData(ResourceLocation particleId, MolangExp expression, boolean ignoreSameBlock, boolean allowsVanilla, boolean ignoreRange) {
+        public AttachData(Identifier particleId, MolangExp expression, boolean ignoreSameBlock, boolean allowsVanilla, boolean ignoreRange) {
             this(particleId, (level, pos, state) -> expression, ignoreSameBlock, allowsVanilla, ignoreRange);
         }
 
@@ -155,11 +162,11 @@ public final class EmitterAttachHandler {
         @Override
         public @Nullable WithBlockParticleEmitter apply(Level level, BlockPos pos, BlockState state) {
             if (disabled) return null;
-            return new WithBlockParticleEmitter(level, pos.getCenter(), particleId, expression.apply(level, pos, state), ignoreSameBlock, ignoreRange);
+            return new WithBlockParticleEmitter(level, new Vec3(pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5), particleId, expression.apply(level, pos, state), ignoreSameBlock, ignoreRange);
         }
 
         public static class Wrapped extends AttachData {
-            private final static ResourceLocation defaultParticle = ParticleStorm.asResource("blend");
+            private final static Identifier defaultParticle = ParticleStorm.asResource("blend");
 
             private final Function3<Level, BlockPos, BlockState, @Nullable WithBlockParticleEmitter> factory;
 

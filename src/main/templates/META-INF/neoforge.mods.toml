@@ -1,0 +1,38 @@
+# ParticleStorm NeoForge 26.2 metadata. Placeholder values are expanded by the
+# generateModMetadata task from gradle.properties at build time.
+modLoader = "javafml" #mandatory
+loaderVersion = "${loader_version_range}" #mandatory
+license = "${mod_license}"
+[[mods]] #mandatory
+modId = "${mod_id}" #mandatory
+version = "${mod_version}" #mandatory
+displayName = "${mod_name}" #mandatory
+logoFile = "icon.png"
+authors = "${mod_authors}" #optional
+
+# The description text for the mod (multi line!) (#mandatory)
+description = '''${mod_description}'''
+
+# Declare the mixin configuration so FML loads it on the client.
+[[mixins]]
+config = "${mod_id}.mixins.json"
+
+# Access Transformers are auto-detected at META-INF/accesstransformer.cfg by ModDevGradle;
+# the explicit block is kept for clarity.
+[[accessTransformers]]
+file = "META-INF/accesstransformer.cfg"
+
+# A dependency - use the . to indicate dependency for a specific modid. Dependencies are optional.
+[[dependencies."${mod_id}"]]
+modId = "neoforge" #mandatory
+type = "required" #mandatory
+versionRange = "${neo_version_range}" #mandatory
+ordering = "NONE"
+side = "BOTH"
+
+[[dependencies."${mod_id}"]]
+modId = "minecraft"
+type = "required"
+versionRange = "${minecraft_version_range}"
+ordering = "NONE"
+side = "BOTH"

@@ -2,7 +2,7 @@ package org.mesdag.particlestorm.particle.attach;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
@@ -12,19 +12,21 @@ import org.mesdag.particlestorm.data.event.ParticleEffect;
 import org.mesdag.particlestorm.data.molang.MolangExp;
 import org.mesdag.particlestorm.particle.ParticleEmitter;
 
+/// Emitter attached to a block position; removes itself when the block state changes away from the
+/// one it was attached to.
 public class WithBlockParticleEmitter extends IgnoreRangeParticleEmitter {
-    public static final ResourceLocation TYPE = ParticleStorm.asResource("with_block");
+    public static final Identifier TYPE = ParticleStorm.asResource("with_block");
 
     protected @Nullable WithBlockParticleEmitter.BlockData blockData;
 
-    public WithBlockParticleEmitter(Level level, Vec3 pos, ResourceLocation particleId, MolangExp expression, boolean ignoreSameBlock, boolean ignoreRange) {
+    public WithBlockParticleEmitter(Level level, Vec3 pos, Identifier particleId, MolangExp expression, boolean ignoreSameBlock, boolean ignoreRange) {
         super(TYPE, level, pos, particleId, expression, ignoreRange);
         initBlock(level, pos, ignoreSameBlock);
     }
 
     public WithBlockParticleEmitter(Level level, CompoundTag tag) {
         super(level, tag);
-        initBlock(level, pos, tag.getBoolean("ignoreSameBlock"));
+        initBlock(level, pos, tag.getBoolean("ignoreSameBlock").orElse(false));
     }
 
     public WithBlockParticleEmitter(ParticleEmitter parent, ParticleEffect effect) {
@@ -65,12 +67,6 @@ public class WithBlockParticleEmitter extends IgnoreRangeParticleEmitter {
         if (blockData != null) {
             tag.putBoolean("ignoreSameBlock", blockData.ignoreSameBlock);
         }
-    }
-
-    @Override
-    public void deserialize(CompoundTag tag) {
-        super.deserialize(tag);
-
     }
 
     public record BlockData(BlockPos pos, BlockState state, boolean ignoreSameBlock) {}

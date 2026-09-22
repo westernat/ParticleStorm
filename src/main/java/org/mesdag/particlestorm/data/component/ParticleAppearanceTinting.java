@@ -5,7 +5,7 @@ import com.mojang.datafixers.util.Either;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.util.Mth;
-import net.minecraft.util.Tuple;
+import org.mesdag.particlestorm.data.Tuple;
 import org.mesdag.particlestorm.api.IMolangParticleInstance;
 import org.mesdag.particlestorm.api.IParticleComponent;
 import org.mesdag.particlestorm.api.MolangInstance;
@@ -74,8 +74,8 @@ public record ParticleAppearanceTinting(Color color, ColorField colorField) impl
     @Override
     public void apply(IMolangParticleInstance instance) {
         if (color.interpolant.initialized() && !color.gradient.map.isEmpty()) {
-            float interpolant = color.interpolant.calculate(instance);
-            float[] calculated = getCalculatedColor(instance, color.gradient.list, interpolant / color.gradient.range);
+            float interpolant = Mth.clamp(color.interpolant.calculate(instance), 0.0F, 1.0F);
+            float[] calculated = getCalculatedColor(instance, color.gradient.list, interpolant);
             instance.setColor(calculated[0], calculated[1], calculated[2], calculated[3]);
         } else {
             float[] color = colorField.calculate(instance);

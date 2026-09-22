@@ -7,14 +7,14 @@ import net.neoforged.neoforge.common.NeoForge;
 import org.mesdag.particlestorm.api.AddDefaultVariableEvent;
 import org.mesdag.particlestorm.data.molang.VariableTable;
 import org.mesdag.particlestorm.data.molang.compiler.value.Variable;
-import org.mesdag.particlestorm.mixed.IPSEntity;
+import org.mesdag.particlestorm.mixed.IEntity;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 
 import java.util.Hashtable;
 
 @Mixin(Entity.class)
-public abstract class EntityMixin implements IPSEntity {
+public abstract class EntityMixin implements IEntity {
     @Unique
     private VariableTable particlestorm$variableTable;
 
@@ -24,9 +24,9 @@ public abstract class EntityMixin implements IPSEntity {
             Hashtable<String, Variable> table = new Hashtable<>();
             table.put("variable.entity_scale", new Variable("variable.entity_scale", p -> {
                 if (p.getAttachedEntity() instanceof LivingEntity living) {
-                    return (float) living.getAttributeValue(Attributes.SCALE);
+                    return living.getAttributeValue(Attributes.SCALE);
                 }
-                return 1;
+                return 1.0;
             }));
             this.particlestorm$variableTable = new VariableTable(table, null);
             NeoForge.EVENT_BUS.post(new AddDefaultVariableEvent.Entity(particlestorm$variableTable, (Entity) (Object) this));
