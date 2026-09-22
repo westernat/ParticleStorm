@@ -5,17 +5,14 @@ import org.mesdag.particlestorm.data.molang.compiler.MathValue;
 
 public record StringValue(String value) implements MathValue {
     @Override
-    public float get(MolangInstance instance) {
-        return value.isEmpty() ? 0 : 1;
+    public double get(MolangInstance instance) {
+        return value.isEmpty() ? 0.0 : 1.0;
     }
 
     @Override
     public boolean isMutable() {
         return false;
     }
-
-    @Override
-    public void markImmutable() {}
 
     @Override
     public String toString() {

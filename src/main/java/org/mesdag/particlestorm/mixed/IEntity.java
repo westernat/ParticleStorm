@@ -3,10 +3,10 @@ package org.mesdag.particlestorm.mixed;
 import net.minecraft.world.entity.Entity;
 import org.mesdag.particlestorm.data.molang.VariableTable;
 
-public interface IPSEntity {
+public interface IEntity {
     VariableTable particlestorm$getVariableTable();
 
-    static IPSEntity of(Entity entity) {
-        return (IPSEntity) entity;
+    static IEntity of(Entity entity) {
+        return (IEntity) entity;
     }
 }

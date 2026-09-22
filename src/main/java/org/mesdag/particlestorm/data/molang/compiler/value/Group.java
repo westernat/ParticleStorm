@@ -3,20 +3,18 @@ package org.mesdag.particlestorm.data.molang.compiler.value;
 import org.mesdag.particlestorm.api.MolangInstance;
 import org.mesdag.particlestorm.data.molang.compiler.MathValue;
 
-/// [MathValue] value supplier
-///
-/// **Contract:**
-///
-/// An unaltered return of the stored MathValue
+/**
+ * {@link MathValue} value supplier
+ *
+ * <p>
+ * <b>Contract:</b>
+ * <br>
+ * An unaltered return of the stored MathValue
+ */
 public record Group(MathValue contents) implements MathValue {
     @Override
-    public float get(MolangInstance instance) {
+    public double get(MolangInstance instance) {
         return this.contents.get(instance);
-    }
-
-    @Override
-    public void markImmutable() {
-        contents.markImmutable();
     }
 
     @Override

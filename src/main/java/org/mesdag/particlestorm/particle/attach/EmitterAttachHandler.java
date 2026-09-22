@@ -13,7 +13,6 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
-import net.neoforged.fml.ModLoader;
 import org.jetbrains.annotations.Nullable;
 import org.mesdag.particlestorm.PSClientConfigs;
 import org.mesdag.particlestorm.ParticleStorm;
@@ -23,7 +22,11 @@ import org.mesdag.particlestorm.data.molang.compiler.value.Variable;
 import org.mesdag.particlestorm.particle.MolangParticleEngine;
 import org.mesdag.particlestorm.particle.ParticleEmitter;
 
-import java.util.*;
+import java.util.ArrayDeque;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Queue;
 
 public final class EmitterAttachHandler {
     public static final Map<BlockPos, ObjectBooleanPair<WithBlockParticleEmitter>> attachedToBlockEmitters = new Object2ObjectOpenHashMap<>(64);
@@ -36,7 +39,7 @@ public final class EmitterAttachHandler {
 
     public static void postEvent() {
         if (stateMap.isEmpty()) {
-            ModLoader.postEvent(new AttachEmitterToBlockEvent(stateMap, blockMap));
+            AttachEmitterToBlockEvent.EVENT.invoker().onAttach(new AttachEmitterToBlockEvent(stateMap, blockMap));
         }
     }
 
@@ -75,7 +78,7 @@ public final class EmitterAttachHandler {
             Iterator<IgnoreRangeParticleEmitter> iterator = ignoreRangeEmitters.iterator();
             while (iterator.hasNext()) {
                 IgnoreRangeParticleEmitter emitter = iterator.next();
-                List<ParticleEmitter> children = emitter.getChildren(false);
+                List<ParticleEmitter> children = emitter.children;
                 if (children != null) {
                     for (ParticleEmitter child : children) {
                         if (child instanceof IgnoreRangeParticleEmitter irpe && shouldRemoveEmitter(camera, irpe)) {
@@ -102,7 +105,7 @@ public final class EmitterAttachHandler {
     }
 
     public static boolean ableToAddEmitter() {
-        return Minecraft.fps > PSClientConfigs.fpsThreshold &&
+        return Minecraft.getInstance().getFps() > PSClientConfigs.fpsThreshold &&
                 attachedToBlockEmitters.size() < PSClientConfigs.emitterLimit;
     }
 
@@ -119,7 +122,7 @@ public final class EmitterAttachHandler {
         double c = 0;
         do {
             c += PSClientConfigs.emitterAutoRemoveAttenuationCoefficient;
-            if (emitter.level.random.nextDouble() < c) {
+            if (emitter.level.getRandom().nextDouble() < c) {
                 return true;
             }
             v -= PSClientConfigs.emitterAutoRemoveAttenuationDistance;
@@ -159,12 +162,12 @@ public final class EmitterAttachHandler {
         }
 
         public static class Wrapped extends AttachData {
-            private final static ResourceLocation defaultParticle = ParticleStorm.asResource("blend");
+            private static final ResourceLocation DEFAULT_PARTICLE = ParticleStorm.asResource("blend");
 
             private final Function3<Level, BlockPos, BlockState, @Nullable WithBlockParticleEmitter> factory;
 
             public Wrapped(Function3<Level, BlockPos, BlockState, @Nullable WithBlockParticleEmitter> factory, boolean ignoreSameBlock, boolean allowsVanilla, boolean ignoreRange) {
-                super(defaultParticle, MolangExp.EMPTY, ignoreSameBlock, allowsVanilla, ignoreRange);
+                super(DEFAULT_PARTICLE, MolangExp.EMPTY, ignoreSameBlock, allowsVanilla, ignoreRange);
                 this.factory = factory;
             }
 

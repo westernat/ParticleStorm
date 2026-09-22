@@ -10,12 +10,18 @@ import org.mesdag.particlestorm.data.MathHelper;
 import org.mesdag.particlestorm.data.component.ParticleAppearanceBillboard;
 
 public enum FaceCameraMode implements SingleQuadParticle.FacingCameraMode {
-    DO_NOTHING {},
+    DO_NOTHING {
+        @Override
+        public void setRotation(Quaternionf quaternion, Camera camera, float partialTick) {}
+    },
     LOOKAT_XYZ {
         private static final Vector3f wd = new Vector3f();
         private static final Vector3f qd = new Vector3f();
         private static final Vector3f up = new Vector3f(0, 1, 0);
         private static final Matrix3f mat = new Matrix3f();
+
+        @Override
+        public void setRotation(Quaternionf quaternion, Camera camera, float partialTick) {}
 
         @Override
         public void setRotation(IMolangParticleInstance instance, Quaternionf quaternion, Camera camera, float partialTick) {
@@ -34,6 +40,9 @@ public enum FaceCameraMode implements SingleQuadParticle.FacingCameraMode {
         }
     },
     LOOKAT_Y {
+        @Override
+        public void setRotation(Quaternionf quaternion, Camera camera, float partialTick) {}
+
         @Override
         public void setRotation(IMolangParticleInstance instance, Quaternionf quaternion, Camera camera, float partialTick) {
             LOOKAT_XYZ.setRotation(instance, quaternion, camera, partialTick);
@@ -54,42 +63,51 @@ public enum FaceCameraMode implements SingleQuadParticle.FacingCameraMode {
         }
     },
     DIRECTION_X {
-        private static final Vector3f defaultDir = new Vector3f(0, 0, -1);
-        private static final Quaternionf dirRot = new Quaternionf();
+        @Override
+        public void setRotation(Quaternionf quaternion, Camera camera, float partialTick) {
+            quaternion.rotationXYZ(0.0F, Mth.HALF_PI, 0.0F);
+        }
 
         @Override
         public void setRotation(IMolangParticleInstance instance, Quaternionf quaternion, Camera camera, float partialTick) {
-            quaternion.rotationXYZ(0.0F, Mth.HALF_PI, 0.0F);
-            MathHelper.setFromUnitVectors(defaultDir, instance.getFacingDirection(), dirRot);
-            quaternion.premul(dirRot);
+            if (!setDirectionXRotation(instance, quaternion)) {
+                setRotation(quaternion, camera, partialTick);
+            }
         }
     },
     DIRECTION_Y {
-        private static final Vector3f defaultDir = new Vector3f(0, 0, -1);
-        private static final Quaternionf dirRot = new Quaternionf();
+        @Override
+        public void setRotation(Quaternionf quaternion, Camera camera, float partialTick) {
+            quaternion.rotationXYZ(Mth.HALF_PI, Mth.PI, 0.0F);
+        }
 
         @Override
         public void setRotation(IMolangParticleInstance instance, Quaternionf quaternion, Camera camera, float partialTick) {
-            quaternion.rotationXYZ(Mth.HALF_PI, Mth.PI, 0.0F);
-            MathHelper.setFromUnitVectors(defaultDir, instance.getFacingDirection(), dirRot);
-            quaternion.premul(dirRot);
+            if (!setDirectionYRotation(instance, quaternion)) {
+                setRotation(quaternion, camera, partialTick);
+            }
         }
     },
     DIRECTION_Z {
-        private static final Vector3f defaultDir = new Vector3f(0, 0, -1);
-        private static final Quaternionf dirRot = new Quaternionf();
+        @Override
+        public void setRotation(Quaternionf quaternion, Camera camera, float partialTick) {
+            quaternion.rotationXYZ(0.0F, 0.0F, 0.0F);
+        }
 
         @Override
         public void setRotation(IMolangParticleInstance instance, Quaternionf quaternion, Camera camera, float partialTick) {
-            quaternion.rotationXYZ(0.0F, 0.0F, 0.0F);
-            MathHelper.setFromUnitVectors(defaultDir, instance.getFacingDirection(), dirRot);
-            quaternion.premul(dirRot);
+            if (!setDirectionZRotation(instance, quaternion)) {
+                setRotation(quaternion, camera, partialTick);
+            }
         }
     },
     LOOKAT_DIRECTION {
         private static final Vector3f X = new Vector3f(1.0F, 0.0F, 0.0F);
         private static final Vector4f t = new Vector4f();
         private static final Matrix4f m = new Matrix4f();
+
+        @Override
+        public void setRotation(Quaternionf quaternion, Camera camera, float partialTick) {}
 
         @Override
         public void setRotation(IMolangParticleInstance instance, Quaternionf quaternion, Camera camera, float partialTick) {
@@ -127,8 +145,70 @@ public enum FaceCameraMode implements SingleQuadParticle.FacingCameraMode {
         setRotation(quaternion, camera, partialTick);
     }
 
-    @Override
-    public void setRotation(Quaternionf quaternion, Camera camera, float partialTick) {}
+    private static final float DIRECTION_EPSILON = 1.0E-6F;
+    private static final Vector3f WORLD_UP = new Vector3f(0.0F, 1.0F, 0.0F);
+    private static final Vector3f FALLBACK_UP = new Vector3f(0.0F, 0.0F, 1.0F);
+    private static final Vector3f AXIS_X = new Vector3f();
+    private static final Vector3f AXIS_Y = new Vector3f();
+    private static final Vector3f AXIS_Z = new Vector3f();
+    private static final Vector3f TEMP = new Vector3f();
+    private static final Matrix3f DIRECTION_MATRIX = new Matrix3f();
+
+    private static boolean setDirectionXRotation(IMolangParticleInstance instance, Quaternionf quaternion) {
+        if (!readDirection(instance, AXIS_X)) {
+            return false;
+        }
+
+        setUpAxis(AXIS_X, AXIS_Y);
+        AXIS_Z.set(AXIS_X).cross(AXIS_Y).normalize();
+        setFromAxes(quaternion, AXIS_X, AXIS_Y, AXIS_Z);
+        return true;
+    }
+
+    private static boolean setDirectionYRotation(IMolangParticleInstance instance, Quaternionf quaternion) {
+        if (!readDirection(instance, AXIS_Y)) {
+            return false;
+        }
+
+        setUpAxis(AXIS_Y, AXIS_X);
+        AXIS_Z.set(AXIS_X).cross(AXIS_Y).normalize();
+        setFromAxes(quaternion, AXIS_X, AXIS_Y, AXIS_Z);
+        return true;
+    }
+
+    private static boolean setDirectionZRotation(IMolangParticleInstance instance, Quaternionf quaternion) {
+        if (!readDirection(instance, AXIS_Z)) {
+            return false;
+        }
+
+        AXIS_Z.negate();
+        setUpAxis(AXIS_Z, AXIS_Y);
+        AXIS_X.set(AXIS_Y).cross(AXIS_Z).normalize();
+        setFromAxes(quaternion, AXIS_X, AXIS_Y, AXIS_Z);
+        return true;
+    }
+
+    private static boolean readDirection(IMolangParticleInstance instance, Vector3f dest) {
+        dest.set(instance.getFacingDirection());
+        if (dest.lengthSquared() <= DIRECTION_EPSILON) {
+            return false;
+        }
+        dest.normalize();
+        return true;
+    }
+
+    private static void setUpAxis(Vector3f lockedAxis, Vector3f dest) {
+        Vector3f up = java.lang.Math.abs(WORLD_UP.dot(lockedAxis)) > 0.999F ? FALLBACK_UP : WORLD_UP;
+        dest.set(up).sub(TEMP.set(lockedAxis).mul(up.dot(lockedAxis))).normalize();
+    }
+
+    private static void setFromAxes(Quaternionf quaternion, Vector3f xAxis, Vector3f yAxis, Vector3f zAxis) {
+        quaternion.setFromNormalized(DIRECTION_MATRIX.set(
+                xAxis.x, yAxis.x, zAxis.x,
+                xAxis.y, yAxis.y, zAxis.y,
+                xAxis.z, yAxis.z, zAxis.z
+        ).invert());
+    }
 
     public static FaceCameraMode fromComponent(ParticleAppearanceBillboard.FaceCameraMode faceCameraMode) {
         try {

@@ -4,9 +4,7 @@ import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.Level;
-import net.neoforged.bus.api.Event;
-import net.neoforged.fml.ModLoader;
-import net.neoforged.fml.event.IModBusEvent;
+import org.mesdag.particlestorm.PSModClient;
 import org.mesdag.particlestorm.data.event.ParticleEffect;
 import org.mesdag.particlestorm.particle.ParticleEmitter;
 import org.mesdag.particlestorm.particle.attach.WithBlockParticleEmitter;
@@ -14,7 +12,7 @@ import org.mesdag.particlestorm.particle.attach.WithBlockParticleEmitter;
 import java.util.Map;
 import java.util.function.BiFunction;
 
-public class RegisterCustomEmitterTypeEvent extends Event implements IModBusEvent {
+public class RegisterCustomEmitterTypeEvent {
     private static final Map<ResourceLocation, BiFunction<Level, CompoundTag, ? extends ParticleEmitter>> fromNbt = new Object2ObjectOpenHashMap<>();
     private static final Map<ResourceLocation, BiFunction<ParticleEmitter, ParticleEffect, ? extends ParticleEmitter>> fromEffect = new Object2ObjectOpenHashMap<>();
 
@@ -25,7 +23,7 @@ public class RegisterCustomEmitterTypeEvent extends Event implements IModBusEven
             RegisterCustomEmitterTypeEvent event = new RegisterCustomEmitterTypeEvent();
             event.register(WithBlockParticleEmitter.TYPE, WithBlockParticleEmitter::new, WithBlockParticleEmitter::new);
 //            event.register(PresetVarsParticleEmitter.TYPE, PresetVarsParticleEmitter::new, PresetVarsParticleEmitter::new);
-            ModLoader.postEvent(event);
+            PSModClient.registerCustomEmitterType(event);
         }
     }
 

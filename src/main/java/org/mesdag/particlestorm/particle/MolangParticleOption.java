@@ -6,6 +6,7 @@ import net.minecraft.core.particles.ParticleOptions;
 import net.minecraft.core.particles.ParticleType;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.resources.ResourceLocation;
+import org.mesdag.particlestorm.PSGameClient;
 import org.mesdag.particlestorm.ParticleStorm;
 
 public record MolangParticleOption(ResourceLocation id) implements ParticleOptions {
@@ -14,6 +15,14 @@ public record MolangParticleOption(ResourceLocation id) implements ParticleOptio
 
     @Override
     public ParticleType<MolangParticleOption> getType() {
-        return ParticleStorm.MOLANG.get();
+        return ParticleStorm.MOLANG;
+    }
+
+    public ResourceLocation getId() {
+        return id;
+    }
+
+    public ParticlePreset getPreset() {
+        return PSGameClient.LOADER.id2Particle().get(id);
     }
 }

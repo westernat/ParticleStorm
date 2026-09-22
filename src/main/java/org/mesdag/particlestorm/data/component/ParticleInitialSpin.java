@@ -42,6 +42,6 @@ public record ParticleInitialSpin(FloatMolangExp rotation, FloatMolangExp rotati
 
     @Override
     public int order() {
-        return 900;
+        return 500;
     }
 }

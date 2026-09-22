@@ -1,9 +1,5 @@
 package org.mesdag.particlestorm.mixin.integration.geckolib;
 
-import com.llamalad7.mixinextras.injector.v2.WrapWithCondition;
-import com.llamalad7.mixinextras.sugar.Local;
-import org.apache.logging.log4j.Level;
-import org.apache.logging.log4j.Logger;
 import org.mesdag.particlestorm.api.geckolib.GeckoLibHelper;
 import org.mesdag.particlestorm.mixed.IPSAnimationController;
 import org.mesdag.particlestorm.mixed.IPSGeoBone;
@@ -11,6 +7,7 @@ import org.spongepowered.asm.mixin.*;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import software.bernie.geckolib.animatable.GeoAnimatable;
 import software.bernie.geckolib.animation.AnimationController;
 import software.bernie.geckolib.animation.keyframe.event.data.ParticleKeyframeData;
@@ -30,18 +27,23 @@ public abstract class AnimationControllerMixin<T extends GeoAnimatable> implemen
     protected T animatable;
     @Shadow
     protected AnimationController.State animationState;
+    @Shadow
+    protected AnimationController.ParticleKeyframeHandler<T> particleKeyframeHandler;
+
+    @Unique
+    private AnimationController.ParticleKeyframeHandler<T> particlestorm$wrappedParticleHandler;
 
     @Unique
     private List<GeoBone> particlestorm$bonesWhichHasLocators;
 
+    @Inject(method = "<init>", at = @At("TAIL"))
+    private void particlestorm$registerReloadCallback(CallbackInfo ci) {
+        GeckoLibHelper.addReloadCallback(() -> particlestorm$bonesWhichHasLocators = null);
+    }
+
     @Override
     public List<GeoBone> particlestorm$getBonesWhichHasLocators() {
         return Objects.requireNonNullElse(particlestorm$bonesWhichHasLocators, List.of());
-    }
-
-    @Inject(method = "<init>(Lsoftware/bernie/geckolib/animatable/GeoAnimatable;Ljava/lang/String;ILsoftware/bernie/geckolib/animation/AnimationController$AnimationStateHandler;)V", at = @At("TAIL"))
-    private void addRunner(CallbackInfo ci) {
-        GeckoLibHelper.addReloadCallback(() -> this.particlestorm$bonesWhichHasLocators = null);
     }
 
     @Override
@@ -54,15 +56,29 @@ public abstract class AnimationControllerMixin<T extends GeoAnimatable> implemen
         }
     }
 
-    @WrapWithCondition(method = "processCurrentAnimation", at = @At(value = "INVOKE", target = "Lorg/apache/logging/log4j/Logger;log(Lorg/apache/logging/log4j/Level;Ljava/lang/String;)V", ordinal = 1))
-    private boolean processParticleEffect(Logger instance, Level level, String s, @Local(name = "keyframeData") ParticleKeyframeData keyframeData) {
-        return GeckoLibHelper.processParticleEffect(animatable, (AnimationController<?>) (Object) this, keyframeData);
+    @Inject(method = "process", at = @At("HEAD"))
+    private void particlestorm$ensureParticleHandler(CallbackInfo ci) {
+        particlestorm$wrapParticleHandler();
+    }
+
+    @Inject(method = "setParticleKeyframeHandler", at = @At("TAIL"))
+    private void particlestorm$wrapCustomParticleHandler(AnimationController.ParticleKeyframeHandler<T> handler, CallbackInfoReturnable<AnimationController<T>> cir) {
+        particlestorm$wrapParticleHandler();
+    }
+
+    @Unique
+    private void particlestorm$wrapParticleHandler() {
+        if (particlestorm$wrappedParticleHandler != null && particleKeyframeHandler == particlestorm$wrappedParticleHandler) return;
+        AnimationController.ParticleKeyframeHandler<T> original = particleKeyframeHandler;
+        particlestorm$wrappedParticleHandler = event -> {
+            GeckoLibHelper.processParticleEffect(event.getAnimatable(), event.getController(), event.getKeyframeData());
+            if (original != null) original.handle(event);
+        };
+        particleKeyframeHandler = particlestorm$wrappedParticleHandler;
     }
 
     @Inject(method = "resetEventKeyFrames", at = @At("HEAD"))
     private void removeEmitters(CallbackInfo ci) {
-        if (!particlestorm$getBonesWhichHasLocators().isEmpty()) {
-            GeckoLibHelper.removeEmittersWhenAnimationChange(animationState, animatable.getAnimatableInstanceCache());
-        }
+        GeckoLibHelper.removeEmittersWhenAnimationChange(animationState, animatable.getAnimatableInstanceCache());
     }
 }
