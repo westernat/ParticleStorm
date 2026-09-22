@@ -2,7 +2,7 @@ package org.mesdag.particlestorm.data.molang;
 
 import com.mojang.serialization.Codec;
 import io.netty.buffer.ByteBuf;
-import net.minecraft.Util;
+import net.minecraft.util.Util;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import org.mesdag.particlestorm.api.MolangInstance;
@@ -14,12 +14,11 @@ import org.mesdag.particlestorm.data.molang.compiler.value.Constant;
 import java.util.Map;
 
 public class MolangExp {
-    public static final MolangExp EMPTY = Util.make(new MolangExp(""), exp -> exp.variable = new Constant(0));
+    public static final MolangExp EMPTY = Util.make(new MolangExp(""), exp -> exp.variable = new Constant(0.0));
     public static final Codec<MolangExp> CODEC = Codec.STRING.xmap(MolangExp::new, MolangExp::getExpStr);
     public static final StreamCodec<ByteBuf, MolangExp> STREAM_CODEC = ByteBufCodecs.STRING_UTF8.map(MolangExp::new, MolangExp::getExpStr);
     protected final String expStr;
     protected MathValue variable;
-    protected boolean immutable;
 
     public MolangExp(String expStr) {
         this.expStr = expStr;
@@ -53,19 +52,12 @@ public class MolangExp {
     public void compile(MolangParser parser) {
         if (variable == null && !expStr.isEmpty() && !expStr.isBlank()) {
             this.variable = parser.compileMolang(expStr);
-            if (immutable) {
-                variable.markImmutable();
-            }
         }
     }
 
     public float calculate(MolangInstance instance) {
         if (!initialized()) return 0.0F;
-        return variable.get(instance);
-    }
-
-    public void markImmutable() {
-        this.immutable = true;
+        return (float) variable.get(instance);
     }
 
     public MathValue getVariable() {

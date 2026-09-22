@@ -4,11 +4,14 @@ import org.mesdag.particlestorm.api.MolangInstance;
 import org.mesdag.particlestorm.data.molang.compiler.MathValue;
 import org.mesdag.particlestorm.data.molang.compiler.function.MathFunction;
 
-/// [MathFunction] value supplier
-///
-/// **Contract:**
-///
-/// Returns the square root of the input value
+/**
+ * {@link MathFunction} value supplier
+ *
+ * <p>
+ * <b>Contract:</b>
+ * <br>
+ * Returns the square root of the input value
+ */
 public final class SqrtFunction extends MathFunction {
     private final MathValue value;
 
@@ -24,8 +27,8 @@ public final class SqrtFunction extends MathFunction {
     }
 
     @Override
-    public float compute(MolangInstance instance) {
-        return (float) Math.sqrt(value.get(instance));
+    public double compute(MolangInstance instance) {
+        return Math.sqrt(this.value.get(instance));
     }
 
     @Override
@@ -35,6 +38,6 @@ public final class SqrtFunction extends MathFunction {
 
     @Override
     public MathValue[] getArgs() {
-        return new MathValue[] {value};
+        return new MathValue[] {this.value};
     }
 }

@@ -7,16 +7,19 @@ import org.mesdag.particlestorm.data.molang.compiler.function.MathFunction;
 
 import java.util.Random;
 
-/// [MathFunction] value supplier
-///
-/// **Contract:**
-///
-/// Returns a random value based on the input values:
-///
-///   - A single input generates a value between 0 and that input (exclusive)
-///   - Two inputs generates a random value between the first (inclusive) and second input (exclusive)
-///   - Three inputs generates a random value between the first (inclusive) and second input (exclusive), seeded by the third input
-///
+/**
+ * {@link MathFunction} value supplier
+ *
+ * <p>
+ * <b>Contract:</b>
+ * <br>
+ * Returns a random value based on the input values:
+ * <ul>
+ *     <li>A single input generates a value between 0 and that input (exclusive)</li>
+ *     <li>Two inputs generates a random value between the first (inclusive) and second input (exclusive)</li>
+ *     <li>Three inputs generates a random value between the first (inclusive) and second input (exclusive), seeded by the third input</li>
+ * </ul>
+ */
 public final class RandomFunction extends MathFunction {
     private final MathValue valueA;
     @Nullable
@@ -41,23 +44,23 @@ public final class RandomFunction extends MathFunction {
     }
 
     @Override
-    public float compute(MolangInstance instance) {
-        float result;
-        float valueA = this.valueA.get(instance);
+    public double compute(MolangInstance instance) {
+        double result;
+        double valueA = this.valueA.get(instance);
 
         if (this.random != null) {
             this.random.setSeed((long)this.seed.get(instance));
 
-            result = this.random.nextFloat();
+            result = this.random.nextDouble();
         }
         else {
-            result = (float) Math.random();
+            result = Math.random();
         }
 
         if (this.valueB != null) {
-            float valueB = this.valueB.get(instance);
-            float min = Math.min(valueA, valueB);
-            float max = Math.max(valueA, valueB);
+            double valueB = this.valueB.get(instance);
+            double min = Math.min(valueA, valueB);
+            double max = Math.max(valueA, valueB);
 
             result = min + result * (max - min);
         }

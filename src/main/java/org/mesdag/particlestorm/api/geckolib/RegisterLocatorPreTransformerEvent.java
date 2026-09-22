@@ -2,6 +2,7 @@ package org.mesdag.particlestorm.api.geckolib;
 
 import it.unimi.dsi.fastutil.objects.Reference2ObjectMap;
 import it.unimi.dsi.fastutil.objects.Reference2ObjectOpenHashMap;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.entity.LivingEntityRenderer;
 import net.minecraft.core.Direction;
 import net.minecraft.util.Mth;
@@ -12,22 +13,35 @@ import net.minecraft.world.entity.Pose;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
-import net.neoforged.bus.api.Event;
-import net.neoforged.fml.event.IModBusEvent;
+import net.fabricmc.fabric.api.event.Event;
+import net.fabricmc.fabric.api.event.EventFactory;
 import org.joml.Matrix4x3f;
+import com.mojang.blaze3d.vertex.PoseStack;
+import org.jetbrains.annotations.Nullable;
 import org.joml.Quaternionf;
-import software.bernie.geckolib.animatable.GeoAnimatable;
-import software.bernie.geckolib.animatable.GeoBlockEntity;
-import software.bernie.geckolib.animatable.GeoEntity;
-import software.bernie.geckolib.animatable.GeoItem;
-import software.bernie.geckolib.animatable.instance.AnimatableInstanceCache;
-import software.bernie.geckolib.cache.object.GeoBone;
-import software.bernie.geckolib.util.RenderUtil;
+import com.geckolib.animatable.GeoAnimatable;
+import com.geckolib.animatable.GeoBlockEntity;
+import com.geckolib.animatable.GeoEntity;
+import com.geckolib.animatable.GeoItem;
+import com.geckolib.animatable.instance.AnimatableInstanceCache;
+import com.geckolib.cache.model.GeoBone;
+import com.geckolib.util.RenderUtil;
 
 import java.util.ArrayDeque;
 import java.util.Deque;
 
-public class RegisterLocatorPreTransformerEvent extends Event implements IModBusEvent {
+public class RegisterLocatorPreTransformerEvent {
+    public static final Event<Callback> EVENT = EventFactory.createArrayBacked(Callback.class, listeners -> event -> {
+        for (Callback listener : listeners) {
+            listener.onRegisterLocatorPreTransformers(event);
+        }
+    });
+
+    @FunctionalInterface
+    public interface Callback {
+        void onRegisterLocatorPreTransformers(RegisterLocatorPreTransformerEvent event);
+    }
+
     private static final Reference2ObjectMap<AnimatableInstanceCache, Transformer<?>> singletonTransformers = new Reference2ObjectOpenHashMap<>();
     private static final Reference2ObjectMap<BlockEntityType<?>, Transformer<?>> blockEntityTransformers = new Reference2ObjectOpenHashMap<>();
     private static final Reference2ObjectMap<EntityType<?>, Transformer<?>> entityTransformers = new Reference2ObjectOpenHashMap<>();
@@ -62,6 +76,16 @@ public class RegisterLocatorPreTransformerEvent extends Event implements IModBus
         return (Transformer<T>) transformer;
     }
 
+    @SuppressWarnings("unchecked")
+    static <T extends GeoAnimatable> @Nullable Transformer<T> getRegisteredTransformer(T animatable) {
+        Transformer<?> transformer = switch (animatable) {
+            case Entity entity -> entityTransformers.get(entity.getType());
+            case BlockEntity blockEntity -> blockEntityTransformers.get(blockEntity.getType());
+            default -> singletonTransformers.get(animatable.getAnimatableInstanceCache());
+        };
+        return (Transformer<T>) transformer;
+    }
+
     private static final Quaternionf quat = new Quaternionf();
 
     @FunctionalInterface
@@ -81,7 +105,7 @@ public class RegisterLocatorPreTransformerEvent extends Event implements IModBus
             defaultTransformer(bone, animatable, mat, partialTick);
         }
 
-        /// [software.bernie.geckolib.renderer.GeoEntityRenderer#actuallyRender]
+        /// [com.geckolib.renderer.GeoEntityRenderer#actuallyRender]
         static void transformEntity(Entity entity, Matrix4x3f mat, float partialTick) {
             LivingEntity living = entity instanceof LivingEntity livingEntity ? livingEntity : null;
             boolean shouldSit = entity.isPassenger() && (entity.getVehicle() != null);
@@ -123,10 +147,17 @@ public class RegisterLocatorPreTransformerEvent extends Event implements IModBus
                 } else if (entity.hasPose(Pose.SLEEPING)) {
                     Direction bedOrientation = living.getBedOrientation();
 
-                    mat.rotate(quat.rotationY((bedOrientation != null ? RenderUtil.getDirectionAngle(bedOrientation) : lerpBodyRot) * Mth.DEG_TO_RAD));
+                    float bedAngle = switch (bedOrientation) {
+                        case SOUTH -> 90;
+                        case NORTH -> 270;
+                        case EAST -> 180;
+                        case null -> lerpBodyRot;
+                        default -> 0;
+                    };
+                    mat.rotate(quat.rotationY(bedAngle * Mth.DEG_TO_RAD));
                     mat.rotate(quat.rotationZ(Mth.HALF_PI));
                     mat.rotate(quat.rotationY(Mth.PI * 1.5F));
-                } else if (LivingEntityRenderer.isEntityUpsideDown(living)) {
+                } else if (isEntityUpsideDown(living)) {
                     mat.translate(0, (entity.getBbHeight() + 0.1f) / nativeScale, 0);
                     mat.rotate(quat.rotationZ(Mth.PI));
                 }
@@ -134,29 +165,23 @@ public class RegisterLocatorPreTransformerEvent extends Event implements IModBus
             mat.translate(0, 0.01f, 0);
         }
 
+        @SuppressWarnings("unchecked")
+        private static boolean isEntityUpsideDown(LivingEntity entity) {
+            var renderer = Minecraft.getInstance().getEntityRenderDispatcher().getRenderer(entity);
+            return renderer instanceof LivingEntityRenderer<?, ?, ?> livingRenderer
+                    && ((LivingEntityRenderer<LivingEntity, ?, ?>) livingRenderer).isEntityUpsideDown(entity);
+        }
+
         static void defaultTransformer(GeoBone bone, GeoAnimatable animatable, Matrix4x3f mat, float partialTick) {
             Deque<GeoBone> chain = new ArrayDeque<>();
-            GeoBone current = bone;
-            while (current != null) {
+            for (GeoBone current = bone; current != null; current = current.parent()) {
                 chain.add(current);
-                current = current.getParent();
             }
+            PoseStack poseStack = new PoseStack();
             while (!chain.isEmpty()) {
-                GeoBone last = chain.pollLast();
-                mat.translate(-last.getPosX() / 16f, last.getPosY() / 16f, last.getPosZ() / 16f);
-                mat.translate(last.getPivotX() / 16f, last.getPivotY() / 16f, last.getPivotZ() / 16f);
-                if (last.getRotZ() != 0) {
-                    mat.rotate(quat.rotationZ(last.getRotZ()));
-                }
-                if (last.getRotY() != 0) {
-                    mat.rotate(quat.rotationY(last.getRotY()));
-                }
-                if (last.getRotX() != 0) {
-                    mat.rotate(quat.rotationX(last.getRotX()));
-                }
-                mat.scale(last.getScaleX(), last.getScaleY(), last.getScaleZ());
-                mat.translate(-last.getPivotX() / 16f, -last.getPivotY() / 16f, -last.getPivotZ() / 16f);
+                RenderUtil.prepMatrixForBone(poseStack, chain.pollLast());
             }
+            mat.mul(poseStack.last().pose().get4x3(new Matrix4x3f()));
         }
     }
 }

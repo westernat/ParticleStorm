@@ -1,3 +1,7 @@
 {
-    "commands.particlestorm.remove": "已移除粒子：%s"
+    "commands.particlestorm.add": "正在显示 ParticleStorm 粒子：%s",
+    "commands.particlestorm.failed": "没有匹配的玩家",
+    "commands.particlestorm.not_found": "未找到 ParticleStorm 发射器：%s",
+    "commands.particlestorm.remove": "已移除 ParticleStorm 粒子：%s",
+    "commands.particlestorm.unknown_particle": "未知的 ParticleStorm 粒子：%s"
 }
