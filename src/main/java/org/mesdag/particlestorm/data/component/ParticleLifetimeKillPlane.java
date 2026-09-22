@@ -1,6 +1,7 @@
 package org.mesdag.particlestorm.data.component;
 
 import com.mojang.serialization.Codec;
+import org.mesdag.particlestorm.data.ParticleCodecs;
 import org.mesdag.particlestorm.api.IMolangParticleInstance;
 import org.mesdag.particlestorm.api.IParticleComponent;
 import org.mesdag.particlestorm.data.molang.MolangExp;
@@ -15,7 +16,7 @@ import java.util.List;
 ///
 /// `A*x + B*y + C*z + D = 0` with the parameters being `[ A, B, C, D ]`
 public final class ParticleLifetimeKillPlane implements IParticleComponent {
-    public static final Codec<ParticleLifetimeKillPlane> CODEC = Codec.FLOAT.listOf().xmap(
+    public static final Codec<ParticleLifetimeKillPlane> CODEC = ParticleCodecs.list(Codec.FLOAT, 4, 4).xmap(
             floats -> new ParticleLifetimeKillPlane(floats.get(0), floats.get(1), floats.get(2), floats.get(3)),
             plane -> List.of(plane.A, plane.B, plane.C, plane.D)
     );

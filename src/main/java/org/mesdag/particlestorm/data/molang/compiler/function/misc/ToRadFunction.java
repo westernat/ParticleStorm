@@ -1,15 +1,17 @@
 package org.mesdag.particlestorm.data.molang.compiler.function.misc;
 
-import net.minecraft.util.Mth;
 import org.mesdag.particlestorm.api.MolangInstance;
 import org.mesdag.particlestorm.data.molang.compiler.MathValue;
 import org.mesdag.particlestorm.data.molang.compiler.function.MathFunction;
 
-/// [MathFunction] value supplier
-///
-/// **Contract:**
-///
-/// Converts the input value to radians
+/**
+ * {@link MathFunction} value supplier
+ *
+ * <p>
+ * <b>Contract:</b>
+ * <br>
+ * Converts the input value to radians
+ */
 public final class ToRadFunction extends MathFunction {
     private final MathValue value;
 
@@ -25,8 +27,8 @@ public final class ToRadFunction extends MathFunction {
     }
 
     @Override
-    public float compute(MolangInstance instance) {
-        return value.get(instance) * Mth.DEG_TO_RAD;
+    public double compute(MolangInstance instance) {
+        return Math.toRadians(this.value.get(instance));
     }
 
     @Override
@@ -36,6 +38,6 @@ public final class ToRadFunction extends MathFunction {
 
     @Override
     public MathValue[] getArgs() {
-        return new MathValue[] {value};
+        return new MathValue[] {this.value};
     }
 }

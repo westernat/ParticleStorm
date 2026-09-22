@@ -1,32 +1,30 @@
 package org.mesdag.particlestorm;
 
-import it.unimi.dsi.fastutil.objects.ObjectBooleanPair;
-import net.minecraft.client.Minecraft;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraftforge.common.ForgeConfigSpec;
-import net.minecraftforge.fml.config.ModConfig;
-import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
-import org.jetbrains.annotations.Nullable;
-import org.mesdag.particlestorm.particle.attach.EmitterAttachHandler;
-import org.mesdag.particlestorm.particle.attach.WithBlockParticleEmitter;
+import net.fabricmc.loader.api.FabricLoader;
 
-import java.util.List;
+import java.io.IOException;
+import java.io.Reader;
+import java.io.Writer;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Properties;
 
 public final class PSClientConfigs {
-    private static ForgeConfigSpec.BooleanValue SHOW_EMITTER_OUTLINE;
-    private static ForgeConfigSpec.IntValue MAX_TRACKERS_PER_ENTITY;
+    private static final String DEBUG = "debug";
+    private static final String SHOW_EMITTER_OUTLINE = "showEmitterOutline";
+    private static final String MAX_TRACKERS_PER_ENTITY = "maxTrackersPerEntity";
+    private static final String EMITTER_LIMIT = "emitterLimit";
+    private static final String FPS_THRESHOLD = "fpsThreshold";
+    private static final String ALLOWS_VANILLA_PARTICLE_WHEN_REACH_LIMIT = "allowsVanillaParticleWhenReachLimit";
+    private static final String EMITTER_AUTO_REMOVE_INTERVAL_TICK = "emitterAutoRemoveIntervalTick";
+    private static final String EMITTER_AUTO_REMOVE_MINIMUM_DISTANCE = "minimumEmitterAutoRemoveDistance";
+    private static final String EMITTER_AUTO_REMOVE_ATTENUATION_DISTANCE = "minimumEmitterAutoRemoveAttenuationDistance";
+    private static final String EMITTER_AUTO_REMOVE_ATTENUATION_COEFFICIENT = "minimumEmitterAutoRemoveAttenuationCoefficient";
 
-    private static ForgeConfigSpec.IntValue EMITTER_LIMIT;
-    private static ForgeConfigSpec.IntValue FPS_THRESHOLD;
-    private static ForgeConfigSpec.BooleanValue ALLOWS_VANILLA_PARTICLE_WHEN_REACH_LIMIT;
-    private static ForgeConfigSpec.IntValue EMITTER_AUTO_REMOVE_INTERVAL_TICK;
-    private static ForgeConfigSpec.IntValue EMITTER_AUTO_REMOVE_MINIMUM_DISTANCE;
-    private static ForgeConfigSpec.IntValue EMITTER_AUTO_REMOVE_ATTENUATION_DISTANCE;
-    private static ForgeConfigSpec.DoubleValue EMITTER_AUTO_REMOVE_ATTENUATION_COEFFICIENT;
-
+    public static boolean debug = false;
     public static boolean showEmitterOutline = true;
     public static int maxTrackersPerEntity = 64;
-
     public static int emitterLimit = 50;
     public static int fpsThreshold = 30;
     public static boolean allowsVanillaParticleWhenReachLimit = false;
@@ -35,124 +33,81 @@ public final class PSClientConfigs {
     public static int emitterAutoRemoveAttenuationDistance = 16;
     public static double emitterAutoRemoveAttenuationCoefficient = 0.25;
 
+    private PSClientConfigs() {
+    }
+
     public static void onLoad() {
-        showEmitterOutline = SHOW_EMITTER_OUTLINE.get();
-        maxTrackersPerEntity = MAX_TRACKERS_PER_ENTITY.get();
+        Properties properties = new Properties();
+        properties.setProperty(DEBUG, "false");
+        properties.setProperty(SHOW_EMITTER_OUTLINE, "true");
+        properties.setProperty(MAX_TRACKERS_PER_ENTITY, "64");
+        properties.setProperty(EMITTER_LIMIT, "50");
+        properties.setProperty(FPS_THRESHOLD, "30");
+        properties.setProperty(ALLOWS_VANILLA_PARTICLE_WHEN_REACH_LIMIT, "false");
+        properties.setProperty(EMITTER_AUTO_REMOVE_INTERVAL_TICK, "1");
+        properties.setProperty(EMITTER_AUTO_REMOVE_MINIMUM_DISTANCE, "32");
+        properties.setProperty(EMITTER_AUTO_REMOVE_ATTENUATION_DISTANCE, "16");
+        properties.setProperty(EMITTER_AUTO_REMOVE_ATTENUATION_COEFFICIENT, "0.25");
 
-        emitterLimit = EMITTER_LIMIT.get();
-        fpsThreshold = FPS_THRESHOLD.get();
-        allowsVanillaParticleWhenReachLimit = ALLOWS_VANILLA_PARTICLE_WHEN_REACH_LIMIT.get();
-        emitterAutoRemoveIntervalTick = EMITTER_AUTO_REMOVE_INTERVAL_TICK.get();
-        emitterAutoRemoveMinimumDistance = EMITTER_AUTO_REMOVE_MINIMUM_DISTANCE.get();
-        emitterAutoRemoveAttenuationDistance = EMITTER_AUTO_REMOVE_ATTENUATION_DISTANCE.get();
-        emitterAutoRemoveAttenuationCoefficient = EMITTER_AUTO_REMOVE_ATTENUATION_COEFFICIENT.get();
+        Path path = FabricLoader.getInstance().getConfigDir().resolve(ParticleStorm.MODID + ".properties");
+        if (Files.notExists(path)) {
+            writeDefaults(path, properties);
+        }
+
+        try (Reader reader = Files.newBufferedReader(path, StandardCharsets.UTF_8)) {
+            properties.load(reader);
+        } catch (IOException exception) {
+            ParticleStorm.LOGGER.warn("Failed to load ParticleStorm config '{}', using defaults", path, exception);
+        }
+
+        debug = Boolean.parseBoolean(properties.getProperty(DEBUG, "false"));
+        showEmitterOutline = Boolean.parseBoolean(properties.getProperty(SHOW_EMITTER_OUTLINE, "true"));
+        allowsVanillaParticleWhenReachLimit = Boolean.parseBoolean(properties.getProperty(ALLOWS_VANILLA_PARTICLE_WHEN_REACH_LIMIT, "false"));
+        maxTrackersPerEntity = parseInt(properties, MAX_TRACKERS_PER_ENTITY, 64, 0, 16384);
+        emitterLimit = parseInt(properties, EMITTER_LIMIT, 50, 20, 1000);
+        fpsThreshold = parseInt(properties, FPS_THRESHOLD, 30, 10, 260);
+        emitterAutoRemoveIntervalTick = parseInt(properties, EMITTER_AUTO_REMOVE_INTERVAL_TICK, 1, 1, 1200);
+        emitterAutoRemoveMinimumDistance = parseInt(properties, EMITTER_AUTO_REMOVE_MINIMUM_DISTANCE, 32, 16, 256);
+        emitterAutoRemoveAttenuationDistance = parseInt(properties, EMITTER_AUTO_REMOVE_ATTENUATION_DISTANCE, 16, 0, 64);
+        emitterAutoRemoveAttenuationCoefficient = parseDouble(properties, EMITTER_AUTO_REMOVE_ATTENUATION_COEFFICIENT, 0.25, 0.0, 1.0);
     }
 
-    public static void register(FMLJavaModLoadingContext context) {
-        ForgeConfigSpec.Builder builder = new ForgeConfigSpec.Builder();
-
-        builder.push("Normal");
-        SHOW_EMITTER_OUTLINE = builder.define("showEmitterOutline", true);
-        MAX_TRACKERS_PER_ENTITY = builder.defineInRange("maxTrackersPerEntity", 64, 0, 16384);
-        builder.pop();
-
-        builder.push("Attach");
-        EMITTER_LIMIT = builder.defineInRange("emitterLimit", 50, 20, 1000);
-        FPS_THRESHOLD = builder.defineInRange("fpsThreshold", 30, 10, 260);
-        ALLOWS_VANILLA_PARTICLE_WHEN_REACH_LIMIT = builder.define("allowsVanillaParticleWhenReachLimit", false);
-        EMITTER_AUTO_REMOVE_INTERVAL_TICK = builder.defineInRange("emitterAutoRemoveIntervalTick", 1, 1, 1200);
-        EMITTER_AUTO_REMOVE_MINIMUM_DISTANCE = builder.defineInRange("minimumEmitterAutoRemoveDistance", 32, 16, 256);
-        EMITTER_AUTO_REMOVE_ATTENUATION_DISTANCE = builder.defineInRange("minimumEmitterAutoRemoveAttenuationDistance", 16, 0, 64);
-        EMITTER_AUTO_REMOVE_ATTENUATION_COEFFICIENT = builder.defineInRange("minimumEmitterAutoRemoveAttenuationCoefficient", 0.25, 0, 1);
-        builder.pop();
-
-        context.registerConfig(ModConfig.Type.COMMON, builder.build());
+    private static int parseInt(Properties properties, String key, int defaultValue, int min, int max) {
+        try {
+            int value = Integer.parseInt(properties.getProperty(key, Integer.toString(defaultValue)));
+            if (value < min || value > max) {
+                ParticleStorm.LOGGER.warn("Value {} for config '{}' is out of range [{}, {}], using default {}", value, key, min, max, defaultValue);
+                return defaultValue;
+            }
+            return value;
+        } catch (NumberFormatException exception) {
+            ParticleStorm.LOGGER.warn("Invalid integer for config '{}', using default {}", key, defaultValue);
+            return defaultValue;
+        }
     }
 
-    public static class ParticleConfig {
-        private boolean enabled = true;
-        public @Nullable ResourceLocation particle;
-        private @Nullable List<EmitterAttachHandler.AttachData> associated;
-        public boolean failed = false;
-
-        private final String configPath;
-        private final @Nullable Runnable onLoadCallback;
-        private final ForgeConfigSpec.BooleanValue ENABLE;
-        private final ForgeConfigSpec.ConfigValue<String> PARTICLE;
-
-        public ParticleConfig(ForgeConfigSpec.Builder builder, String configPath, String particlePath) {
-            this(builder, configPath, particlePath, true, null);
-        }
-
-        public ParticleConfig(ForgeConfigSpec.Builder builder, String configPath, String particlePath, @Nullable Runnable onLoadCallback) {
-            this(builder, configPath, particlePath, true, onLoadCallback);
-        }
-
-        public ParticleConfig(ForgeConfigSpec.Builder builder, String configPath, String particlePath, boolean enabled, @Nullable Runnable onLoadCallback) {
-            this.configPath = configPath;
-            this.onLoadCallback = onLoadCallback;
-            this.ENABLE = builder.define(configPath, enabled);
-            this.PARTICLE = builder.define(configPath + "Particle", "tdp:" + particlePath);
-        }
-
-        public boolean isEnabled() {
-            return enabled && !failed;
-        }
-
-        public boolean enable(boolean enable) {
-            if (enable) {
-                if (!isEnabled()) {
-                    ENABLE.set(true);
-                    return true;
-                }
-            } else if (isEnabled()) {
-                ENABLE.set(false);
-                return true;
+    private static double parseDouble(Properties properties, String key, double defaultValue, double min, double max) {
+        try {
+            double value = Double.parseDouble(properties.getProperty(key, Double.toString(defaultValue)));
+            if (Double.isNaN(value) || value < min || value > max) {
+                ParticleStorm.LOGGER.warn("Value {} for config '{}' is out of range [{}, {}], using default {}", value, key, min, max, defaultValue);
+                return defaultValue;
             }
-            return false;
+            return value;
+        } catch (NumberFormatException exception) {
+            ParticleStorm.LOGGER.warn("Invalid number for config '{}', using default {}", key, defaultValue);
+            return defaultValue;
         }
+    }
 
-        public void onLoad() {
-            this.enabled = ENABLE.get();
-            this.particle = ResourceLocation.tryParse(PARTICLE.get());
-            updateAssociated();
-            if (onLoadCallback != null) {
-                Minecraft.getInstance().execute(onLoadCallback);
+    private static void writeDefaults(Path path, Properties properties) {
+        try {
+            Files.createDirectories(path.getParent());
+            try (Writer writer = Files.newBufferedWriter(path, StandardCharsets.UTF_8)) {
+                properties.store(writer, "ParticleStorm configuration");
             }
-        }
-
-        public void initAssociated(List<EmitterAttachHandler.AttachData> associated) {
-            this.associated = associated;
-            updateAssociated();
-        }
-
-        private void updateAssociated() {
-            if (associated == null) return;
-            boolean disabled = !enabled;
-            for (EmitterAttachHandler.AttachData data : associated) {
-                data.disabled = disabled;
-            }
-            if (particle == null) return;
-            Minecraft.getInstance().execute(() -> {
-                for (ObjectBooleanPair<WithBlockParticleEmitter> pair : EmitterAttachHandler.attachedToBlockEmitters.values()) {
-                    WithBlockParticleEmitter emitter = pair.left();
-                    if (particle.equals(emitter.particleId)) {
-                        emitter.remove();
-                    }
-                }
-            });
-        }
-
-        public void markFailed() {
-            this.failed = true;
-            ParticleStorm.LOGGER.warn("Error get {} particle", configPath);
-        }
-
-        @Override
-        public String toString() {
-            return "ParticleConfig{" +
-                    "configPath='" + configPath + '\'' +
-                    '}';
+        } catch (IOException exception) {
+            ParticleStorm.LOGGER.warn("Failed to create ParticleStorm config '{}'", path, exception);
         }
     }
 }

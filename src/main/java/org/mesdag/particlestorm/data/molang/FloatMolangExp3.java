@@ -1,6 +1,7 @@
 package org.mesdag.particlestorm.data.molang;
 
 import com.mojang.serialization.Codec;
+import org.mesdag.particlestorm.data.ParticleCodecs;
 import org.mesdag.particlestorm.api.MolangInstance;
 
 import java.util.List;
@@ -10,19 +11,13 @@ public record FloatMolangExp3(FloatMolangExp exp1, FloatMolangExp exp2, FloatMol
     public static final FloatMolangExp3 X = new FloatMolangExp3(FloatMolangExp.ONE, FloatMolangExp.ZERO, FloatMolangExp.ZERO);
     public static final FloatMolangExp3 Y = new FloatMolangExp3(FloatMolangExp.ZERO, FloatMolangExp.ONE, FloatMolangExp.ZERO);
     public static final FloatMolangExp3 Z = new FloatMolangExp3(FloatMolangExp.ZERO, FloatMolangExp.ZERO, FloatMolangExp.ONE);
-    public static final Codec<FloatMolangExp3> CODEC = FloatMolangExp.CODEC.listOf().xmap(
+    public static final Codec<FloatMolangExp3> CODEC = ParticleCodecs.list(FloatMolangExp.CODEC, 3, 3).xmap(
             exps -> new FloatMolangExp3(exps.get(0), exps.get(1), exps.get(2)),
             exp3 -> List.of(exp3.exp1, exp3.exp2, exp3.exp3)
     );
 
     public float[] calculate(MolangInstance instance) {
         return new float[]{exp1.calculate(instance), exp2.calculate(instance), exp3.calculate(instance)};
-    }
-
-    public void markImmutable() {
-        exp1.markImmutable();
-        exp2.markImmutable();
-        exp3.markImmutable();
     }
 
     @Override

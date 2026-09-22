@@ -10,6 +10,7 @@ import org.mesdag.particlestorm.api.IEventNode;
 import org.mesdag.particlestorm.api.IMolangParticleInstance;
 import org.mesdag.particlestorm.api.MolangInstance;
 import org.mesdag.particlestorm.data.molang.MolangExp;
+import org.mesdag.particlestorm.data.molang.compiler.MolangParser;
 
 import java.util.function.Function;
 
@@ -22,7 +23,6 @@ public final class NodeMolangExp extends MolangExp implements IEventNode {
             either -> either.map(Function.identity(), s -> new NodeMolangExp(s, false)),
             e -> e.log ? Either.right(e.expStr) : Either.left(e)
     );
-
     private final boolean log;
 
     public NodeMolangExp(String expStr, boolean log) {
@@ -34,20 +34,25 @@ public final class NodeMolangExp extends MolangExp implements IEventNode {
         return log;
     }
 
-    private static final Vector3f vector3f = new Vector3f();
+    private static final Vector3f POSITION = new Vector3f();
 
     @Override
     public void execute(MolangInstance instance) {
-        if (initialized()) {
+        if (variable == null && !expStr.isEmpty() && !expStr.isBlank()) {
+            MolangParser parser = new MolangParser(instance.getVars());
+            this.variable = parser.compileMolang(expStr);
+        }
+        if (variable != null) {
             double v = variable.get(instance);
             if (log) {
-                if (instance instanceof IMolangParticleInstance p) {
-                    p.getEmitter().local2World(vector3f.set((float) p.getX(), (float) p.getY(), (float) p.getZ()), 1);
+                if (instance instanceof IMolangParticleInstance particle) {
+                    POSITION.set((float) particle.getX(), (float) particle.getY(), (float) particle.getZ());
+                    particle.getEmitter().local2World(POSITION, 1.0F);
                 } else {
                     Vec3 pos = instance.getPosition();
-                    vector3f.set(pos.x, pos.y, pos.z);
+                    POSITION.set((float) pos.x, (float) pos.y, (float) pos.z);
                 }
-                ParticleStorm.LOGGER.info("{}[{},{},{}]: {}={}", instance.getIdentity(), vector3f.x, vector3f.y, vector3f.z, expStr, v);
+                ParticleStorm.LOGGER.info("{}[{},{},{}]: {}={}", instance.getIdentity(), POSITION.x, POSITION.y, POSITION.z, expStr, v);
             }
         }
     }

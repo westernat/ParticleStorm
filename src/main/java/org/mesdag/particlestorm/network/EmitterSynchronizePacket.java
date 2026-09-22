@@ -1,59 +1,79 @@
 package org.mesdag.particlestorm.network;
 
-import net.minecraft.nbt.CompoundTag;
+import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
+import net.fabricmc.fabric.api.networking.v1.FabricPacket;
+import net.fabricmc.fabric.api.networking.v1.PacketType;
+import net.fabricmc.fabric.api.networking.v1.PacketSender;
 import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.fml.DistExecutor;
-import net.minecraftforge.network.NetworkDirection;
-import net.minecraftforge.network.NetworkEvent;
-import net.minecraftforge.network.PacketDistributor;
+import net.minecraft.world.entity.player.Player;
+import org.mesdag.particlestorm.PSGameClient;
 import org.mesdag.particlestorm.ParticleStorm;
+import org.mesdag.particlestorm.mixed.IPlayerPersistentData;
 import org.mesdag.particlestorm.particle.ParticleEmitter;
 
-import java.util.function.Supplier;
-
-public record EmitterSynchronizePacket(int id, CompoundTag tag) {
+public record EmitterSynchronizePacket(int id, CompoundTag tag) implements FabricPacket {
+    public static final PacketType<EmitterSynchronizePacket> TYPE = PacketType.create(ParticleStorm.asResource("emitter_synchronize"), EmitterSynchronizePacket::new);
     public static final String KEY = "particlestorm:emitters";
 
-    public static void encode(EmitterSynchronizePacket msg, FriendlyByteBuf buf) {
-        buf.writeInt(msg.id);
-        buf.writeNbt(msg.tag);
+
+    public EmitterSynchronizePacket(FriendlyByteBuf buf) {
+        this(buf.readInt(), java.util.Objects.requireNonNull(buf.readNbt(), "Missing emitter data"));
     }
 
-    public static EmitterSynchronizePacket decode(FriendlyByteBuf buf) {
-        return new EmitterSynchronizePacket(buf.readInt(), buf.readNbt());
+    @Override
+    public void write(FriendlyByteBuf buf) {
+        buf.writeInt(id);
+        buf.writeNbt(tag);
     }
 
-    public void handle(Supplier<NetworkEvent.Context> ctx) {
-        if (ctx.get().getDirection() == NetworkDirection.PLAY_TO_CLIENT) {
-            DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> PSClientPacketHandler.handleEmitterSynchronize(this));
+    @Override
+    public PacketType<EmitterSynchronizePacket> getType() {
+        return TYPE;
+    }
+
+    public static void handleClient(EmitterSynchronizePacket payload, Player player, PacketSender responseSender) {
+        PSGameClient.LOADER.loadEmitter(player.level(), payload.id, payload.tag);
+    }
+
+    public static void handleServer(EmitterSynchronizePacket payload, ServerPlayer player, PacketSender responseSender) {
+        CompoundTag emitters = getEmitterData(player, true);
+        emitters.put(Integer.toString(payload.id), payload.tag.copy());
+    }
+
+    public static void syncToServer(ParticleEmitter emitter) {
+        if (ClientPlayNetworking.canSend(TYPE)) {
+            ClientPlayNetworking.send(new EmitterSynchronizePacket(emitter.id, emitter.serialize()));
+        }
+    }
+
+    public static void syncToClient(ServerPlayer player, int id) {
+        CompoundTag emitters = getEmitterData(player, false);
+        if (emitters.contains(Integer.toString(id))) {
+            ServerPlayNetworking.send(player, new EmitterSynchronizePacket(id, emitters.getCompound(Integer.toString(id))));
         } else {
-            ServerPlayer player = ctx.get().getSender();
-            if (player != null) {
-                CompoundTag data = player.getPersistentData();
-                if (data.contains(KEY)) {
-                    data.getCompound(KEY).put(Integer.toString(id), tag);
-                } else {
-                    CompoundTag emitters = new CompoundTag();
-                    emitters.put(Integer.toString(id), tag);
-                    data.put(KEY, emitters);
-                }
+            ParticleStorm.LOGGER.warn("No persisted emitter {} for player {}", id, player.getGameProfile());
+        }
+    }
+
+    public static void syncSavedEmitters(ServerPlayer player) {
+        CompoundTag emitters = getEmitterData(player, false);
+        for (String id : emitters.getAllKeys()) {
+            try {
+                ServerPlayNetworking.send(player, new EmitterSynchronizePacket(Integer.parseInt(id), emitters.getCompound(id)));
+            } catch (NumberFormatException exception) {
+                ParticleStorm.LOGGER.warn("Invalid persisted emitter id '{}' for player {}", id, player.getGameProfile());
             }
         }
     }
 
-    public static void syncToServer(ParticleEmitter emitter) {
-        ParticleStorm.CHANNEL.sendToServer(new EmitterSynchronizePacket(emitter.id, emitter.serialize()));
-    }
-
-    public static void syncToClient(ServerPlayer player, int id) {
-        CompoundTag data = player.getPersistentData();
-        if (data.contains(KEY)) {
-            CompoundTag emitter = data.getCompound(KEY).getCompound(Integer.toString(id));
-            ParticleStorm.CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), new EmitterSynchronizePacket(id, emitter));
-        } else {
-            ParticleStorm.LOGGER.warn("No emitters for player: {}", player.getGameProfile());
+    public static CompoundTag getEmitterData(Player player, boolean create) {
+        CompoundTag persistentData = IPlayerPersistentData.of(player).particlestorm$getPersistentData();
+        if (!persistentData.contains(KEY) && create) {
+            persistentData.put(KEY, new CompoundTag());
         }
+        return persistentData.getCompound(KEY);
     }
 }

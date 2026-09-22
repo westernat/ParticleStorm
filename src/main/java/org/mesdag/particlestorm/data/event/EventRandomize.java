@@ -5,22 +5,15 @@ import net.minecraft.util.ExtraCodecs;
 import net.minecraft.util.Tuple;
 import org.mesdag.particlestorm.api.IEventNode;
 import org.mesdag.particlestorm.api.MolangInstance;
-import org.mesdag.particlestorm.data.DFUCompat;
 
 import java.util.*;
 
 public final class EventRandomize implements IEventNode {
-    @SuppressWarnings({"unchecked", "rawtypes"})
-    public static final Codec<EventRandomize> CODEC = DFUCompat.dispatchedMap(Codec.STRING, name -> {
-        Codec<IEventNode> codec = MAP.get(name);
-        if (codec == null) return (Codec<IEventNode>) (Codec) EventLog.CODEC;
-        return codec;
-    }).listOf().xmap(EventRandomize::new, eventRandomize -> eventRandomize.nodes);
+    public static final Codec<EventRandomize> CODEC = IEventNode.CODEC.listOf().xmap(EventRandomize::new, eventRandomize -> eventRandomize.nodes);
     public final List<Map<String, IEventNode>> nodes;
 
     public final List<Tuple<Float, Map<String, IEventNode>>> sortedNodes;
 
-    @SuppressWarnings({"rawtypes", "unchecked"})
     public EventRandomize(List<Map<String, IEventNode>> nodes) {
         this.nodes = nodes;
 
@@ -43,7 +36,7 @@ public final class EventRandomize implements IEventNode {
 
     @Override
     public void execute(MolangInstance instance) {
-        float random = instance.getLevel().random.nextFloat();
+        float random = instance.getLevel().getRandom().nextFloat();
         for (Tuple<Float, Map<String, IEventNode>> tuple : sortedNodes) {
             if (random < tuple.getA()) {
                 for (IEventNode node : tuple.getB().values()) {

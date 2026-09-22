@@ -2,25 +2,26 @@ package org.mesdag.particlestorm.data.component;
 
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
-import it.unimi.dsi.fastutil.floats.FloatObjectImmutablePair;
-import it.unimi.dsi.fastutil.floats.FloatObjectPair;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.util.Tuple;
 import org.mesdag.particlestorm.ParticleStorm;
 import org.mesdag.particlestorm.api.IEventNode;
 import org.mesdag.particlestorm.api.IMolangParticleInstance;
 import org.mesdag.particlestorm.api.IParticleComponent;
+import org.mesdag.particlestorm.data.event.EventResolver;
 import org.mesdag.particlestorm.data.molang.MolangExp;
 
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 
 /// All events use the event names in the event section
 ///
 /// All events can be either an array or a string
 public final class ParticleLifeTimeEvents implements IParticleComponent {
-    public static final ResourceLocation ID = ResourceLocation.withDefaultNamespace("particle_lifetime_events");
+    public static final ResourceLocation ID = new ResourceLocation("particle_lifetime_events");
     public static final Codec<ParticleLifeTimeEvents> CODEC = RecordCodecBuilder.create(instance -> instance.group(
             ParticleStorm.STRING_LIST_CODEC.fieldOf("creation_event").orElseGet(List::of).forGetter(events -> events.creationEvent),
             ParticleStorm.STRING_LIST_CODEC.fieldOf("expiration_event").orElseGet(List::of).forGetter(events -> events.expirationEvent),
@@ -30,7 +31,7 @@ public final class ParticleLifeTimeEvents implements IParticleComponent {
     public final List<String> expirationEvent;
     public final Map<String, List<String>> timeline;
 
-    public final List<FloatObjectPair<List<String>>> sortedTimeline;
+    public final List<Tuple<Function<Integer, Boolean>, List<String>>> sortedTimeline;
 
     /// @param creationEvent   Fires when the particle is created
     /// @param expirationEvent Fires when the particle expires (does not wait for particles to expire too)
@@ -42,9 +43,9 @@ public final class ParticleLifeTimeEvents implements IParticleComponent {
 
         this.sortedTimeline = new ArrayList<>();
         timeline.entrySet().stream()
-                .map(entry -> new FloatObjectImmutablePair<>(Float.parseFloat(entry.getKey()) * 20, entry.getValue()))
-                .sorted(Comparator.comparing(FloatObjectPair::leftFloat))
-                .forEachOrdered(sortedTimeline::add);
+                .map(entry -> new Tuple<>(Float.parseFloat(entry.getKey()), entry.getValue()))
+                .sorted(Comparator.comparing(Tuple::getA))
+                .forEachOrdered(tuple -> sortedTimeline.add(new Tuple<>(time -> time >= tuple.getA() * 20, tuple.getB())));
     }
 
     @Override
@@ -60,10 +61,10 @@ public final class ParticleLifeTimeEvents implements IParticleComponent {
     @Override
     public void update(IMolangParticleInstance instance) {
         for (int i = instance.getLastTimeline(); i < sortedTimeline.size(); i++) {
-            FloatObjectPair<List<String>> pair = sortedTimeline.get(i);
-            if (instance.getAge() >= pair.leftFloat()) {
+            Tuple<Function<Integer, Boolean>, List<String>> tuple = sortedTimeline.get(i);
+            if (tuple.getA().apply(instance.getAge())) {
                 instance.setLastTimeline(i + 1);
-                executes(instance, pair.right());
+                executes(instance, tuple.getB());
                 break;
             }
         }
@@ -93,7 +94,7 @@ public final class ParticleLifeTimeEvents implements IParticleComponent {
 
     private static void executes(IMolangParticleInstance instance, List<String> triggers) {
         for (String event : triggers) {
-            for (IEventNode node : instance.getPreset().effect.events.get(event).values()) {
+            for (IEventNode node : EventResolver.resolve(instance.getPreset().effect.events, event).values()) {
                 node.execute(instance);
             }
         }

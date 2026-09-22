@@ -12,7 +12,7 @@ import java.util.List;
 
 /// Starts the particle with a specified render expression.
 public record ParticleInitialization(FloatMolangExp perRenderExpression, FloatMolangExp perUpdateExpression) implements IParticleComponent {
-    public static final ResourceLocation ID = ResourceLocation.withDefaultNamespace("particle_initialization");
+    public static final ResourceLocation ID = new ResourceLocation("particle_initialization");
     public static final Codec<ParticleInitialization> CODEC = RecordCodecBuilder.create(instance -> instance.group(
             FloatMolangExp.CODEC.optionalFieldOf("per_render_expression", FloatMolangExp.ZERO).forGetter(ParticleInitialization::perRenderExpression),
             FloatMolangExp.CODEC.optionalFieldOf("per_update_expression", FloatMolangExp.ZERO).forGetter(ParticleInitialization::perUpdateExpression)

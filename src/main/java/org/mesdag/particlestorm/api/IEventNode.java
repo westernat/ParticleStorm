@@ -1,14 +1,14 @@
 package org.mesdag.particlestorm.api;
 
 import com.mojang.serialization.Codec;
-import org.mesdag.particlestorm.data.DFUCompat;
+import org.mesdag.particlestorm.data.ParticleCodecs;
 import org.mesdag.particlestorm.data.event.EventLog;
 
 import java.util.Hashtable;
 import java.util.Map;
 
 public interface IEventNode {
-    Codec<Map<String, IEventNode>> CODEC = DFUCompat.dispatchedMap(Codec.STRING, IEventNode::getCodec);
+    Codec<Map<String, IEventNode>> CODEC = ParticleCodecs.keyedMap(Codec.STRING, IEventNode::getCodec);
     Map<String, Codec<IEventNode>> MAP = new Hashtable<>();
 
     void execute(MolangInstance instance);

@@ -16,7 +16,7 @@ public interface IComponent {
     }
 
     static void register(String vanillaPath, Codec<? extends IComponent> codec) {
-        register(ResourceLocation.withDefaultNamespace(vanillaPath), codec);
+        register(new ResourceLocation(vanillaPath), codec);
     }
 
     Codec<? extends IComponent> codec();

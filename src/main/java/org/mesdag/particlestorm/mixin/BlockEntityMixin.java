@@ -1,15 +1,14 @@
 package org.mesdag.particlestorm.mixin;
 
 import net.minecraft.world.level.block.entity.BlockEntity;
-import net.minecraftforge.common.MinecraftForge;
 import org.mesdag.particlestorm.api.AddDefaultVariableEvent;
 import org.mesdag.particlestorm.data.molang.VariableTable;
-import org.mesdag.particlestorm.mixed.IPSBlockEntity;
+import org.mesdag.particlestorm.mixed.IBlockEntity;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 
 @Mixin(BlockEntity.class)
-public abstract class BlockEntityMixin implements IPSBlockEntity {
+public abstract class BlockEntityMixin implements IBlockEntity {
     @Unique
     private VariableTable particlestorm$variableTable;
 
@@ -17,7 +16,7 @@ public abstract class BlockEntityMixin implements IPSBlockEntity {
     public VariableTable particlestorm$getVariableTable() {
         if (particlestorm$variableTable == null) {
             this.particlestorm$variableTable = new VariableTable(null);
-            MinecraftForge.EVENT_BUS.post(new AddDefaultVariableEvent.BlockEntity(particlestorm$variableTable, (net.minecraft.world.level.block.entity.BlockEntity) (Object) this));
+            AddDefaultVariableEvent.EVENT.invoker().onAddDefaultVariables(new AddDefaultVariableEvent.BlockEntity(particlestorm$variableTable, (BlockEntity) (Object) this));
         }
         return particlestorm$variableTable;
     }

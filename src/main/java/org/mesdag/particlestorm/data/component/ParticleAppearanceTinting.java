@@ -3,6 +3,7 @@ package org.mesdag.particlestorm.data.component;
 import com.google.common.collect.ImmutableMap;
 import com.mojang.datafixers.util.Either;
 import com.mojang.serialization.Codec;
+import org.mesdag.particlestorm.data.ParticleCodecs;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.util.Mth;
 import net.minecraft.util.Tuple;
@@ -74,8 +75,8 @@ public record ParticleAppearanceTinting(Color color, ColorField colorField) impl
     @Override
     public void apply(IMolangParticleInstance instance) {
         if (color.interpolant.initialized() && !color.gradient.map.isEmpty()) {
-            float interpolant = color.interpolant.calculate(instance);
-            float[] calculated = getCalculatedColor(instance, color.gradient.list, interpolant / color.gradient.range);
+            float interpolant = Mth.clamp(color.interpolant.calculate(instance), 0.0F, 1.0F);
+            float[] calculated = getCalculatedColor(instance, color.gradient.list, interpolant);
             instance.setColor(calculated[0], calculated[1], calculated[2], calculated[3]);
         } else {
             float[] color = colorField.calculate(instance);
@@ -163,7 +164,7 @@ public record ParticleAppearanceTinting(Color color, ColorField colorField) impl
 
     public record ColorField(FloatMolangExp red, FloatMolangExp green, FloatMolangExp blue, FloatMolangExp alpha) {
         public static final ColorField EMPTY = new ColorField(FloatMolangExp.ZERO, FloatMolangExp.ZERO, FloatMolangExp.ZERO, FloatMolangExp.ZERO);
-        public static final Codec<ColorField> CODEC = Codec.either(Codec.STRING, FloatMolangExp.CODEC.listOf()).xmap(
+        public static final Codec<ColorField> CODEC = Codec.either(Codec.STRING, ParticleCodecs.list(FloatMolangExp.CODEC, 3, 4)).xmap(
                 either -> either.map(hex -> {
                     hex = hex.replace("#", "");
                     if (hex.length() != 6 && hex.length() != 8) throw new IllegalArgumentException("The size is not allowed");

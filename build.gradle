@@ -1,213 +1,111 @@
 plugins {
-    id 'java-library'
-    id 'eclipse'
-    id 'idea'
+    id 'fabric-loom' version '1.8.13'
     id 'maven-publish'
-    id 'net.neoforged.moddev.legacyforge' version '2.0.141'
 }
 
-tasks.named('wrapper', Wrapper).configure {
-    distributionType = Wrapper.DistributionType.BIN
-}
-
-version = mod_version
-group = mod_group_id
+version = project.mod_version
+group = project.maven_group
 
 base {
-    archivesName = "ParticleStorm-forge-${minecraft_version}"
+    archivesName = "ParticleStorm-fabric-${minecraft_version}"
 }
-
-java.toolchain.languageVersion = JavaLanguageVersion.of(17)
-
-boolean isRunningInIdea = System.getProperty("idea.active") == "true"
-
-legacyForge {
-    version = project.minecraft_version + '-' + project.forge_version
-
-    parchment {
-        mappingsVersion = project.parchment_mappings_version
-        minecraftVersion = project.parchment_minecraft_version
-    }
-
-    accessTransformers = project.files('src/main/resources/META-INF/accesstransformer.cfg')
-
-    runs {
-        client {
-            client()
-            systemProperty 'forge.enabledGameTestNamespaces', project.mod_id
-        }
-        server {
-            server()
-//            programArgument '--nogui'
-            systemProperty 'forge.enabledGameTestNamespaces', project.mod_id
-        }
-        data {
-            data()
-            programArguments.addAll '--mod', project.mod_id, '--all', '--output', file('src/generated/resources/').getAbsolutePath(), '--existing', file('src/main/resources/').getAbsolutePath()
-        }
-        configureEach {
-            systemProperties.putAll([
-                    'forge.logging.markers'    : 'REGISTRIES',
-                    'particlestorm.debug'      : 'true',
-                    'geckolib.disable_examples': 'true'
-            ])
-            logLevel = org.slf4j.event.Level.DEBUG
-            jvmArguments.addAll([
-                    // 忽略无效指令，避免有的人没安装 JetBrain Runtime 无法启动游戏
-                    "-XX:+IgnoreUnrecognizedVMOptions",
-                    // 启用 JetBrain Runtime 热重载功能
-                    "-XX:+AllowEnhancedClassRedefinition"
-            ])
-            if (isRunningInIdea) {
-                systemProperty "terminal.jline", "true"
-            }
-        }
-    }
-
-    mods {
-        "${mod_id}" {
-            sourceSet(sourceSets.main)
-        }
-    }
-}
-
-sourceSets.main.resources { srcDir 'src/generated/resources' }
-
-configurations {
-    runtimeClasspath.extendsFrom localRuntime
-}
-obfuscation {
-    createRemappingConfiguration(configurations.localRuntime)
+loom {
+    accessWidenerPath = file("src/main/resources/mesdag.accesswidener")
 }
 
 repositories {
-    mavenLocal()
     maven {
-        name = 'GeckoLib'
-        url 'https://dl.cloudsmith.io/public/geckolib3/geckolib/maven/'
-        content {
-            includeGroup("software.bernie.geckolib")
+        url = 'https://dl.cloudsmith.io/public/geckolib3/geckolib/maven/'
+        content { includeGroup('com.eliotlash.mclib') }
+        metadataSources { artifact() }
+    }
+    exclusiveContent {
+        forRepository {
+            ivy {
+                name = 'ModrinthGeckoLib'
+                url = 'https://cdn.modrinth.com/data/8BmcQJ2H/versions'
+                patternLayout {
+                    artifact "[revision]/geckolib-fabric-${minecraft_version}-${geckolib_version}.[ext]"
+                }
+                metadataSources { artifact() }
+            }
         }
+        filter { includeModule('modrinth.geckolib', 'geckolib-fabric') }
     }
 }
-
-boolean slim = true
 
 dependencies {
-    modCompileOnly "software.bernie.geckolib:geckolib-forge-${minecraft_version}:${geckolib_version}"
-    modRuntimeOnly "software.bernie.geckolib:geckolib-forge-${minecraft_version}:${geckolib_version}"
-
-    compileOnly(annotationProcessor("io.github.llamalad7:mixinextras-common:0.5.0"))
-    if (slim) {
-        implementation("io.github.llamalad7:mixinextras-forge:0.5.0")
-    } else {
-        implementation(jarJar("io.github.llamalad7:mixinextras-forge:0.5.0"))
-    }
-    annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
+    // To change the versions see the gradle.properties file
+    minecraft "com.mojang:minecraft:${project.minecraft_version}"
+    mappings loom.officialMojangMappings()
+    modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
+    modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
+    modImplementation('modrinth.geckolib:geckolib-fabric:SD2lOScS') { transitive = false }
+    runtimeOnly 'com.eliotlash.mclib:mclib:20'
 }
 
-mixin {
-    add sourceSets.main, "${mod_id}.refmap.json"
-    config "${mod_id}.mixins.json"
+processResources {
+    inputs.property "version", project.version
+    inputs.property "minecraft_version", project.minecraft_version
+    inputs.property "loader_version", project.loader_version
+    inputs.property "geckolib_version", project.geckolib_version
+    filteringCharset "UTF-8"
+
+    filesMatching("fabric.mod.json") {
+        expand "version": project.version,
+                "minecraft_version": project.minecraft_version,
+                "loader_version": project.loader_version,
+                "geckolib_version": project.geckolib_version
+    }
+}
+
+def targetJavaVersion = 17
+tasks.withType(JavaCompile).configureEach {
+    // ensure that the encoding is set to UTF-8, no matter what the system default is
+    // this fixes some edge cases with special characters not displaying correctly
+    // see http://yodaconditions.net/blog/fix-for-java-file-encoding-problems-with-gradle.html
+    // If Javadoc is generated, this must be specified in that task too.
+    it.options.encoding = "UTF-8"
+    if (targetJavaVersion >= 10 || JavaVersion.current().isJava10Compatible()) {
+        it.options.release.set(targetJavaVersion)
+    }
+}
+
+java {
+    def javaVersion = JavaVersion.toVersion(targetJavaVersion)
+    if (JavaVersion.current() < javaVersion) {
+        toolchain.languageVersion = JavaLanguageVersion.of(targetJavaVersion)
+    }
+    // Loom will automatically attach sourcesJar to a RemapSourcesJar task and to the "build" task
+    // if it is present.
+    // If you remove this line, sources will not be generated.
+    withSourcesJar()
 }
 
 jar {
-    manifest.attributes([
-            "MixinConfigs": "${mod_id}.mixins.json"
-    ])
-}
-
-tasks.withType(ProcessResources).configureEach {
-    var replaceProperties = [
-            minecraft_version      : minecraft_version,
-            minecraft_version_range: minecraft_version_range,
-            forge_version          : forge_version,
-            forge_version_range    : forge_version_range,
-            loader_version_range   : loader_version_range,
-            mod_id                 : mod_id,
-            mod_name               : mod_name,
-            mod_license            : mod_license,
-            mod_version            : mod_version,
-            mod_authors            : mod_authors,
-            mod_description        : mod_description
-    ]
-    inputs.properties replaceProperties
-
-    filesMatching(['META-INF/mods.toml']) {
-        expand replaceProperties
+    from("LICENSE.txt") {
+        rename { "${it}_${project.archives_base_name}" }
     }
 }
 
-java.withSourcesJar()
-ext {
-    releasesUrl = "https://maven.confluence.ink/releases"
-    snapshotsUrl = "https://maven.confluence.ink/snapshots"
-}
+// configure the maven publication
 publishing {
     publications {
-        register('mavenJava', MavenPublication) {
+        create("mavenJava", MavenPublication) {
+            artifactId = "ParticleStorm-fabric-${minecraft_version}"
             from components.java
-            artifactId = "ParticleStorm-forge-${minecraft_version}"
         }
     }
+
+    // See https://docs.gradle.org/current/userguide/publishing_maven.html for information on how to set up publishing.
     repositories {
         maven {
             name = "Confluence"
-            url = version.toString().endsWith("SNAPSHOT") ? snapshotsUrl : releasesUrl
+            url = version.toString().endsWith("SNAPSHOT") ? "https://maven.confluence.ink/snapshots" : "https://maven.confluence.ink/releases"
             credentials {
                 username = System.getenv("MAGIC_TEAM_USERNAME")
                 password = System.getenv("MAGIC_TEAM_TOKEN")
             }
         }
     }
-}
-
-idea {
-    module {
-        downloadSources = true
-        downloadJavadoc = true
-    }
-}
-
-def refmapPath = layout.buildDirectory.file("mixin/${mod_id}.refmap.json")
-tasks.register('patchRefmap') {
-    dependsOn compileJava
-    doLast {
-        def refmapFile = refmapPath.get().asFile
-        if (!refmapFile.exists()) {
-            logger.warn("Refmap file not found at ${refmapFile.absolutePath}, skipping patch")
-            return
-        }
-
-        def json = new groovy.json.JsonSlurper().parse(refmapFile) as Map
-
-        def insertRefMap = { String m, String meth, String map ->
-            if (!json.mappings[m]) json.mappings[m] = [:]
-            if (!json.data.searge[m]) json.data.searge[m] = [:]
-            json.mappings[m][meth] = map
-            json.data.searge[m][meth] = map
-        }
-
-        insertRefMap(
-                'org/mesdag/particlestorm/mixin/ParticleEngineMixin',
-                'lambda$reload$9',
-                'Lnet/minecraft/client/particle/ParticleEngine;m_244715_(Lnet/minecraft/util/profiling/ProfilerFiller;Ljava/util/concurrent/CompletableFuture;Ljava/util/concurrent/CompletableFuture;Ljava/lang/Void;)V'
-        )
-        insertRefMap(
-                'org.mesdag.particlestorm.mixin.integration.geckolib.GeoReplacedEntityRendererMixin',
-                'render',
-                'Lsoftware/bernie/geckolib/renderer/GeoReplacedEntityRenderer;m_7392_(Lnet/minecraft/world/entity/Entity;FFLcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/MultiBufferSource;I)V'
-        )
-
-        refmapFile.text = groovy.json.JsonOutput.prettyPrint(groovy.json.JsonOutput.toJson(json))
-        logger.lifecycle('Patched refmap')
-    }
-}
-
-tasks.named('jar') {
-    dependsOn patchRefmap
-}
-
-tasks.withType(JavaCompile) {
-    options.encoding = 'UTF-8'
 }

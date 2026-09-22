@@ -2,7 +2,6 @@ package org.mesdag.particlestorm.data.molang;
 
 import com.mojang.serialization.Codec;
 import net.minecraft.Util;
-import net.minecraft.network.FriendlyByteBuf;
 import org.mesdag.particlestorm.api.MolangInstance;
 import org.mesdag.particlestorm.data.molang.compiler.MathValue;
 import org.mesdag.particlestorm.data.molang.compiler.MolangParser;
@@ -12,11 +11,10 @@ import org.mesdag.particlestorm.data.molang.compiler.value.Constant;
 import java.util.Map;
 
 public class MolangExp {
-    public static final MolangExp EMPTY = Util.make(new MolangExp(""), exp -> exp.variable = new Constant(0));
+    public static final MolangExp EMPTY = Util.make(new MolangExp(""), exp -> exp.variable = new Constant(0.0));
     public static final Codec<MolangExp> CODEC = Codec.STRING.xmap(MolangExp::new, MolangExp::getExpStr);
     protected final String expStr;
     protected MathValue variable;
-    protected boolean immutable;
 
     public MolangExp(String expStr) {
         this.expStr = expStr;
@@ -50,19 +48,12 @@ public class MolangExp {
     public void compile(MolangParser parser) {
         if (variable == null && !expStr.isEmpty() && !expStr.isBlank()) {
             this.variable = parser.compileMolang(expStr);
-            if (immutable) {
-                variable.markImmutable();
-            }
         }
     }
 
     public float calculate(MolangInstance instance) {
         if (!initialized()) return 0.0F;
-        return variable.get(instance);
-    }
-
-    public void markImmutable() {
-        this.immutable = true;
+        return (float) variable.get(instance);
     }
 
     public MathValue getVariable() {
@@ -71,14 +62,6 @@ public class MolangExp {
 
     public boolean initialized() {
         return variable != null;
-    }
-
-    public void writeToNetwork(FriendlyByteBuf buf) {
-        buf.writeUtf(expStr);
-    }
-
-    public static MolangExp fromNetwork(FriendlyByteBuf buf) {
-        return new MolangExp(buf.readUtf());
     }
 
     @Override

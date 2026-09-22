@@ -1,6 +1,5 @@
 package org.mesdag.particlestorm.mixin.integration.geckolib;
 
-import com.llamalad7.mixinextras.sugar.Local;
 import net.minecraft.world.entity.Entity;
 import org.mesdag.particlestorm.api.geckolib.GeckoLibHelper;
 import org.spongepowered.asm.mixin.Final;
@@ -18,11 +17,12 @@ public abstract class GeoReplacedEntityRendererMixin<E extends Entity, T extends
     @Shadow
     @Final
     protected T animatable;
+    @Shadow
+    protected E currentEntity;
 
-    /// \@Inject target 'render' in @Pseudo mixin will not be obfuscated
-    @Inject(method = "render", at = @At(value = "INVOKE", target = "Lsoftware/bernie/geckolib/renderer/GeoReplacedEntityRenderer;defaultRender(Lcom/mojang/blaze3d/vertex/PoseStack;Lsoftware/bernie/geckolib/core/animatable/GeoAnimatable;Lnet/minecraft/client/renderer/MultiBufferSource;Lnet/minecraft/client/renderer/RenderType;Lcom/mojang/blaze3d/vertex/VertexConsumer;FFI)V"))
-    private void setCurrentEntity(CallbackInfo ci, @Local(argsOnly = true) E entity) {
-        GeckoLibHelper.setCurrentEntity(animatable, entity);
+    @Inject(method = "preRender", at = @At("HEAD"))
+    private void setCurrentEntity(CallbackInfo ci) {
+        GeckoLibHelper.setCurrentEntity(animatable, currentEntity);
     }
 
     @Inject(method = "doPostRenderCleanup", at = @At("TAIL"))

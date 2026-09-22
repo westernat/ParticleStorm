@@ -1,36 +1,53 @@
 package org.mesdag.particlestorm.particle;
 
-import net.minecraft.client.particle.ParticleEngine;
+import net.minecraft.client.particle.SpriteSet;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
+import net.minecraft.util.RandomSource;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class ExtendMutableSpriteSet extends ParticleEngine.MutableSpriteSet {
-    private final List<TextureAtlasSprite> extendedSprites = new ArrayList<>();
+public class ExtendMutableSpriteSet implements SpriteSet {
+    private final List<TextureAtlasSprite> sprites = new ArrayList<>();
     private TextureAtlasSprite missing;
 
     public TextureAtlasSprite get(int index) {
-        if (index < 0 || index >= extendedSprites.size()) return missing;
-        return extendedSprites.get(index);
+        if (index < 0 || index >= sprites.size()) {
+            return missing;
+        }
+        return sprites.get(index);
     }
 
     public void addSprite(TextureAtlasSprite sprite) {
-        extendedSprites.add(sprite);
+        sprites.add(sprite);
     }
 
     public void clear() {
-        extendedSprites.clear();
-    }
-
-    @Override
-    public void rebind(List<TextureAtlasSprite> sprites) {
-        super.rebind(sprites);
-        this.extendedSprites.clear();
-        this.extendedSprites.addAll(sprites);
+        sprites.clear();
     }
 
     public void bindMissing(TextureAtlasSprite missing) {
         this.missing = missing;
+    }
+
+    @Override
+    public TextureAtlasSprite get(int index, int max) {
+        if (sprites.isEmpty()) {
+            return missing;
+        }
+        int resolved = max <= 0 ? 0 : index * (sprites.size() - 1) / max;
+        return get(resolved);
+    }
+
+    @Override
+    public TextureAtlasSprite get(RandomSource random) {
+        if (sprites.isEmpty()) {
+            return missing;
+        }
+        return sprites.get(random.nextInt(sprites.size()));
+    }
+
+    public TextureAtlasSprite first() {
+        return sprites.isEmpty() ? missing : sprites.get(0);
     }
 }

@@ -1,31 +1,45 @@
 package org.mesdag.particlestorm.network;
 
+import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
+import net.fabricmc.fabric.api.networking.v1.FabricPacket;
+import net.fabricmc.fabric.api.networking.v1.PacketType;
+import net.fabricmc.fabric.api.networking.v1.PacketSender;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.fml.DistExecutor;
-import net.minecraftforge.network.NetworkEvent;
-import net.minecraftforge.network.PacketDistributor;
+import net.minecraft.world.entity.player.Player;
+import org.mesdag.particlestorm.PSGameClient;
 import org.mesdag.particlestorm.ParticleStorm;
+import org.mesdag.particlestorm.particle.ParticleEmitter;
 
-import java.util.function.Supplier;
+public record EmitterAttachPacketS2C(int particleId, int entityId) implements FabricPacket {
+    public static final PacketType<EmitterAttachPacketS2C> TYPE = PacketType.create(ParticleStorm.asResource("emitter_attach"), EmitterAttachPacketS2C::new);
 
-public record EmitterAttachPacketS2C(int particleId, int entityId) {
-    public static void encode(EmitterAttachPacketS2C msg, FriendlyByteBuf buf) {
-        buf.writeInt(msg.particleId);
-        buf.writeInt(msg.entityId);
+    public EmitterAttachPacketS2C(FriendlyByteBuf buf) {
+        this(buf.readInt(), buf.readInt());
     }
 
-    public static EmitterAttachPacketS2C decode(FriendlyByteBuf buf) {
-        return new EmitterAttachPacketS2C(buf.readInt(), buf.readInt());
+    @Override
+    public void write(FriendlyByteBuf buf) {
+        buf.writeInt(particleId);
+        buf.writeInt(entityId);
     }
 
-    public void handle(Supplier<NetworkEvent.Context> ctx) {
-        DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> PSClientPacketHandler.handleEmitterAttach(this));
+    @Override
+    public PacketType<EmitterAttachPacketS2C> getType() {
+        return TYPE;
     }
 
-    public static void sendToClient(ServerPlayer player, int particleId, Entity entity) {
-        ParticleStorm.CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), new EmitterAttachPacketS2C(particleId, entity.getId()));
+    public static void handleClient(EmitterAttachPacketS2C payload, Player player, PacketSender responseSender) {
+        ParticleEmitter emitter = PSGameClient.LOADER.getEmitter(payload.particleId);
+        Entity entity;
+        if (emitter != null && (entity = player.level().getEntity(payload.entityId)) != null) {
+            emitter.attachEntity(entity);
+        }
+    }
+
+    public static void sendToClient(ServerPlayer serverPlayer, int particleId, Entity entity) {
+        ServerPlayNetworking.send(serverPlayer, new EmitterAttachPacketS2C(particleId, entity.getId()));
     }
 }

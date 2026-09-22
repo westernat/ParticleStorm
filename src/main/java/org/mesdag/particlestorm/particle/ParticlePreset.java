@@ -2,7 +2,7 @@ package org.mesdag.particlestorm.particle;
 
 import com.google.common.collect.Iterables;
 import net.minecraft.client.particle.ParticleRenderType;
-import net.minecraftforge.fml.ModLoader;
+import net.minecraft.util.Mth;
 import org.jetbrains.annotations.Nullable;
 import org.mesdag.particlestorm.PSGameClient;
 import org.mesdag.particlestorm.api.IEventNode;
@@ -12,7 +12,6 @@ import org.mesdag.particlestorm.api.ParticlePresetLoadedEvent;
 import org.mesdag.particlestorm.data.DefinedParticleEffect;
 import org.mesdag.particlestorm.data.component.*;
 import org.mesdag.particlestorm.data.curve.ParticleCurve;
-import org.mesdag.particlestorm.data.description.DescriptionMaterial;
 import org.mesdag.particlestorm.data.event.NodeMolangExp;
 import org.mesdag.particlestorm.data.molang.FloatMolangExp;
 import org.mesdag.particlestorm.data.molang.MolangExp;
@@ -31,6 +30,7 @@ public class ParticlePreset {
     public DefinedParticleEffect effect;
     public ParticleRenderType renderType;
     public FaceCameraMode facingCameraMode;
+    public float minSpeedThresholdSqr;
     public boolean environmentLighting;
     public ParticleLifeTimeEvents lifeTimeEvents;
     public List<ParticleMotionCollision.Event> collisionEvents = List.of();
@@ -46,30 +46,23 @@ public class ParticlePreset {
 
     public ParticlePreset(DefinedParticleEffect effect) {
         this.effect = effect;
-        DescriptionMaterial material = effect.description.parameters().material();
-        if (material == DescriptionMaterial.TERRAIN_SHEET) {
-            this.renderType = ParticleRenderType.TERRAIN_SHEET;
-        } else if (material == DescriptionMaterial.particles_opaque || material == DescriptionMaterial.PARTICLE_SHEET_OPAQUE) {
-            this.renderType = ParticleRenderType.PARTICLE_SHEET_OPAQUE;
-        } else if (material == DescriptionMaterial.particles_add) {
-            this.renderType = PSGameClient.PARTICLE_ADD;
-        } else if (material == DescriptionMaterial.particles_blend) {
-            this.renderType = PSGameClient.PARTICLE_BLEND;
-        } else if (material == DescriptionMaterial.PARTICLE_SHEET_TRANSLUCENT) {
-            this.renderType = ParticleRenderType.PARTICLE_SHEET_TRANSLUCENT;
-        } else if (material == DescriptionMaterial.particles_alpha || material == DescriptionMaterial.PARTICLE_SHEET_LIT) {
-            this.renderType = ParticleRenderType.PARTICLE_SHEET_LIT;
-        } else if (material == DescriptionMaterial.CUSTOM) {
-            this.renderType = ParticleRenderType.CUSTOM;
-        } else {
-            this.renderType = ParticleRenderType.NO_RENDER;
-        }
+        this.renderType = switch (effect.description.parameters().material()) {
+            case TERRAIN_SHEET -> ParticleRenderType.TERRAIN_SHEET;
+            case particles_opaque, PARTICLE_SHEET_OPAQUE -> ParticleRenderType.PARTICLE_SHEET_OPAQUE;
+            case particles_add -> PSGameClient.PARTICLE_ADD;
+            case particles_blend -> PSGameClient.PARTICLE_BLEND;
+            case PARTICLE_SHEET_TRANSLUCENT -> ParticleRenderType.PARTICLE_SHEET_TRANSLUCENT;
+            case particles_alpha, PARTICLE_SHEET_LIT, CUSTOM -> ParticleRenderType.PARTICLE_SHEET_OPAQUE;
+            default -> ParticleRenderType.NO_RENDER;
+        };
         if (effect.components.get(ParticleAppearanceBillboard.ID) instanceof ParticleAppearanceBillboard component) {
             this.facingCameraMode = FaceCameraMode.fromComponent(component.faceCameraMode());
+            this.minSpeedThresholdSqr = Mth.square(Math.max(component.direction().minSpeedThreshold(), 0.0F));
             this.invTextureWidth = 1.0F / component.uv().texturewidth();
             this.invTextureHeight = 1.0F / component.uv().textureheight();
         } else {
             this.facingCameraMode = FaceCameraMode.DO_NOTHING;
+            this.minSpeedThresholdSqr = 0;
             this.invTextureWidth = 1;
             this.invTextureHeight = 1;
         }
@@ -82,9 +75,7 @@ public class ParticlePreset {
             this.collisionEvents = motionCollision.events();
             for (ParticleMotionCollision.Event event : collisionEvents) {
                 Map<String, IEventNode> nodes = effect.events.get(event.event());
-                if (nodes == null) {
-                    throw new IllegalStateException("Unknown event id: " + event.event());
-                }
+                if (nodes == null) continue;
                 for (IEventNode node : nodes.values()) {
                     if (node instanceof NodeMolangExp exp) {
                         exp.compile(parser);
@@ -94,6 +85,7 @@ public class ParticlePreset {
         }
         this.motionDynamic = effect.components.containsKey(ParticleMotionDynamic.ID);
         this.initialization = (ParticleInitialization) effect.components.get(ParticleInitialization.ID);
+
         for (Map.Entry<String, ParticleCurve> entry : effect.curves.entrySet()) {
             ParticleCurve curve = entry.getValue();
             curve.input.compile(parser);
@@ -106,6 +98,7 @@ public class ParticlePreset {
             String name = applyPrefixAliases(entry.getKey(), "variable.", "v.");
             table.table.put(name, new Variable(name, p -> curve.calculate(p, name)));
         }
+
         for (IParticleComponent component : Iterables.concat(effect.orderedParticleEarlyComponents, effect.orderedParticleComponents)) {
             assert component != null;
             for (MolangExp exp : component.getAllMolangExp()) {
@@ -113,7 +106,7 @@ public class ParticlePreset {
             }
         }
         this.vars = table;
-        ModLoader.get().postEvent(new ParticlePresetLoadedEvent(this));
+        ParticlePresetLoadedEvent.EVENT.invoker().onParticlePresetLoaded(new ParticlePresetLoadedEvent(this));
     }
 
     public <T> void setTicket(Class<T> clazz, T value) {

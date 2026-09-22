@@ -35,15 +35,8 @@ import java.util.function.Function;
 ///                                 Note that this must be less than or equal to 1/2 block
 /// @param expireOnContact          Triggers expiration on contact if true
 /// @param events                   Triggers an event array of individual events
-public record ParticleMotionCollision(
-        BoolMolangExp enabled,
-        float collisionDrag,
-        float coefficientOfRestitution,
-        float collisionRadius,
-        boolean expireOnContact,
-        List<Event> events
-) implements IParticleComponent {
-    public static final ResourceLocation ID = ResourceLocation.withDefaultNamespace("particle_motion_collision");
+public record ParticleMotionCollision(BoolMolangExp enabled, float collisionDrag, float coefficientOfRestitution, float collisionRadius, boolean expireOnContact, List<Event> events) implements IParticleComponent {
+    public static final ResourceLocation ID = new ResourceLocation("particle_motion_collision");
     public static final Codec<ParticleMotionCollision> CODEC = RecordCodecBuilder.create(instance -> instance.group(
             BoolMolangExp.CODEC.optionalFieldOf("enabled", BoolMolangExp.TRUE).forGetter(ParticleMotionCollision::enabled),
             Codec.FLOAT.optionalFieldOf("collision_drag", 0.0F).forGetter(ParticleMotionCollision::collisionDrag),
@@ -77,7 +70,6 @@ public record ParticleMotionCollision(
         instance.setCollisionDrag(collisionDrag * instance.getInvTickRate());
         instance.setCoefficientOfRestitution(coefficientOfRestitution);
         instance.setCollisionRadius(Math.max(collisionRadius, Mth.EPSILON));
-        instance.moveDirectly(0, 0, 0);
         instance.setExpireOnContact(expireOnContact);
     }
 
@@ -98,8 +90,10 @@ public record ParticleMotionCollision(
                 '}';
     }
 
-    /// @param event    Triggers the specified event if the conditions are met
-    /// @param minSpeed Optional minimum speed for event triggering
+    /**
+     * @param event    Triggers the specified event if the conditions are met
+     * @param minSpeed Optional minimum speed for event triggering
+     */
     public record Event(String event, float minSpeed) {
         public static final Codec<Event> CODEC = RecordCodecBuilder.create(instance -> instance.group(
                 Codec.STRING.fieldOf("event").forGetter(Event::event),

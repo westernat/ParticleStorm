@@ -18,22 +18,22 @@ public interface MolangInstance {
 
     float tickLifetime();
 
-    float getRandom1();
+    double getRandom1();
 
-    float getRandom2();
+    double getRandom2();
 
-    float getRandom3();
+    double getRandom3();
 
-    float getRandom4();
+    double getRandom4();
 
     ResourceLocation getIdentity();
 
     Vec3 getPosition();
 
-    @Nullable ParticleEmitterAttachable getAttached();
+    @Nullable Entity getAttachedEntity();
 
-    default @Nullable Entity getAttachedEntity() {
-        return getAttached() instanceof Entity entity ? entity : null;
+    default @Nullable ParticleEmitterAttachable getAttached() {
+        return getEmitter().getAttached();
     }
 
     float getInvTickRate();

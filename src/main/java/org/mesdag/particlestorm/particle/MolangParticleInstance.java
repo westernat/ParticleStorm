@@ -1,55 +1,68 @@
 package org.mesdag.particlestorm.particle;
 
-import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.client.Camera;
 import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.client.particle.Particle;
+import net.minecraft.client.particle.ParticleProvider;
 import net.minecraft.client.particle.ParticleRenderType;
 import net.minecraft.client.particle.TextureSheetParticle;
+import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.client.renderer.culling.Frustum;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.core.particles.ParticleGroup;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
+import org.mesdag.particlestorm.PSDiagnostics;
 import org.mesdag.particlestorm.api.IEventNode;
 import org.mesdag.particlestorm.api.IMolangParticleInstance;
 import org.mesdag.particlestorm.api.IParticleComponent;
 import org.mesdag.particlestorm.data.component.ParticleMotionCollision;
+import org.mesdag.particlestorm.data.event.EventResolver;
 import org.mesdag.particlestorm.data.molang.VariableTable;
-import org.mesdag.particlestorm.mixed.IPSTextureAtlasSprite;
+import org.mesdag.particlestorm.mixed.ITextureAtlasSprite;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
 public class MolangParticleInstance extends TextureSheetParticle implements IMolangParticleInstance {
+    public static final int FULL_LIGHT = 0xF000F0;
+    private static final float MIN_RENDER_SIZE = 1.0E-4F;
+
     protected final ParticlePreset preset;
     protected ParticleVariableTable vars;
-    protected final float invOx;
-    protected final float invOy;
+    protected final float originX;
+    protected final float originY;
 
     protected Vector3f acceleration = new Vector3f();
     protected Vector3f facingDirection = new Vector3f();
     protected Vector3f initialSpeed = new Vector3f();
-    protected float xRot;
-    protected float yRot;
-    protected float xRotO;
-    protected float yRotO;
-    protected float rolld;
-    protected boolean hasCollision;
-    protected float collisionDrag;
-    protected float coefficientOfRestitution;
-    protected boolean expireOnContact;
+    protected final Vector3f renderPosition = new Vector3f();
+    protected float xRot = 0.0F;
+    protected float yRot = 0.0F;
+    protected float xRotO = 0.0F;
+    protected float yRotO = 0.0F;
+    protected float rolld = 0.0F;
+    protected boolean hasCollision = false;
+    protected float collisionDrag = 0.0F;
+    protected float coefficientOfRestitution = 0.0F;
+    protected float collisionRadius = 0.0F;
+    protected boolean expireOnContact = false;
 
-    protected final float particleRandom1;
-    protected final float particleRandom2;
-    protected final float particleRandom3;
-    protected final float particleRandom4;
-    protected List<IParticleComponent> components;
+    protected final double particleRandom1;
+    protected final double particleRandom2;
+    protected final double particleRandom3;
+    protected final double particleRandom4;
+    protected List<IParticleComponent> components = List.of();
     protected ParticleEmitter emitter;
 
     protected final float scaleU;
@@ -58,29 +71,27 @@ public class MolangParticleInstance extends TextureSheetParticle implements IMol
     protected float[] uvSize;
     protected float[] uvStep;
     protected int maxFrame = 1;
-    protected int currentFrame;
+    protected int currentFrame = 0;
     protected float[] UV;
 
     protected boolean insideKillPlane;
     protected ParticleGroup particleGroup;
-    protected int lastTimeline;
+    protected int lastTimeline = 0;
 
-    public MolangParticleInstance(ParticlePreset preset, ClientLevel level, double x, double y, double z, ExtendMutableSpriteSet sprites) {
+    public MolangParticleInstance(ParticlePreset preset, ClientLevel level, double x, double y, double z, RandomSource random) {
         super(level, x, y, z);
+        setSprite(preset.effect.description.parameters().getTexture());
         this.friction = 1.0F;
-        this.quadSize = 0; // as collision radius
         this.preset = preset;
-        setSprite(sprites.get(preset.effect.description.parameters().getTextureIndex()));
-        this.invOx = ((IPSTextureAtlasSprite) sprite).particlestorm$getInvOx();
-        this.invOy = ((IPSTextureAtlasSprite) sprite).particlestorm$getInvOy();
+        this.originX = ((ITextureAtlasSprite) sprite).particlestorm$getOriginX();
+        this.originY = ((ITextureAtlasSprite) sprite).particlestorm$getOriginY();
         this.scaleU = sprite.contents().width() * preset.invTextureWidth;
         this.scaleV = sprite.contents().height() * preset.invTextureHeight;
 
-        RandomSource random = level.getRandom();
-        this.particleRandom1 = random.nextFloat();
-        this.particleRandom2 = random.nextFloat();
-        this.particleRandom3 = random.nextFloat();
-        this.particleRandom4 = random.nextFloat();
+        this.particleRandom1 = random.nextDouble();
+        this.particleRandom2 = random.nextDouble();
+        this.particleRandom3 = random.nextDouble();
+        this.particleRandom4 = random.nextDouble();
     }
 
     @Override
@@ -120,27 +131,18 @@ public class MolangParticleInstance extends TextureSheetParticle implements IMol
     }
 
     @Override
-    public void setXRot(float x, boolean o) {
+    public void setXRot(float x) {
         this.xRot = x;
-        if (o) {
-            this.xRotO = x;
-        }
     }
 
     @Override
-    public void setYRot(float y, boolean o) {
+    public void setYRot(float y) {
         this.yRot = y;
-        if (o) {
-            this.yRotO = y;
-        }
     }
 
     @Override
-    public void setZRot(float z, boolean o) {
+    public void setZRot(float z) {
         this.roll = z;
-        if (o) {
-            this.oRoll = z;
-        }
     }
 
     @Override
@@ -170,12 +172,12 @@ public class MolangParticleInstance extends TextureSheetParticle implements IMol
 
     @Override
     public void setCollisionRadius(float radius) {
-        this.quadSize = radius;
+        this.collisionRadius = radius;
     }
 
     @Override
     public float getCollisionRadius() {
-        return quadSize;
+        return collisionRadius;
     }
 
     @Override
@@ -220,7 +222,7 @@ public class MolangParticleInstance extends TextureSheetParticle implements IMol
 
     @Override
     public void setMaxFrame(int frame) {
-        this.maxFrame = frame;
+        this.maxFrame = Math.max(frame, 1);
     }
 
     @Override
@@ -294,13 +296,10 @@ public class MolangParticleInstance extends TextureSheetParticle implements IMol
     }
 
     @Override
-    public void setPos(double x, double y, double z, boolean o) {
-        setPos(x, y, z);
-        if (o) {
-            this.xo = x;
-            this.yo = y;
-            this.zo = z;
-        }
+    public void setPosO(double x, double y, double z) {
+        this.xo = x;
+        this.yo = y;
+        this.zo = z;
     }
 
     @Override
@@ -312,10 +311,10 @@ public class MolangParticleInstance extends TextureSheetParticle implements IMol
     @Override
     public void setUV(float u, float v, float w, float h) {
         if (UV == null) this.UV = new float[4];
-        this.UV[0] = u * invOx;
-        this.UV[1] = v * invOy;
-        this.UV[2] = (u + w) * invOx;
-        this.UV[3] = (v + h) * invOy;
+        this.UV[0] = u / originX;
+        this.UV[1] = v / originY;
+        this.UV[2] = (u + w) / originX;
+        this.UV[3] = (v + h) / originY;
     }
 
     @Override
@@ -344,22 +343,22 @@ public class MolangParticleInstance extends TextureSheetParticle implements IMol
     }
 
     @Override
-    public float getRandom1() {
+    public double getRandom1() {
         return particleRandom1;
     }
 
     @Override
-    public float getRandom2() {
+    public double getRandom2() {
         return particleRandom2;
     }
 
     @Override
-    public float getRandom3() {
+    public double getRandom3() {
         return particleRandom3;
     }
 
     @Override
-    public float getRandom4() {
+    public double getRandom4() {
         return particleRandom4;
     }
 
@@ -398,102 +397,123 @@ public class MolangParticleInstance extends TextureSheetParticle implements IMol
         for (IParticleComponent component : components) {
             component.update(this);
         }
-    }
-
-    protected static final Quaternionf worldRot = new Quaternionf();
-    protected static final Quaternionf localRot = new Quaternionf();
-    protected static final Vector3f pos = new Vector3f();
-
-    // 在render前调用
-    @Override
-    public boolean isVisible(Camera camera, Frustum frustum, float partialTick) {
-        Vec3 camPos = camera.getPosition();
-        if (emitter.isLocalSpace()) {
-            emitter.local2World(pos.set(
-                    (float) Mth.lerp(partialTick, xo, x),
-                    (float) Mth.lerp(partialTick, yo, y),
-                    (float) Mth.lerp(partialTick, zo, z)
-            ), partialTick);
-            float size = Math.max(billboardSize[0], billboardSize[1]);
-            boolean inFrustum = frustum.cubeInFrustum(
-                    pos.x - size,
-                    pos.y - size,
-                    pos.z - size,
-                    pos.x + size,
-                    pos.y + size,
-                    pos.z + size
-            );
-            pos.sub((float) camPos.x, (float) camPos.y, (float) camPos.z);
-            return inFrustum;
-        }
-        pos.set(
-                (float) (Mth.lerp(partialTick, xo, x) - camPos.x),
-                (float) (Mth.lerp(partialTick, yo, y) - camPos.y) + 1.0e-4f, // add an epsilon to fix the z-flash
-                (float) (Mth.lerp(partialTick, zo, z) - camPos.z)
+        PSDiagnostics.infoFirstN("particle-tick:" + (emitter == null ? "none" : emitter.id + ":" + emitter.particleId), 8, "particle tick runtimeId={} state={}",
+                emitter == null ? -1 : emitter.id,
+                diagnosticSummary()
         );
-        return IMolangParticleInstance.super.isVisible(camera, frustum, partialTick);
     }
 
-    // 在isVisible后调用
     @Override
-    public void render(VertexConsumer buffer, Camera camera, float partialTicks) {
-        getFacingCameraMode().setRotation(this, worldRot, camera, partialTicks);
-        if (xRot != 0.0F) worldRot.rotateX(Mth.lerp(partialTicks, xRotO, xRot));
-        if (yRot != 0.0F) worldRot.rotateY(Mth.lerp(partialTicks, yRotO, yRot));
-        if (roll != 0.0F) worldRot.rotateZ(Mth.lerp(partialTicks, oRoll, roll));
-        if (emitter.isLocalSpace() && emitter.getPreset().localRotation) {
-            emitter.getLocalSpace().getNormalizedRotation(localRot);
-            worldRot.premul(localRot);
+    public float getQuadSize(float partialTicks) {
+        float width = getBillboardWidth(partialTicks);
+        float height = getBillboardHeight(partialTicks);
+        float size = Math.max(width, height);
+        return size > MIN_RENDER_SIZE ? size : super.getQuadSize(partialTicks);
+    }
+
+    @Override
+    public void render(@NotNull VertexConsumer vertices, @NotNull Camera camera, float partialTicks) {
+        Quaternionf quaternionf = new Quaternionf();
+        getFacingCameraMode().setRotation(this, quaternionf, camera, partialTicks);
+        if (xRot != 0.0F) quaternionf.rotateX(Mth.lerp(partialTicks, xRotO, xRot));
+        if (yRot != 0.0F) quaternionf.rotateY(Mth.lerp(partialTicks, yRotO, yRot));
+        if (roll != 0.0F) quaternionf.rotateZ(Mth.lerp(partialTicks, oRoll, roll));
+
+        if (emitter != null && emitter.isLocalSpace() && emitter.getPreset().localRotation) {
+            quaternionf.premul(emitter.getLocalSpace().getNormalizedRotation(new Quaternionf()));
         }
-        renderRotatedQuad(buffer, pos.x, pos.y, pos.z, partialTicks);
+
+        if (emitter != null && emitter.isLocalSpace()) {
+            Vec3 camPos = camera.getPosition();
+            renderPosition.set(
+                    (float) Mth.lerp((double) partialTicks, xo, x),
+                    (float) Mth.lerp((double) partialTicks, yo, y),
+                    (float) Mth.lerp((double) partialTicks, zo, z)
+            );
+            emitter.local2World(renderPosition, partialTicks);
+            renderPosition.sub((float) camPos.x, (float) camPos.y, (float) camPos.z);
+            renderRotatedQuad(vertices, quaternionf, renderPosition.x, renderPosition.y, renderPosition.z, partialTicks);
+            return;
+        }
+        Vec3 camPos = camera.getPosition();
+        renderPosition.set(
+                (float) (Mth.lerp(partialTicks, xo, x) - camPos.x),
+                (float) (Mth.lerp(partialTicks, yo, y) - camPos.y) + MIN_RENDER_SIZE,
+                (float) (Mth.lerp(partialTicks, zo, z) - camPos.z)
+        );
+        renderRotatedQuad(vertices, quaternionf, renderPosition.x, renderPosition.y, renderPosition.z, partialTicks);
     }
 
-    protected void renderRotatedQuad(VertexConsumer buffer, float x, float y, float z, float partialTicks) {
-        float u0 = getU0();
-        float u1 = getU1();
-        float v0 = getV0();
-        float v1 = getV1();
-        int color = getLightColor(partialTicks);
-        renderVertex(buffer, x, y, z, -1.0F, -1.0F, u1, v1, color);
-        renderVertex(buffer, x, y, z, -1.0F, 1.0F, u1, v0, color);
-        renderVertex(buffer, x, y, z, 1.0F, 1.0F, u0, v0, color);
-        renderVertex(buffer, x, y, z, 1.0F, -1.0F, u0, v1, color);
+    public boolean particlestorm$isVisible(Frustum frustum, float partialTick) {
+        if (emitter != null && emitter.isLocalSpace()) {
+            renderPosition.set(
+                    (float) Mth.lerp((double) partialTick, xo, x),
+                    (float) Mth.lerp((double) partialTick, yo, y),
+                    (float) Mth.lerp((double) partialTick, zo, z)
+            );
+            emitter.local2World(renderPosition, partialTick);
+            float size = Math.max(getBillboardWidth(partialTick), getBillboardHeight(partialTick));
+            return frustum.isVisible(new AABB(
+                    renderPosition.x - size,
+                    renderPosition.y - size,
+                    renderPosition.z - size,
+                    renderPosition.x + size,
+                    renderPosition.y + size,
+                    renderPosition.z + size
+            ));
+        }
+        return frustum.isVisible(getBoundingBox().inflate(getQuadSize(partialTick)));
     }
 
-    protected void renderVertex(
-            VertexConsumer buffer,
-            float x,
-            float y,
-            float z,
-            float xOffset,
-            float yOffset,
-            float u,
-            float v,
-            int packedLight
-    ) {
-        pos.set(xOffset * billboardSize[0], yOffset * billboardSize[1], 0.0F).rotate(worldRot).add(x, y, z);
-        buffer.vertex(pos.x(), pos.y(), pos.z()).uv(u, v).color(rCol, gCol, bCol, alpha).uv2(packedLight).endVertex();
+    protected void renderRotatedQuad(VertexConsumer vertices, Quaternionf orientation, float x, float y, float z, float partialTick) {
+        float width = getBillboardWidth(partialTick);
+        float height = getBillboardHeight(partialTick);
+        if (width <= MIN_RENDER_SIZE || height <= MIN_RENDER_SIZE) {
+            width = height = Math.max(width, height);
+            if (width <= MIN_RENDER_SIZE) width = height = super.getQuadSize(partialTick);
+        }
+        int light = getLightColor(partialTick);
+        emitVertex(vertices, orientation, x, y, z, width, -height, getU1(), getV1(), light);
+        emitVertex(vertices, orientation, x, y, z, width, height, getU1(), getV0(), light);
+        emitVertex(vertices, orientation, x, y, z, -width, height, getU0(), getV0(), light);
+        emitVertex(vertices, orientation, x, y, z, -width, -height, getU0(), getV1(), light);
+        emitVertex(vertices, orientation, x, y, z, -width, -height, getU0(), getV1(), light);
+        emitVertex(vertices, orientation, x, y, z, -width, height, getU0(), getV0(), light);
+        emitVertex(vertices, orientation, x, y, z, width, height, getU1(), getV0(), light);
+        emitVertex(vertices, orientation, x, y, z, width, -height, getU1(), getV1(), light);
+    }
+
+    private void emitVertex(VertexConsumer vertices, Quaternionf orientation, float x, float y, float z, float horizontal, float vertical, float u, float v, int light) {
+        Vector3f point = new Vector3f(horizontal, vertical, 0.0F).rotate(orientation).add(x, y, z);
+        vertices.vertex(point.x, point.y, point.z).uv(u, v).color(rCol, gCol, bCol, alpha).uv2(light).endVertex();
+    }
+
+    private float getBillboardWidth(float partialTick) {
+        return billboardSize == null || billboardSize.length < 2 ? super.getQuadSize(partialTick) : Math.abs(billboardSize[0]);
+    }
+
+    private float getBillboardHeight(float partialTick) {
+        return billboardSize == null || billboardSize.length < 2 ? super.getQuadSize(partialTick) : Math.abs(billboardSize[1]);
     }
 
     @Override
     public void move(double x, double y, double z) {
-        if (stoppedByCollision) {
-            collisionEvent();
-            return;
-        }
-
+        if (stoppedByCollision) return;
         double d0 = x;
         double d1 = y;
         double d2 = z;
-        if (hasPhysics && hasCollision && (x != 0.0 || y != 0.0 || z != 0.0) && Mth.lengthSquared(x, y, z) < MAXIMUM_COLLISION_VELOCITY_SQUARED) {
+        if (hasPhysics && hasCollision && (x != 0.0 || y != 0.0 || z != 0.0) && x * x + y * y + z * z < MAXIMUM_COLLISION_VELOCITY_SQUARED) {
             AABB aabb = getBoundingBox();
-            if (emitter.isLocalSpace()) {
-                emitter.local2World(pos.set(aabb.minX, aabb.minY, aabb.minZ), 1);
-                float mx = pos.x;
-                float my = pos.y;
-                float mz = pos.z;
-                emitter.local2World(pos.set(aabb.maxX, aabb.maxY, aabb.maxZ), 1);
-                aabb = new AABB(mx, my, mz, pos.x, pos.y, pos.z);
+            if (collisionRadius > 0.0F) {
+                aabb = aabb.inflate(collisionRadius, 0.0, collisionRadius);
+            }
+            if (emitter != null && emitter.isLocalSpace()) {
+                emitter.local2World(renderPosition.set((float) aabb.minX, (float) aabb.minY, (float) aabb.minZ), 1.0F);
+                float minX = renderPosition.x;
+                float minY = renderPosition.y;
+                float minZ = renderPosition.z;
+                emitter.local2World(renderPosition.set((float) aabb.maxX, (float) aabb.maxY, (float) aabb.maxZ), 1.0F);
+                aabb = new AABB(minX, minY, minZ, renderPosition.x, renderPosition.y, renderPosition.z);
             }
             Vec3 vec3 = Entity.collideBoundingBox(null, new Vec3(x, y, z), aabb, level, List.of());
             if (x != vec3.x) {
@@ -520,9 +540,19 @@ public class MolangParticleInstance extends TextureSheetParticle implements IMol
 
         if (hasPhysics && hasCollision) {
             this.onGround = d1 != y && d1 < 0.0;
+            boolean collided = d0 != x || d2 != z;
 
-            if (onGround || (d0 != x || d2 != z)) {
-                collisionEvent();
+            if (onGround || collided) {
+                if (!preset.collisionEvents.isEmpty()) {
+                    for (ParticleMotionCollision.Event event : preset.collisionEvents) {
+                        float tickSpeed = event.minSpeed() * getInvTickRate();
+                        if (tickSpeed * tickSpeed < xd * xd + yd * yd + zd * zd) {
+                            for (IEventNode node : EventResolver.resolve(preset.effect.events, event.event()).values()) {
+                                node.execute(this);
+                            }
+                        }
+                    }
+                }
                 if (expireOnContact) {
                     remove();
                 }
@@ -530,48 +560,92 @@ public class MolangParticleInstance extends TextureSheetParticle implements IMol
         }
     }
 
-    protected void collisionEvent() {
-        if (preset.collisionEvents.isEmpty()) return;
-        for (ParticleMotionCollision.Event event : preset.collisionEvents) {
-            float tickSpeed = event.minSpeed() * getInvTickRate();
-            if (tickSpeed * tickSpeed < Mth.lengthSquared(xd, yd, zd)) {
-                for (IEventNode node : preset.effect.events.get(event.event()).values()) {
-                    node.execute(this);
-                }
-            }
-        }
-    }
-
-    @Override
-    public void setParticleSpeed(double xd, double yd, double zd) {
-        if (stoppedByCollision) return;
-        super.setParticleSpeed(xd, yd, zd);
-    }
-
     @Override
     public void remove() {
-        if (preset.lifeTimeEvents != null) {
-            preset.lifeTimeEvents.onExpiration(this);
+        if (!removed) {
+            if (preset.lifeTimeEvents != null) {
+                preset.lifeTimeEvents.onExpiration(this);
+            }
         }
         super.remove();
     }
 
     @Override
-    public ParticleRenderType getRenderType() {
+    public @NotNull ParticleRenderType getRenderType() {
         return preset.renderType;
     }
 
-    public FaceCameraMode getFacingCameraMode() {
+    public @NotNull FaceCameraMode getFacingCameraMode() {
         return preset.facingCameraMode;
     }
 
     @Override
     protected int getLightColor(float partialTick) {
-        return preset.environmentLighting ? super.getLightColor(partialTick) : 0xF000F0;
+        return preset.environmentLighting ? super.getLightColor(partialTick) : FULL_LIGHT;
     }
 
     @Override
-    public Optional<ParticleGroup> getParticleGroup() {
-        return Optional.ofNullable(particleGroup);
+    public @NotNull Optional<ParticleGroup> getParticleGroup() {
+        return Optional.empty();
+    }
+
+    @Override
+    public ResourceLocation getIdentity() {
+        return preset.effect.description.identifier();
+    }
+
+    @Override
+    public Vec3 getPosition() {
+        return new Vec3(x, y, z);
+    }
+
+    public String diagnosticSummary() {
+        return "identity=" + getIdentity() +
+                ",pos=(" + x + "," + y + "," + z + ")" +
+                ",speed=(" + xd + "," + yd + "," + zd + ")" +
+                ",age=" + age +
+                ",lifetime=" + getLifetime() +
+                ",quadSize=" + getQuadSize(0.0F) +
+                ",billboardSize=" + Arrays.toString(billboardSize) +
+                ",color=(" + rCol + "," + gCol + "," + bCol + "," + alpha + ")" +
+                ",spriteSize=" + sprite.contents().width() + "x" + sprite.contents().height() +
+                ",atlasSize=" + originX + "x" + originY +
+                ",scale=(" + scaleU + "," + scaleV + ")" +
+                ",uv=" + Arrays.toString(UV) +
+                ",uvSize=" + Arrays.toString(uvSize) +
+                ",uvStep=" + Arrays.toString(uvStep) +
+                ",frame=" + currentFrame + "/" + maxFrame +
+                ",layer=" + getRenderType() +
+                ",group=" + getRenderType() +
+                ",motionDynamic=" + preset.motionDynamic +
+                ",components=" + components.stream().map(component -> component.getClass().getSimpleName()).toList() +
+                ",flags=" + diagnosticFlags();
+    }
+
+    private String diagnosticFlags() {
+        StringBuilder builder = new StringBuilder();
+        appendDiagnosticFlag(builder, getLifetime() <= 0, "lifetime<=0");
+        appendDiagnosticFlag(builder, billboardSize == null || billboardSize.length < 2 || billboardSize[0] <= 0.0F || billboardSize[1] <= 0.0F, "size<=0");
+        appendDiagnosticFlag(builder, alpha <= 0.0F, "alpha<=0");
+        appendDiagnosticFlag(builder, preset.renderType == null, "no_render_type");
+        appendDiagnosticFlag(builder, sprite.contents().width() <= 0 || sprite.contents().height() <= 0, "sprite_empty");
+        return builder.isEmpty() ? "none" : builder.toString();
+    }
+
+    private static void appendDiagnosticFlag(StringBuilder builder, boolean condition, String name) {
+        if (!condition) {
+            return;
+        }
+        if (!builder.isEmpty()) {
+            builder.append('|');
+        }
+        builder.append(name);
+    }
+
+    public static class Provider implements ParticleProvider<MolangParticleOption> {
+        @Override
+        public @Nullable Particle createParticle(@NotNull MolangParticleOption option, @NotNull ClientLevel level, double x, double y, double z, double xSpeed, double ySpeed, double zSpeed) {
+            return new MolangParticleInstance(option.getPreset(), level, x, y, z, level.random);
+        }
     }
 }

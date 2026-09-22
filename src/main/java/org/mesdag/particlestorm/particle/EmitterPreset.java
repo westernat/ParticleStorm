@@ -1,7 +1,6 @@
 package org.mesdag.particlestorm.particle;
 
 import net.minecraft.core.particles.ParticleType;
-import net.minecraftforge.fml.ModLoader;
 import org.jetbrains.annotations.Nullable;
 import org.mesdag.particlestorm.api.EmitterPresetLoadedEvent;
 import org.mesdag.particlestorm.api.IEmitterComponent;
@@ -31,6 +30,11 @@ public class EmitterPreset {
     /// For custom preset data
     protected Map<Class<?>, Object> tickets;
 
+    @Deprecated
+    public EmitterPreset(MolangParticleOption option, List<IEmitterComponent> components, Map<String, Map<String, IEventNode>> events) {
+        this(option.getType(), components, events);
+    }
+
     public EmitterPreset(ParticleType<?> type, List<IEmitterComponent> components, Map<String, Map<String, IEventNode>> events) {
         this.type = type;
         this.components = components;
@@ -42,27 +46,19 @@ public class EmitterPreset {
         boolean shape = false;
         for (IEmitterComponent component : components) {
             if (component instanceof EmitterLifetime) {
-                if (lifeTime) {
-                    throw new IllegalArgumentException("Duplicate emitter lifetime component");
-                }
-                lifeTime = true;
+                if (lifeTime) throw new IllegalArgumentException("Duplicate emitter lifetime component");
+                else lifeTime = true;
             } else if (component instanceof EmitterRate) {
                 if (rate) {
                     throw new IllegalArgumentException("Duplicate emitter rate component");
-                }
-                rate = true;
-                if (component instanceof EmitterRate.Instant) {
-                    this.emitterRateType = EmitterRate.Type.INSTANT;
-                } else if (component instanceof EmitterRate.Steady) {
-                    this.emitterRateType = EmitterRate.Type.STEADY;
                 } else {
-                    this.emitterRateType = EmitterRate.Type.MANUAL;
+                    rate = true;
+                    this.emitterRateType = component instanceof EmitterRate.Instant ? EmitterRate.Type.INSTANT
+                            : component instanceof EmitterRate.Steady ? EmitterRate.Type.STEADY : EmitterRate.Type.MANUAL;
                 }
             } else if (component instanceof EmitterShape) {
-                if (shape) {
-                    throw new IllegalArgumentException("Duplicate emitter shape component");
-                }
-                shape = true;
+                if (shape) throw new IllegalArgumentException("Duplicate emitter shape component");
+                else shape = true;
             } else if (component instanceof EmitterLocalSpace localSpace) {
                 this.localPosition = localSpace.position();
                 this.localRotation = localSpace.rotation();
@@ -76,7 +72,7 @@ public class EmitterPreset {
         }
 
         this.vars = table;
-        ModLoader.get().postEvent(new EmitterPresetLoadedEvent(this));
+        EmitterPresetLoadedEvent.EVENT.invoker().onEmitterPresetLoaded(new EmitterPresetLoadedEvent(this));
     }
 
     public <T> void setTicket(Class<T> clazz, T value) {

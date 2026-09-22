@@ -4,11 +4,14 @@ import org.mesdag.particlestorm.api.MolangInstance;
 import org.mesdag.particlestorm.data.molang.compiler.MathValue;
 import org.mesdag.particlestorm.data.molang.compiler.function.MathFunction;
 
-/// [MathFunction] value supplier
-///
-/// **Contract:**
-///
-/// Returns the remainder value of the input value when modulo'd by the modulus value
+/**
+ * {@link MathFunction} value supplier
+ *
+ * <p>
+ * <b>Contract:</b>
+ * <br>
+ * Returns the remainder value of the input value when modulo'd by the modulus value
+ */
 public final class ModFunction extends MathFunction {
     private final MathValue value;
     private final MathValue modulus;
@@ -26,8 +29,8 @@ public final class ModFunction extends MathFunction {
     }
 
     @Override
-    public float compute(MolangInstance instance) {
-        return value.get(instance) % modulus.get(instance);
+    public double compute(MolangInstance instance) {
+        return this.value.get(instance) % this.modulus.get(instance);
     }
 
     @Override
@@ -37,6 +40,6 @@ public final class ModFunction extends MathFunction {
 
     @Override
     public MathValue[] getArgs() {
-        return new MathValue[] {value, modulus};
+        return new MathValue[] {this.value, this.modulus};
     }
 }
