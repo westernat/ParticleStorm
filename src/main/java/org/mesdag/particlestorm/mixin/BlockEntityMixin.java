@@ -17,7 +17,7 @@ public abstract class BlockEntityMixin implements IPSBlockEntity {
     public VariableTable particlestorm$getVariableTable() {
         if (particlestorm$variableTable == null) {
             this.particlestorm$variableTable = new VariableTable(null);
-            MinecraftForge.EVENT_BUS.post(new AddDefaultVariableEvent.BlockEntity(particlestorm$variableTable, (net.minecraft.world.level.block.entity.BlockEntity) (Object) this));
+            MinecraftForge.EVENT_BUS.post(new AddDefaultVariableEvent.BlockEntity(particlestorm$variableTable, (BlockEntity) (Object) this));
         }
         return particlestorm$variableTable;
     }

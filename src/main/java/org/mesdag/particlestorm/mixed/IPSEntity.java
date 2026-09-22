@@ -27,7 +27,7 @@ public interface IPSEntity extends ParticleEmitterAttachable {
 
     @Override
     default VariableTable getVariableTable() {
-        return ((IPSEntity) this).particlestorm$getVariableTable();
+        return particlestorm$getVariableTable();
     }
 
     VariableTable particlestorm$getVariableTable();

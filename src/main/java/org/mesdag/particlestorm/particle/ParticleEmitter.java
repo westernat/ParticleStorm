@@ -11,6 +11,7 @@ import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Matrix4x3f;
+import org.joml.Quaternionf;
 import org.joml.Vector3f;
 import org.mesdag.particlestorm.ParticleStorm;
 import org.mesdag.particlestorm.api.IEmitterComponent;
@@ -273,6 +274,19 @@ public class ParticleEmitter implements MolangInstance {
 
     public final Matrix4x3f getLocalSpace() {
         return localSpace;
+    }
+
+    private static final Quaternionf spaceRotation = new Quaternionf();
+
+    /// 本地空间 -> 世界空间的旋转。
+    ///
+    /// 返回 null 表示粒子的朝向本来就定义在世界空间中（不是本地空间，或未启用 [EmitterPreset#localRotation]）。
+    public final @Nullable Quaternionf getLocalSpaceRotation() {
+        if (localSpace != null && preset.localRotation) {
+            localSpace.getNormalizedRotation(spaceRotation);
+            return spaceRotation;
+        }
+        return null;
     }
 
     public final void setLocalSpace(@Nullable Matrix4x3f space) {

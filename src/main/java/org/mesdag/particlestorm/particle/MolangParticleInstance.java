@@ -441,11 +441,24 @@ public class MolangParticleInstance extends TextureSheetParticle implements IMol
         if (xRot != 0.0F) worldRot.rotateX(Mth.lerp(partialTicks, xRotO, xRot));
         if (yRot != 0.0F) worldRot.rotateY(Mth.lerp(partialTicks, yRotO, yRot));
         if (roll != 0.0F) worldRot.rotateZ(Mth.lerp(partialTicks, oRoll, roll));
+        // 朝向是在粒子自己的空间里算出来的（见 FaceCameraMode），这里绕粒子中心把它变换到世界空间，
+        // 与 isVisible 里绕本地中心做的位置变换配套
         if (emitter.isLocalSpace() && emitter.getPreset().localRotation) {
             emitter.getLocalSpace().getNormalizedRotation(localRot);
             worldRot.premul(localRot);
         }
         renderRotatedQuad(buffer, pos.x, pos.y, pos.z, partialTicks);
+    }
+
+    /// 粒子的世界坐标。本地空间粒子的 [MolangParticleInstance#getX] 等是发射器本地坐标，
+    /// 世界坐标 = `localRot` * 本地坐标 + 发射器坐标，所以需要先做一次坐标变换。
+    @Override
+    public Vector3f getWorldPosition(Vector3f dest, float partialTick) {
+        dest.set((float) x, (float) y, (float) z);
+        if (emitter.isLocalSpace()) {
+            emitter.local2World(dest, partialTick);
+        }
+        return dest;
     }
 
     protected void renderRotatedQuad(VertexConsumer buffer, float x, float y, float z, float partialTicks) {
