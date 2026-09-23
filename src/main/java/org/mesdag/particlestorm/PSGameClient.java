@@ -51,7 +51,6 @@ import org.mesdag.particlestorm.particle.ParticleEmitter;
 import java.nio.file.Files;
 
 public final class PSGameClient implements ClientModInitializer {
-    public static final MolangParticleEngine LOADER = MolangParticleEngine.INSTANCE;
     private static final Identifier MOLANG_PARTICLE_ENTRY = Identifier.withDefaultNamespace("molang_particle");
     private static final Identifier PARTICLE_EMITTER_ENTRY = Identifier.withDefaultNamespace("particle_emitter");
     private static boolean debugEntriesReady = false;
@@ -96,10 +95,10 @@ public final class PSGameClient implements ClientModInitializer {
         }
 
         ParticleProviderRegistry.getInstance().register(ParticleStorm.MOLANG, new MolangParticleInstance.Provider());
-        ResourceLoader.get(PackType.CLIENT_RESOURCES).registerReloadListener(MolangParticleEngine.RELOADER_ID, LOADER);
+        ResourceLoader.get(PackType.CLIENT_RESOURCES).registerReloadListener(MolangParticleEngine.RELOADER_ID, MolangParticleEngine.INSTANCE);
         ClientTickEvents.START_LEVEL_TICK.register(level -> tick());
         ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> {
-            LOADER.removeAll();
+            MolangParticleEngine.INSTANCE.removeAll();
             EmitterAttachHandler.clearEmitters();
             if (ParticleStorm.GECKOLIB_LOADED) {
                 GeckoLibHelper.clearReloadCallbacks();
@@ -117,9 +116,9 @@ public final class PSGameClient implements ClientModInitializer {
         enableDebugEntries(minecraft);
         LocalPlayer localPlayer = minecraft.player;
         if (localPlayer == null) {
-            LOADER.removeAll();
+            MolangParticleEngine.INSTANCE.removeAll();
         } else if (!minecraft.isPaused() && localPlayer.level().tickRateManager().runsNormally()) {
-            LOADER.tick(localPlayer);
+            MolangParticleEngine.INSTANCE.tick(localPlayer);
             if (PSClientConfigs.emitterAutoRemoveIntervalTick <= 1 || localPlayer.level().getGameTime() % PSClientConfigs.emitterAutoRemoveIntervalTick == 0) {
                 Camera camera = minecraft.gameRenderer.getMainCamera();
                 if (camera.isInitialized()) {
@@ -133,9 +132,9 @@ public final class PSGameClient implements ClientModInitializer {
     private static void registerDebugEntries() {
         if (DebugScreenEntries.getEntry(MOLANG_PARTICLE_ENTRY) != null) return;
         DebugScreenEntriesAccessor.particlestorm$invokeRegister("molang_particle", (DebugScreenEntry) (displayer, level, levelChunk, otherChunk) ->
-                displayer.addLine("MolangParticle: " + LOADER.totalParticleCount()));
+                displayer.addLine("MolangParticle: " + MolangParticleEngine.INSTANCE.totalParticleCount()));
         DebugScreenEntriesAccessor.particlestorm$invokeRegister("particle_emitter", (DebugScreenEntry) (displayer, level, levelChunk, otherChunk) ->
-                displayer.addLine("ParticleEmitter: " + LOADER.totalEmitterCount()));
+                displayer.addLine("ParticleEmitter: " + MolangParticleEngine.INSTANCE.totalEmitterCount()));
     }
 
     /// Enable the two F3 entries by default on a fresh game directory only, so existing debug profile settings are never overwritten.
@@ -161,7 +160,8 @@ public final class PSGameClient implements ClientModInitializer {
         }
 
         try {
-            for (ParticleEmitter emitter : LOADER.getEmitters()) {
+        for (ParticleEmitter emitter : MolangParticleEngine.INSTANCE.getEmitters()) {
+            if (emitter.hideOutline) continue;
                 Vec3 pos = emitter.pos;
                 int particleCount = emitter.activeParticleCount;
                 int limit = emitter.particleGroup == null ? 0 : emitter.particleGroup.limit();
@@ -215,17 +215,19 @@ public final class PSGameClient implements ClientModInitializer {
         IComponent.register("particle_expire_if_not_in_blocks", ParticleExpireIfNotInBlocks.CODEC);
 
         PSModClient.registerCustomComponent(new RegisterCustomComponentEvent());
+        RegisterCustomComponentEvent.EVENT.invoker().onRegister(new RegisterCustomComponentEvent());
     }
 
     private static void registerEventNodes() {
         IEventNode.register("sequence", EventSequence.CODEC);
         IEventNode.register("weight", EventRandomize.Weight.CODEC);
         IEventNode.register("randomize", EventRandomize.CODEC);
-        IEventNode.register("particle_effect", ParticleEffect.CODEC.codec());
-        IEventNode.register("sound_effect", SoundEffect.CODEC.codec());
+        IEventNode.register("particle_effect", ParticleEffect.CODEC);
+        IEventNode.register("sound_effect", SoundEffect.CODEC);
         IEventNode.register("expression", NodeMolangExp.CODEC);
         IEventNode.register("log", EventLog.CODEC);
 
         PSModClient.registerCustomEventNode(new RegisterCustomEventNodeEvent());
+        RegisterCustomEventNodeEvent.EVENT.invoker().onRegister(new RegisterCustomEventNodeEvent());
     }
 }

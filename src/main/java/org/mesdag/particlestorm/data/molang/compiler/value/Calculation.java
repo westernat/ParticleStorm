@@ -12,35 +12,22 @@ import org.mesdag.particlestorm.data.molang.compiler.Operator;
  * <br>
  * A computed value of argA and argB defined by the contract of the {@link Operator}
  */
-public final class Calculation implements MathValue {
-    public final Operator operator;
-    public final MathValue argA;
-    public final MathValue argB;
-    public final boolean isMutable;
-
-    private double cachedValue = Double.MIN_VALUE;
-
-    public Calculation(Operator operator, MathValue argA, MathValue argB) {
-        this.operator = operator;
-        this.argA = argA;
-        this.argB = argB;
-        this.isMutable = this.argA.isMutable() || this.argB.isMutable();
-    }
+public record Calculation(Operator operator, MathValue argA, MathValue argB) implements MathValue {
 
     @Override
     public double get(MolangInstance instance) {
-        if (this.isMutable)
-            return this.operator.compute(this.argA.get(instance), this.argB.get(instance));
-
-        if (this.cachedValue == Double.MIN_VALUE)
-            this.cachedValue = this.operator.compute(this.argA.get(instance), this.argB.get(instance));
-
-        return this.cachedValue;
+        return this.operator.compute(this.argA.get(instance), this.argB.get(instance));
     }
 
     @Override
     public boolean isMutable() {
-        return this.isMutable;
+        return argA.isMutable() || argB.isMutable();
+    }
+
+    @Override
+    public void markImmutable() {
+        argA.markImmutable();
+        argB.markImmutable();
     }
 
     @Override

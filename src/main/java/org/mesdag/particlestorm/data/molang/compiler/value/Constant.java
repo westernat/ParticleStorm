@@ -23,6 +23,10 @@ public record Constant(double value) implements MathValue {
     }
 
     @Override
+    public void markImmutable() {
+    }
+
+    @Override
     public String toString() {
         return String.valueOf(this.value);
     }

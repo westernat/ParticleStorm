@@ -1,5 +1,7 @@
 package org.mesdag.particlestorm.api;
 
+import net.fabricmc.fabric.api.event.Event;
+import net.fabricmc.fabric.api.event.EventFactory;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.Identifier;
@@ -13,6 +15,17 @@ import java.util.Map;
 import java.util.function.BiFunction;
 
 public class RegisterCustomEmitterTypeEvent {
+    public static final Event<Callback> EVENT = EventFactory.createArrayBacked(Callback.class, listeners -> event -> {
+        for (Callback listener : listeners) {
+            listener.onRegister(event);
+        }
+    });
+
+    @FunctionalInterface
+    public interface Callback {
+        void onRegister(RegisterCustomEmitterTypeEvent event);
+    }
+
     private static final Map<Identifier, BiFunction<Level, CompoundTag, ? extends ParticleEmitter>> fromNbt = new Object2ObjectOpenHashMap<>();
     private static final Map<Identifier, BiFunction<ParticleEmitter, ParticleEffect, ? extends ParticleEmitter>> fromEffect = new Object2ObjectOpenHashMap<>();
 
@@ -24,6 +37,7 @@ public class RegisterCustomEmitterTypeEvent {
             event.register(WithBlockParticleEmitter.TYPE, WithBlockParticleEmitter::new, WithBlockParticleEmitter::new);
 //            event.register(PresetVarsParticleEmitter.TYPE, PresetVarsParticleEmitter::new, PresetVarsParticleEmitter::new);
             PSModClient.registerCustomEmitterType(event);
+            EVENT.invoker().onRegister(event);
         }
     }
 
