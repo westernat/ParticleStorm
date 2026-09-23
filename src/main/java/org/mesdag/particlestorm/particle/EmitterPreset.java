@@ -30,11 +30,6 @@ public class EmitterPreset {
     /// For custom preset data
     protected Map<Class<?>, Object> tickets;
 
-    @Deprecated
-    public EmitterPreset(MolangParticleOption option, List<IEmitterComponent> components, Map<String, Map<String, IEventNode>> events) {
-        this(option.getType(), components, events);
-    }
-
     public EmitterPreset(ParticleType<?> type, List<IEmitterComponent> components, Map<String, Map<String, IEventNode>> events) {
         this.type = type;
         this.components = components;

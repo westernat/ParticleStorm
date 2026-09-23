@@ -1,5 +1,7 @@
 package org.mesdag.particlestorm.network;
 
+import org.mesdag.particlestorm.particle.MolangParticleEngine;
+
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.fabricmc.fabric.api.networking.v1.FabricPacket;
@@ -13,7 +15,6 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Vector3f;
-import org.mesdag.particlestorm.PSGameClient;
 import org.mesdag.particlestorm.PSDiagnostics;
 import org.mesdag.particlestorm.ParticleStorm;
 import org.mesdag.particlestorm.data.molang.MolangExp;
@@ -42,9 +43,9 @@ public record EmitterCreationPacketS2C(ResourceLocation id, Vector3f pos, Molang
     }
 
     public static void handleClient(EmitterCreationPacketS2C payload, Player player, PacketSender responseSender) {
-        ResourceLocation resolved = PSGameClient.LOADER.resolveParticleId(payload.id);
+        ResourceLocation resolved = MolangParticleEngine.INSTANCE.resolveParticleId(payload.id);
         if (resolved == null) {
-            PSDiagnostics.warn("ignoring unknown particle id from network requested={} knownIds={}", payload.id, PSGameClient.LOADER.suggestibleParticleIds());
+            PSDiagnostics.warn("ignoring unknown particle id from network requested={} knownIds={}", payload.id, MolangParticleEngine.INSTANCE.suggestibleParticleIds());
             return;
         }
         try {
@@ -63,7 +64,7 @@ public record EmitterCreationPacketS2C(ResourceLocation id, Vector3f pos, Molang
             if (attached != null) {
                 emitter.attachEntity(attached);
             }
-            PSGameClient.LOADER.addEmitter(emitter, false);
+            MolangParticleEngine.INSTANCE.addEmitter(emitter, false);
             PSDiagnostics.infoFirstN("packet-client-added:" + resolved, 32, "client added emitter runtimeId={} particle={} pos={} attached={}",
                     emitter.id,
                     emitter.particleId,

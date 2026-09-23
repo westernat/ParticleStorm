@@ -1,9 +1,22 @@
 package org.mesdag.particlestorm.api;
 
+import net.fabricmc.fabric.api.event.Event;
+import net.fabricmc.fabric.api.event.EventFactory;
 import com.mojang.serialization.Codec;
 import net.minecraft.resources.ResourceLocation;
 
 public class RegisterCustomComponentEvent {
+    public static final Event<Callback> EVENT = EventFactory.createArrayBacked(Callback.class, listeners -> event -> {
+        for (Callback listener : listeners) {
+            listener.onRegister(event);
+        }
+    });
+
+    @FunctionalInterface
+    public interface Callback {
+        void onRegister(RegisterCustomComponentEvent event);
+    }
+
     public RegisterCustomComponentEvent() {
     }
 

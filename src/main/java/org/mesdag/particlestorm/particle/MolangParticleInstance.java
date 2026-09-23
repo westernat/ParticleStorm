@@ -368,6 +368,15 @@ public class MolangParticleInstance extends TextureSheetParticle implements IMol
     }
 
     @Override
+    public Vector3f getWorldPosition(Vector3f dest, float partialTick) {
+        dest.set((float) x, (float) y, (float) z);
+        if (emitter != null && emitter.isLocalSpace()) {
+            emitter.local2World(dest, partialTick);
+        }
+        return dest;
+    }
+
+    @Override
     protected float getU0() {
         return UV == null ? super.getU0() : UV[0];
     }
@@ -473,14 +482,14 @@ public class MolangParticleInstance extends TextureSheetParticle implements IMol
             if (width <= MIN_RENDER_SIZE) width = height = super.getQuadSize(partialTick);
         }
         int light = getLightColor(partialTick);
-        emitVertex(vertices, orientation, x, y, z, width, -height, getU1(), getV1(), light);
-        emitVertex(vertices, orientation, x, y, z, width, height, getU1(), getV0(), light);
-        emitVertex(vertices, orientation, x, y, z, -width, height, getU0(), getV0(), light);
-        emitVertex(vertices, orientation, x, y, z, -width, -height, getU0(), getV1(), light);
-        emitVertex(vertices, orientation, x, y, z, -width, -height, getU0(), getV1(), light);
-        emitVertex(vertices, orientation, x, y, z, -width, height, getU0(), getV0(), light);
-        emitVertex(vertices, orientation, x, y, z, width, height, getU1(), getV0(), light);
-        emitVertex(vertices, orientation, x, y, z, width, -height, getU1(), getV1(), light);
+        emitVertex(vertices, orientation, x, y, z, width, -height, getU0(), getV1(), light);
+        emitVertex(vertices, orientation, x, y, z, width, height, getU0(), getV0(), light);
+        emitVertex(vertices, orientation, x, y, z, -width, height, getU1(), getV0(), light);
+        emitVertex(vertices, orientation, x, y, z, -width, -height, getU1(), getV1(), light);
+        emitVertex(vertices, orientation, x, y, z, -width, -height, getU1(), getV1(), light);
+        emitVertex(vertices, orientation, x, y, z, -width, height, getU1(), getV0(), light);
+        emitVertex(vertices, orientation, x, y, z, width, height, getU0(), getV0(), light);
+        emitVertex(vertices, orientation, x, y, z, width, -height, getU0(), getV1(), light);
     }
 
     private void emitVertex(VertexConsumer vertices, Quaternionf orientation, float x, float y, float z, float horizontal, float vertical, float u, float v, int light) {
@@ -504,9 +513,6 @@ public class MolangParticleInstance extends TextureSheetParticle implements IMol
         double d2 = z;
         if (hasPhysics && hasCollision && (x != 0.0 || y != 0.0 || z != 0.0) && x * x + y * y + z * z < MAXIMUM_COLLISION_VELOCITY_SQUARED) {
             AABB aabb = getBoundingBox();
-            if (collisionRadius > 0.0F) {
-                aabb = aabb.inflate(collisionRadius, 0.0, collisionRadius);
-            }
             if (emitter != null && emitter.isLocalSpace()) {
                 emitter.local2World(renderPosition.set((float) aabb.minX, (float) aabb.minY, (float) aabb.minZ), 1.0F);
                 float minX = renderPosition.x;

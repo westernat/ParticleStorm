@@ -16,6 +16,8 @@ public interface MathValue extends ToDoubleFunction<MolangInstance> {
      */
     double get(MolangInstance instance);
 
+    void markImmutable();
+
     default void set(ToDoubleFunction<MolangInstance> function) {}
 
     /**
