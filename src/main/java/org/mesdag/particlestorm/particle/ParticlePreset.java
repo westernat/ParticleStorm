@@ -13,6 +13,7 @@ import org.mesdag.particlestorm.api.ParticlePresetLoadedEvent;
 import org.mesdag.particlestorm.data.DefinedParticleEffect;
 import org.mesdag.particlestorm.data.component.*;
 import org.mesdag.particlestorm.data.curve.ParticleCurve;
+import org.mesdag.particlestorm.data.description.DescriptionMaterial;
 import org.mesdag.particlestorm.data.event.NodeMolangExp;
 import org.mesdag.particlestorm.data.molang.FloatMolangExp;
 import org.mesdag.particlestorm.data.molang.MolangExp;
@@ -47,16 +48,22 @@ public class ParticlePreset {
 
     public ParticlePreset(DefinedParticleEffect effect) {
         this.effect = effect;
-        this.renderType = switch (effect.description.parameters().material()) {
-            case TERRAIN_SHEET -> SingleQuadParticle.Layer.OPAQUE_TERRAIN;
-            case particles_opaque, PARTICLE_SHEET_OPAQUE -> SingleQuadParticle.Layer.OPAQUE;
-            case particles_add -> PSGameClient.PARTICLE_ADD;
-            case particles_blend -> PSGameClient.PARTICLE_BLEND;
-            case PARTICLE_SHEET_TRANSLUCENT -> SingleQuadParticle.Layer.TRANSLUCENT;
-            case particles_alpha, PARTICLE_SHEET_LIT -> SingleQuadParticle.Layer.OPAQUE;
-            case CUSTOM -> SingleQuadParticle.Layer.OPAQUE;
-            default -> null;
-        };
+        DescriptionMaterial material = effect.description.parameters().material();
+        if (material == DescriptionMaterial.TERRAIN_SHEET) {
+            this.renderType = SingleQuadParticle.Layer.OPAQUE_TERRAIN;
+        } else if (material == DescriptionMaterial.particles_opaque || material == DescriptionMaterial.PARTICLE_SHEET_OPAQUE) {
+            this.renderType = SingleQuadParticle.Layer.OPAQUE;
+        } else if (material == DescriptionMaterial.particles_add) {
+            this.renderType = PSGameClient.PARTICLE_ADD;
+        } else if (material == DescriptionMaterial.particles_blend) {
+            this.renderType = PSGameClient.PARTICLE_BLEND;
+        } else if (material == DescriptionMaterial.PARTICLE_SHEET_TRANSLUCENT) {
+            this.renderType = SingleQuadParticle.Layer.TRANSLUCENT;
+        } else if (material == DescriptionMaterial.particles_alpha || material == DescriptionMaterial.PARTICLE_SHEET_LIT || material == DescriptionMaterial.CUSTOM) {
+            this.renderType = SingleQuadParticle.Layer.OPAQUE;
+        } else {
+            this.renderType = null;
+        }
         if (effect.components.get(ParticleAppearanceBillboard.ID) instanceof ParticleAppearanceBillboard component) {
             this.facingCameraMode = FaceCameraMode.fromComponent(component.faceCameraMode());
             this.minSpeedThresholdSqr = Mth.square(Math.max(component.direction().minSpeedThreshold(), 0.0F));

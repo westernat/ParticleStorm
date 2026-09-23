@@ -1,9 +1,11 @@
 package org.mesdag.particlestorm.api;
 
+import net.neoforged.bus.api.Event;
+import net.neoforged.fml.event.IModBusEvent;
 import com.mojang.serialization.Codec;
 import net.minecraft.resources.Identifier;
 
-public class RegisterCustomComponentEvent {
+public class RegisterCustomComponentEvent extends Event implements IModBusEvent {
     public RegisterCustomComponentEvent() {
     }
 

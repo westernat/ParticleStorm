@@ -1,5 +1,7 @@
 package org.mesdag.particlestorm.network;
 
+import org.mesdag.particlestorm.particle.MolangParticleEngine;
+
 import io.netty.buffer.ByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
@@ -9,7 +11,6 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
 import net.neoforged.neoforge.network.PacketDistributor;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
-import org.mesdag.particlestorm.PSGameClient;
 import org.mesdag.particlestorm.ParticleStorm;
 import org.mesdag.particlestorm.particle.ParticleEmitter;
 
@@ -28,7 +29,7 @@ public record EmitterAttachPacketS2C(int particleId, int entityId) implements Cu
 
     public static void handleClient(EmitterAttachPacketS2C payload, IPayloadContext context) {
         Player player = context.player();
-        ParticleEmitter emitter = PSGameClient.LOADER.getEmitter(payload.particleId);
+        ParticleEmitter emitter = MolangParticleEngine.INSTANCE.getEmitter(payload.particleId);
         Entity entity;
         if (emitter != null && (entity = player.level().getEntity(payload.entityId)) != null) {
             emitter.attachEntity(entity);

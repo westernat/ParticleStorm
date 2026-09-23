@@ -13,7 +13,7 @@ import java.util.StringJoiner;
  * Functions should be deterministic - identical input values should result in identical output values, and values should adhere to the {@link MathValue#isMutable() Mutability} contract of {@link MathValue} for determining result-caching.
  */
 public abstract class MathFunction implements MathValue {
-    private final boolean isMutable;
+    private boolean isMutable;
     private double cachedValue = Double.MIN_VALUE;
 
     protected MathFunction(MathValue... values) {
@@ -81,6 +81,11 @@ public abstract class MathFunction implements MathValue {
     @Override
     public final boolean isMutable() {
         return this.isMutable;
+    }
+
+    @Override
+    public void markImmutable() {
+        this.isMutable = false;
     }
 
     @Override

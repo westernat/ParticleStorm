@@ -1,5 +1,7 @@
 package org.mesdag.particlestorm.network;
 
+import org.mesdag.particlestorm.particle.MolangParticleEngine;
+
 import io.netty.buffer.ByteBuf;
 import net.minecraft.client.Minecraft;
 import net.minecraft.nbt.CompoundTag;
@@ -11,7 +13,6 @@ import net.minecraft.world.entity.player.Player;
 import net.neoforged.neoforge.client.network.ClientPacketDistributor;
 import net.neoforged.neoforge.network.PacketDistributor;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
-import org.mesdag.particlestorm.PSGameClient;
 import org.mesdag.particlestorm.ParticleStorm;
 import org.mesdag.particlestorm.mixed.IPlayerPersistentData;
 import org.mesdag.particlestorm.particle.ParticleEmitter;
@@ -33,7 +34,7 @@ public record EmitterSynchronizePacket(int id, CompoundTag tag) implements Custo
 
     public static void handleClient(EmitterSynchronizePacket payload, IPayloadContext context) {
         Player player = context.player();
-        PSGameClient.LOADER.loadEmitter(player.level(), payload.id, payload.tag);
+        MolangParticleEngine.INSTANCE.loadEmitter(player.level(), payload.id, payload.tag);
     }
 
     public static void handleServer(EmitterSynchronizePacket payload, IPayloadContext context) {
