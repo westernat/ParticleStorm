@@ -23,6 +23,11 @@ public record Group(MathValue contents) implements MathValue {
     }
 
     @Override
+    public void markImmutable() {
+        this.contents.markImmutable();
+    }
+
+    @Override
     public String toString() {
         return "(" + this.contents.toString() + ")";
     }

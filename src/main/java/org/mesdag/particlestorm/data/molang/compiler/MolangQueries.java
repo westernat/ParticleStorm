@@ -1,11 +1,13 @@
 package org.mesdag.particlestorm.data.molang.compiler;
 
+import org.mesdag.particlestorm.particle.MolangParticleEngine;
+
 import net.minecraft.client.CameraType;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.particle.ParticleGroup;
 import net.minecraft.world.level.dimension.DimensionType;
-import org.mesdag.particlestorm.PSGameClient;
 import org.mesdag.particlestorm.api.MolangInstance;
+import org.mesdag.particlestorm.api.RegisterMolangQueriesEvent;
 import org.mesdag.particlestorm.data.molang.compiler.value.Variable;
 import org.mesdag.particlestorm.mixin.ParticleEngineAccessor;
 
@@ -24,12 +26,6 @@ public final class MolangQueries {
 
     public static boolean isExistingVariable(String name) {
         return FROZEN_QUERIES.containsKey(name);
-    }
-
-    @Deprecated
-    public static void registerVariable(String name, Variable variable) {
-        checkFrozen();
-        UNFROZEN_QUERIES.put(name, variable);
     }
 
     static Variable getQueryFor(String name) {
@@ -96,7 +92,7 @@ public final class MolangQueries {
         registerQueryVariable("query.player_level", p -> Minecraft.getInstance().player == null ? 0.0 : Minecraft.getInstance().player.experienceLevel);
         registerQueryVariable("query.time_of_day", p -> p.getLevel().getGameTime() % 24000L / 24000f);
         registerQueryVariable("query.time_stamp", p -> p.getLevel().getGameTime());
-        registerQueryVariable("query.total_emitter_count", p -> PSGameClient.LOADER.totalEmitterCount());
+        registerQueryVariable("query.total_emitter_count", p -> MolangParticleEngine.INSTANCE.totalEmitterCount());
         registerQueryVariable("query.total_particle_count", p -> totalParticleCount());
         registerQueryVariable("query.attached_x", p -> p.getAttachedEntity() == null ? 0.0 : p.getAttachedEntity().getX());
         registerQueryVariable("query.attached_y", p -> p.getAttachedEntity() == null ? 0.0 : p.getAttachedEntity().getY());
@@ -104,6 +100,7 @@ public final class MolangQueries {
         registerQueryVariable("query.attached_xo", p -> p.getAttachedEntity() == null ? 0.0 : p.getAttachedEntity().xo);
         registerQueryVariable("query.attached_yo", p -> p.getAttachedEntity() == null ? 0.0 : p.getAttachedEntity().yo);
         registerQueryVariable("query.attached_zo", p -> p.getAttachedEntity() == null ? 0.0 : p.getAttachedEntity().zo);
+        RegisterMolangQueriesEvent.EVENT.invoker().onRegisterMolangQueries(new RegisterMolangQueriesEvent(MolangQueries::registerQueryVariable));
         FROZEN_QUERIES.putAll(UNFROZEN_QUERIES);
         UNFROZEN_QUERIES.clear();
     }

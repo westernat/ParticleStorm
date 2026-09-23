@@ -23,6 +23,11 @@ public record Negative(MathValue value) implements MathValue {
     }
 
     @Override
+    public void markImmutable() {
+        this.value.markImmutable();
+    }
+
+    @Override
     public String toString() {
         if (this.value instanceof Constant)
             return "-" + this.value;

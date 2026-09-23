@@ -4,7 +4,6 @@ import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
-import com.mojang.brigadier.exceptions.DynamicCommandExceptionType;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.exceptions.SimpleCommandExceptionType;
 import com.mojang.brigadier.suggestion.Suggestions;
@@ -21,7 +20,6 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
-import org.mesdag.particlestorm.PSGameClient;
 import org.mesdag.particlestorm.PSDiagnostics;
 import org.mesdag.particlestorm.data.molang.MolangExp;
 import org.mesdag.particlestorm.network.EmitterAttachPacketS2C;
@@ -34,9 +32,6 @@ import java.util.concurrent.CompletableFuture;
 
 public class MolangParticleCommand {
     private static final SimpleCommandExceptionType ERROR_FAILED = new SimpleCommandExceptionType(Component.translatable("commands.particlestorm.failed"));
-    private static final DynamicCommandExceptionType ERROR_UNKNOWN_PARTICLE = new DynamicCommandExceptionType(
-            id -> Component.translatable("commands.particlestorm.unknown_particle", id)
-    );
     private static final List<String> POSITION_SUGGESTIONS = List.of("~ ~ ~", "~ ~1 ~", "~ ~-1 ~", "^ ^ ^", "^ ^ ^1");
     private static final List<String> EXPRESSION_SUGGESTIONS = List.of("\"\"", "\"v.size=1;\"", "\"v.alpha=1;\"", "\"v.size=1;v.alpha=1;\"");
     private static final List<String> ENTITY_SUGGESTIONS = List.of("@s", "@p", "@e[limit=1,sort=nearest]");
@@ -45,7 +40,7 @@ public class MolangParticleCommand {
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
         dispatcher.register(Commands.literal("particlestorm").requires(Commands.hasPermission(Commands.LEVEL_GAMEMASTERS))
                 .then(Commands.literal("add").then(Commands.argument("particle", IdentifierArgument.id()).suggests((context, builder) ->
-                        SharedSuggestionProvider.suggestResource(PSGameClient.LOADER.suggestibleParticleIds(), builder)
+                        SharedSuggestionProvider.suggestResource(MolangParticleEngine.INSTANCE.suggestibleParticleIds(), builder)
                 ).executes(context -> sendParticle(
                                 context.getSource(),
                                 IdentifierArgument.getId(context, "particle"),
@@ -125,7 +120,7 @@ public class MolangParticleCommand {
     }
 
     private static CompletableFuture<Suggestions> suggestEmitterIds(CommandContext<CommandSourceStack> context, SuggestionsBuilder builder) {
-        for (ParticleEmitter emitter : PSGameClient.LOADER.getEmitters()) {
+        for (ParticleEmitter emitter : MolangParticleEngine.INSTANCE.getEmitters()) {
             builder.suggest(emitter.id);
         }
         if (builder.getRemaining().isEmpty()) {
@@ -163,27 +158,22 @@ public class MolangParticleCommand {
     }
 
     private static int sendParticle(CommandSourceStack source, Identifier particle, Vec3 pos, MolangExp expression, @Nullable Entity entity, Collection<ServerPlayer> viewers) throws CommandSyntaxException {
-        Identifier resolved = PSGameClient.LOADER.resolveParticleId(particle);
-        if (resolved == null) {
-            throw ERROR_UNKNOWN_PARTICLE.create(particle);
-        }
         int i = 0;
-        PSDiagnostics.info("command add requested={} resolved={} pos={} expression={} attached={} viewers={}",
+        PSDiagnostics.info("command add particle={} pos={} expression={} attached={} viewers={}",
                 particle,
-                resolved,
                 pos,
                 expression == null ? "" : expression.getExpStr(),
                 entity == null ? "none" : entity.getScoreboardName(),
                 viewers.stream().map(ServerPlayer::getScoreboardName).toList()
         );
         for (ServerPlayer player : viewers) {
-            EmitterCreationPacketS2C.sendToClient(player, resolved, pos.toVector3f(), expression, entity);
+            EmitterCreationPacketS2C.sendToClient(player, particle, pos.toVector3f(), expression, entity);
             i++;
         }
         if (i == 0) {
             throw ERROR_FAILED.create();
         } else {
-            source.sendSuccess(() -> Component.translatable("commands.particlestorm.add", resolved.toString()), true);
+            source.sendSuccess(() -> Component.translatable("commands.particlestorm.add", particle.toString()), true);
             return i;
         }
     }
