@@ -1,5 +1,7 @@
 package org.mesdag.particlestorm.network;
 
+import org.mesdag.particlestorm.particle.MolangParticleEngine;
+
 import io.netty.buffer.ByteBuf;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
@@ -9,7 +11,6 @@ import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
-import org.mesdag.particlestorm.PSGameClient;
 import org.mesdag.particlestorm.ParticleStorm;
 import org.mesdag.particlestorm.mixed.IPlayerPersistentData;
 import org.mesdag.particlestorm.particle.ParticleEmitter;
@@ -31,7 +32,7 @@ public record EmitterSynchronizePacket(int id, CompoundTag tag) implements Custo
 
     public static void handleClient(EmitterSynchronizePacket payload, ClientPlayNetworking.Context context) {
         Player player = context.player();
-        PSGameClient.LOADER.loadEmitter(player.level(), payload.id, payload.tag);
+        MolangParticleEngine.INSTANCE.loadEmitter(player.level(), payload.id, payload.tag);
     }
 
     public static void handleServer(EmitterSynchronizePacket payload, ServerPlayNetworking.Context context) {

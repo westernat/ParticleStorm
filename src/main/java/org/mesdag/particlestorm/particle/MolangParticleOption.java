@@ -6,7 +6,6 @@ import net.minecraft.core.particles.ParticleOptions;
 import net.minecraft.core.particles.ParticleType;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.resources.ResourceLocation;
-import org.mesdag.particlestorm.PSGameClient;
 import org.mesdag.particlestorm.ParticleStorm;
 
 public record MolangParticleOption(ResourceLocation id) implements ParticleOptions {
@@ -23,6 +22,6 @@ public record MolangParticleOption(ResourceLocation id) implements ParticleOptio
     }
 
     public ParticlePreset getPreset() {
-        return PSGameClient.LOADER.id2Particle().get(id);
+        return MolangParticleEngine.INSTANCE.id2Particle().get(id);
     }
 }

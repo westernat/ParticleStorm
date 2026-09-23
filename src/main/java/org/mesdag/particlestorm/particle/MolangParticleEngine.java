@@ -30,6 +30,7 @@ import org.mesdag.particlestorm.api.IMolangParticleInstance;
 import org.mesdag.particlestorm.api.IParticleComponent;
 import org.mesdag.particlestorm.api.IntAllocator;
 import org.mesdag.particlestorm.api.RegisterCustomEmitterTypeEvent;
+import org.mesdag.particlestorm.api.MolangParticleLoadEvent;
 import org.mesdag.particlestorm.api.RegisterCustomParticleTypeEvent;
 import org.mesdag.particlestorm.api.geckolib.GeckoLibHelper;
 import org.mesdag.particlestorm.data.DefinedParticleEffect;
@@ -272,6 +273,7 @@ public final class MolangParticleEngine implements net.fabricmc.fabric.api.resou
     @Override
     public CompletableFuture<Void> reload(PreparationBarrier preparationBarrier, ResourceManager resourceManager, net.minecraft.util.profiling.ProfilerFiller preparationsProfiler, net.minecraft.util.profiling.ProfilerFiller reloadProfiler, Executor backgroundExecutor, Executor gameExecutor) {
         return CompletableFuture.supplyAsync(() -> PARTICLE_LISTER.listMatchingResources(resourceManager), backgroundExecutor).thenCompose(map -> {
+            MolangParticleLoadEvent.Pre.EVENT.invoker().onLoad(new MolangParticleLoadEvent.Pre(backgroundExecutor));
             List<CompletableFuture<LoadedParticle>> list = Lists.newArrayListWithExpectedSize(map.size());
             for (Map.Entry<ResourceLocation, Resource> entry : map.entrySet()) {
                 ResourceLocation id = PARTICLE_LISTER.fileToId(entry.getKey());
@@ -322,6 +324,7 @@ public final class MolangParticleEngine implements net.fabricmc.fabric.api.resou
             this.id2Particle = id2Particle;
             this.id2Emitter = id2Emitter;
             this.initialized = false;
+            MolangParticleLoadEvent.Post.EVENT.invoker().onLoad(new MolangParticleLoadEvent.Post(gameExecutor));
             ParticleStorm.LOGGER.info("Loaded {} particle definitions with {} usable ids", effects.size(), id2Emitter.size());
         }, gameExecutor);
     }

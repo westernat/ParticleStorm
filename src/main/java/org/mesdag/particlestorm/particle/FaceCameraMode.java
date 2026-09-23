@@ -12,12 +12,15 @@ import org.mesdag.particlestorm.data.component.ParticleAppearanceBillboard;
 public enum FaceCameraMode implements SingleQuadParticle.FacingCameraMode {
     DO_NOTHING {
         @Override
-        public void setRotation(Quaternionf quaternion, Camera camera, float partialTick) {}
+        public void setRotation(Quaternionf quaternion, Camera camera, float partialTick) {
+            quaternion.identity();
+        }
     },
     LOOKAT_XYZ {
         private static final Vector3f wd = new Vector3f();
         private static final Vector3f qd = new Vector3f();
         private static final Vector3f up = new Vector3f(0, 1, 0);
+        private static final Vector3f worldPos = new Vector3f();
         private static final Matrix3f mat = new Matrix3f();
 
         @Override
@@ -25,11 +28,9 @@ public enum FaceCameraMode implements SingleQuadParticle.FacingCameraMode {
 
         @Override
         public void setRotation(IMolangParticleInstance instance, Quaternionf quaternion, Camera camera, float partialTick) {
-            Vector3f xd = camera.getPosition().toVector3f().sub(
-                    (float) instance.getX(),
-                    (float) instance.getY(),
-                    (float) instance.getZ()
-            ).normalize();
+            Vector3f xd = toParticleSpace(instance, camera.getPosition().toVector3f().sub(
+                    instance.getWorldPosition(worldPos, partialTick)
+            )).normalize();
             up.cross(xd, wd).normalize();
             xd.cross(wd, qd);
             quaternion.setFromNormalized(mat.set(
@@ -52,11 +53,23 @@ public enum FaceCameraMode implements SingleQuadParticle.FacingCameraMode {
     },
     ROTATE_XYZ {
         @Override
+        public void setRotation(IMolangParticleInstance instance, Quaternionf quaternion, Camera camera, float partialTick) {
+            setRotation(quaternion, camera, partialTick);
+            toParticleSpace(instance, quaternion);
+        }
+
+        @Override
         public void setRotation(Quaternionf quaternion, Camera camera, float partialTick) {
             quaternion.set(camera.rotation());
         }
     },
     ROTATE_Y {
+        @Override
+        public void setRotation(IMolangParticleInstance instance, Quaternionf quaternion, Camera camera, float partialTick) {
+            setRotation(quaternion, camera, partialTick);
+            toParticleSpace(instance, quaternion);
+        }
+
         @Override
         public void setRotation(Quaternionf quaternion, Camera camera, float partialTick) {
             quaternion.set(0.0F, camera.rotation().y, 0.0F, camera.rotation().w);
@@ -103,6 +116,7 @@ public enum FaceCameraMode implements SingleQuadParticle.FacingCameraMode {
     },
     LOOKAT_DIRECTION {
         private static final Vector3f X = new Vector3f(1.0F, 0.0F, 0.0F);
+        private static final Vector3f worldPos = new Vector3f();
         private static final Vector4f t = new Vector4f();
         private static final Matrix4f m = new Matrix4f();
 
@@ -113,12 +127,14 @@ public enum FaceCameraMode implements SingleQuadParticle.FacingCameraMode {
         public void setRotation(IMolangParticleInstance instance, Quaternionf quaternion, Camera camera, float partialTick) {
             MathHelper.setFromUnitVectors(X, instance.getFacingDirection(), quaternion);
             Vec3 pos = camera.getPosition();
+            instance.getWorldPosition(worldPos, partialTick);
             t.set(
-                    pos.x - instance.getX(),
-                    pos.y - instance.getY(),
-                    pos.z - instance.getZ(),
+                    pos.x - worldPos.x,
+                    pos.y - worldPos.y,
+                    pos.z - worldPos.z,
                     0
-            ).mul(m.rotation(quaternion).invert());
+            );
+            toParticleSpace(instance, t).mul(m.rotation(quaternion).invert());
             quaternion.rotateX((float) Mth.atan2(-t.y, t.z));
         }
     },
@@ -208,6 +224,21 @@ public enum FaceCameraMode implements SingleQuadParticle.FacingCameraMode {
                 xAxis.y, yAxis.y, zAxis.y,
                 xAxis.z, yAxis.z, zAxis.z
         ).invert());
+    }
+
+    private static Vector3f toParticleSpace(IMolangParticleInstance instance, Vector3f direction) {
+        Quaternionf rotation = instance.getLocalSpaceRotation();
+        return rotation == null ? direction : direction.rotate(new Quaternionf(rotation).conjugate());
+    }
+
+    private static Vector4f toParticleSpace(IMolangParticleInstance instance, Vector4f direction) {
+        Quaternionf rotation = instance.getLocalSpaceRotation();
+        return rotation == null ? direction : direction.rotate(new Quaternionf(rotation).conjugate());
+    }
+
+    private static Quaternionf toParticleSpace(IMolangParticleInstance instance, Quaternionf orientation) {
+        Quaternionf rotation = instance.getLocalSpaceRotation();
+        return rotation == null ? orientation : orientation.premul(new Quaternionf(rotation).conjugate());
     }
 
     public static FaceCameraMode fromComponent(ParticleAppearanceBillboard.FaceCameraMode faceCameraMode) {

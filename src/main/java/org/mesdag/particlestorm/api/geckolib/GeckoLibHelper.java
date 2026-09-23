@@ -5,9 +5,9 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
+import org.mesdag.particlestorm.api.ParticleEmitterAttachable;
 import org.joml.Matrix4x3f;
 import org.joml.Quaternionf;
 import org.mesdag.particlestorm.PSDiagnostics;
@@ -59,16 +59,17 @@ public final class GeckoLibHelper {
     public static void processParticleEffect(@Nullable GeoAnimatable animatable, AnimationController<?> controller, ParticleKeyframeData keyframeData) {
         try {
             if (animatable == null) return;
-            Entity entity = animatable instanceof Entity value ? value
-                    : animatable instanceof WithCurrentEntity replaced ? replaced.getCurrentEntity() : null;
-            BlockEntity blockEntity = animatable instanceof BlockEntity value ? value : null;
-            Level level = entity != null ? entity.level() : blockEntity != null ? blockEntity.getLevel() : Minecraft.getInstance().level;
+            Object target = animatable instanceof WithCurrentEntity replaced && replaced.getCurrentEntity() != null
+                    ? replaced.getCurrentEntity() : animatable;
+            ParticleEmitterAttachable attachable = target instanceof ParticleEmitterAttachable value ? value : null;
+            if (attachable != null && attachable.getLevel() == null) return;
+            Level level = attachable != null ? attachable.getLevel() : Minecraft.getInstance().level;
             if (level == null) return;
-            Vec3 basePos = entity != null ? entity.position() : blockEntity != null ? blockEntity.getBlockPos().getBottomCenter() : Vec3.ZERO;
+            Vec3 basePos = attachable != null ? attachable.getPos() : Vec3.ZERO;
             ResourceLocation particleId = ResourceLocation.parse(keyframeData.getEffect());
             String locatorName = keyframeData.getLocator();
             if (locatorName == null || locatorName.isBlank()) {
-                createEmitter(level, basePos, particleId, entity, blockEntity);
+                createEmitter(level, basePos, particleId, attachable);
                 return;
             }
 
@@ -80,7 +81,7 @@ public final class GeckoLibHelper {
                 Map<String, LocatorValue> locators = IPSGeoBone.of(bone).particlestorm$getLocators();
                 LocatorValue locator = locators == null ? null : locators.get(locatorName);
                 if (locator == null) continue;
-                ParticleEmitter emitter = createEmitter(level, basePos, particleId, entity, blockEntity);
+                ParticleEmitter emitter = createEmitter(level, basePos, particleId, attachable);
                 emitter.parentSpace = new Matrix4x3f();
                 bindings.put(key, new BoundEmitter(emitter, bone, locator));
                 return;
@@ -91,13 +92,11 @@ public final class GeckoLibHelper {
         }
     }
 
-    private static ParticleEmitter createEmitter(Level level, Vec3 pos, ResourceLocation particleId, @Nullable Entity entity, @Nullable BlockEntity blockEntity) {
+    private static ParticleEmitter createEmitter(Level level, Vec3 pos, ResourceLocation particleId, @Nullable ParticleEmitterAttachable attachable) {
         ParticleEmitter emitter = new ParticleEmitter(level, pos, particleId, MolangExp.EMPTY);
         MolangParticleEngine.INSTANCE.addEmitter(emitter);
-        if (entity != null) {
-            emitter.attachEntity(entity);
-        } else if (blockEntity != null) {
-            emitter.attachedBlock = blockEntity;
+        if (attachable != null) {
+            emitter.attach(attachable);
         }
         return emitter;
     }
@@ -139,8 +138,7 @@ public final class GeckoLibHelper {
             poseStack.translate(-offset[0] / 16.0, offset[1] / 16.0, offset[2] / 16.0);
             ParticleEmitter emitter = bound.emitter();
             poseStack.last().pose().get4x3(emitter.parentSpace);
-            Vec3 basePos = emitter.getAttachedEntity() != null ? emitter.getAttachedEntity().position()
-                    : emitter.attachedBlock != null ? emitter.attachedBlock.getBlockPos().getBottomCenter() : Vec3.ZERO;
+            Vec3 basePos = emitter.getAttached() != null ? emitter.getAttached().getPos() : Vec3.ZERO;
             emitter.setPos(basePos.add(emitter.parentSpace.m30(), emitter.parentSpace.m31(), emitter.parentSpace.m32()));
             poseStack.popPose();
         }
