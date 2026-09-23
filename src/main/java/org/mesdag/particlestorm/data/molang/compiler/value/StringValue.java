@@ -15,6 +15,10 @@ public record StringValue(String value) implements MathValue {
     }
 
     @Override
+    public void markImmutable() {
+    }
+
+    @Override
     public String toString() {
         return value;
     }

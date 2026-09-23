@@ -370,6 +370,15 @@ public class MolangParticleInstance extends SingleQuadParticle implements IMolan
     }
 
     @Override
+    public Vector3f getWorldPosition(Vector3f dest, float partialTick) {
+        dest.set((float) x, (float) y, (float) z);
+        if (emitter != null && emitter.isLocalSpace()) {
+            emitter.local2World(dest, partialTick);
+        }
+        return dest;
+    }
+
+    @Override
     protected float getU0() {
         return UV == null ? super.getU0() : UV[0];
     }
@@ -536,9 +545,6 @@ public class MolangParticleInstance extends SingleQuadParticle implements IMolan
         double d2 = z;
         if (hasPhysics && hasCollision && (x != 0.0 || y != 0.0 || z != 0.0) && x * x + y * y + z * z < MAXIMUM_COLLISION_VELOCITY_SQUARED) {
             AABB aabb = getBoundingBox();
-            if (collisionRadius > 0.0F) {
-                aabb = aabb.inflate(collisionRadius, 0.0, collisionRadius);
-            }
             if (emitter != null && emitter.isLocalSpace()) {
                 emitter.local2World(renderPosition.set((float) aabb.minX, (float) aabb.minY, (float) aabb.minZ), 1.0F);
                 float minX = renderPosition.x;

@@ -132,13 +132,12 @@ public abstract sealed class EmitterShape implements IEmitterComponent permits E
             }
             return true;
         } catch (RuntimeException exception) {
-            PSDiagnostics.error("failed to create particle runtimeId={} particle={} shape={} pos={} spawnRate={} spawnDuration={}",
+            PSDiagnostics.error("failed to create particle runtimeId={} particle={} shape={} pos={} spawnRate={}",
                     emitter.id,
                     emitter.particleId,
                     getClass().getSimpleName(),
                     emitter.pos,
                     emitter.spawnRate,
-                    emitter.spawnDuration,
                     exception
             );
             return false;

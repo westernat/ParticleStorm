@@ -1,5 +1,7 @@
 package org.mesdag.particlestorm;
 
+import org.mesdag.particlestorm.particle.MolangParticleEngine;
+
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -24,7 +26,7 @@ public final class PSClientEvents {
 
     @SubscribeEvent
     public static void loggingOut(ClientPlayerNetworkEvent.LoggingOut event) {
-        PSGameClient.LOADER.removeAll();
+        MolangParticleEngine.INSTANCE.removeAll();
         EmitterAttachHandler.clearEmitters();
         if (ParticleStorm.GECKOLIB_LOADED) {
             GeckoLibHelper.clearReloadCallbacks();
