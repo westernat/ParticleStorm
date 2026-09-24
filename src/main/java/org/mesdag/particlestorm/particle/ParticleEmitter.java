@@ -1,6 +1,5 @@
 package org.mesdag.particlestorm.particle;
 
-import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
@@ -12,10 +11,12 @@ import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Matrix4x3f;
+import org.joml.Quaternionf;
 import org.joml.Vector3f;
 import org.mesdag.particlestorm.ParticleStorm;
 import org.mesdag.particlestorm.api.IEmitterComponent;
 import org.mesdag.particlestorm.api.MolangInstance;
+import org.mesdag.particlestorm.api.ParticleEmitterAttachable;
 import org.mesdag.particlestorm.data.component.EmitterLifetime;
 import org.mesdag.particlestorm.data.component.EmitterRate;
 import org.mesdag.particlestorm.data.event.ParticleEffect;
@@ -23,8 +24,6 @@ import org.mesdag.particlestorm.data.molang.MolangExp;
 import org.mesdag.particlestorm.data.molang.VariableTable;
 import org.mesdag.particlestorm.data.molang.compiler.MolangParser;
 import org.mesdag.particlestorm.data.molang.compiler.value.Variable;
-import org.mesdag.particlestorm.mixed.IPSBlockEntity;
-import org.mesdag.particlestorm.mixed.IPSEntity;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -65,8 +64,7 @@ public class ParticleEmitter implements MolangInstance {
     public transient float spawnChance;
     public transient int spawnRate;
     public transient boolean spawned;
-    protected transient Entity attached;
-    protected transient BlockEntity attachedBlock;
+    protected transient ParticleEmitterAttachable attached;
     public transient int lastTimeline;
     public transient float moveDist;
     public transient float moveDistO;
@@ -127,8 +125,7 @@ public class ParticleEmitter implements MolangInstance {
             switch (effect.type()) {
                 case EMITTER -> {}
                 case EMITTER_BOUND -> {
-                    attachEntity(parent.getAttachedEntity());
-                    this.attachedBlock = parent.attachedBlock;
+                    attach(parent.getAttached());
                     this.localSpace = parent.localSpace;
                 }
                 case PARTICLE -> this.isManual = true;
@@ -152,31 +149,27 @@ public class ParticleEmitter implements MolangInstance {
     }
 
     public void attachEntity(@Nullable Entity entity) {
-        if (entity == null) {
-            this.vars = new VariableTable(vars.table, preset.vars);
-            this.attached = null;
-        } else {
-            VariableTable parent = IPSEntity.of(entity).particlestorm$getVariableTable();
-            parent.setParent(preset.vars);
-            this.vars = new VariableTable(vars.table, parent);
-            this.attached = entity;
-        }
+        attach((ParticleEmitterAttachable) entity);
     }
 
     public void attachBlock(@Nullable BlockEntity entity) {
-        if (entity == null) {
+        attach((ParticleEmitterAttachable) entity);
+    }
+
+    public void attach(@Nullable ParticleEmitterAttachable attachable) {
+        if (attachable == null) {
             this.vars = new VariableTable(vars.table, preset.vars);
-            this.attachedBlock = null;
+            this.attached = null;
         } else {
-            VariableTable parent = IPSBlockEntity.of(entity).particlestorm$getVariableTable();
+            VariableTable parent = attachable.getVariableTable();
             parent.setParent(preset.vars);
             this.vars = new VariableTable(vars.table, parent);
-            this.attachedBlock = entity;
+            this.attached = attachable;
         }
     }
 
-    public BlockEntity getAttachedBlock() {
-        return attachedBlock;
+    public @Nullable BlockEntity getAttachedBlock() {
+        return attached instanceof BlockEntity entity ? entity : null;
     }
 
     protected void init() {
@@ -220,18 +213,12 @@ public class ParticleEmitter implements MolangInstance {
         this.posO = pos;
 
         if (attached != null) {
-            if (attached.isRemoved()) {
+            if (attached.isDiscarded()) {
                 remove();
                 return;
             }
-            updatePos(attached.getX(), attached.getY(), attached.getZ());
-        } else if (attachedBlock != null) {
-            if (attachedBlock.isRemoved()) {
-                remove();
-                return;
-            }
-            BlockPos bp = attachedBlock.getBlockPos();
-            updatePos(bp.getX() + 0.5, bp.getY(), bp.getZ() + 0.5);
+            Vec3 p = attached.getPos();
+            updatePos(p.x, p.y, p.z);
         }
 
         for (IEmitterComponent component : components) {
@@ -289,6 +276,19 @@ public class ParticleEmitter implements MolangInstance {
         return localSpace;
     }
 
+    private static final Quaternionf spaceRotation = new Quaternionf();
+
+    /// 本地空间 -> 世界空间的旋转。
+    ///
+    /// 返回 null 表示粒子的朝向本来就定义在世界空间中（不是本地空间，或未启用 [EmitterPreset#localRotation]）。
+    public final @Nullable Quaternionf getLocalSpaceRotation() {
+        if (localSpace != null && preset.localRotation) {
+            localSpace.getNormalizedRotation(spaceRotation);
+            return spaceRotation;
+        }
+        return null;
+    }
+
     public final void setLocalSpace(@Nullable Matrix4x3f space) {
         setLocalSpace(space, true);
     }
@@ -296,14 +296,11 @@ public class ParticleEmitter implements MolangInstance {
     public final void setLocalSpace(@Nullable Matrix4x3f space, boolean updatePos) {
         this.localSpace = space;
         if (updatePos) {
-            // 以附着实体/方块位置为基准（与tick一致），保证重复调用不会累加localSpace的平移
-            if (attached != null) {
-                updatePos(attached.getX(), attached.getY(), attached.getZ());
-            } else if (attachedBlock != null) {
-                BlockPos bp = attachedBlock.getBlockPos();
-                updatePos(bp.getX() + 0.5, bp.getY(), bp.getZ() + 0.5);
-            } else {
+            if (attached == null) {
                 updatePos(getX(), getY(), getZ());
+            } else {
+                Vec3 p = attached.getPos();
+                updatePos(p.x, p.y, p.z);
             }
         }
     }
@@ -339,7 +336,7 @@ public class ParticleEmitter implements MolangInstance {
     }
 
     public boolean isRemoved() {
-        return removed || (attached != null && attached.isRemoved()) || (attachedBlock != null && attachedBlock.isRemoved());
+        return removed || (attached != null && attached.isDiscarded());
     }
 
     public void setPos(Vec3 pos) {
@@ -444,7 +441,7 @@ public class ParticleEmitter implements MolangInstance {
     }
 
     @Override
-    public @Nullable Entity getAttachedEntity() {
+    public @Nullable ParticleEmitterAttachable getAttached() {
         return attached;
     }
 
