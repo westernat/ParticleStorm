@@ -118,6 +118,11 @@ public record ParticleAppearanceBillboard(FloatMolangExp2 size, FaceCameraMode f
         return true;
     }
 
+    @Override
+    public int order() {
+        return 700;
+    }
+
     private void updateSimpleUV(IMolangParticleInstance instance) {
         TextureAtlasSprite sprite = instance.getSprite();
         if (sprite == null) return;

@@ -24,6 +24,13 @@ public record Ternary(MathValue condition, MathValue trueValue, MathValue falseV
     }
 
     @Override
+    public void markImmutable() {
+        this.condition.markImmutable();
+        this.trueValue.markImmutable();
+        this.falseValue.markImmutable();
+    }
+
+    @Override
     public String toString() {
         return this.condition.toString() + " ? " + this.trueValue.toString() + " : " + this.falseValue.toString();
     }
