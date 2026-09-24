@@ -30,6 +30,7 @@ import org.mesdag.particlestorm.api.IMolangParticleInstance;
 import org.mesdag.particlestorm.api.IParticleComponent;
 import org.mesdag.particlestorm.api.IntAllocator;
 import org.mesdag.particlestorm.api.RegisterCustomEmitterTypeEvent;
+import org.mesdag.particlestorm.api.MolangParticleLoadEvent;
 import org.mesdag.particlestorm.api.RegisterCustomParticleTypeEvent;
 import org.mesdag.particlestorm.api.geckolib.GeckoLibHelper;
 import org.mesdag.particlestorm.data.DefinedParticleEffect;
@@ -267,6 +268,7 @@ public final class MolangParticleEngine implements PreparableReloadListener {
     public CompletableFuture<Void> reload(SharedState sharedState, Executor backgroundExecutor, PreparationBarrier preparationBarrier, Executor gameExecutor) {
         ResourceManager resourceManager = sharedState.resourceManager();
         return CompletableFuture.supplyAsync(() -> PARTICLE_LISTER.listMatchingResources(resourceManager), backgroundExecutor).thenCompose(map -> {
+            MolangParticleLoadEvent.Pre.EVENT.invoker().onLoad(new MolangParticleLoadEvent.Pre(backgroundExecutor));
             List<CompletableFuture<LoadedParticle>> list = Lists.newArrayListWithExpectedSize(map.size());
             for (Map.Entry<Identifier, Resource> entry : map.entrySet()) {
                 Identifier id = PARTICLE_LISTER.fileToId(entry.getKey());
@@ -318,6 +320,7 @@ public final class MolangParticleEngine implements PreparableReloadListener {
             this.id2Emitter = id2Emitter;
             RegisterCustomParticleTypeEvent.bindSprites(id2Effect);
             this.initialized = false;
+            MolangParticleLoadEvent.Post.EVENT.invoker().onLoad(new MolangParticleLoadEvent.Post(gameExecutor));
             ParticleStorm.LOGGER.info("Loaded {} particle definitions with {} usable ids", effects.size(), id2Emitter.size());
         }, gameExecutor);
     }

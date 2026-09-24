@@ -1,5 +1,9 @@
 package org.mesdag.particlestorm.api;
 
+import net.fabricmc.fabric.api.event.Event;
+import net.fabricmc.fabric.api.event.EventFactory;
+import org.mesdag.particlestorm.particle.MolangParticleEngine;
+
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.particle.Particle;
 import net.minecraft.client.renderer.texture.MissingTextureAtlasSprite;
@@ -9,7 +13,6 @@ import net.minecraft.core.particles.ParticleType;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.client.Minecraft;
 import net.minecraft.resources.Identifier;
-import org.mesdag.particlestorm.PSGameClient;
 import org.mesdag.particlestorm.PSModClient;
 import org.mesdag.particlestorm.data.DefinedParticleEffect;
 import org.mesdag.particlestorm.particle.ExtendMutableSpriteSet;
@@ -20,6 +23,17 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class RegisterCustomParticleTypeEvent {
+    public static final Event<Callback> EVENT = EventFactory.createArrayBacked(Callback.class, listeners -> event -> {
+        for (Callback listener : listeners) {
+            listener.onRegister(event);
+        }
+    });
+
+    @FunctionalInterface
+    public interface Callback {
+        void onRegister(RegisterCustomParticleTypeEvent event);
+    }
+
     private static final Map<ParticleType<?>, Provider<?>> PROVIDERS = new HashMap<>();
     private static final ExtendMutableSpriteSet SPRITES = new ExtendMutableSpriteSet();
 
@@ -35,6 +49,7 @@ public class RegisterCustomParticleTypeEvent {
         PROVIDERS.clear();
         SPRITES.clear();
         PSModClient.registerCustomParticleType(new RegisterCustomParticleTypeEvent());
+        EVENT.invoker().onRegister(new RegisterCustomParticleTypeEvent());
     }
 
     public static void bindSprites(Map<Identifier, DefinedParticleEffect> effects) {
@@ -53,7 +68,7 @@ public class RegisterCustomParticleTypeEvent {
             throw new NullPointerException("Provider from '" + BuiltInRegistries.PARTICLE_TYPE.getKey(emitter.getPreset().type) + "' is not registered");
         }
 
-        return (V) provider.create(emitter, PSGameClient.LOADER.id2Particle().get(emitter.particleId), (ClientLevel) emitter.level, emitter.getX(), emitter.getY(), emitter.getZ(), SPRITES);
+        return (V) provider.create(emitter, MolangParticleEngine.INSTANCE.id2Particle().get(emitter.particleId), (ClientLevel) emitter.level, emitter.getX(), emitter.getY(), emitter.getZ(), SPRITES);
     }
 
     @FunctionalInterface

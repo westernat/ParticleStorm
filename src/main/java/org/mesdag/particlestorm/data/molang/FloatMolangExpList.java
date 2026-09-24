@@ -41,6 +41,10 @@ public class FloatMolangExpList {
         return expressions;
     }
 
+    public void markImmutable() {
+        expressions.forEach(FloatMolangExp::markImmutable);
+    }
+
     public boolean isSingleExp() {
         return size == 1;
     }
