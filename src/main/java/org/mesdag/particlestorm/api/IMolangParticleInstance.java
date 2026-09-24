@@ -6,7 +6,9 @@ import net.minecraft.core.particles.ParticleLimit;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.phys.Vec3;
+import net.minecraft.world.phys.AABB;
 import org.jetbrains.annotations.Nullable;
+import org.joml.Quaternionf;
 import org.joml.Vector3f;
 import org.mesdag.particlestorm.particle.ParticleEmitter;
 import org.mesdag.particlestorm.particle.ParticlePreset;
@@ -98,6 +100,14 @@ public interface IMolangParticleInstance extends MolangInstance {
 
     double getZ();
 
+    default Vector3f getWorldPosition(Vector3f dest, float partialTick) {
+        return dest.set((float) getX(), (float) getY(), (float) getZ());
+    }
+
+    default @Nullable Quaternionf getLocalSpaceRotation() {
+        return getEmitter().getLocalSpaceRotation();
+    }
+
     void setPosO(double x, double y, double z);
 
     void setColor(float red, float green, float blue, float alpha);
@@ -111,8 +121,19 @@ public interface IMolangParticleInstance extends MolangInstance {
     boolean isDiscarded();
 
     // region default
-    default void moveDirectly(double x, double y, double z) {
-        self().setBoundingBox(self().getBoundingBox().move(x, y, z));
+    default void moveDirectly(double dx, double dy, double dz) {
+        float radius = getCollisionRadius();
+        double px = getX() + dx;
+        double py = getY() + dy;
+        double pz = getZ() + dz;
+        self().setBoundingBox(new AABB(
+                px - radius,
+                py,
+                pz - radius,
+                px + radius,
+                py + radius + radius,
+                pz + radius
+        ));
         self().setLocationFromBoundingbox();
     }
 

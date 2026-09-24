@@ -1,7 +1,8 @@
 package org.mesdag.particlestorm.data.event;
 
+import org.mesdag.particlestorm.particle.MolangParticleEngine;
+
 import com.mojang.serialization.Codec;
-import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import io.netty.buffer.ByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;
@@ -11,7 +12,6 @@ import net.minecraft.util.ByIdMap;
 import net.minecraft.util.StringRepresentable;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Vector3f;
-import org.mesdag.particlestorm.PSGameClient;
 import org.mesdag.particlestorm.api.IEventNode;
 import org.mesdag.particlestorm.api.IMolangParticleInstance;
 import org.mesdag.particlestorm.api.MolangInstance;
@@ -25,7 +25,7 @@ import java.util.Locale;
 import java.util.function.IntFunction;
 
 public record ParticleEffect(Identifier effect, Type type, MolangExp preEffectExpression, List<String> sharedVars) implements IEventNode {
-    public static final MapCodec<ParticleEffect> CODEC = RecordCodecBuilder.mapCodec(instance -> instance.group(
+    public static final Codec<ParticleEffect> CODEC = RecordCodecBuilder.create(instance -> instance.group(
             Identifier.CODEC.fieldOf("effect").forGetter(ParticleEffect::effect),
             Type.CODEC.fieldOf("type").forGetter(ParticleEffect::type),
             MolangExp.CODEC.fieldOf("pre_effect_expression").orElse(MolangExp.EMPTY).forGetter(ParticleEffect::preEffectExpression),
@@ -49,7 +49,7 @@ public record ParticleEffect(Identifier effect, Type type, MolangExp preEffectEx
             emitter.setPos(new Vec3(VECTOR.x, VECTOR.y, VECTOR.z));
             emitter.posO = emitter.getPosition();
         }
-        PSGameClient.LOADER.addEmitter(emitter, false);
+        MolangParticleEngine.INSTANCE.addEmitter(emitter, false);
     }
 
     @Override
