@@ -51,7 +51,6 @@ import org.mesdag.particlestorm.particle.attach.EmitterAttachHandler;
  */
 @EventBusSubscriber(modid = ParticleStorm.MODID, value = Dist.CLIENT)
 public final class PSGameClient {
-    public static final MolangParticleEngine LOADER = MolangParticleEngine.INSTANCE;
     public static SingleQuadParticle.Layer PARTICLE_ADD;
     public static SingleQuadParticle.Layer PARTICLE_BLEND;
 
@@ -106,7 +105,7 @@ public final class PSGameClient {
     @SubscribeEvent
     public static void addReloadListeners(AddClientReloadListenersEvent event) {
         RegisterCustomEmitterTypeEvent.postEvent();
-        event.addListener(MolangParticleEngine.RELOADER_ID, LOADER);
+        event.addListener(MolangParticleEngine.RELOADER_ID, MolangParticleEngine.INSTANCE);
     }
 
     @SubscribeEvent
@@ -126,9 +125,9 @@ public final class PSGameClient {
         Minecraft minecraft = Minecraft.getInstance();
         LocalPlayer localPlayer = minecraft.player;
         if (localPlayer == null) {
-            LOADER.removeAll();
+            MolangParticleEngine.INSTANCE.removeAll();
         } else if (!minecraft.isPaused() && localPlayer.level().tickRateManager().runsNormally()) {
-            LOADER.tick(localPlayer);
+            MolangParticleEngine.INSTANCE.tick(localPlayer);
             if (PSClientConfigs.emitterAutoRemoveIntervalTick <= 1 || localPlayer.level().getGameTime() % PSClientConfigs.emitterAutoRemoveIntervalTick == 0) {
                 Camera camera = minecraft.gameRenderer.mainCamera();
                 if (camera.isInitialized()) {
@@ -155,7 +154,8 @@ public final class PSGameClient {
         }
 
         try {
-            for (ParticleEmitter emitter : LOADER.getEmitters()) {
+        for (ParticleEmitter emitter : MolangParticleEngine.INSTANCE.getEmitters()) {
+            if (emitter.hideOutline) continue;
                 Vec3 pos = emitter.pos;
                 int particleCount = emitter.particleGroup == null ? 0 : minecraft.particleEngine.trackedParticleCounts.getInt(emitter.particleGroup);
                 int limit = emitter.particleGroup == null ? 0 : emitter.particleGroup.limit();
@@ -209,17 +209,19 @@ public final class PSGameClient {
         IComponent.register("particle_expire_if_not_in_blocks", ParticleExpireIfNotInBlocks.CODEC);
 
         PSModClient.registerCustomComponent(new RegisterCustomComponentEvent());
+        net.neoforged.fml.ModLoader.postEvent(new RegisterCustomComponentEvent());
     }
 
     private static void registerEventNodes() {
         IEventNode.register("sequence", EventSequence.CODEC);
         IEventNode.register("weight", EventRandomize.Weight.CODEC);
         IEventNode.register("randomize", EventRandomize.CODEC);
-        IEventNode.register("particle_effect", ParticleEffect.CODEC.codec());
-        IEventNode.register("sound_effect", SoundEffect.CODEC.codec());
+        IEventNode.register("particle_effect", ParticleEffect.CODEC);
+        IEventNode.register("sound_effect", SoundEffect.CODEC);
         IEventNode.register("expression", NodeMolangExp.CODEC);
         IEventNode.register("log", EventLog.CODEC);
 
         PSModClient.registerCustomEventNode(new RegisterCustomEventNodeEvent());
+        net.neoforged.fml.ModLoader.postEvent(new RegisterCustomEventNodeEvent());
     }
 }

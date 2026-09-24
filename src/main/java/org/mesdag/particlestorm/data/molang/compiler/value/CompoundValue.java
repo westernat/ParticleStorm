@@ -25,6 +25,13 @@ public record CompoundValue(MathValue[] subValues) implements MathValue {
     }
 
     @Override
+    public void markImmutable() {
+        for (MathValue subValue : subValues) {
+            subValue.markImmutable();
+        }
+    }
+
+    @Override
     public String toString() {
         final StringJoiner joiner = new StringJoiner("; ");
 

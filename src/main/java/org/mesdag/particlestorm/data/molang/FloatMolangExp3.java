@@ -19,6 +19,12 @@ public record FloatMolangExp3(FloatMolangExp exp1, FloatMolangExp exp2, FloatMol
         return new float[]{exp1.calculate(instance), exp2.calculate(instance), exp3.calculate(instance)};
     }
 
+    public void markImmutable() {
+        exp1.markImmutable();
+        exp2.markImmutable();
+        exp3.markImmutable();
+    }
+
     @Override
     public String toString() {
         return "FloatMolangExp3{" +
