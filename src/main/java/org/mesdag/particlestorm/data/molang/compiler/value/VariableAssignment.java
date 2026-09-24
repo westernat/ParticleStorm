@@ -11,16 +11,26 @@ import org.mesdag.particlestorm.data.molang.compiler.MathValue;
  * <br>
  * Assigns a variable to the given value, then returns 0
  */
-public record VariableAssignment(Variable variable, MathValue value) implements MathValue {
+public record VariableAssignment(String name, MathValue value) implements MathValue {
     @Override
     public double get(MolangInstance instance) {
-        // Write into the current instance's variable table so concurrent instances never mutate the shared preset Variable.
-        instance.getVars().setValue(variable.name(), value.get(instance));
+        double calculated = value.get(instance);
+        Variable variable = instance.getVars().getVariable(name);
+        if (variable == null) {
+            instance.getVars().setValue(name, calculated);
+        } else {
+            variable.set(calculated);
+        }
         return 0;
     }
 
     @Override
+    public void markImmutable() {
+        value.markImmutable();
+    }
+
+    @Override
     public String toString() {
-        return variable.name() + "=" + value.toString();
+        return name + "=" + value.toString();
     }
 }

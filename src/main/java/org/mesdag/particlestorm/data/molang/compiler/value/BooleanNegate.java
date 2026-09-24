@@ -23,6 +23,11 @@ public record BooleanNegate(MathValue value) implements MathValue {
     }
 
     @Override
+    public void markImmutable() {
+        this.value.markImmutable();
+    }
+
+    @Override
     public String toString() {
         return "!" + this.value.toString();
     }

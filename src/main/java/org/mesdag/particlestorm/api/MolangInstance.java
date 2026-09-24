@@ -32,6 +32,10 @@ public interface MolangInstance {
 
     @Nullable Entity getAttachedEntity();
 
+    default @Nullable ParticleEmitterAttachable getAttached() {
+        return getEmitter().getAttached();
+    }
+
     float getInvTickRate();
 
     ParticleEmitter getEmitter();

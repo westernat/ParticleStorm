@@ -13,7 +13,7 @@ import java.util.List;
 public abstract sealed class EmitterRate implements IEmitterComponent permits EmitterRate.Instant, EmitterRate.Steady, EmitterRate.Manual {
     @Override
     public int order() {
-        return 500;
+        return 900;
     }
 
     public enum Type {
@@ -150,7 +150,7 @@ public abstract sealed class EmitterRate implements IEmitterComponent permits Em
         public void apply(ParticleEmitter emitter) {
             int limit = (int) maxParticles.calculate(emitter);
             emitter.particleGroup = new ParticleGroup(limit);
-            emitter.spawnRate = 1;
+            emitter.spawnRate = limit;
         }
 
         @Override

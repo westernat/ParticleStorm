@@ -1,5 +1,7 @@
 package org.mesdag.particlestorm.network;
 
+import org.mesdag.particlestorm.particle.MolangParticleEngine;
+
 import io.netty.buffer.ByteBuf;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
@@ -9,7 +11,6 @@ import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
-import org.mesdag.particlestorm.PSGameClient;
 import org.mesdag.particlestorm.ParticleStorm;
 import org.mesdag.particlestorm.particle.ParticleEmitter;
 
@@ -28,7 +29,7 @@ public record EmitterRemovalPacket(int id) implements CustomPacketPayload {
 
     public static void handleClient(EmitterRemovalPacket payload, ClientPlayNetworking.Context context) {
         Player player = context.player();
-        ParticleEmitter emitter = PSGameClient.LOADER.removeEmitter(payload.id, false);
+        ParticleEmitter emitter = MolangParticleEngine.INSTANCE.removeEmitter(payload.id, false);
         if (emitter == null) {
             player.sendSystemMessage(Component.translatable("commands.particlestorm.not_found", payload.id));
         } else {
