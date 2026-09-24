@@ -8,11 +8,10 @@ import net.minecraft.core.particles.ParticleType;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
-import org.mesdag.particlestorm.PSGameClient;
 import org.mesdag.particlestorm.ParticleStorm;
 
 public record MolangParticleOption(ResourceLocation id) implements ParticleOptions {
-    public static final Codec<MolangParticleOption> CODEC = ResourceLocation.CODEC.fieldOf("id").xmap(MolangParticleOption::new, MolangParticleOption::id).codec();
+    public static final Codec<MolangParticleOption> CODEC = ResourceLocation.CODEC.xmap(MolangParticleOption::new, MolangParticleOption::id);
     public static final Deserializer<MolangParticleOption> DESERIALIZER = new Deserializer<>() {
         @Override
         public MolangParticleOption fromCommand(ParticleType<MolangParticleOption> type, StringReader reader) throws CommandSyntaxException {
@@ -46,6 +45,6 @@ public record MolangParticleOption(ResourceLocation id) implements ParticleOptio
     }
 
     public ParticlePreset getPreset() {
-        return PSGameClient.LOADER.id2Particle().get(id);
+        return MolangParticleEngine.INSTANCE.id2Particle().get(id);
     }
 }

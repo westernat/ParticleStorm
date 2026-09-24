@@ -1,5 +1,7 @@
 package org.mesdag.particlestorm.network;
 
+import org.mesdag.particlestorm.particle.MolangParticleEngine;
+
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.fabricmc.fabric.api.networking.v1.FabricPacket;
@@ -9,7 +11,6 @@ import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
-import org.mesdag.particlestorm.PSGameClient;
 import org.mesdag.particlestorm.ParticleStorm;
 import org.mesdag.particlestorm.mixed.IPlayerPersistentData;
 import org.mesdag.particlestorm.particle.ParticleEmitter;
@@ -35,7 +36,7 @@ public record EmitterSynchronizePacket(int id, CompoundTag tag) implements Fabri
     }
 
     public static void handleClient(EmitterSynchronizePacket payload, Player player, PacketSender responseSender) {
-        PSGameClient.LOADER.loadEmitter(player.level(), payload.id, payload.tag);
+        MolangParticleEngine.INSTANCE.loadEmitter(player.level(), payload.id, payload.tag);
     }
 
     public static void handleServer(EmitterSynchronizePacket payload, ServerPlayer player, PacketSender responseSender) {

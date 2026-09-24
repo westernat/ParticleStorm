@@ -15,6 +15,7 @@ public class MolangExp {
     public static final Codec<MolangExp> CODEC = Codec.STRING.xmap(MolangExp::new, MolangExp::getExpStr);
     protected final String expStr;
     protected MathValue variable;
+    protected boolean immutable;
 
     public MolangExp(String expStr) {
         this.expStr = expStr;
@@ -48,6 +49,9 @@ public class MolangExp {
     public void compile(MolangParser parser) {
         if (variable == null && !expStr.isEmpty() && !expStr.isBlank()) {
             this.variable = parser.compileMolang(expStr);
+            if (immutable) {
+                variable.markImmutable();
+            }
         }
     }
 
@@ -58,6 +62,13 @@ public class MolangExp {
 
     public MathValue getVariable() {
         return variable;
+    }
+
+    public void markImmutable() {
+        this.immutable = true;
+        if (variable != null) {
+            variable.markImmutable();
+        }
     }
 
     public boolean initialized() {

@@ -51,7 +51,6 @@ import org.mesdag.particlestorm.particle.ParticleEmitter;
 import org.mesdag.particlestorm.particle.attach.EmitterAttachHandler;
 
 public final class PSGameClient implements ClientModInitializer {
-    public static final MolangParticleEngine LOADER = MolangParticleEngine.INSTANCE;
     public static final boolean IRIS_LOADED = FabricLoader.getInstance().isModLoaded("iris");
 
     public static final ParticleRenderType PARTICLE_ADD = new ParticleRenderType() {
@@ -131,11 +130,11 @@ public final class PSGameClient implements ClientModInitializer {
             GeckoLibHelper.postEvent();
         }
 
-        ResourceManagerHelper.get(PackType.CLIENT_RESOURCES).registerReloadListener(LOADER);
+        ResourceManagerHelper.get(PackType.CLIENT_RESOURCES).registerReloadListener(MolangParticleEngine.INSTANCE);
         ClientTickEvents.START_CLIENT_TICK.register(client -> tick());
         WorldRenderEvents.AFTER_ENTITIES.register(PSGameClient::renderEmitterOutlines);
         ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> {
-            LOADER.removeAll();
+            MolangParticleEngine.INSTANCE.removeAll();
             EmitterAttachHandler.clearEmitters();
             if (ParticleStorm.GECKOLIB_LOADED) {
                 GeckoLibHelper.clearReloadCallbacks();
@@ -152,9 +151,9 @@ public final class PSGameClient implements ClientModInitializer {
         Minecraft minecraft = Minecraft.getInstance();
         LocalPlayer localPlayer = minecraft.player;
         if (localPlayer == null) {
-            LOADER.removeAll();
+            MolangParticleEngine.INSTANCE.removeAll();
         } else if (!minecraft.isPaused()) {
-            LOADER.tick(localPlayer);
+            MolangParticleEngine.INSTANCE.tick(localPlayer);
             if (PSClientConfigs.emitterAutoRemoveIntervalTick <= 1 || localPlayer.level().getGameTime() % PSClientConfigs.emitterAutoRemoveIntervalTick == 0) {
                 Camera camera = minecraft.gameRenderer.getMainCamera();
                 if (camera.isInitialized()) {
@@ -182,7 +181,8 @@ public final class PSGameClient implements ClientModInitializer {
 
         Vec3 cameraPos = context.camera().getPosition();
         float partialTick = context.tickDelta();
-        for (ParticleEmitter emitter : LOADER.getEmitters()) {
+        for (ParticleEmitter emitter : MolangParticleEngine.INSTANCE.getEmitters()) {
+            if (emitter.hideOutline) continue;
             double x = Mth.lerp(partialTick, emitter.posO.x, emitter.getX());
             double y = Mth.lerp(partialTick, emitter.posO.y, emitter.getY());
             double z = Mth.lerp(partialTick, emitter.posO.z, emitter.getZ());
@@ -238,17 +238,19 @@ public final class PSGameClient implements ClientModInitializer {
         IComponent.register("particle_expire_if_not_in_blocks", ParticleExpireIfNotInBlocks.CODEC);
 
         PSModClient.registerCustomComponent(new RegisterCustomComponentEvent());
+        RegisterCustomComponentEvent.EVENT.invoker().onRegister(new RegisterCustomComponentEvent());
     }
 
     private static void registerEventNodes() {
         IEventNode.register("sequence", EventSequence.CODEC);
         IEventNode.register("weight", EventRandomize.Weight.CODEC);
         IEventNode.register("randomize", EventRandomize.CODEC);
-        IEventNode.register("particle_effect", ParticleEffect.CODEC.codec());
-        IEventNode.register("sound_effect", SoundEffect.CODEC.codec());
+        IEventNode.register("particle_effect", ParticleEffect.CODEC);
+        IEventNode.register("sound_effect", SoundEffect.CODEC);
         IEventNode.register("expression", NodeMolangExp.CODEC);
         IEventNode.register("log", EventLog.CODEC);
 
         PSModClient.registerCustomEventNode(new RegisterCustomEventNodeEvent());
+        RegisterCustomEventNodeEvent.EVENT.invoker().onRegister(new RegisterCustomEventNodeEvent());
     }
 }
