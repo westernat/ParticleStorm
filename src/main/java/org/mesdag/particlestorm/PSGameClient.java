@@ -200,11 +200,12 @@ public final class PSGameClient {
         IComponent.register("emitter_lifetime_expression", EmitterLifetime.Expression.CODEC);
         IComponent.register("emitter_lifetime_events", EmitterLifetimeEvents.CODEC);
 
-        IComponent.register("emitter_shape_point", EmitterShape.Point.CODEC);
-        IComponent.register("emitter_shape_sphere", EmitterShape.Sphere.CODEC);
-        IComponent.register("emitter_shape_box", EmitterShape.Box.CODEC);
-        IComponent.register("emitter_shape_entity_aabb", EmitterShape.EntityAABB.CODEC);
-        IComponent.register("emitter_shape_disc", EmitterShape.Disc.CODEC);
+        IComponent.register(EmitterShape.Point.ID, EmitterShape.Point.CODEC);
+        IComponent.register(EmitterShape.Sphere.ID, EmitterShape.Sphere.CODEC);
+        IComponent.register(EmitterShape.Box.ID, EmitterShape.Box.CODEC);
+        IComponent.register(EmitterShape.EntityAABB.ID, EmitterShape.EntityAABB.CODEC);
+        IComponent.register(EmitterShape.Disc.ID, EmitterShape.Disc.CODEC);
+        IComponent.register(ParticleStorm.asResource("emitter_multi_shape"), EmitterMultiShape.CODEC);
 
         IComponent.register("particle_initial_speed", ParticleInitialSpeed.CODEC);
         IComponent.register("particle_initial_spin", ParticleInitialSpin.CODEC);
