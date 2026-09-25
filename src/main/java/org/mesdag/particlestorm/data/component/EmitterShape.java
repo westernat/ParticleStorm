@@ -4,8 +4,10 @@ import com.mojang.datafixers.util.Either;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.DataResult;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
+import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.particle.Particle;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
 import net.minecraft.util.StringRepresentable;
@@ -15,6 +17,7 @@ import net.minecraft.world.phys.Vec3;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
 import org.mesdag.particlestorm.PSDiagnostics;
+import org.mesdag.particlestorm.ParticleStorm;
 import org.mesdag.particlestorm.api.*;
 import org.mesdag.particlestorm.data.MathHelper;
 import org.mesdag.particlestorm.data.molang.FloatMolangExp;
@@ -28,8 +31,11 @@ import org.mesdag.particlestorm.particle.ParticlePreset;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 public abstract sealed class EmitterShape implements IEmitterComponent permits EmitterShape.Disc, EmitterShape.Box, EmitterShape.EntityAABB, EmitterShape.Point, EmitterShape.Sphere {
+    static final Map<ResourceLocation, Codec<? extends EmitterShape>> MAP = new Object2ObjectOpenHashMap<>();
+
     protected final boolean surfaceOnly;
 
     protected EmitterShape(boolean surfaceOnly) {
@@ -67,6 +73,14 @@ public abstract sealed class EmitterShape implements IEmitterComponent permits E
 
     protected boolean isPoint() {
         return false;
+    }
+
+    protected abstract ResourceLocation id();
+
+    private static ResourceLocation registerId(String name, Codec<? extends EmitterShape> codec) {
+        ResourceLocation id = ParticleStorm.asResource(name);
+        MAP.put(id, codec);
+        return id;
     }
 
     private <T extends Particle & IMolangParticleInstance> boolean emittingParticle(ParticleEmitter emitter) {
@@ -160,6 +174,7 @@ public abstract sealed class EmitterShape implements IEmitterComponent permits E
                 Direction.CODEC.fieldOf("direction").orElse(Direction.OUTWARDS).forGetter(disc -> disc.direction),
                 Codec.BOOL.fieldOf("surface_only").orElse(false).forGetter(EmitterShape::isSurfaceOnly)
         ).apply(instance, Disc::new));
+        public static final ResourceLocation ID = registerId("emitter_shape_disc", CODEC);
         /// Specifies the offset from the emitter to emit the particles
         ///
         /// Evaluated once per particle emitted
@@ -211,6 +226,11 @@ public abstract sealed class EmitterShape implements IEmitterComponent permits E
         }
 
         @Override
+        protected ResourceLocation id() {
+            return ID;
+        }
+
+        @Override
         public String toString() {
             return "Disc{" +
                     "offset=" + offset +
@@ -258,6 +278,7 @@ public abstract sealed class EmitterShape implements IEmitterComponent permits E
                 Direction.CODEC.fieldOf("direction").orElse(Direction.OUTWARDS).forGetter(box -> box.direction),
                 Codec.BOOL.fieldOf("surface_only").orElse(false).forGetter(EmitterShape::isSurfaceOnly)
         ).apply(instance, Box::new));
+        public static final ResourceLocation ID = registerId("emitter_shape_box", CODEC);
         /// Specifies the offset from the emitter to emit the particles
         /// Evaluated once per particle emitted
         public final FloatMolangExp3 offset;
@@ -312,6 +333,11 @@ public abstract sealed class EmitterShape implements IEmitterComponent permits E
                     ", offset=" + offset +
                     '}';
         }
+
+        @Override
+        protected ResourceLocation id() {
+            return ID;
+        }
     }
 
     /// All particles come out of the axis-aligned bounding box AABB for the entity the emitter is attached to, or the emitter point if no entity.
@@ -320,6 +346,7 @@ public abstract sealed class EmitterShape implements IEmitterComponent permits E
                 Direction.CODEC.fieldOf("direction").orElse(Direction.OUTWARDS).forGetter(entityAABB -> entityAABB.direction),
                 Codec.BOOL.fieldOf("surface_only").orElse(false).forGetter(EmitterShape::isSurfaceOnly)
         ).apply(instance, EntityAABB::new));
+        public static final ResourceLocation ID = registerId("emitter_shape_entity_aabb", CODEC);
         public final Direction direction;
 
         public EntityAABB(Direction direction, boolean surfaceOnly) {
@@ -364,6 +391,11 @@ public abstract sealed class EmitterShape implements IEmitterComponent permits E
                     ", surfaceOnly=" + surfaceOnly +
                     '}';
         }
+
+        @Override
+        protected ResourceLocation id() {
+            return ID;
+        }
     }
 
     /// All particles come out of a point offset from the emitter.
@@ -372,6 +404,7 @@ public abstract sealed class EmitterShape implements IEmitterComponent permits E
                 FloatMolangExp3.CODEC.fieldOf("offset").orElse(FloatMolangExp3.ZERO).forGetter(point -> point.offset),
                 Direction.CODEC.fieldOf("direction").orElse(Direction.OUTWARDS).forGetter(point -> point.direction)
         ).apply(instance, Point::new));
+        public static final ResourceLocation ID = registerId("emitter_shape_point", CODEC);
         /// Specifies the offset from the emitter to emit the particles
         ///
         /// Evaluated once per particle emitted
@@ -417,6 +450,11 @@ public abstract sealed class EmitterShape implements IEmitterComponent permits E
         protected boolean isPoint() {
             return true;
         }
+
+        @Override
+        protected ResourceLocation id() {
+            return ID;
+        }
     }
 
     public static final class Sphere extends EmitterShape {
@@ -426,6 +464,7 @@ public abstract sealed class EmitterShape implements IEmitterComponent permits E
                 Direction.CODEC.fieldOf("direction").orElse(Direction.OUTWARDS).forGetter(sphere -> sphere.direction),
                 Codec.BOOL.fieldOf("surface_only").orElse(false).forGetter(EmitterShape::isSurfaceOnly)
         ).apply(instance, Sphere::new));
+        public static final ResourceLocation ID = registerId("emitter_shape_sphere", CODEC);
         /// Specifies the offset from the emitter to emit the particles
         ///
         /// Evaluated once per particle emitted
@@ -474,6 +513,11 @@ public abstract sealed class EmitterShape implements IEmitterComponent permits E
                     ", direction=" + direction +
                     ", surfaceOnly=" + surfaceOnly +
                     '}';
+        }
+
+        @Override
+        protected ResourceLocation id() {
+            return ID;
         }
     }
 
