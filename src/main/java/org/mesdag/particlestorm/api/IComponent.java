@@ -21,7 +21,7 @@ public interface IComponent {
 
     Codec<? extends IComponent> codec();
 
-    List<MolangExp> getAllMolangExp();
+    List<? extends MolangExp> getAllMolangExp();
 
     /// @return order < 0 means early initialize and no update
     default int order() {
