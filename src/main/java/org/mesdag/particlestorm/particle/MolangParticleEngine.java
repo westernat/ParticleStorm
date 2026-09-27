@@ -66,8 +66,8 @@ public final class MolangParticleEngine implements net.fabricmc.fabric.api.resou
         }
 
         @Override
-        public boolean equals(Entity a, Entity b) {
-            return a == b || a != null && b != null && a.getUUID().equals(b.getUUID());
+        public boolean equals(@Nullable Entity a, @Nullable Entity b) {
+            return a == b || (a != null && b != null && a.getUUID().equals(b.getUUID()));
         }
     });
     private final Int2ObjectOpenHashMap<Queue<IMolangParticleInstance>> particlesForEmitter = new Int2ObjectOpenHashMap<>();
