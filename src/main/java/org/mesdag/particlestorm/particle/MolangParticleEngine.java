@@ -206,7 +206,7 @@ public final class MolangParticleEngine implements PreparableReloadListener {
             Queue<IMolangParticleInstance> queue = entry.getValue();
             if (queue.isEmpty()) continue;
 
-            RenderSystem.setShader(!ParticleStorm.IRIS_LOADED && PSGameClient.isTranslucent(type)
+            RenderSystem.setShader(!ParticleStorm.OCULUS_LOADED && PSGameClient.isTranslucent(type)
                     ? PSGameClient::getParticleNoDiscardShader
                     : GameRenderer::getParticleShader);
             type.begin(builder, textureManager);
