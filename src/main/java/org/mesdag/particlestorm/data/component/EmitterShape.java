@@ -15,7 +15,6 @@ import net.minecraft.world.entity.EntityDimensions;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
-import org.mesdag.particlestorm.ParticleStorm;
 import org.mesdag.particlestorm.api.*;
 import org.mesdag.particlestorm.data.MathHelper;
 import org.mesdag.particlestorm.data.molang.FloatMolangExp;
@@ -75,7 +74,7 @@ public abstract sealed class EmitterShape implements IEmitterComponent permits E
     protected abstract ResourceLocation id();
 
     private static ResourceLocation registerId(String name, Codec<? extends EmitterShape> codec) {
-        ResourceLocation id = ParticleStorm.asResource(name);
+        ResourceLocation id = ResourceLocation.withDefaultNamespace(name);
         MAP.put(id, codec);
         return id;
     }
