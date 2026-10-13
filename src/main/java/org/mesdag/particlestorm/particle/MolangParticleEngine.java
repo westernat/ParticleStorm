@@ -259,10 +259,11 @@ public final class MolangParticleEngine implements PreparableReloadListener {
         addEmitter(emitter, false);
     }
 
-    public boolean addTrackedEmitter(Entity entity, ResourceLocation particleId) {
+    public boolean addTrackedEmitter(Entity entity, ResourceLocation particleId, boolean hideOutline) {
         var queue = tracker.computeIfAbsent(entity, e -> new Object2ObjectLinkedOpenHashMap<>());
         if (!queue.isEmpty() && queue.containsKey(particleId)) return false;
         ParticleEmitter emitter = new ParticleEmitter(entity.level(), entity.position(), particleId);
+        emitter.hideOutline = hideOutline;
         addEmitter(emitter);
         emitter.attachEntity(entity);
         queue.put(particleId, emitter);
@@ -270,6 +271,10 @@ public final class MolangParticleEngine implements PreparableReloadListener {
             queue.removeFirst();
         }
         return true;
+    }
+
+    public boolean addTrackedEmitter(Entity entity, ResourceLocation particleId) {
+        return addTrackedEmitter(entity, particleId, true);
     }
 
     public void addParticle(IMolangParticleInstance instance) {
