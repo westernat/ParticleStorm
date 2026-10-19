@@ -178,8 +178,18 @@ public class ParticleEmitter implements MolangInstance {
         createComponents();
     }
 
+    /// 创建粒子用的预设。默认取引擎的加载数据。
+    public ParticlePreset getParticlePreset() {
+        return MolangParticleEngine.INSTANCE.id2Particle().get(particleId);
+    }
+
+    /// 发射器预设。默认取引擎的加载数据。
+    public @Nullable EmitterPreset getEmitterPreset() {
+        return MolangParticleEngine.INSTANCE.id2Emitter().get(particleId);
+    }
+
     protected void createVars() {
-        this.preset = MolangParticleEngine.INSTANCE.id2Emitter().get(particleId);
+        this.preset = this.getEmitterPreset();
         if (preset == null) {
             throw new IllegalArgumentException("Unknown particle id: '" + particleId + "'!");
         }

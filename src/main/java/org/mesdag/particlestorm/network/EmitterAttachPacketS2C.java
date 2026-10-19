@@ -16,8 +16,8 @@ import org.mesdag.particlestorm.particle.ParticleEmitter;
 public record EmitterAttachPacketS2C(int particleId, int entityId) implements CustomPacketPayload {
     public static final Type<EmitterAttachPacketS2C> TYPE = new Type<>(ParticleStorm.asResource("emitter_attach"));
     public static final StreamCodec<ByteBuf, EmitterAttachPacketS2C> STREAM_CODEC = StreamCodec.composite(
-            ByteBufCodecs.INT, p -> p.particleId,
-            ByteBufCodecs.INT, p -> p.entityId,
+            ByteBufCodecs.VAR_INT, EmitterAttachPacketS2C::particleId,
+            ByteBufCodecs.VAR_INT, EmitterAttachPacketS2C::entityId,
             EmitterAttachPacketS2C::new
     );
 
@@ -29,12 +29,10 @@ public record EmitterAttachPacketS2C(int particleId, int entityId) implements Cu
     public void handle(IPayloadContext context) {
         context.enqueueWork(() -> {
             Player player = context.player();
-            if (player.isLocalPlayer()) {
-                ParticleEmitter emitter = MolangParticleEngine.INSTANCE.getEmitter(particleId);
-                Entity entity;
-                if (emitter != null && (entity = player.level().getEntity(entityId)) != null) {
-                    emitter.attachEntity(entity);
-                }
+            ParticleEmitter emitter = MolangParticleEngine.INSTANCE._getEmitter(particleId);
+            Entity entity;
+            if (emitter != null && (entity = player.level().getEntity(entityId)) != null) {
+                emitter.attachEntity(entity);
             }
         });
     }

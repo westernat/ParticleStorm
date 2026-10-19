@@ -1,53 +1,101 @@
 package org.mesdag.particlestorm.data.description;
 
 import com.mojang.serialization.Codec;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.texture.AbstractTexture;
+import net.minecraft.client.renderer.texture.TextureAtlas;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.StringRepresentable;
 import net.neoforged.fml.ModLoader;
+import org.jetbrains.annotations.ApiStatus;
+import org.jetbrains.annotations.Nullable;
 import org.mesdag.particlestorm.api.RegisterCustomMaterialEvent;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Supplier;
 
+/// 材质（`description.basic_render_parameters.material`）。
+///
+/// 每个材质带一个 `Supplier<TextureAtlas>`：这个材质**用哪张纹理图集**（注册时给，懒取）。
+/// 默认是粒子图集（`textures/atlas/particles.png`），`terrain_sheet` 是方块图集；
+/// 自定义材质想用别的图集就在 [RegisterCustomMaterialEvent] 里传自己的 supplier。
+///
+/// 注意：图集是客户端资源，[#getAtlas()] 只能在客户端调用（服务器侧类加载不受影响，supplier 是懒执行的）。
 public final class DescriptionMaterial implements StringRepresentable {
     private static List<DescriptionMaterial> list = new ArrayList<>();
     private static DescriptionMaterial[] values;
 
+    /// 默认图集：粒子图集（各种 `particle_sheet_*` / `particles_*` 都在这张图上）。
+    private static final Supplier<TextureAtlas> PARTICLES_ATLAS = () -> atlas(TextureAtlas.LOCATION_PARTICLES);
+    /// 方块 / 地形图集（`terrain_sheet`）。
+    private static final Supplier<TextureAtlas> BLOCKS_ATLAS = () -> atlas(TextureAtlas.LOCATION_BLOCKS);
+
     public static final DescriptionMaterial
-            TERRAIN_SHEET = register("terrain_sheet"),
-            PARTICLE_SHEET_OPAQUE = register("particle_sheet_opaque"),
-            PARTICLE_SHEET_TRANSLUCENT = register("particle_sheet_translucent"),
-            PARTICLE_SHEET_LIT = register("particle_sheet_lit"),
-            CUSTOM = register("custom"),
-            NO_RENDER = register("no_renderer"),
-            particles_alpha = register("particles_alpha"),
-            particles_blend = register("particles_blend"),
-            particles_add = register("particles_add"),
-            particles_opaque = register("particles_opaque");
+            TERRAIN_SHEET = register("terrain_sheet", BLOCKS_ATLAS),
+            PARTICLE_SHEET_OPAQUE = register("particle_sheet_opaque", PARTICLES_ATLAS),
+            PARTICLE_SHEET_TRANSLUCENT = register("particle_sheet_translucent", PARTICLES_ATLAS),
+            PARTICLE_SHEET_LIT = register("particle_sheet_lit", PARTICLES_ATLAS),
+            CUSTOM = register("custom", PARTICLES_ATLAS),
+            NO_RENDER = register("no_renderer", PARTICLES_ATLAS),
+            particles_alpha = register("particles_alpha", PARTICLES_ATLAS),
+            particles_blend = register("particles_blend", PARTICLES_ATLAS),
+            particles_add = register("particles_add", PARTICLES_ATLAS),
+            particles_opaque = register("particles_opaque", PARTICLES_ATLAS);
 
 
-    private static DescriptionMaterial register(String name) {
-        DescriptionMaterial material = new DescriptionMaterial(name);
+    /// 注册材质；`atlas` 为 null 时用粒子图集（供 [RegisterCustomMaterialEvent] 使用）。
+    @ApiStatus.Internal
+    public static DescriptionMaterial register(String name, @Nullable Supplier<TextureAtlas> atlas) {
+        DescriptionMaterial material = new DescriptionMaterial(name, atlas);
         list.add(material);
         return material;
     }
 
-    public static final Codec<DescriptionMaterial> CODEC = StringRepresentable.fromValues(() -> {
+    public static final Codec<DescriptionMaterial> CODEC = StringRepresentable.fromValues(DescriptionMaterial::values);
+
+    /// 所有已注册的材质（与 [#CODEC] 使用同一份 `values` 数组；首次调用时完成自定义材质的注册）。
+    @ApiStatus.Internal
+    public static DescriptionMaterial[] values() {
         if (values == null) {
             ModLoader.postEvent(new RegisterCustomMaterialEvent(DescriptionMaterial::register));
             values = list.toArray(DescriptionMaterial[]::new);
             list = null;
         }
         return values;
-    });
+    }
 
     private final String name;
+    private final @Nullable Supplier<TextureAtlas> atlas;
 
-    private DescriptionMaterial(String name) {
+    private DescriptionMaterial(String name, @Nullable Supplier<TextureAtlas> atlas) {
         this.name = name;
+        this.atlas = atlas;
     }
 
     @Override
     public String getSerializedName() {
         return name;
+    }
+
+    /// 该材质对应的纹理图集（懒取）。自定义材质没给 supplier、或图集还没加载出来时回落到粒子图集。
+    ///
+    /// 只能在客户端调用。
+    public TextureAtlas getAtlas() {
+        TextureAtlas textureAtlas = this.atlas == null ? null : this.atlas.get();
+        if (textureAtlas != null) {
+            return textureAtlas;
+        }
+        TextureAtlas particles = atlas(TextureAtlas.LOCATION_PARTICLES);
+        if (particles == null) {
+            throw new IllegalStateException("Particles texture atlas is not loaded yet");
+        }
+        return particles;
+    }
+
+    /// 按纹理位置从 `TextureManager` 取图集（`TextureAtlas` 构造时会把自己注册进去）。
+    private static @Nullable TextureAtlas atlas(ResourceLocation location) {
+        AbstractTexture texture = Minecraft.getInstance().getTextureManager().getTexture(location, null);
+        return texture instanceof TextureAtlas textureAtlas ? textureAtlas : null;
     }
 }

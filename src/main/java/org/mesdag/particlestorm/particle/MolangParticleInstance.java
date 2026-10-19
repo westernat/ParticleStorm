@@ -71,7 +71,7 @@ public class MolangParticleInstance extends TextureSheetParticle implements IMol
         this.friction = 1.0F;
         this.quadSize = 0; // as collision radius
         this.preset = preset;
-        setSprite(sprites.get(preset.effect.description.parameters().getTextureIndex()));
+        setSprite(sprites.get(preset.effect.description.parameters().texture()));
         this.invOx = ((IPSTextureAtlasSprite) sprite).particlestorm$getInvOx();
         this.invOy = ((IPSTextureAtlasSprite) sprite).particlestorm$getInvOy();
         this.scaleU = sprite.contents().width() * preset.invTextureWidth;

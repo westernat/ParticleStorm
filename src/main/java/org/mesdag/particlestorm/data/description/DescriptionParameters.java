@@ -14,7 +14,6 @@ public class DescriptionParameters {
     ).apply(instance, DescriptionParameters::new));
     private final DescriptionMaterial material;
     private final ResourceLocation texture;
-    private int index = -1;
 
     public DescriptionParameters(DescriptionMaterial material, ResourceLocation texture) {
         this.material = material;
@@ -27,14 +26,5 @@ public class DescriptionParameters {
 
     public ResourceLocation texture() {
         return texture;
-    }
-
-    public ResourceLocation bindTexture(int index) {
-        this.index = index;
-        return texture;
-    }
-
-    public int getTextureIndex() {
-        return index;
     }
 }

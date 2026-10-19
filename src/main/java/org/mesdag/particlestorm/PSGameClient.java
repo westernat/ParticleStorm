@@ -45,7 +45,6 @@ public final class PSGameClient {
     public static final ParticleRenderType PARTICLE_ADD = new ParticleRenderType() {
         @Override
         public BufferBuilder begin(Tesselator tesselator, TextureManager textureManager) {
-            RenderSystem.enableDepthTest();
             RenderSystem.depthMask(false);
             RenderSystem.setShaderTexture(0, TextureAtlas.LOCATION_PARTICLES);
             RenderSystem.enableBlend();
@@ -60,7 +59,6 @@ public final class PSGameClient {
     public static final ParticleRenderType PARTICLE_BLEND = new ParticleRenderType() {
         @Override
         public BufferBuilder begin(Tesselator tesselator, TextureManager textureManager) {
-            RenderSystem.enableDepthTest();
             RenderSystem.depthMask(false);
             RenderSystem.setShaderTexture(0, TextureAtlas.LOCATION_PARTICLES);
             RenderSystem.enableBlend();
@@ -139,7 +137,7 @@ public final class PSGameClient {
         if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_PARTICLES) return;
         if (!PSClientConfigs.showEmitterOutline) return;
         Minecraft minecraft = Minecraft.getInstance();
-        if (!minecraft.getEntityRenderDispatcher().shouldRenderHitBoxes()) return;
+        if (minecraft.screen != null || !minecraft.getEntityRenderDispatcher().shouldRenderHitBoxes()) return;
         PoseStack poseStack = event.getPoseStack();
         MultiBufferSource.BufferSource bufferSource = minecraft.renderBuffers().bufferSource();
         Camera camera = event.getCamera();
@@ -156,7 +154,7 @@ public final class PSGameClient {
             double z = Mth.lerp(partialTick, emitter.posO.z, emitter.getZ());
             DebugRenderer.renderFloatingText(poseStack, bufferSource, emitter.particleId.toString(), x, y + 0.5, z, 0xFFFFFF);
             DebugRenderer.renderFloatingText(poseStack, bufferSource, "id: " + emitter.id, x, y + 0.3, z, 0xFFFFFF);
-            Queue<IMolangParticleInstance> queue = MolangParticleEngine.INSTANCE.getParticlesForEmitter(emitter);
+            Queue<IMolangParticleInstance> queue = MolangParticleEngine.INSTANCE._getParticlesForEmitter(emitter);
             int count = queue == null ? 0 : queue.size();
             DebugRenderer.renderFloatingText(poseStack, bufferSource, "particles: " + count, x, y + 0.1, z, count >= emitter.particleGroup.getLimit() ? 0xFF0000 : 0xFFFFFF);
             poseStack.pushPose();
@@ -182,44 +180,45 @@ public final class PSGameClient {
     }
 
     private static void registerComponents() {
-        IComponent.register("emitter_local_space", EmitterLocalSpace.CODEC);
-        IComponent.register("emitter_initialization", EmitterInitialization.CODEC);
+        IComponent.register(EmitterLocalSpace.ID, EmitterLocalSpace.CODEC);
+        IComponent.register(EmitterInitialization.ID, EmitterInitialization.CODEC);
 
-        IComponent.register("emitter_rate_instant", EmitterRate.Instant.CODEC);
-        IComponent.register("emitter_rate_steady", EmitterRate.Steady.CODEC);
-        IComponent.register("emitter_rate_manual", EmitterRate.Manual.CODEC);
+        IComponent.register(EmitterRate.Instant.ID, EmitterRate.Instant.CODEC);
+        IComponent.register(EmitterRate.Steady.ID, EmitterRate.Steady.CODEC);
+        IComponent.register(EmitterRate.Manual.ID, EmitterRate.Manual.CODEC);
 
-        IComponent.register("emitter_lifetime_looping", EmitterLifetime.Looping.CODEC);
-        IComponent.register("emitter_lifetime_once", EmitterLifetime.Once.CODEC);
-        IComponent.register("emitter_lifetime_expression", EmitterLifetime.Expression.CODEC);
-        IComponent.register("emitter_lifetime_events", EmitterLifetimeEvents.CODEC);
+        IComponent.register(EmitterLifetime.Looping.ID, EmitterLifetime.Looping.CODEC);
+        IComponent.register(EmitterLifetime.Once.ID, EmitterLifetime.Once.CODEC);
+        IComponent.register(EmitterLifetime.Expression.ID, EmitterLifetime.Expression.CODEC);
+        IComponent.register(EmitterLifetimeEvents.ID, EmitterLifetimeEvents.CODEC);
 
         IComponent.register(EmitterShape.Point.ID, EmitterShape.Point.CODEC);
         IComponent.register(EmitterShape.Sphere.ID, EmitterShape.Sphere.CODEC);
         IComponent.register(EmitterShape.Box.ID, EmitterShape.Box.CODEC);
         IComponent.register(EmitterShape.EntityAABB.ID, EmitterShape.EntityAABB.CODEC);
         IComponent.register(EmitterShape.Disc.ID, EmitterShape.Disc.CODEC);
-        IComponent.register(ParticleStorm.asResource("emitter_multi_shape"), EmitterMultiShape.CODEC);
+        IComponent.register(EmitterMultiShape.ID, EmitterMultiShape.CODEC);
 
-        IComponent.register("particle_initial_speed", ParticleInitialSpeed.CODEC);
-        IComponent.register("particle_initial_spin", ParticleInitialSpin.CODEC);
+        IComponent.register(ParticleInitialSpeed.ID, ParticleInitialSpeed.CODEC);
+        IComponent.register(ParticleInitialSpin.ID, ParticleInitialSpin.CODEC);
         IComponent.register(ParticleInitialization.ID, ParticleInitialization.CODEC);
 
         IComponent.register(ParticleMotionDynamic.ID, ParticleMotionDynamic.CODEC);
-        IComponent.register("particle_motion_parametric", ParticleMotionParametric.CODEC);
+        IComponent.register(ParticleMotionParametric.ID, ParticleMotionParametric.CODEC);
         IComponent.register(ParticleMotionCollision.ID, ParticleMotionCollision.CODEC);
 
         IComponent.register(ParticleAppearanceBillboard.ID, ParticleAppearanceBillboard.CODEC);
-        IComponent.register("particle_appearance_tinting", ParticleAppearanceTinting.CODEC);
-        IComponent.register("particle_appearance_lighting", ParticleAppearanceLighting.CODEC);
+        IComponent.register(ParticleAppearanceTinting.ID, ParticleAppearanceTinting.CODEC);
+        IComponent.register(ParticleAppearanceLighting.ID, ParticleAppearanceLighting.CODEC);
 
-        IComponent.register("particle_lifetime_expression", ParticleLifetimeExpression.CODEC);
+        IComponent.register(ParticleLifetimeExpression.ID, ParticleLifetimeExpression.CODEC);
         IComponent.register(ParticleLifeTimeEvents.ID, ParticleLifeTimeEvents.CODEC);
-        IComponent.register("particle_kill_plane", ParticleLifetimeKillPlane.CODEC);
-        IComponent.register("particle_expire_if_in_blocks", ParticleExpireIfInBlocks.CODEC);
-        IComponent.register("particle_expire_if_not_in_blocks", ParticleExpireIfNotInBlocks.CODEC);
+        IComponent.register(ParticleLifetimeKillPlane.ID, ParticleLifetimeKillPlane.CODEC);
+        IComponent.register(ParticleExpireIfInBlocks.ID, ParticleExpireIfInBlocks.CODEC);
+        IComponent.register(ParticleExpireIfNotInBlocks.ID, ParticleExpireIfNotInBlocks.CODEC);
 
         ModLoader.postEvent(new RegisterCustomComponentEvent());
+        RegisterComponentGridEvent.postEvent();
     }
 
     private static void registerEventNodes() {

@@ -4,6 +4,7 @@ import com.google.common.collect.ImmutableMap;
 import com.mojang.datafixers.util.Either;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
 import net.minecraft.util.Tuple;
 import org.mesdag.particlestorm.api.IMolangParticleInstance;
@@ -16,6 +17,7 @@ import java.util.*;
 import java.util.stream.Stream;
 
 public record ParticleAppearanceTinting(Color color, ColorField colorField) implements IParticleComponent {
+    public static final ResourceLocation ID = ResourceLocation.withDefaultNamespace("particle_appearance_tinting");
     public static final Codec<ParticleAppearanceTinting> CODEC = Codec.either(Color.CODEC, ColorField.CODEC).xmap(
             either -> either.map(c -> new ParticleAppearanceTinting(c, ColorField.EMPTY), f -> new ParticleAppearanceTinting(Color.EMPTY, f)),
             tinting -> tinting.colorField == ColorField.EMPTY ? Either.left(tinting.color) : Either.right(tinting.colorField)

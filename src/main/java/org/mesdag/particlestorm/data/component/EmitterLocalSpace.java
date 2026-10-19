@@ -2,6 +2,7 @@ package org.mesdag.particlestorm.data.component;
 
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
+import net.minecraft.resources.ResourceLocation;
 import org.mesdag.particlestorm.api.IEmitterComponent;
 import org.mesdag.particlestorm.data.molang.MolangExp;
 
@@ -21,6 +22,7 @@ import java.util.List;
 ///
 /// `velocity` will add the emitter's velocity to the initial particle velocity.
 public record EmitterLocalSpace(boolean position, boolean rotation, boolean velocity) implements IEmitterComponent {
+    public static final ResourceLocation ID = ResourceLocation.withDefaultNamespace("emitter_local_space");
     public static final Codec<EmitterLocalSpace> CODEC = RecordCodecBuilder.create(instance -> instance.group(
             Codec.BOOL.lenientOptionalFieldOf("position", false).forGetter(EmitterLocalSpace::position),
             Codec.BOOL.lenientOptionalFieldOf("rotation", false).forGetter(EmitterLocalSpace::rotation),

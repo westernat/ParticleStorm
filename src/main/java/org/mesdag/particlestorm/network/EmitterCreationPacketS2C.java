@@ -37,13 +37,11 @@ public record EmitterCreationPacketS2C(ResourceLocation id, Vector3f pos, Molang
     public void handle(IPayloadContext context) {
         context.enqueueWork(() -> {
             Player player = context.player();
-            if (player.isLocalPlayer()) {
-                ParticleEmitter emitter = new ParticleEmitter(player.level(), new Vec3(pos.x, pos.y, pos.z), id, expression);
-                if (entityId > 0) {
-                    emitter.attachEntity(player.level().getEntity(entityId));
-                }
-                MolangParticleEngine.INSTANCE.addEmitter(emitter);
+            ParticleEmitter emitter = new ParticleEmitter(player.level(), new Vec3(pos.x, pos.y, pos.z), id, expression);
+            if (entityId > 0) {
+                emitter.attachEntity(player.level().getEntity(entityId));
             }
+            MolangParticleEngine.addEmitter(emitter);
         });
     }
 

@@ -8,6 +8,7 @@ import net.neoforged.bus.api.Event;
 import net.neoforged.fml.ModLoader;
 import net.neoforged.fml.event.IModBusEvent;
 import org.mesdag.particlestorm.data.event.ParticleEffect;
+import org.mesdag.particlestorm.editor.EditorParticleEmitter;
 import org.mesdag.particlestorm.particle.ParticleEmitter;
 import org.mesdag.particlestorm.particle.attach.WithBlockParticleEmitter;
 
@@ -25,6 +26,7 @@ public class RegisterCustomEmitterTypeEvent extends Event implements IModBusEven
             RegisterCustomEmitterTypeEvent event = new RegisterCustomEmitterTypeEvent();
             event.register(WithBlockParticleEmitter.TYPE, WithBlockParticleEmitter::new, WithBlockParticleEmitter::new);
 //            event.register(PresetVarsParticleEmitter.TYPE, PresetVarsParticleEmitter::new, PresetVarsParticleEmitter::new);
+            event.register(EditorParticleEmitter.TYPE, (level, tag) -> {throw new UnsupportedOperationException();}, EditorParticleEmitter::new);
             ModLoader.postEvent(event);
         }
     }

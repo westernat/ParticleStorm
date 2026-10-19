@@ -4,6 +4,7 @@ import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import it.unimi.dsi.fastutil.floats.FloatObjectImmutablePair;
 import it.unimi.dsi.fastutil.floats.FloatObjectPair;
+import net.minecraft.resources.ResourceLocation;
 import org.mesdag.particlestorm.ParticleStorm;
 import org.mesdag.particlestorm.api.IEmitterComponent;
 import org.mesdag.particlestorm.api.IEventNode;
@@ -21,6 +22,7 @@ import java.util.Map;
 ///
 /// All events can be an array or a string
 public final class EmitterLifetimeEvents implements IEmitterComponent {
+    public static final ResourceLocation ID = ResourceLocation.withDefaultNamespace("emitter_lifetime_events");
     public static final Codec<EmitterLifetimeEvents> CODEC = RecordCodecBuilder.create(instance -> instance.group(
             ParticleStorm.STRING_LIST_CODEC.fieldOf("creation_event").orElseGet(List::of).forGetter(events -> events.creationEvent),
             ParticleStorm.STRING_LIST_CODEC.fieldOf("expiration_event").orElseGet(List::of).forGetter(events -> events.expirationEvent),

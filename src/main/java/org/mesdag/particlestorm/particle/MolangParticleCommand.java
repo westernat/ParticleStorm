@@ -25,7 +25,8 @@ import org.jetbrains.annotations.Nullable;
 import org.mesdag.particlestorm.data.molang.MolangExp;
 import org.mesdag.particlestorm.network.EmitterAttachPacketS2C;
 import org.mesdag.particlestorm.network.EmitterCreationPacketS2C;
-import org.mesdag.particlestorm.network.EmitterRemovalPacket;
+import org.mesdag.particlestorm.network.EmitterRemovalPacketS2C;
+import org.mesdag.particlestorm.network.OpenEditorPacketS2C;
 
 import java.util.Collection;
 import java.util.List;
@@ -33,14 +34,20 @@ import java.util.concurrent.CompletableFuture;
 
 public class MolangParticleCommand {
     private static final SimpleCommandExceptionType ERROR_FAILED = new SimpleCommandExceptionType(Component.translatable("commands.particle.failed"));
+    /// `editor` 只能由玩家执行：编辑器要开的是**这名玩家自己**的客户端界面，命令方块/控制台没有客户端。
+    private static final SimpleCommandExceptionType ERROR_NOT_PLAYER = new SimpleCommandExceptionType(Component.translatable(
+            "commands.particle_editor.not_player"));
     private static final List<String> POSITION_SUGGESTIONS = List.of("~ ~ ~", "~ ~1 ~", "~ ~-1 ~", "^ ^ ^", "^ ^ ^1");
     private static final List<String> EXPRESSION_SUGGESTIONS = List.of("\"\"", "\"v.size=1;\"", "\"v.alpha=1;\"", "\"v.size=1;v.alpha=1;\"");
     private static final List<String> ENTITY_SUGGESTIONS = List.of("@s", "@p", "@e[limit=1,sort=nearest]");
     private static final List<String> VIEWER_SUGGESTIONS = List.of("@a", "@p", "@s");
 
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
-        dispatcher.register(Commands.literal("particlestorm").requires(sourceStack -> sourceStack.hasPermission(2))
-                .then(Commands.literal("add").then(Commands.argument("particle", ResourceLocationArgument.id()).executes(context -> sendParticle(
+        // 权限门槛必须挂在**子命令**上，不能挂在根节点上：
+        // `editor` 是纯客户端界面，普通玩家也该能用；挂在根上会把它一起挡掉。
+        // add / remove / attach 的门槛与行为原样不变，只是从根节点搬到了各自身上。
+        dispatcher.register(Commands.literal("particlestorm")
+                .then(Commands.literal("add").requires(sourceStack -> sourceStack.hasPermission(2)).then(Commands.argument("particle", ResourceLocationArgument.id()).executes(context -> sendParticle(
                                 context.getSource(),
                                 ResourceLocationArgument.getId(context, "particle"),
                                 context.getSource().getPosition(),
@@ -89,7 +96,7 @@ public class MolangParticleCommand {
                                 )
                         )
                 ))
-                .then(Commands.literal("remove").then(Commands.argument("id", IntegerArgumentType.integer(0)).suggests(MolangParticleCommand::suggestEmitterIds).executes(context -> removeParticle(
+                .then(Commands.literal("remove").requires(sourceStack -> sourceStack.hasPermission(2)).then(Commands.argument("id", IntegerArgumentType.integer(0)).suggests(MolangParticleCommand::suggestEmitterIds).executes(context -> removeParticle(
                                 IntegerArgumentType.getInteger(context, "id"),
                                 context.getSource().getServer().getPlayerList().getPlayers()
                         )).then(Commands.argument("viewers", EntityArgument.players()).suggests((context, builder) ->
@@ -100,7 +107,7 @@ public class MolangParticleCommand {
                                 )
                         ))
                 ))
-                .then(Commands.literal("attach").then(Commands.argument("id", IntegerArgumentType.integer(0)).suggests(MolangParticleCommand::suggestEmitterIds).then(Commands.argument("entity", EntityArgument.entity()).suggests((context, builder) ->
+                .then(Commands.literal("attach").requires(sourceStack -> sourceStack.hasPermission(2)).then(Commands.argument("id", IntegerArgumentType.integer(0)).suggests(MolangParticleCommand::suggestEmitterIds).then(Commands.argument("entity", EntityArgument.entity()).suggests((context, builder) ->
                                 SharedSuggestionProvider.suggest(ENTITY_SUGGESTIONS, builder)
                         ).executes(context -> attachEmitter2Entity(
                                 IntegerArgumentType.getInteger(context, "id"),
@@ -115,7 +122,19 @@ public class MolangParticleCommand {
                                 )
                         ))
                 )))
+                .then(Commands.literal("editor")
+                        .executes(context -> openEditor(context.getSource()))
+                )
         );
+    }
+
+    private static int openEditor(CommandSourceStack source) throws CommandSyntaxException {
+        ServerPlayer player = source.getPlayer();
+        if (player == null) {
+            throw ERROR_NOT_PLAYER.create();
+        }
+        OpenEditorPacketS2C.sendToClient(player);
+        return 1;
     }
 
     private static CompletableFuture<Suggestions> suggestEmitterIds(CommandContext<CommandSourceStack> context, SuggestionsBuilder builder) {
@@ -138,22 +157,20 @@ public class MolangParticleCommand {
         }
         if (i == 0) {
             throw ERROR_FAILED.create();
-        } else {
-            return i;
         }
+        return i;
     }
 
     private static int removeParticle(int id, Collection<ServerPlayer> viewers) throws CommandSyntaxException {
         int i = 0;
         for (ServerPlayer serverplayer : viewers) {
-            EmitterRemovalPacket.sendToClient(serverplayer, id);
+            EmitterRemovalPacketS2C.sendToClient(serverplayer, id);
             i++;
         }
         if (i == 0) {
             throw ERROR_FAILED.create();
-        } else {
-            return i;
         }
+        return i;
     }
 
     private static int sendParticle(CommandSourceStack source, ResourceLocation particle, Vec3 pos, MolangExp expression, @Nullable Entity entity, Collection<ServerPlayer> viewers) throws CommandSyntaxException {
@@ -164,9 +181,8 @@ public class MolangParticleCommand {
         }
         if (i == 0) {
             throw ERROR_FAILED.create();
-        } else {
-            source.sendSuccess(() -> Component.translatable("commands.particle.success", particle.toString()), true);
-            return i;
         }
+        source.sendSuccess(() -> Component.translatable("commands.particle.success", particle.toString()), true);
+        return i;
     }
 }

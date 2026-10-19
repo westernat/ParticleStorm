@@ -10,9 +10,9 @@ import net.minecraft.resources.ResourceLocation;
 import net.neoforged.bus.api.Event;
 import net.neoforged.fml.ModLoader;
 import net.neoforged.fml.event.IModBusEvent;
+import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Contract;
 import org.mesdag.particlestorm.particle.ExtendMutableSpriteSet;
-import org.mesdag.particlestorm.particle.MolangParticleEngine;
 import org.mesdag.particlestorm.particle.ParticleEmitter;
 import org.mesdag.particlestorm.particle.ParticlePreset;
 
@@ -55,7 +55,19 @@ public class RegisterCustomParticleTypeEvent extends Event implements IModBusEve
             throw new NullPointerException("Provider from '" + BuiltInRegistries.PARTICLE_TYPE.getKey(emitter.getPreset().type) + "' is not registered");
         }
 
-        return (V) provider.create(emitter, MolangParticleEngine.INSTANCE.id2Particle().get(emitter.particleId), (ClientLevel) emitter.level, emitter.getX(), emitter.getY(), emitter.getZ(), sprites);
+        return (V) provider.create(emitter, emitter.getParticlePreset(), (ClientLevel) emitter.level, emitter.getX(), emitter.getY(), emitter.getZ(), sprites);
+    }
+
+    /// 已注册的自定义粒子类型 → 提供者。编辑器用来列出可选的 `description.type` 值。
+    @ApiStatus.Internal
+    public static Map<ParticleType<?>, Provider<?>> map() {
+        return map == null ? Map.of() : map;
+    }
+
+    /// 带 sprite 的类型共用的 sprite 集合（编辑器挑完贴图后往这里追加 sprite）。
+    @ApiStatus.Internal
+    public static ExtendMutableSpriteSet sprites() {
+        return sprites;
     }
 
     @FunctionalInterface
