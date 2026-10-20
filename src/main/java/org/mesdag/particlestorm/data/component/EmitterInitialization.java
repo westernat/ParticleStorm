@@ -16,8 +16,8 @@ import java.util.List;
 public record EmitterInitialization(MolangExp creationExpression, MolangExp perUpdateExpression) implements IEmitterComponent {
     public static final ResourceLocation ID = ResourceLocation.withDefaultNamespace("emitter_initialization");
     public static final Codec<EmitterInitialization> CODEC = RecordCodecBuilder.create(instance -> instance.group(
-            MolangExp.CODEC.fieldOf("creation_expression").orElse(MolangExp.EMPTY).forGetter(EmitterInitialization::creationExpression),
-            MolangExp.CODEC.fieldOf("per_update_expression").orElse(MolangExp.EMPTY).forGetter(EmitterInitialization::perUpdateExpression)
+            MolangExp.CODEC.lenientOptionalFieldOf("creation_expression", MolangExp.EMPTY).forGetter(EmitterInitialization::creationExpression),
+            MolangExp.CODEC.lenientOptionalFieldOf("per_update_expression", MolangExp.EMPTY).forGetter(EmitterInitialization::perUpdateExpression)
     ).apply(instance, EmitterInitialization::new));
 
     public EmitterInitialization {

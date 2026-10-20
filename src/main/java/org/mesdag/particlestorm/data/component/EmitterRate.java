@@ -27,7 +27,7 @@ public abstract sealed class EmitterRate implements IEmitterComponent permits Em
     public static final class Instant extends EmitterRate {
         public static final ResourceLocation ID = ResourceLocation.withDefaultNamespace("emitter_rate_instant");
         public static final Codec<Instant> CODEC = RecordCodecBuilder.create(instance -> instance.group(
-                FloatMolangExp.CODEC.fieldOf("num_particles").orElseGet(() -> FloatMolangExp.ofConstant(10)).forGetter(Instant::getNumParticles)
+                FloatMolangExp.CODEC.lenientOptionalFieldOf("num_particles", FloatMolangExp.ofConstant(10)).forGetter(Instant::getNumParticles)
         ).apply(instance, Instant::new));
         private final FloatMolangExp numParticles;
 
@@ -72,8 +72,8 @@ public abstract sealed class EmitterRate implements IEmitterComponent permits Em
     public static final class Steady extends EmitterRate {
         public static final ResourceLocation ID = ResourceLocation.withDefaultNamespace("emitter_rate_steady");
         public static final Codec<Steady> CODEC = RecordCodecBuilder.create(instance -> instance.group(
-                FloatMolangExp.CODEC.fieldOf("spawn_rate").orElse(FloatMolangExp.ONE).forGetter(Steady::getSpawnRate),
-                FloatMolangExp.CODEC.fieldOf("max_particles").orElseGet(() -> FloatMolangExp.ofConstant(50)).forGetter(Steady::getMaxParticles)
+                FloatMolangExp.CODEC.lenientOptionalFieldOf("spawn_rate", FloatMolangExp.ONE).forGetter(Steady::getSpawnRate),
+                FloatMolangExp.CODEC.lenientOptionalFieldOf("max_particles", FloatMolangExp.ofConstant(50)).forGetter(Steady::getMaxParticles)
         ).apply(instance, Steady::new));
         private final FloatMolangExp spawnRate;
         private final FloatMolangExp maxParticles;
@@ -132,7 +132,7 @@ public abstract sealed class EmitterRate implements IEmitterComponent permits Em
     public static final class Manual extends EmitterRate {
         public static final ResourceLocation ID = ResourceLocation.withDefaultNamespace("emitter_rate_manual");
         public static final Codec<Manual> CODEC = RecordCodecBuilder.create(instance -> instance.group(
-                FloatMolangExp.CODEC.fieldOf("max_particles").orElse(FloatMolangExp.ZERO).forGetter(Manual::getMaxParticles)
+                FloatMolangExp.CODEC.lenientOptionalFieldOf("max_particles", FloatMolangExp.ZERO).forGetter(Manual::getMaxParticles)
         ).apply(instance, Manual::new));
         private final FloatMolangExp maxParticles;
 

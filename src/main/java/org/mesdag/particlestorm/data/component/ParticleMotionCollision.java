@@ -49,10 +49,10 @@ public record ParticleMotionCollision(
             Codec.FLOAT.lenientOptionalFieldOf("coefficient_of_restitution", 0.0F).forGetter(ParticleMotionCollision::coefficientOfRestitution),
             Codec.FLOAT.lenientOptionalFieldOf("collision_radius", 0.0F).forGetter(ParticleMotionCollision::collisionRadius),
             Codec.BOOL.lenientOptionalFieldOf("expire_on_contact", false).forGetter(ParticleMotionCollision::expireOnContact),
-            Codec.either(Event.CODEC, Codec.list(Event.CODEC)).xmap(
+            Codec.either(Event.CODEC, Event.CODEC.listOf()).xmap(
                     either -> either.map(Collections::singletonList, Function.identity()),
                     l -> l.size() == 1 ? Either.left(l.getFirst()) : Either.right(l)
-            ).fieldOf("events").orElseGet(List::of).forGetter(ParticleMotionCollision::events)
+            ).lenientOptionalFieldOf("events", List.of()).forGetter(ParticleMotionCollision::events)
     ).apply(instance, ParticleMotionCollision::new));
 
     @Override

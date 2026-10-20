@@ -207,11 +207,15 @@ final class ParticleAppearanceTintingGrid extends ComponentGrid {
 }
 
 /// 静态调色盘行：把 [ColorPicker] 摆进 Grid，颜色变化时回调。
+///
+/// **拖动期间只记脏、不回调**：每次回调都会重建组件 → 清场景 → 重新发射，
+/// 拖着调色盘就是不停地重放粒子；松手（或单击 / 输入提交这类离散操作）时才真正落地一次。
 final class PickerRow extends ComponentGrid.Row {
     private final EditorScreen screen;
     private final Font font;
     private final ColorPicker picker;
     private final Runnable onChange;
+    private boolean pendingChange;
 
     PickerRow(EditorScreen screen, Font font, ColorPicker picker, Runnable onChange) {
         super(() -> "");
@@ -235,14 +239,18 @@ final class PickerRow extends ComponentGrid.Row {
     @Override
     boolean mouseClicked(double mouseX, double mouseY) {
         boolean pressed = this.picker.mousePressed(mouseX, mouseY);
-        this.applyPickerChanged();
+        this.capturePickerChanged();
+        if (!this.picker.isDragging()) {
+            // 点读数格子 / 上下箭头不是拖拽：当场落地
+            this.flushPendingChange();
+        }
         return pressed;
     }
 
     @Override
     boolean mouseDragged(double mouseX, double mouseY) {
         boolean dragged = this.picker.mouseDragged(mouseX, mouseY);
-        this.applyPickerChanged();
+        this.capturePickerChanged();
         return dragged;
     }
 
@@ -250,21 +258,24 @@ final class PickerRow extends ComponentGrid.Row {
     boolean mouseReleased(double mouseX, double mouseY) {
         boolean dragging = this.picker.isDragging();
         this.picker.mouseReleased();
-        this.applyPickerChanged();
+        this.capturePickerChanged();
+        this.flushPendingChange();
         return dragging;
     }
 
     @Override
     boolean keyPressed(int keyCode, int scanCode, int modifiers) {
         boolean handled = this.picker.keyPressed(keyCode);
-        this.applyPickerChanged();
+        this.capturePickerChanged();
+        this.flushPendingChange();
         return handled;
     }
 
     @Override
     boolean charTyped(char codePoint, int modifiers) {
         boolean handled = this.picker.charTyped(codePoint);
-        this.applyPickerChanged();
+        this.capturePickerChanged();
+        this.flushPendingChange();
         return handled;
     }
 
@@ -276,11 +287,19 @@ final class PickerRow extends ComponentGrid.Row {
     @Override
     void closeEditing() {
         this.picker.commitEditing();
-        this.applyPickerChanged();
+        this.capturePickerChanged();
+        this.flushPendingChange();
     }
 
-    private void applyPickerChanged() {
+    private void capturePickerChanged() {
         if (this.picker.consumeChanged()) {
+            this.pendingChange = true;
+        }
+    }
+
+    private void flushPendingChange() {
+        if (this.pendingChange) {
+            this.pendingChange = false;
             this.onChange.run();
         }
     }
@@ -303,6 +322,8 @@ final class GradientRow extends ComponentGrid.Row {
     private final List<float[]> stops;
     private final Runnable onChange;
     private final ColorPicker picker = new ColorPicker();
+    /// 拖动期间只记脏、不回调（回调 = 重建组件 + 清场景重发粒子，拖着色标就是不停重放）；松手才落地。
+    private boolean pendingChange;
     private int selected = -1;
     private int dragIndex = -1;
 
@@ -384,30 +405,32 @@ final class GradientRow extends ComponentGrid.Row {
     boolean mouseClicked(double mouseX, double mouseY) {
         // 点任何地方都把正在编辑的读数格子先提交
         this.picker.commitEditing();
-        this.applyPickerChanged();
+        this.capturePickerChanged();
+        boolean handled = false;
         if (mouseX >= this.plusX && mouseX < this.plusX + PLUS_SIZE && mouseY >= this.plusY && mouseY < this.plusY + PLUS_SIZE) {
             this.addStop();
-            return true;
-        }
-        if (this.selected >= 0 && mouseX >= this.deleteX && mouseX < this.deleteX + DELETE_SIZE
+            handled = true;
+        } else if (this.selected >= 0 && mouseX >= this.deleteX && mouseX < this.deleteX + DELETE_SIZE
                 && mouseY >= this.paletteY && mouseY < this.paletteY + DELETE_SIZE) {
             this.deleteSelected();
-            return true;
-        }
-        if (this.selected >= 0 && this.picker.mousePressed(mouseX, mouseY)) {
-            this.applyPickerChanged();
-            return true;
-        }
-        if (mouseY >= this.barY - 3 && mouseY <= this.barY + BAR_HEIGHT + 3
+            handled = true;
+        } else if (this.selected >= 0 && this.picker.mousePressed(mouseX, mouseY)) {
+            this.capturePickerChanged();
+            handled = true;
+        } else if (mouseY >= this.barY - 3 && mouseY <= this.barY + BAR_HEIGHT + 3
                 && mouseX >= this.barX - 5 && mouseX <= this.barX + this.barWidth + 5) {
             int hit = this.blockAt(mouseX);
             if (hit >= 0) {
                 this.select(hit);
                 this.dragIndex = hit;
             }
-            return true;
+            handled = true;
         }
-        return false;
+        // 拖拽还没开始（点色标 / 点读数格子 / 加法减法）就让改动当场落地；拖拽中留给 mouseReleased
+        if (!this.picker.isDragging() && this.dragIndex < 0) {
+            this.flushPendingChange();
+        }
+        return handled;
     }
 
     @Override
@@ -418,11 +441,11 @@ final class GradientRow extends ComponentGrid.Row {
             float max = this.dragIndex < this.stops.size() - 1 ? this.stops.get(this.dragIndex + 1)[0] - MIN_GAP : 1.0F;
             float[] stop = this.stops.get(this.dragIndex);
             stop[0] = Mth.clamp(position, Math.min(min, max), Math.max(min, max));
-            this.onChange.run();
+            this.pendingChange = true;
             return true;
         }
         if (this.selected >= 0 && this.picker.mouseDragged(mouseX, mouseY)) {
-            this.applyPickerChanged();
+            this.capturePickerChanged();
             return true;
         }
         return false;
@@ -433,21 +456,24 @@ final class GradientRow extends ComponentGrid.Row {
         boolean consumed = this.dragIndex >= 0 || this.picker.isDragging();
         this.dragIndex = -1;
         this.picker.mouseReleased();
-        this.applyPickerChanged();
+        this.capturePickerChanged();
+        this.flushPendingChange();
         return consumed;
     }
 
     @Override
     boolean keyPressed(int keyCode, int scanCode, int modifiers) {
         boolean handled = this.picker.keyPressed(keyCode);
-        this.applyPickerChanged();
+        this.capturePickerChanged();
+        this.flushPendingChange();
         return handled;
     }
 
     @Override
     boolean charTyped(char codePoint, int modifiers) {
         boolean handled = this.picker.charTyped(codePoint);
-        this.applyPickerChanged();
+        this.capturePickerChanged();
+        this.flushPendingChange();
         return handled;
     }
 
@@ -459,12 +485,20 @@ final class GradientRow extends ComponentGrid.Row {
     @Override
     void closeEditing() {
         this.picker.commitEditing();
-        this.applyPickerChanged();
+        this.capturePickerChanged();
+        this.flushPendingChange();
     }
 
-    private void applyPickerChanged() {
+    private void capturePickerChanged() {
         if (this.picker.consumeChanged()) {
             this.applyPicker();
+            this.pendingChange = true;
+        }
+    }
+
+    private void flushPendingChange() {
+        if (this.pendingChange) {
+            this.pendingChange = false;
             this.onChange.run();
         }
     }
@@ -512,7 +546,7 @@ final class GradientRow extends ComponentGrid.Row {
         this.stops.add(stop);
         this.stops.sort(Comparator.comparingDouble(value -> value[0]));
         this.select(this.stops.indexOf(stop));
-        this.onChange.run();
+        this.pendingChange = true;
     }
 
     private void deleteSelected() {
@@ -522,7 +556,7 @@ final class GradientRow extends ComponentGrid.Row {
         this.stops.remove(this.selected);
         this.selected = Math.min(this.selected, this.stops.size() - 1);
         this.select(this.selected);
-        this.onChange.run();
+        this.pendingChange = true;
     }
 
     private float biggestGapMidpoint() {

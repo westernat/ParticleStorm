@@ -30,6 +30,7 @@ import org.mesdag.particlestorm.particle.screen.ScreenParticleEmitter;
 
 import java.io.IOException;
 import java.io.Reader;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
@@ -72,6 +73,29 @@ public final class MolangParticleEngine extends MolangParticleManager implements
 
     public Map<ResourceLocation, EmitterPreset> id2Emitter() {
         return id2Emitter;
+    }
+
+    /// 编辑器「保存到内存」：用编辑后的完整效果替换引擎里的同名条目（按 `description.identifier()` 建索引），
+    /// 同时重建它的 [ParticlePreset] / [EmitterPreset]。写完立刻生效：Loaded 下拉、编辑器重新发射、
+    /// 世界里的新发射器都会用这份数据，直到下一次资源重载（重载会按磁盘上的定义覆盖回来）。
+    public void saveEffect(DefinedParticleEffect effect) {
+        ResourceLocation id = effect.description.identifier();
+        ParticlePreset particlePreset = new ParticlePreset(effect);
+        EmitterPreset emitterPreset = new EmitterPreset(effect.description.type(), effect.orderedEmitterComponents, effect.events);
+        for (IComponent component : effect.orderedComponents) {
+            if (component instanceof IParticleComponent particleComponent) {
+                particleComponent.initialize(Minecraft.getInstance().level);
+            }
+        }
+        Map<ResourceLocation, DefinedParticleEffect> effects = new HashMap<>(this.id2Effect);
+        effects.put(id, effect);
+        this.id2Effect = effects;
+        Map<ResourceLocation, ParticlePreset> particles = new HashMap<>(this.id2Particle);
+        particles.put(id, particlePreset);
+        this.id2Particle = particles;
+        Map<ResourceLocation, EmitterPreset> emitters = new HashMap<>(this.id2Emitter);
+        emitters.put(id, emitterPreset);
+        this.id2Emitter = emitters;
     }
 
     @Override

@@ -531,6 +531,12 @@ final class AtlasViewer {
             ensureAlphaBlend();
             if (i == hovered) {
                 guiGraphics.fill(x, y, x + cell - 1, y + cell - 1, 0x30FFFFFF);
+                // `fill` 走 `RenderType.gui()`，顶点先攒在 BufferSource 里，要等 flush 才真正绘制
+                // （这一帧里最近的一次 flush 在 `disableScissor`），而下面 sprite 的 `blit` 是**立即绘制**：
+                // 不主动 flush 的话，高亮底的绘制顺序会排到 sprite 之后，把悬停 sprite 的透明像素糊成白色。
+                guiGraphics.flush();
+                // flush 画完 `RenderType.gui()` 的 `clearRenderState` 会把混合关掉，blit 之前得再压一次
+                ensureAlphaBlend();
             }
             guiGraphics.blit(x + 1, y + 1, 0, cell - 2, cell - 2, this.sprites.get(i));
             int color = i == current ? COLOR_CURRENT

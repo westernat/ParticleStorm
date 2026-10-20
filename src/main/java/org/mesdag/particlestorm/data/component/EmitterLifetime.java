@@ -20,8 +20,8 @@ public abstract sealed class EmitterLifetime implements IEmitterComponent permit
     public static final class Expression extends EmitterLifetime {
         public static final ResourceLocation ID = ResourceLocation.withDefaultNamespace("emitter_lifetime_expression");
         public static final Codec<Expression> CODEC = RecordCodecBuilder.create(instance -> instance.group(
-                FloatMolangExp.CODEC.fieldOf("activation_expression").orElse(FloatMolangExp.ONE).forGetter(Expression::getActivationExpression),
-                FloatMolangExp.CODEC.fieldOf("expiration_expression").orElse(FloatMolangExp.ZERO).forGetter(Expression::getExpirationExpression)
+                FloatMolangExp.CODEC.lenientOptionalFieldOf("activation_expression", FloatMolangExp.ONE).forGetter(Expression::getActivationExpression),
+                FloatMolangExp.CODEC.lenientOptionalFieldOf("expiration_expression", FloatMolangExp.ZERO).forGetter(Expression::getExpirationExpression)
         ).apply(instance, Expression::new));
         private final FloatMolangExp activationExpression;
         private final FloatMolangExp expirationExpression;
@@ -82,8 +82,8 @@ public abstract sealed class EmitterLifetime implements IEmitterComponent permit
     public static final class Looping extends EmitterLifetime {
         public static final ResourceLocation ID = ResourceLocation.withDefaultNamespace("emitter_lifetime_looping");
         public static final Codec<Looping> CODEC = RecordCodecBuilder.create(instance -> instance.group(
-                FloatMolangExp.CODEC.fieldOf("active_time").orElseGet(() -> FloatMolangExp.ofConstant(10)).forGetter(Looping::getActiveTime),
-                FloatMolangExp.CODEC.fieldOf("sleep_time").orElse(FloatMolangExp.ZERO).forGetter(Looping::getSleepTime)
+                FloatMolangExp.CODEC.lenientOptionalFieldOf("active_time", FloatMolangExp.ofConstant(10)).forGetter(Looping::getActiveTime),
+                FloatMolangExp.CODEC.lenientOptionalFieldOf("sleep_time", FloatMolangExp.ZERO).forGetter(Looping::getSleepTime)
         ).apply(instance, Looping::new));
         private final FloatMolangExp activeTime;
         private final FloatMolangExp sleepTime;
@@ -161,7 +161,7 @@ public abstract sealed class EmitterLifetime implements IEmitterComponent permit
     public static final class Once extends EmitterLifetime {
         public static final ResourceLocation ID = ResourceLocation.withDefaultNamespace("emitter_lifetime_once");
         public static final Codec<Once> CODEC = RecordCodecBuilder.create(instance -> instance.group(
-                FloatMolangExp.CODEC.fieldOf("active_time").orElseGet(() -> FloatMolangExp.ofConstant(10)).forGetter(Once::getActiveTime)
+                FloatMolangExp.CODEC.lenientOptionalFieldOf("active_time", FloatMolangExp.ofConstant(10)).forGetter(Once::getActiveTime)
         ).apply(instance, Once::new));
         private final FloatMolangExp activeTime;
 

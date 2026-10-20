@@ -17,7 +17,7 @@ import java.util.List;
 /// `A*x + B*y + C*z + D = 0` with the parameters being `[ A, B, C, D ]`
 public final class ParticleLifetimeKillPlane implements IParticleComponent {
     public static final ResourceLocation ID = ResourceLocation.withDefaultNamespace("particle_kill_plane");
-    public static final Codec<ParticleLifetimeKillPlane> CODEC = Codec.list(Codec.FLOAT, 4, 4).xmap(
+    public static final Codec<ParticleLifetimeKillPlane> CODEC = Codec.FLOAT.listOf(4, 4).xmap(
             floats -> new ParticleLifetimeKillPlane(floats.getFirst(), floats.get(1), floats.get(2), floats.get(3)),
             plane -> List.of(plane.A, plane.B, plane.C, plane.D)
     );

@@ -97,8 +97,19 @@ GUI pass 里 RenderSystem 的状态是：正交像素投影（`0..guiW, 0..guiH,
 ## 6. 顶部工具栏、粒子下拉与场景工具
 
 - 顶部一条工具栏（高 `20`）：
-  - 按钮宽度**按文本动态计算**（`EditorScreen#newButtonWidth/loadedButtonWidth/sceneButtonWidth`）：普通按钮 = 文本宽 + 8px 内边距；下拉按钮 = 文本宽 + 8px 内边距 + 14px 箭头占位；按钮间距 6px，依次排布；
-  - 最左边「New」按钮：新建编辑器文档——默认组件集（steady 发射率 / looping 生命周期 / point 形状 / 初速 / 寿命 / billboard 外观）+ 沿用当前文档的贴图与材质，identifier 为 `particlestorm:new_particle`（可在描述页签改），清场景后用新效果重新发射；
+  - 按钮宽度**按文本动态计算**（`EditorScreen#fileButtonWidth/loadedButtonWidth/sceneButtonWidth`）：普通按钮 = 文本宽 + 8px 内边距；下拉按钮 = 文本宽 + 8px 内边距 + 14px 箭头占位；按钮间距 6px，依次排布；
+  - 最左边「File」下拉按钮（`particle_editor.file`），和 Loaded/Scene 一样是下拉列表，三项：
+    - **New / 新建**：新建编辑器文档——默认组件集（steady 发射率 / looping 生命周期 / point 形状 / 初速 / 寿命 / billboard 外观）+ 沿用当前文档的贴图与材质，identifier 为 `particlestorm:new_particle`（可在描述页签改），清场景后用新效果重新发射；
+    - **Save / 保存（保存到内存）**：把编辑器里当前编辑的完整效果写回 `MolangParticleEngine`
+      （`MolangParticleEngine#saveEffect`）：用 `ParticlePreset` / `EmitterPreset` 重建该 id 的预设，
+      并按 `description.identifier()` 覆盖 `id2Effect` / `id2Particle` / `id2Emitter`（`HashMap` 拷贝后替换引用，不破坏别的条目）。
+      保存后立刻刷新 Loaded 下拉、选中该 id 并清场景重新发射——内存里的数据一直有效到下一次资源重载
+      （重载会按磁盘上的定义覆盖回来）。成功显示绿色「已保存到内存：<id>」，失败显示红色「保存失败：<原因>」；
+    - **Export / 导出（写盘）**：把编辑器里当前编辑的完整效果按引擎的粒子定义格式写盘：
+      `{"format_version": "1.10.0", "particle_effect": <DefinedParticleEffect.CODEC 编码结果>}`
+      → `<游戏目录>/particlestorm/editor/<namespace>/<path>.particle.json`（id 里的 `/` 换成 `_`），
+      编码/写盘失败时在左下角显示红色错误，成功则显示绿色「已导出：<相对路径>」；文件可以直接拷进资源包的
+      `assets/<namespace>/particle_definitions/` 里被引擎加载（引擎按 `description.identifier` 建索引，文件名不参与 id）；
   - 「Loaded」下拉按钮（只显示 `Loaded`，不显示粒子 id；当前粒子内容见左侧工具框「描述」页）；
   - 「Scene」下拉按钮（场景工具）；
   - 两个播放控制按钮（18px 方形图标按钮，紧跟 Scene 之后）：
@@ -166,11 +177,13 @@ GUI pass 里 RenderSystem 的状态是：正交像素投影（`0..guiW, 0..guiH,
     - `Gradient`（`ParticleAppearanceTinting$Color`）：`interpolant` 表达式行 + `range` 行（**色标位置 × range = 渐变键**，即用 range 自动计算 gradient；载入时 range 取 `gradient.range`、位置 = 键 / range）+ 一条横向渐变条：
       - 渐变条按每个色标的颜色逐像素插值预览，每个色标是一个色块，**长按左键可左右拖动**（拖动时不能越过相邻色标）；
       - 条右侧 `+` 添加色标：插到最大空隙中间、颜色取该点插值结果、**插入后自动选中**；
-      - 选中色标后下方展开调色盘（改颜色即时生效）和 `×` 删除（至少保留一个色标）；
+      - 选中色标后下方展开调色盘（拖动只改草稿，**松手**才把颜色写进组件并重新发射）和 `×` 删除（至少保留一个色标）；
     - `Expression`（`ColorField` 表达式）：红 / 绿 / 蓝 / 透明四个通道各一行 molang 表达式；
     - 载入分类：`colorField` 非空时全常量 → Static、否则 → Expression；`colorField == EMPTY` → Gradient。渐变/Static 的色标与常量在编辑器里只能编辑常量颜色，所以载入时会把表达式折叠成常量（渐变里的表达式通道也按常量读）；
     - `build()` 只填当前模式那一边、另一边写 `EMPTY`（与 codec 写回时选 Either 的逻辑一致）；`range` 非法或非正数时抛 `IllegalArgumentException`（宿主显示错误、保留旧组件）；
-  - 拖拽交互走 `Row#mouseDragged` / `#mouseReleased`（默认 no-op）：`ComponentGrid` → `ComponentsTab` 逐层转发，`EditorScreen#mouseDragged` 先把拖动交给当前页签（页签不消费才走相机），拖拽过程中 `consumeChanged()` 也会立刻重建组件并重新发射；
+  - 拖拽交互走 `Row#mouseDragged` / `#mouseReleased`（默认 no-op）：`ComponentGrid` → `ComponentsTab` 逐层转发，`EditorScreen#mouseDragged` 先把拖动交给当前页签（页签不消费才走相机）；
+  - **拖拽不逐帧重建**：重建组件会清场景重新发射，拖着调色盘 / 渐变色标就是不停重放粒子。`PickerRow`、`GradientRow` 拖动期间只改内部草稿并记 `pendingChange`，
+    `mouseReleased`（以及单击读数格子、`+` / `×`、`ENTER` 提交这类离散操作）才 `flushPendingChange()` 调一次 `onChange` → `markChanged()` → 重建组件并重新发射；拖拽全程 `consumeChanged()` 保持 false；
   - **按模式显隐的行**：`ParticleAppearanceBillboardGrid` 的 `direction_mode` = 由速度推导时只显示 `min_speed_threshold`，= 自定义方向时只显示 `custom_direction`（下拉切换后 `rebuildRows()`，`load()` 末尾也重建行，不再持有行字段引用）；`EmitterShapeGrid` 同理：`direction` 选「自定义」才显示 `custom_direction`，`plane_normal` 选「自定义」才显示 `custom_plane`；
   - **不用 codec**：Grid 的 `build()` 直接用当前字段 **new 一个新组件** 替换 `effect.components`，再清场景并重新发射；
   - 内置 Grid 在 `editor/ComponentGrids` 注册，注册 id 全部直接用组件类的 `ID` 常量（Grid 本身不持有 id 字段）；**自定义组件**可在模组总线监听 `api/RegisterComponentGridEvent` 注册自己的 Grid（`register(MyComponent.ID, (screen, font) -> new MyGrid(...))`，多子类型用 `register(defaultId, label, variants, required, factory)`）；
@@ -191,7 +204,13 @@ GUI pass 里 RenderSystem 的状态是：正交像素投影（`0..guiW, 0..guiH,
     - 其它类型：每个节点一行 molang 表达式文本，`+` 追加、每条自带 `-` 删除；
     - 底部可「删除曲线」；
   - 切类型时草稿会自动把另一种节点表示补齐（`values` ↔ `nodes` 互转），不会出现空的节点列表导致引擎崩；
-  - 数据是草稿，改动后整体重建 `curves` map → 替换 `screen.effect` → 清场景重新发射；文案键 `particle_editor.curve.*`。- **描述页 `DescriptionTab`**：description 编辑的**全部入口都在这一个页签里**——ParticleDescription 表单（`identifier`、`type`、`material`、`texture` 四行）连同编辑框/下拉都由这个页签负责，不再散落在 `EditorScreen` 里；四行标签用 `particle_editor.description.<field>` 翻译键（lang 已补）；**行布局和组件 Grid 一致：标签在上、值缩进在下一行**（行高 24，`LABEL_Y=2` / `VALUE_Y=13` / `VALUE_X=12`），type / material 的值行右侧有下拉箭头，下拉列表展开在行下方；
+  - 数据是草稿，改动后整体重建 `curves` map → 替换 `screen.effect` → 清场景重新发射；拖节点松手（`mouseReleased`）与按键/点击都会 `flushDirty()` 立刻落地；文案键 `particle_editor.curve.*`。
+  - **坑（已修）**：换曲线时 `effect.components` 是原样复用的，而 `MolangExp#compile` 把结果缓存在 exp 对象上、绑死当时的 `Variable`，
+    曲线变量原本又闭包捕获构建时的 `ParticleCurve`，于是「改曲线后引用它的组件（如广告牌外观）不更新」。现在
+    `ParticlePreset` 注册的曲线变量改成**按名字晚绑定**：求值时用 `((IMolangParticleInstance) instance).getPreset().effect.curves.get(曲线名)`
+    现查实例所属预设的曲线，旧表达式也能读到新曲线；非粒子实例（发射器侧求值）退回构建时那条曲线，曲线被删则返回 0。
+    这样不用重建组件对象，也不会把编辑器里的曲线改动漏给引擎的同名预设（世界里的粒子仍按加载时的定义走，除非点了 Save）。
+- **描述页 `DescriptionTab`**：description 编辑的**全部入口都在这一个页签里**——ParticleDescription 表单（`identifier`、`type`、`material`、`texture` 四行）连同编辑框/下拉都由这个页签负责，不再散落在 `EditorScreen` 里；四行标签用 `particle_editor.description.<field>` 翻译键（lang 已补）；**行布局和组件 Grid 一致：标签在上、值缩进在下一行**（行高 24，`LABEL_Y=2` / `VALUE_Y=13` / `VALUE_X=12`），type / material 的值行右侧有下拉箭头，下拉列表展开在行下方；
   - `identifier` 可编辑：点击行打开原版 `EditBox`（盖在该行的**值行**上，是否在编辑直接看 `identifierBox.isFocused()`），`ENTER` 提交、`ESC` 取消、点别处取消，提交时 `ResourceLocation.tryParse` 校验；新 id 只存在于编辑器文档里（引擎数据不变）；
   - `type` 为**下拉框**：值来自 `RegisterCustomParticleTypeEvent.map()` 的已注册粒子类型（按注册名排序显示），选中即生效；
   - `material` 为**下拉框**：值来自 `DescriptionMaterial.values()`（`@ApiStatus.Internal`，与 CODEC 共用同一份 `values` 数组），显示名走翻译键 `particle_editor.minecraft.material.<serialized_name>`（如 `particle_sheet_translucent` → 「粒子贴图集（半透明）」），值行显示同一个翻译名；其它模组注册的自定义材质没有翻译时原样显示序列化名；
@@ -206,6 +225,7 @@ GUI pass 里 RenderSystem 的状态是：正交像素投影（`0..guiW, 0..guiH,
     - sprite 集合**不用下标索引**：`ExtendMutableSpriteSet` 内部是 `Map<ResourceLocation, TextureAtlasSprite>`，渲染时 `MolangParticleInstance` 直接 `sprites.get(parameters.texture())`；所以资源重载后集合重建也不会串图，`EditorScreen#spawnEmitter` 发射前只做一次「按贴图名登记」的兜底（`ensureSpriteRegistered()`，换材质时同样处理，找不到就落到 missing）；
     - **面板布局**：四周各留 16px；顶栏两行（第一行标题 + 右侧悬停 sprite / 搜索状态，第二行搜索框 + 提示 + 视图切换按钮，文本都按可用宽度截断），顶栏与内容区之间有分隔线；内容区统一内缩 4px，命中判定和绘制共用同一套 `layout()` 算出来的坐标；
     - **混合状态**：图集贴图是带 alpha 的，而 GUI 的 blit 底层 `GuiGraphics#innerBlit` 的 10 参数重载**只管画不管混合函数**，16/20 参数重载画完还会 `disableBlend()`；编辑器场景 pass 里 `PARTICLE_ADD` 材质又会 `blendFunc(SRC_ALPHA, ONE)` 且不还原。所以 `EditorScreen#render` 在画 overlay 前复位 GUI 状态，`AtlasViewer` 在**每一次画图集 / sprite 之前**都调用 `ensureAlphaBlend()`：`setShaderColor(1,1,1,1)` + 直接压 GL（`GlStateManager._enableBlend()` + `_blendFuncSeparate(SRC_ALPHA, ONE_MINUS_SRC_ALPHA, ONE, ZERO)`），不依赖 `RenderSystem` 的缓存状态；
+    - **绘制顺序（坑）**：`fill` / `renderOutline` 走 `RenderType`，顶点先攒在 `GuiGraphics` 的 BufferSource 里，要等 flush 才真正绘制（这一帧最近的 flush 在 `disableScissor`；`enableScissor` 也会顺手 flush 掉面板底色和顶栏），而 sprite 的 `blit` 是**立即绘制**。所以格子视图里悬停格的白色高亮底必须在 `blit` 前手动 `guiGraphics.flush()`，否则它会排到 sprite 之后、把悬停 sprite 的透明像素糊成白色（看起来就是「半透明失效」）；flush 完之后 `RenderType.gui()` 的 `clearRenderState` 会关掉混合，需要再 `ensureAlphaBlend()` 一次；
     - 未移植（编辑器用不上）：图集下拉切换、隐藏 padding、高亮动画/坏 mip、导出图集、mip 等级滑块、右键 sprite 详情页；
 - **换粒子时**：先 `this.effect = id2Effect().get(id)`，再清场景并 `spawnEmitter(id)`（之前的修改不会带到别的粒子）；随后调用 `onEffectReplaced()`：遍历所有页签执行 `EditorTab#onEffectReplaced`（默认收起编辑，`ComponentsTab` 直接丢弃打开的 Grid / 下拉 / 滚动偏移，**不提交旧 Grid 的改动**），再切回**描述页**（`DESCRIPTION_TAB = 0`）；「新建」同样会走这套重置；
 - **组件 / 事件 / 曲线页**都已可编辑（组件 Grid、事件节点树、曲线编辑器）。
@@ -242,7 +262,8 @@ GUI pass 里 RenderSystem 的状态是：正交像素投影（`0..guiW, 0..guiH,
 - [ ] 实体绑定预览（把发射器 attach 到预览实体）；
 - [ ] 材质/深度：若某效果确实需要“硬遮挡”的半透明粒子，应使用 `particles_opaque` / `particle_sheet_opaque` 材质，而不是让 BLEND 写深度；
 - [ ] 工具框编辑能力：描述页 `identifier` / `type` / `material` 已可改，`texture` 只读；组件 / 事件 / 曲线页均已可编辑；
-- [ ] 导出/写回：编辑只影响编辑器缓存（通过重建发射器生效），暂不写回引擎数据或导出 JSON；改 `texture` 还需要重新绑定 sprite。
+- [x] 保存 / 导出：File 下拉里的 **Save** 写回引擎内存（`MolangParticleEngine#saveEffect`，立即生效到重载为止），**Export** 按引擎定义格式写盘成 `.particle.json`；两者都用 `DefinedParticleEffect.CODEC` 编码，组件/事件/曲线页的编辑结果因此能一起带出去；
+- [ ] 改 `texture` 后还需要重新绑定 sprite（导出/保存只带数据，不带图集绑定）。
 
 ## 9. 决策记录
 

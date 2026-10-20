@@ -44,10 +44,10 @@ public record ParticleMotionDynamic(
 ) implements IParticleComponent {
     public static final ResourceLocation ID = ResourceLocation.withDefaultNamespace("particle_motion_dynamic");
     public static final Codec<ParticleMotionDynamic> CODEC = RecordCodecBuilder.create(instance -> instance.group(
-            FloatMolangExp3.CODEC.fieldOf("linear_acceleration").orElse(FloatMolangExp3.ZERO).forGetter(ParticleMotionDynamic::linerAcceleration),
-            FloatMolangExp.CODEC.fieldOf("linear_drag_coefficient").orElse(FloatMolangExp.ZERO).forGetter(ParticleMotionDynamic::linearDragCoefficient),
-            FloatMolangExp.CODEC.fieldOf("rotation_acceleration").orElse(FloatMolangExp.ZERO).forGetter(ParticleMotionDynamic::rotationAcceleration),
-            FloatMolangExp.CODEC.fieldOf("rotation_drag_coefficient").orElse(FloatMolangExp.ZERO).forGetter(ParticleMotionDynamic::rotationDragCoefficient)
+            FloatMolangExp3.CODEC.lenientOptionalFieldOf("linear_acceleration", FloatMolangExp3.ZERO).forGetter(ParticleMotionDynamic::linerAcceleration),
+            FloatMolangExp.CODEC.lenientOptionalFieldOf("linear_drag_coefficient", FloatMolangExp.ZERO).forGetter(ParticleMotionDynamic::linearDragCoefficient),
+            FloatMolangExp.CODEC.lenientOptionalFieldOf("rotation_acceleration", FloatMolangExp.ZERO).forGetter(ParticleMotionDynamic::rotationAcceleration),
+            FloatMolangExp.CODEC.lenientOptionalFieldOf("rotation_drag_coefficient", FloatMolangExp.ZERO).forGetter(ParticleMotionDynamic::rotationDragCoefficient)
     ).apply(instance, ParticleMotionDynamic::new));
 
     @Override

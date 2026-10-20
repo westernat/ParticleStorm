@@ -25,7 +25,7 @@ public record ParticleAppearanceBillboard(FloatMolangExp2 size, FaceCameraMode f
             FloatMolangExp2.CODEC.fieldOf("size").forGetter(ParticleAppearanceBillboard::size),
             NeoForgeExtraCodecs.aliasedFieldOf(FaceCameraMode.CODEC, "face_camera_mode", "facing_camera_mode").forGetter(ParticleAppearanceBillboard::faceCameraMode),
             Direction.CODEC.lenientOptionalFieldOf("direction", Direction.DEFAULT).forGetter(ParticleAppearanceBillboard::direction),
-            UV.CODEC.fieldOf("uv").orElse(UV.EMPTY).forGetter(ParticleAppearanceBillboard::uv)
+            UV.CODEC.lenientOptionalFieldOf("uv", UV.EMPTY).forGetter(ParticleAppearanceBillboard::uv)
     ).apply(instance, ParticleAppearanceBillboard::new));
 
     @Override
@@ -185,10 +185,10 @@ public record ParticleAppearanceBillboard(FloatMolangExp2 size, FaceCameraMode f
     public record Direction(Mode mode, float minSpeedThreshold, FloatMolangExp3 customDirection) {
         public static final Direction DEFAULT = new Direction(Direction.Mode.DERIVE_FROM_VELOCITY, 0.01F, FloatMolangExp3.ZERO);
         public static final MapCodec<Direction> CUSTOM_MODE_CODEC = RecordCodecBuilder.mapCodec(instance -> instance.group(
-                FloatMolangExp3.CODEC.fieldOf("custom_direction").orElse(FloatMolangExp3.ZERO).forGetter(Direction::customDirection)
+                FloatMolangExp3.CODEC.lenientOptionalFieldOf("custom_direction", FloatMolangExp3.ZERO).forGetter(Direction::customDirection)
         ).apply(instance, l -> new Direction(Mode.CUSTOM_DIRECTION, 0, l)));
         public static final MapCodec<Direction> SPEED_MODE_CODEC = RecordCodecBuilder.mapCodec(instance -> instance.group(
-                Codec.FLOAT.fieldOf("min_speed_threshold").orElse(0.01F).forGetter(Direction::minSpeedThreshold)
+                Codec.FLOAT.lenientOptionalFieldOf("min_speed_threshold", 0.01F).forGetter(Direction::minSpeedThreshold)
         ).apply(instance, f -> new Direction(Mode.DERIVE_FROM_VELOCITY, f, FloatMolangExp3.ZERO)));
         public static final Codec<Direction> CODEC = Mode.CODEC.dispatchMap(
                 "mode", Direction::mode, mode -> mode == Mode.CUSTOM_DIRECTION ? CUSTOM_MODE_CODEC : SPEED_MODE_CODEC
@@ -238,9 +238,9 @@ public record ParticleAppearanceBillboard(FloatMolangExp2 size, FaceCameraMode f
         public static final Codec<UV> CODEC = RecordCodecBuilder.create(instance -> instance.group(
                 NeoForgeExtraCodecs.aliasedFieldOf(ExtraCodecs.POSITIVE_INT, "texturewidth", "texture_width").orElse(1).forGetter(UV::texturewidth),
                 NeoForgeExtraCodecs.aliasedFieldOf(ExtraCodecs.POSITIVE_INT, "textureheight", "texture_height").orElse(1).forGetter(UV::textureheight),
-                FloatMolangExp2.CODEC.fieldOf("uv").orElse(FloatMolangExp2.ZERO).forGetter(UV::uv),
-                FloatMolangExp2.CODEC.fieldOf("uv_size").orElse(FloatMolangExp2.ZERO).forGetter(UV::uvSize),
-                Flipbook.CODEC.fieldOf("flipbook").orElse(Flipbook.EMPTY).forGetter(UV::flipbook)
+                FloatMolangExp2.CODEC.lenientOptionalFieldOf("uv", FloatMolangExp2.ZERO).forGetter(UV::uv),
+                FloatMolangExp2.CODEC.lenientOptionalFieldOf("uv_size", FloatMolangExp2.ZERO).forGetter(UV::uvSize),
+                Flipbook.CODEC.lenientOptionalFieldOf("flipbook", Flipbook.EMPTY).forGetter(UV::flipbook)
         ).apply(instance, UV::new));
 
         @Override
@@ -266,7 +266,7 @@ public record ParticleAppearanceBillboard(FloatMolangExp2 size, FaceCameraMode f
         /// @param stretchToLifetime Optional, adjust fps to match lifetime of particle. Default=false
         /// @param loop              Optional, makes the animation loop when it reaches the end? Default=false
         public record Flipbook(FloatMolangExp2 baseUV, FloatMolangExp2 sizeUV, FloatMolangExp2 stepUV, float framesPerSecond, FloatMolangExp maxFrame, boolean stretchToLifetime, boolean loop) {
-            public static final Flipbook EMPTY = new Flipbook(FloatMolangExp2.ZERO, FloatMolangExp2.ZERO, FloatMolangExp2.ZERO, 0, FloatMolangExp.ZERO, false, false);
+            public static final Flipbook EMPTY = new Flipbook(FloatMolangExp2.ZERO, FloatMolangExp2.ZERO, FloatMolangExp2.ZERO, 1, FloatMolangExp.ZERO, false, false);
             public static final Codec<Flipbook> CODEC = RecordCodecBuilder.create(instance -> instance.group(
                     FloatMolangExp2.CODEC.lenientOptionalFieldOf("base_UV", FloatMolangExp2.ZERO).forGetter(Flipbook::baseUV),
                     FloatMolangExp2.CODEC.lenientOptionalFieldOf("size_UV", FloatMolangExp2.ZERO).forGetter(Flipbook::sizeUV),

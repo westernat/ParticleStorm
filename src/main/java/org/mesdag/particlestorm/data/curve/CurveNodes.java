@@ -15,7 +15,7 @@ public final class CurveNodes {
             map -> new CurveNodes(Either.left(map)),
             nodes -> nodes.either.left().orElseThrow()
     );
-    public static final Codec<CurveNodes> LIST_CODEC = Codec.list(FloatMolangExp.CODEC).xmap(
+    public static final Codec<CurveNodes> LIST_CODEC = FloatMolangExp.CODEC.listOf().xmap(
             list -> new CurveNodes(Either.right(list)),
             nodes -> nodes.either.right().orElseThrow()
     );

@@ -10,7 +10,7 @@ import java.util.Objects;
 
 public record FloatMolangExpList(int size, List<FloatMolangExp> expressions) {
     public static final FloatMolangExpList EMPTY = new FloatMolangExpList(0, List.of());
-    public static final Codec<FloatMolangExpList> CODEC = Codec.either(FloatMolangExp.CODEC, Codec.list(FloatMolangExp.CODEC)).xmap(
+    public static final Codec<FloatMolangExpList> CODEC = Codec.either(FloatMolangExp.CODEC, FloatMolangExp.CODEC.listOf()).xmap(
             either -> either.map(e -> new FloatMolangExpList(1, Collections.singletonList(e)), l -> new FloatMolangExpList(l.size(), l)),
             list -> list.size() == 1 ? Either.left(list.expressions.getFirst()) : Either.right(list.expressions)
     );

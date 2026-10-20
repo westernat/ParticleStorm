@@ -5,10 +5,7 @@ import net.minecraft.client.particle.ParticleRenderType;
 import net.neoforged.fml.ModLoader;
 import org.jetbrains.annotations.Nullable;
 import org.mesdag.particlestorm.PSGameClient;
-import org.mesdag.particlestorm.api.IEventNode;
-import org.mesdag.particlestorm.api.IParticleComponent;
-import org.mesdag.particlestorm.api.MolangInstance;
-import org.mesdag.particlestorm.api.ParticlePresetLoadedEvent;
+import org.mesdag.particlestorm.api.*;
 import org.mesdag.particlestorm.data.DefinedParticleEffect;
 import org.mesdag.particlestorm.data.component.*;
 import org.mesdag.particlestorm.data.curve.ParticleCurve;
@@ -95,6 +92,7 @@ public class ParticlePreset {
         this.motionDynamic = effect.components.containsKey(ParticleMotionDynamic.ID);
         this.initialization = (ParticleInitialization) effect.components.get(ParticleInitialization.ID);
         for (Map.Entry<String, ParticleCurve> entry : effect.curves.entrySet()) {
+            String curveKey = entry.getKey();
             ParticleCurve curve = entry.getValue();
             curve.input.compile(parser);
             curve.horizontalRange.compile(parser);
@@ -103,8 +101,19 @@ public class ParticlePreset {
                     exp.compile(parser);
                 }
             });
-            String name = applyPrefixAliases(entry.getKey(), "variable.", "v.");
-            table.table.put(name, new Variable(name, p -> curve.calculate(p, name)));
+            String name = applyPrefixAliases(curveKey, "variable.", "v.");
+            // 变量值**不闭包捕获**这里的 `curve`：组件表达式编译一次就把这个 Variable 焊死在表达式树里，
+            // 而编辑器换曲线时只重建 `DefinedParticleEffect` 外壳（`effect.components` 原样复用），
+            // 捕获旧曲线会让「改曲线后引用它的组件（广告牌外观等）永远读旧值」。
+            // 这里按曲线名去**实例所属预设**的 `effect#curves` 里现查：编辑器重新发射换了曲线，旧表达式也能读到新曲线；
+            // 非粒子实例（发射器侧求值）拿不到粒子预设，退回构建时的那条曲线。
+            table.table.put(name, new Variable(name, p -> {
+                if (p instanceof IMolangParticleInstance particle) {
+                    ParticleCurve latest = particle.getPreset().effect.curves.get(curveKey);
+                    return latest == null ? 0.0F : latest.calculate(p, name);
+                }
+                return curve.calculate(p, name);
+            }));
         }
         for (IParticleComponent component : Iterables.concat(effect.orderedParticleEarlyComponents, effect.orderedParticleComponents)) {
             assert component != null;

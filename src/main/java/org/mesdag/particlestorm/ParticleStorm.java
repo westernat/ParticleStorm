@@ -28,7 +28,10 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 
 @Mod(ParticleStorm.MODID)
@@ -89,5 +92,12 @@ public final class ParticleStorm {
                 return MolangParticleOption.STREAM_CODEC;
             }
         });
+    }
+
+    public static <A> MapCodec<A> lenientOptionalFieldOf(Codec<A> codec, String name, Supplier<? extends A> value) {
+        return Codec.optionalField(name, codec, true).xmap(
+                o -> o.orElse(value.get()),
+                a -> Objects.equals(a, value.get()) ? Optional.empty() : Optional.of(a)
+        );
     }
 }

@@ -14,9 +14,9 @@ import java.util.Map;
 
 public final class ParticleCurve {
     public static final Codec<ParticleCurve> CODEC = RecordCodecBuilder.create(instance -> instance.group(
-            CurveType.CODEC.fieldOf("type").orElse(CurveType.LINEAR).forGetter(curve -> curve.type),
+            CurveType.CODEC.lenientOptionalFieldOf("type", CurveType.LINEAR).forGetter(curve -> curve.type),
             FloatMolangExp.CODEC.fieldOf("input").forGetter(curve -> curve.input),
-            FloatMolangExp.CODEC.fieldOf("horizontal_range").orElse(FloatMolangExp.ONE).forGetter(curve -> curve.horizontalRange),
+            FloatMolangExp.CODEC.lenientOptionalFieldOf("horizontal_range", FloatMolangExp.ONE).forGetter(curve -> curve.horizontalRange),
             Codec.either(CurveNodes.MAP_CODEC, CurveNodes.LIST_CODEC).xmap(
                     either -> either.left().orElse(either.right().orElseThrow()),
                     nodes -> nodes.isLeft ? Either.left(nodes) : Either.right(nodes)

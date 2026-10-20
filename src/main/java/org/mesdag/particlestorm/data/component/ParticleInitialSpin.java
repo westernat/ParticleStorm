@@ -18,8 +18,8 @@ import java.util.List;
 public record ParticleInitialSpin(FloatMolangExp rotation, FloatMolangExp rotationRate) implements IParticleComponent {
     public static final ResourceLocation ID = ResourceLocation.withDefaultNamespace("particle_initial_spin");
     public static final Codec<ParticleInitialSpin> CODEC = RecordCodecBuilder.create(instance -> instance.group(
-            FloatMolangExp.CODEC.fieldOf("rotation").orElse(FloatMolangExp.ZERO).forGetter(ParticleInitialSpin::rotation),
-            FloatMolangExp.CODEC.fieldOf("rotation_rate").orElse(FloatMolangExp.ZERO).forGetter(ParticleInitialSpin::rotationRate)
+            FloatMolangExp.CODEC.lenientOptionalFieldOf("rotation", FloatMolangExp.ZERO).forGetter(ParticleInitialSpin::rotation),
+            FloatMolangExp.CODEC.lenientOptionalFieldOf("rotation_rate", FloatMolangExp.ZERO).forGetter(ParticleInitialSpin::rotationRate)
     ).apply(instance, ParticleInitialSpin::new));
 
     @Override

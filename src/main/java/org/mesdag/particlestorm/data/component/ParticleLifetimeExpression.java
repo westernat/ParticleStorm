@@ -22,8 +22,8 @@ import java.util.List;
 public record ParticleLifetimeExpression(FloatMolangExp expirationExpression, FloatMolangExp maxLifetime) implements IParticleComponent {
     public static final ResourceLocation ID = ResourceLocation.withDefaultNamespace("particle_lifetime_expression");
     public static final Codec<ParticleLifetimeExpression> CODEC = RecordCodecBuilder.create(instance -> instance.group(
-            FloatMolangExp.CODEC.fieldOf("expiration_expression").orElse(FloatMolangExp.ZERO).forGetter(ParticleLifetimeExpression::expirationExpression),
-            FloatMolangExp.CODEC.fieldOf("max_lifetime").orElse(FloatMolangExp.ZERO).forGetter(ParticleLifetimeExpression::maxLifetime)
+            FloatMolangExp.CODEC.lenientOptionalFieldOf("expiration_expression", FloatMolangExp.ZERO).forGetter(ParticleLifetimeExpression::expirationExpression),
+            FloatMolangExp.CODEC.lenientOptionalFieldOf("max_lifetime", FloatMolangExp.ZERO).forGetter(ParticleLifetimeExpression::maxLifetime)
     ).apply(instance, ParticleLifetimeExpression::new));
 
     @Override

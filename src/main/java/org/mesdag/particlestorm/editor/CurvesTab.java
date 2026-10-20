@@ -405,6 +405,9 @@ final class CurvesTab extends EditorTab {
             this.pendingRebuild = false;
             this.rowsDirty = true;
         }
+        // 拖节点改值只在松手时重建行；这里顺便把草稿落地（`markDirty` 之后通常要等下一次点击/按键才 apply，
+        // 否则拖完松手预览里既不重发粒子、曲线变量也不生效）
+        this.flushDirty();
         return handled;
     }
 

@@ -1,9 +1,13 @@
 package org.mesdag.particlestorm.editor;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonObject;
 import com.mojang.blaze3d.platform.Lighting;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.*;
 import com.mojang.datafixers.util.Either;
+import com.mojang.serialization.JsonOps;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.ints.IntArrays;
 import net.minecraft.client.Camera;
@@ -43,6 +47,9 @@ import org.mesdag.particlestorm.particle.MolangParticleManager;
 import org.mesdag.particlestorm.particle.ParticleEmitter;
 import org.mesdag.particlestorm.particle.screen.IParticleManagerScreen;
 
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.*;
 import java.util.function.Consumer;
 
@@ -133,6 +140,7 @@ public class EditorScreen extends Screen implements IParticleManagerScreen {
     /// 工具框页签（描述 / 组件 / 事件 / 曲线），当前页签由 [EditorTab] 自己负责内容区。
     private List<EditorTab> tabs = List.of();
     private int activeTabIndex;
+    private DropdownWidget fileDropdown;
     private DropdownWidget loadedDropdown;
     private DropdownWidget sceneDropdown;
     /// 本次 overlay 渲染中，悬停在被截断文本上时要显示的完整文本。
@@ -140,6 +148,8 @@ public class EditorScreen extends Screen implements IParticleManagerScreen {
     /// 悬停在被截断的 Molang 文本上时显示的完整文本（用 [MolangSyntax] 着色绘制）。
     @Nullable String highlightedTooltip;
     @Nullable Component error;
+    /// 文件下拉里「保存」的状态提示（绿色一行，null = 不显示）。
+    @Nullable Component status;
     /// 场景暂停开关（工具栏「⏸ / ▶」）：暂停时不推进 manager，粒子冻结在当前位置。
     boolean playing = true;
     @Nullable Float pausePartialTick;
@@ -196,6 +206,7 @@ public class EditorScreen extends Screen implements IParticleManagerScreen {
         };
         this.camera = new PreviewCamera();
         this.frustum = new Frustum(new Matrix4f(), new Matrix4f());
+        this.fileDropdown = new DropdownWidget(this.fileButtonX(), TOOLBAR_HEIGHT, this.fileButtonWidth(), TOOLBAR_ROW_HEIGHT);
         this.loadedDropdown = new DropdownWidget(this.loadedButtonX(), TOOLBAR_HEIGHT, this.loadedButtonWidth(), TOOLBAR_ROW_HEIGHT);
         this.sceneDropdown = new DropdownWidget(this.sceneButtonX(), TOOLBAR_HEIGHT, this.sceneButtonWidth(), TOOLBAR_ROW_HEIGHT);
         this.tabs = List.of(
@@ -509,8 +520,8 @@ public class EditorScreen extends Screen implements IParticleManagerScreen {
             return true;
         }
         // 按钮先处理（再次点击按钮 = 关闭它自己）；toggleMenu → closeMenus 会顺带收起页签里的编辑/下拉
-        if (button == 0 && this.mouseOverNewButton(mouseX, mouseY)) {
-            this.newEffect();
+        if (button == 0 && this.mouseOverFileButton(mouseX, mouseY)) {
+            this.toggleMenu(this.fileDropdown);
             return true;
         }
         if (button == 0 && this.mouseOverLoadedButton(mouseX, mouseY)) {
@@ -548,6 +559,18 @@ public class EditorScreen extends Screen implements IParticleManagerScreen {
             this.closeVariablesPanel();
         }
         // 下拉展开时优先处理（列表从 y=20 开始，和左侧工具框区域重叠，否则点列表项会被工具框吃掉）
+        if (button == 0 && this.fileDropdown.isOpen()) {
+            int index = this.fileDropdown.hitTest(mouseX, mouseY);
+            this.fileDropdown.close();
+            if (index == 0) {
+                this.newEffect();
+            } else if (index == 1) {
+                this.saveEffect();
+            } else if (index == 2) {
+                this.exportEffect();
+            }
+            return true;
+        }
         if (button == 0 && this.loadedDropdown.isOpen()) {
             this.selectLoaded(this.loadedDropdown.hitTest(mouseX, mouseY));
             this.loadedDropdown.close();
@@ -658,7 +681,7 @@ public class EditorScreen extends Screen implements IParticleManagerScreen {
             return true;
         }
         // 指针在展开的下拉列表上时，滚轮滚动列表而不是缩放场景
-        for (DropdownWidget widget : List.of(this.loadedDropdown, this.sceneDropdown)) {
+        for (DropdownWidget widget : List.of(this.fileDropdown, this.loadedDropdown, this.sceneDropdown)) {
             if (widget.contains(mouseX, mouseY)) {
                 widget.scroll(scrollY);
                 return true;
@@ -721,7 +744,7 @@ public class EditorScreen extends Screen implements IParticleManagerScreen {
             return true;
         }
         if (keyCode == 256) { // ESC：关闭工具栏下拉
-            if (this.loadedDropdown.isOpen() || this.sceneDropdown.isOpen()) {
+            if (this.fileDropdown.isOpen() || this.loadedDropdown.isOpen() || this.sceneDropdown.isOpen()) {
                 this.closeMenus();
                 return true;
             }
@@ -761,6 +784,9 @@ public class EditorScreen extends Screen implements IParticleManagerScreen {
                 this.manager.totalEmitterCount(), this.manager.totalParticleCount(), Minecraft.fps);
         guiGraphics.drawString(this.font, stats, this.width - this.font.width(stats) - 8, 6, 0xFFFFFF, true);
         int textX = this.toolboxWidth() + 6;
+        if (this.status != null) {
+            guiGraphics.drawString(this.font, this.status, textX, this.height - 36, 0x55FF55, true);
+        }
         if (this.error != null) {
             guiGraphics.drawString(this.font, this.error, textX, this.height - 24, 0xFF5555, true);
         }
@@ -859,13 +885,14 @@ public class EditorScreen extends Screen implements IParticleManagerScreen {
     private void renderToolbar(GuiGraphics guiGraphics, int mouseX, int mouseY) {
         guiGraphics.fill(0, 0, this.width, TOOLBAR_HEIGHT, 0xF0181820);
 
-        // 「New」按钮：宽 = 文本宽 + 内边距
-        int newWidth = this.newButtonWidth();
-        String newLabel = this.newButtonText();
-        guiGraphics.fill(NEW_X, TOOLBAR_BUTTON_Y, NEW_X + newWidth, TOOLBAR_BUTTON_Y + TOOLBAR_BUTTON_HEIGHT,
-                this.mouseOverNewButton(mouseX, mouseY) ? 0xFF3A3A48 : 0xFF2A2A34);
-        guiGraphics.renderOutline(NEW_X, TOOLBAR_BUTTON_Y, newWidth, TOOLBAR_BUTTON_HEIGHT, 0xFF4A4A58);
-        guiGraphics.drawString(this.font, newLabel, NEW_X + (newWidth - this.font.width(newLabel)) / 2, TOOLBAR_BUTTON_Y + 4, 0xFFFFFF, true);
+        // 「File」下拉按钮（新建 / 保存）：宽 = 文本宽 + 内边距 + 箭头占位
+        int fileWidth = this.fileButtonWidth();
+        String fileLabel = this.fileButtonText();
+        guiGraphics.fill(NEW_X, TOOLBAR_BUTTON_Y, NEW_X + fileWidth, TOOLBAR_BUTTON_Y + TOOLBAR_BUTTON_HEIGHT,
+                this.mouseOverFileButton(mouseX, mouseY) || this.fileDropdown.isOpen() ? 0xFF3A3A48 : 0xFF2A2A34);
+        guiGraphics.renderOutline(NEW_X, TOOLBAR_BUTTON_Y, fileWidth, TOOLBAR_BUTTON_HEIGHT, 0xFF4A4A58);
+        guiGraphics.drawString(this.font, fileLabel, NEW_X + 4, TOOLBAR_BUTTON_Y + 4, 0xFFFFFF, true);
+        this.renderDropdownArrow(guiGraphics, NEW_X + fileWidth - 11, TOOLBAR_BUTTON_Y + 7);
 
         // 「Loaded」下拉按钮：宽 = 文本宽 + 内边距 + 箭头占位
         int loadedX = this.loadedButtonX();
@@ -889,6 +916,15 @@ public class EditorScreen extends Screen implements IParticleManagerScreen {
 
         this.renderPlaybackButtons(guiGraphics, mouseX, mouseY);
         this.renderVariablesButton(guiGraphics, mouseX, mouseY);
+
+        // 「File」下拉列表：新建 / 保存（写回引擎内存）/ 导出（写盘）
+        this.fileDropdown.setPosition(NEW_X, TOOLBAR_HEIGHT);
+        this.fileDropdown.setItems(List.of(
+                Component.translatable("particle_editor.file.new").getString(),
+                Component.translatable("particle_editor.file.save").getString(),
+                Component.translatable("particle_editor.file.export").getString()));
+        this.fileDropdown.render(guiGraphics, this.font, mouseX, mouseY, this.height);
+        this.tooltipForMenu(this.fileDropdown, mouseX, mouseY);
 
         this.loadedDropdown.setPosition(loadedX, TOOLBAR_HEIGHT);
         this.loadedDropdown.setItems(this.particleIds.stream().map(ResourceLocation::toString).toList());
@@ -936,7 +972,8 @@ public class EditorScreen extends Screen implements IParticleManagerScreen {
 
     /// 鼠标是否落在展开的工具栏下拉列表上：是的话，下拉底下的文本不应再触发 tooltip。
     boolean isOverToolbarMenu(double mouseX, double mouseY) {
-        return (this.loadedDropdown.isOpen() && this.loadedDropdown.hitTest(mouseX, mouseY) >= 0)
+        return (this.fileDropdown.isOpen() && this.fileDropdown.hitTest(mouseX, mouseY) >= 0)
+                || (this.loadedDropdown.isOpen() && this.loadedDropdown.hitTest(mouseX, mouseY) >= 0)
                 || (this.sceneDropdown.isOpen() && this.sceneDropdown.hitTest(mouseX, mouseY) >= 0);
     }
 
@@ -950,6 +987,7 @@ public class EditorScreen extends Screen implements IParticleManagerScreen {
     }
 
     void closeMenus() {
+        this.fileDropdown.close();
         this.loadedDropdown.close();
         this.sceneDropdown.close();
         this.closeSceneSizeEditor();
@@ -989,8 +1027,8 @@ public class EditorScreen extends Screen implements IParticleManagerScreen {
 
     // region 工具栏按钮的动态宽度
 
-    private String newButtonText() {
-        return Component.translatable("particle_editor.new").getString();
+    private String fileButtonText() {
+        return Component.translatable("particle_editor.file").getString();
     }
 
     private String loadedButtonText() {
@@ -1001,8 +1039,8 @@ public class EditorScreen extends Screen implements IParticleManagerScreen {
         return Component.translatable("particle_editor.scene").getString();
     }
 
-    private int newButtonWidth() {
-        return this.font.width(this.newButtonText()) + BUTTON_PADDING;
+    private int fileButtonWidth() {
+        return this.font.width(this.fileButtonText()) + BUTTON_PADDING + DROPDOWN_ARROW_AREA;
     }
 
     private int loadedButtonWidth() {
@@ -1013,8 +1051,12 @@ public class EditorScreen extends Screen implements IParticleManagerScreen {
         return this.font.width(this.sceneButtonText()) + BUTTON_PADDING + DROPDOWN_ARROW_AREA;
     }
 
+    private int fileButtonX() {
+        return NEW_X;
+    }
+
     private int loadedButtonX() {
-        return NEW_X + this.newButtonWidth() + BUTTON_GAP;
+        return this.fileButtonX() + this.fileButtonWidth() + BUTTON_GAP;
     }
 
     private int sceneButtonX() {
@@ -1023,8 +1065,9 @@ public class EditorScreen extends Screen implements IParticleManagerScreen {
 
     // endregion
 
-    private boolean mouseOverNewButton(double mouseX, double mouseY) {
-        return mouseX >= NEW_X && mouseX < NEW_X + this.newButtonWidth()
+    private boolean mouseOverFileButton(double mouseX, double mouseY) {
+        int x = this.fileButtonX();
+        return mouseX >= x && mouseX < x + this.fileButtonWidth()
                 && mouseY >= TOOLBAR_BUTTON_Y && mouseY < TOOLBAR_BUTTON_Y + TOOLBAR_BUTTON_HEIGHT;
     }
 
@@ -1060,6 +1103,70 @@ public class EditorScreen extends Screen implements IParticleManagerScreen {
         int x = this.loadedButtonX();
         return mouseX >= x && mouseX < x + this.loadedButtonWidth()
                 && mouseY >= TOOLBAR_BUTTON_Y && mouseY < TOOLBAR_BUTTON_Y + TOOLBAR_BUTTON_HEIGHT;
+    }
+
+    /// 「File → Export」：把编辑器里当前编辑的完整效果按引擎的粒子定义格式
+    /// （`{"format_version": "1.10.0", "particle_effect": {...}}`）写到
+    /// `<游戏目录>/particlestorm/editor/<namespace>/<path>.particle.json`，方便直接拷进资源包。
+    private void exportEffect() {
+        DefinedParticleEffect effect = this.effect;
+        if (effect == null) {
+            this.error = Component.translatable("particle_editor.file.no_particle");
+            this.status = null;
+            return;
+        }
+        try {
+            JsonObject root = new JsonObject();
+            root.addProperty("format_version", "1.10.0");
+            root.add("particle_effect", DefinedParticleEffect.CODEC
+                    .encodeStart(JsonOps.INSTANCE, effect)
+                    .getOrThrow(IllegalStateException::new)
+                    .getAsJsonObject());
+            ResourceLocation id = effect.description.identifier();
+            String fileName = id.getPath().replace('/', '_') + ".particle.json";
+            Path dir = this.minecraft.gameDirectory.toPath()
+                    .resolve("particlestorm").resolve(id.getNamespace());
+            Files.createDirectories(dir);
+            Path file = dir.resolve(fileName);
+            Gson gson = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
+            Files.writeString(file, gson.toJson(root), StandardCharsets.UTF_8);
+            this.status = Component.translatable("particle_editor.file.exported",
+                    "particlestorm/" + id.getNamespace() + "/" + fileName);
+            this.error = null;
+        } catch (Exception e) {
+            this.status = null;
+            this.error = Component.translatable("particle_editor.file.export_failed", String.valueOf(e.getMessage()));
+            ParticleStorm.LOGGER.warn("Editor failed to export particle effect", e);
+        }
+    }
+
+    /// 「File → Save」：把编辑器里当前编辑的完整效果**保存到内存**
+    /// （写回 `MolangParticleEngine` 的 id2Effect / id2Particle / id2Emitter），
+    /// 之后 Loaded 下拉、重新发射、世界里新生成的发射器都会用这份数据，直到下一次资源重载。
+    private void saveEffect() {
+        DefinedParticleEffect effect = this.effect;
+        if (effect == null) {
+            this.error = Component.translatable("particle_editor.file.no_particle");
+            this.status = null;
+            return;
+        }
+        try {
+            MolangParticleEngine.INSTANCE.saveEffect(effect);
+            ResourceLocation id = effect.description.identifier();
+            // 保存后 id 可能变过：刷新 Loaded 列表并选中它，再用内存里的新数据重新发射一次
+            List<ResourceLocation> ids = new ArrayList<>(MolangParticleEngine.INSTANCE.id2Effect().keySet());
+            ids.sort(Comparator.comparing(ResourceLocation::toString));
+            this.particleIds = ids;
+            this.selectedParticle = id;
+            this.manager.clearScene();
+            this.spawnEmitter(id);
+            this.status = Component.translatable("particle_editor.file.saved", id.toString());
+            this.error = null;
+        } catch (Exception e) {
+            this.status = null;
+            this.error = Component.translatable("particle_editor.file.save_failed", String.valueOf(e.getMessage()));
+            ParticleStorm.LOGGER.warn("Editor failed to save particle effect into engine", e);
+        }
     }
 
     private boolean mouseOverSceneButton(double mouseX, double mouseY) {

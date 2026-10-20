@@ -106,8 +106,8 @@ public record ParticleAppearanceTinting(Color color, ColorField colorField) impl
     public record Color(Gradient gradient, FloatMolangExp interpolant) {
         public static final Color EMPTY = new Color(Gradient.EMPTY, FloatMolangExp.ZERO);
         public static final Codec<Color> CODEC = RecordCodecBuilder.create(instance -> instance.group(
-                Gradient.CODEC.fieldOf("gradient").orElse(Gradient.EMPTY).forGetter(Color::gradient),
-                FloatMolangExp.CODEC.fieldOf("interpolant").orElse(FloatMolangExp.ZERO).forGetter(Color::interpolant)
+                Gradient.CODEC.lenientOptionalFieldOf("gradient", Gradient.EMPTY).forGetter(Color::gradient),
+                FloatMolangExp.CODEC.lenientOptionalFieldOf("interpolant", FloatMolangExp.ZERO).forGetter(Color::interpolant)
         ).apply(instance, Color::new));
 
         @Override
@@ -120,7 +120,7 @@ public record ParticleAppearanceTinting(Color color, ColorField colorField) impl
 
         public static final class Gradient {
             public static final Gradient EMPTY = new Gradient(Map.of());
-            public static final Codec<Gradient> CODEC = Codec.either(Codec.list(ColorField.CODEC), Codec.unboundedMap(Codec.STRING, ColorField.CODEC)).xmap(
+            public static final Codec<Gradient> CODEC = Codec.either(ColorField.CODEC.listOf(), Codec.unboundedMap(Codec.STRING, ColorField.CODEC)).xmap(
                     either -> either.map(l -> {
                         float step = 1.0F / l.size();
                         Iterator<ColorField> iterator = l.iterator();
@@ -165,7 +165,7 @@ public record ParticleAppearanceTinting(Color color, ColorField colorField) impl
 
     public record ColorField(FloatMolangExp red, FloatMolangExp green, FloatMolangExp blue, FloatMolangExp alpha) {
         public static final ColorField EMPTY = new ColorField(FloatMolangExp.ZERO, FloatMolangExp.ZERO, FloatMolangExp.ZERO, FloatMolangExp.ZERO);
-        public static final Codec<ColorField> CODEC = Codec.either(Codec.STRING, Codec.list(FloatMolangExp.CODEC, 3, 4)).xmap(
+        public static final Codec<ColorField> CODEC = Codec.either(Codec.STRING, FloatMolangExp.CODEC.listOf(3, 4)).xmap(
                 either -> either.map(hex -> {
                     hex = hex.replace("#", "");
                     if (hex.length() != 6 && hex.length() != 8) throw new IllegalArgumentException("The size is not allowed");

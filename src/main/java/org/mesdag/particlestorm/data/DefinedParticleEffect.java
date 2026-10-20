@@ -18,9 +18,9 @@ import java.util.Map;
 public class DefinedParticleEffect {
     public static final Codec<DefinedParticleEffect> CODEC = RecordCodecBuilder.create(instance -> instance.group(
             ParticleDescription.CODEC.fieldOf("description").forGetter(effect -> effect.description),
-            Codec.unboundedMap(Codec.STRING, ParticleCurve.CODEC).fieldOf("curves").orElseGet(Map::of).forGetter(effect -> effect.curves),
+            Codec.unboundedMap(Codec.STRING, ParticleCurve.CODEC).lenientOptionalFieldOf("curves", Map.of()).forGetter(effect -> effect.curves),
             Codec.dispatchedMap(ResourceLocation.CODEC, IComponent.COMPONENTS::get).fieldOf("components").forGetter(effect -> effect.components),
-            Codec.unboundedMap(Codec.STRING, IEventNode.CODEC).fieldOf("events").orElseGet(Map::of).forGetter(effect -> effect.events)
+            Codec.unboundedMap(Codec.STRING, IEventNode.CODEC).lenientOptionalFieldOf("events", Map.of()).forGetter(effect -> effect.events)
     ).apply(instance, DefinedParticleEffect::new));
     public final ParticleDescription description;
     public final Map<String, ParticleCurve> curves;

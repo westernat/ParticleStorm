@@ -27,7 +27,7 @@ public record ParticleEffect(ResourceLocation effect, Type type, MolangExp preEf
     public static final Codec<ParticleEffect> CODEC = RecordCodecBuilder.create(instance -> instance.group(
             ResourceLocation.CODEC.fieldOf("effect").forGetter(ParticleEffect::effect),
             Type.CODEC.fieldOf("type").forGetter(ParticleEffect::type),
-            MolangExp.CODEC.fieldOf("pre_effect_expression").orElse(MolangExp.EMPTY).forGetter(ParticleEffect::preEffectExpression),
+            MolangExp.CODEC.lenientOptionalFieldOf("pre_effect_expression", MolangExp.EMPTY).forGetter(ParticleEffect::preEffectExpression),
             Codec.STRING.listOf().lenientOptionalFieldOf("shared_vars", List.of()).forGetter(ParticleEffect::sharedVars)
     ).apply(instance, (rl, t, e, l) -> {
         l = l.stream().map(s -> MolangQueries.applyPrefixAliases(s, "variable.", "v.")).toList();
