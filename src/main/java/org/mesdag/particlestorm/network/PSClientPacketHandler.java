@@ -34,7 +34,7 @@ public class PSClientPacketHandler {
     public static void handleEmitterRemoval(EmitterRemovalPacketS2C packet) {
         LocalPlayer player = Minecraft.getInstance().player;
         if (player != null) {
-            ParticleEmitter emitter = MolangParticleEngine.removeEmitter(packet.id());
+            ParticleEmitter emitter = MolangParticleEngine.INSTANCE._removeEmitter(packet.id());
             if (emitter == null) {
                 player.displayClientMessage(Component.translatable("particle.notFound", packet.id()), false);
             } else {

@@ -40,6 +40,7 @@ import java.util.concurrent.Executor;
 public final class MolangParticleEngine extends MolangParticleManager implements PreparableReloadListener {
     public static final MolangParticleEngine INSTANCE = new MolangParticleEngine();
     private static final FileToIdConverter PARTICLE_LISTER = FileToIdConverter.json("particle_definitions");
+    private static MolangParticleManager screenManager;
     private Map<ResourceLocation, DefinedParticleEffect> id2Effect = ImmutableMap.of();
     private Map<ResourceLocation, ParticlePreset> id2Particle = ImmutableMap.of();
     private Map<ResourceLocation, EmitterPreset> id2Emitter = ImmutableMap.of();
@@ -95,41 +96,46 @@ public final class MolangParticleEngine extends MolangParticleManager implements
     }
 
     public static @Nullable MolangParticleManager getScreenManager() {
-        return Minecraft.getInstance().screen instanceof IParticleManagerScreen screen ? screen.getManager() : null;
+        return screenManager;
     }
 
-    /// 编辑器/屏幕粒子：发射器是 [ScreenParticleEmitter] 时只进屏幕自己的 manager，绝不进世界引擎。
-    public static void addEmitterRouted(ParticleEmitter emitter) {
-        if (emitter instanceof ScreenParticleEmitter) {
-            MolangParticleManager manager = getScreenManager();
-            if (manager != null) {
-                manager._addEmitter(emitter);
-            }
+    public static void addParticle(IMolangParticleInstance instance) {
+        if (getScreenManager() != null && instance.getEmitter() instanceof ScreenParticleEmitter) {
+            getScreenManager()._addParticle(instance);
+        } else {
+            INSTANCE._addParticle(instance);
+        }
+    }
+
+    public static void addEmitter(ParticleEmitter emitter) {
+        if (getScreenManager() != null && emitter instanceof ScreenParticleEmitter) {
+            getScreenManager()._addEmitter(emitter);
+        } else {
+            INSTANCE._addEmitter(emitter);
+        }
+    }
+
+    public static void removeEmitter(int id) {
+        if (getScreenManager() != null && getScreenManager()._removeEmitter(id) instanceof ScreenParticleEmitter) {
             return;
         }
-        INSTANCE.addEmitter(emitter);
+        INSTANCE._removeEmitter(id);
     }
 
-    public static void addParticleRouted(IMolangParticleInstance instance) {
-        if (instance.getEmitter() instanceof ScreenParticleEmitter) {
-            MolangParticleManager manager = getScreenManager();
-            if (manager != null) {
-                manager._addParticle(instance);
-            }
-            return;
+    public static @Nullable ParticleEmitter getEmitter(int id) {
+        if (getScreenManager() != null && getScreenManager()._getEmitter(id) instanceof ScreenParticleEmitter emitter) {
+            return emitter;
         }
-        INSTANCE._addParticle(instance);
+        return INSTANCE._getEmitter(id);
     }
 
-    public static @Nullable Queue<IMolangParticleInstance> getParticlesForEmitterRouted(ParticleEmitter emitter) {
-        if (emitter instanceof ScreenParticleEmitter) {
-            MolangParticleManager manager = getScreenManager();
-            return manager == null ? null : manager._getParticlesForEmitter(emitter);
+    public static @Nullable Queue<IMolangParticleInstance> getParticlesForEmitter(ParticleEmitter emitter) {
+        if (getScreenManager() != null && emitter instanceof ScreenParticleEmitter) {
+            return getScreenManager()._getParticlesForEmitter(emitter);
         }
-        return INSTANCE.getParticlesForEmitter(emitter);
+        return INSTANCE._getParticlesForEmitter(emitter);
     }
 
-    @SuppressWarnings("CallToPrintStackTrace")
     public void tick(Minecraft minecraft, LocalPlayer player) {
         if (!initialized) {
             for (ParticlePreset detail : id2Particle.values()) {
@@ -145,6 +151,7 @@ public final class MolangParticleEngine extends MolangParticleManager implements
             }
             this.initialized = true;
         }
+        screenManager = minecraft.screen instanceof IParticleManagerScreen screen ? screen.getManager() : null;
         super.tick(minecraft, player);
         if (!tracker.isEmpty()) {
             var iterator = tracker.object2ObjectEntrySet().fastIterator();
@@ -159,10 +166,6 @@ public final class MolangParticleEngine extends MolangParticleManager implements
         }
     }
 
-
-    public static void addEmitter(ParticleEmitter emitter) {
-        INSTANCE._addEmitter(emitter);
-    }
 
     public boolean addTrackedEmitter(Entity entity, ResourceLocation particleId, boolean hideOutline) {
         var queue = tracker.computeIfAbsent(entity, e -> new Object2ObjectLinkedOpenHashMap<>());
@@ -182,30 +185,10 @@ public final class MolangParticleEngine extends MolangParticleManager implements
         return addTrackedEmitter(entity, particleId, true);
     }
 
-    public static @Nullable ParticleEmitter removeEmitter(int id) {
-        return INSTANCE._removeEmitter(id);
-    }
-
-    public static void removeEmitter(ParticleEmitter emitter) {
-        removeEmitter(emitter.id);
-    }
-
     @Override
     public void removeAll() {
         super.removeAll();
         tracker.clear();
-    }
-
-    public static @Nullable ParticleEmitter getEmitter(int id) {
-        MolangParticleManager manager = getScreenManager();
-        if (manager != null && manager._getEmitter(id) instanceof ScreenParticleEmitter emitter) {
-            return emitter;
-        }
-        return INSTANCE._getEmitter(id);
-    }
-
-    public static @Nullable Queue<IMolangParticleInstance> getParticlesForEmitter(ParticleEmitter emitter) {
-        return getParticlesForEmitterRouted(emitter);
     }
 
     @Override

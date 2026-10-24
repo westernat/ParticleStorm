@@ -160,7 +160,7 @@ public final class PSGameClient {
             double z = Mth.lerp(partialTick, emitter.posO.z, emitter.getZ());
             DebugRenderer.renderFloatingText(poseStack, bufferSource, emitter.particleId.toString(), x, y + 0.5, z, 0xFFFFFF);
             DebugRenderer.renderFloatingText(poseStack, bufferSource, "id: " + emitter.id, x, y + 0.3, z, 0xFFFFFF);
-            Queue<IMolangParticleInstance> queue = MolangParticleEngine.getParticlesForEmitter(emitter);
+            Queue<IMolangParticleInstance> queue = MolangParticleEngine.INSTANCE._getParticlesForEmitter(emitter);
             int count = queue == null ? 0 : queue.size();
             DebugRenderer.renderFloatingText(poseStack, bufferSource, "particles: " + count, x, y + 0.1, z, count >= emitter.particleGroup.getLimit() ? 0xFF0000 : 0xFFFFFF);
             poseStack.pushPose();

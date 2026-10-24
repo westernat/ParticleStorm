@@ -1,9 +1,6 @@
 package org.mesdag.particlestorm.data.description;
 
-import com.mojang.datafixers.util.Pair;
 import com.mojang.serialization.Codec;
-import com.mojang.serialization.DataResult;
-import com.mojang.serialization.DynamicOps;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.texture.AbstractTexture;
 import net.minecraft.client.renderer.texture.TextureAtlas;
@@ -15,9 +12,8 @@ import org.jetbrains.annotations.Nullable;
 import org.mesdag.particlestorm.api.RegisterCustomMaterialEvent;
 
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import java.util.function.Supplier;
 
 /// 材质（`description.basic_render_parameters.material`）。
@@ -28,7 +24,6 @@ import java.util.function.Supplier;
 public final class DescriptionMaterial implements StringRepresentable {
     private static List<DescriptionMaterial> list = new ArrayList<>();
     private static DescriptionMaterial[] values;
-    private static final Map<String, DescriptionMaterial> BY_NAME = new HashMap<>();
 
     private static final Supplier<TextureAtlas> PARTICLES_ATLAS = () -> atlas(TextureAtlas.LOCATION_PARTICLES);
     private static final Supplier<TextureAtlas> BLOCKS_ATLAS = () -> atlas(TextureAtlas.LOCATION_BLOCKS);
@@ -52,21 +47,18 @@ public final class DescriptionMaterial implements StringRepresentable {
         return material;
     }
 
-    /// 所有已注册的材质（首次调用时完成自定义材质注册）。
+    public static final Codec<DescriptionMaterial> CODEC = Codec.STRING.xmap(
+            name -> Arrays.stream(values()).filter(material -> material.getSerializedName().equals(name)).findFirst().orElse(CUSTOM),
+            DescriptionMaterial::getSerializedName
+    );
+
+    /// 所有已注册的材质（与 [#CODEC] 使用同一份 `values` 数组；首次调用时完成自定义材质的注册）。
     @ApiStatus.Internal
-    public static synchronized DescriptionMaterial[] values() {
+    public static DescriptionMaterial[] values() {
         if (values == null) {
-            // 先放进内置材质再触发事件：事件处理器里如果又碰到材质反序列化（values() 重入），
-            // 会直接拿到这份临时数组，而不是看到 list 已被清空。
-            values = list.toArray(new DescriptionMaterial[0]);
-            for (DescriptionMaterial material : values) {
-                BY_NAME.put(material.getSerializedName(), material);
-            }
             ModLoader.get().postEvent(new RegisterCustomMaterialEvent(DescriptionMaterial::register));
-            values = list.toArray(new DescriptionMaterial[0]);
-            for (DescriptionMaterial material : values) {
-                BY_NAME.put(material.getSerializedName(), material);
-            }
+            values = list.toArray(DescriptionMaterial[]::new);
+            list = null;
         }
         return values;
     }
@@ -98,22 +90,7 @@ public final class DescriptionMaterial implements StringRepresentable {
     }
 
     private static @Nullable TextureAtlas atlas(ResourceLocation location) {
-        AbstractTexture texture = Minecraft.getInstance().getTextureManager().getTexture(location);
+        AbstractTexture texture = Minecraft.getInstance().getTextureManager().getTexture(location, null);
         return texture instanceof TextureAtlas textureAtlas ? textureAtlas : null;
     }
-
-    public static final Codec<DescriptionMaterial> CODEC = new Codec<>() {
-        @Override
-        public <T> DataResult<Pair<DescriptionMaterial, T>> decode(DynamicOps<T> ops, T input) {
-            return Codec.STRING.decode(ops, input).map(p -> {
-                values();
-                return new Pair<>(BY_NAME.getOrDefault(p.getFirst(), CUSTOM), p.getSecond());
-            });
-        }
-
-        @Override
-        public <T> DataResult<T> encode(DescriptionMaterial input, DynamicOps<T> ops, T prefix) {
-            return Codec.STRING.encode(input.getSerializedName(), ops, prefix);
-        }
-    };
 }

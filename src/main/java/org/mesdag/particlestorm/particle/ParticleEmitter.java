@@ -202,7 +202,7 @@ public class ParticleEmitter implements MolangInstance {
     }
 
     protected void createVars() {
-        this.preset = getEmitterPreset();
+        this.preset = this.getEmitterPreset();
         if (preset == null) {
             throw new IllegalArgumentException("Unknown particle id: '" + particleId + "'!");
         }
@@ -215,7 +215,7 @@ public class ParticleEmitter implements MolangInstance {
     }
 
     /// 发射器预设。默认取引擎的加载数据；编辑器会覆写为内存里的草稿预设。
-    public EmitterPreset getEmitterPreset() {
+    public @Nullable EmitterPreset getEmitterPreset() {
         return MolangParticleEngine.INSTANCE.id2Emitter().get(particleId);
     }
 

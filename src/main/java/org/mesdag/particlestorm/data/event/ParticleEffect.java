@@ -110,7 +110,7 @@ public record ParticleEffect(ResourceLocation effect, Type type, MolangExp preEf
             emitter.setPos(new Vec3(vector3f.x, vector3f.y, vector3f.z));
             emitter.posO = emitter.getPosition();
         }
-        MolangParticleEngine.addEmitterRouted(emitter);
+        MolangParticleEngine.addEmitter(emitter);
     }
 
     @Override
