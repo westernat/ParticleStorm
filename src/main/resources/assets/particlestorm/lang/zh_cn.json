@@ -239,6 +239,7 @@
     "particle_editor.event.effect_type": "效果类型",
     "particle_editor.event.pre_effect_expression": "前置表达式",
     "particle_editor.event.shared_vars": "共享变量",
+    "particle_editor.event.shared_vars_default": "默认值",
     "particle_editor.event.shared_vars_add": "添加共享变量",
     "particle_editor.event.shared_vars_remove": "删除该变量",
     "particle_editor.event.children": "子节点",

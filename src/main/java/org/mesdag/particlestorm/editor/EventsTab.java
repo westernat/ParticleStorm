@@ -11,6 +11,7 @@ import org.jetbrains.annotations.Nullable;
 import org.mesdag.particlestorm.api.IEventNode;
 import org.mesdag.particlestorm.data.DefinedParticleEffect;
 import org.mesdag.particlestorm.data.event.*;
+import org.mesdag.particlestorm.data.molang.FloatMolangExp;
 import org.mesdag.particlestorm.data.molang.MolangExp;
 
 import java.util.*;
@@ -140,14 +141,16 @@ final class EventsTab extends EditorTab {
         String effect;
         int type;
         String preEffectExpression;
-        final List<String> sharedVars = new ArrayList<>();
+        final List<SharedVarDraft> sharedVars = new ArrayList<>();
 
-        ParticleEffectDraft(String effect, int type, String preEffectExpression, List<String> sharedVars) {
+        ParticleEffectDraft(String effect, int type, String preEffectExpression, List<ParticleEffect.SharedVar> sharedVars) {
             super("particle_effect");
             this.effect = effect;
             this.type = type;
             this.preEffectExpression = preEffectExpression;
-            this.sharedVars.addAll(sharedVars);
+            for (ParticleEffect.SharedVar shared : sharedVars) {
+                this.sharedVars.add(new SharedVarDraft(shared.name(), sharedVarText(shared.defaultValue())));
+            }
         }
 
         @Override
@@ -162,12 +165,47 @@ final class EventsTab extends EditorTab {
                 throw new IllegalArgumentException("Invalid particle effect: " + this.effect);
             }
             MolangExp pre = this.preEffectExpression.isBlank() ? MolangExp.EMPTY : new MolangExp(this.preEffectExpression.trim());
-            return new ParticleEffect(id, ParticleEffect.Type.values()[this.type], pre, List.copyOf(this.sharedVars));
+            List<ParticleEffect.SharedVar> vars = new ArrayList<>(this.sharedVars.size());
+            for (SharedVarDraft draft : this.sharedVars) {
+                String name = draft.name.trim();
+                if (!name.isEmpty()) {
+                    vars.add(new ParticleEffect.SharedVar(name,
+                            draft.defaultValue.isBlank() ? null : sharedVarDefault(draft.defaultValue)));
+                }
+            }
+            return new ParticleEffect(id, ParticleEffect.Type.values()[this.type], pre, List.copyOf(vars));
         }
 
         @Override
         String summary() {
             return "particle_effect: " + this.effect;
+        }
+    }
+
+    /// `shared_vars` 草稿：变量名 + 可选默认值（空 = 沿用父发射器里的变量）。
+    private static final class SharedVarDraft {
+        String name;
+        String defaultValue;
+
+        SharedVarDraft(String name, String defaultValue) {
+            this.name = name;
+            this.defaultValue = defaultValue;
+        }
+    }
+
+    private static String sharedVarText(@Nullable FloatMolangExp exp) {
+        if (exp == null) {
+            return "";
+        }
+        return exp.getExpStr().isEmpty() ? String.valueOf(exp.getConstant()) : exp.getExpStr();
+    }
+
+    private static FloatMolangExp sharedVarDefault(String text) {
+        String trimmed = text.trim();
+        try {
+            return FloatMolangExp.ofConstant(Float.parseFloat(trimmed));
+        } catch (NumberFormatException e) {
+            return FloatMolangExp.ofExpression(trimmed);
         }
     }
 
@@ -589,13 +627,20 @@ final class EventsTab extends EditorTab {
                     effect.preEffectExpression = text;
                     this.markDirty();
                 }));
-                // 共享变量：一条一个文本行 + 删除按钮，底部「＋」追加
+                // 共享变量：变量名一行、默认值一行（默认值为空 = 沿用父发射器里的变量）+ 删除按钮
                 for (int i = 0; i < effect.sharedVars.size(); i++) {
                     int index = i;
-                    String label = eventLabel("shared_vars") + "[" + (index + 1) + "]";
-                    this.rows.add(new ComponentGrid.TextRow(this.screen, this.font, () -> label,
-                            effect.sharedVars.get(index), text -> {
-                        effect.sharedVars.set(index, text.trim());
+                    SharedVarDraft shared = effect.sharedVars.get(index);
+                    String nameLabel = eventLabel("shared_vars") + "[" + (index + 1) + "]";
+                    this.rows.add(new ComponentGrid.TextRow(this.screen, this.font, () -> nameLabel,
+                            shared.name, text -> {
+                        shared.name = text.trim();
+                        this.markDirty();
+                    }));
+                    String defaultLabel = eventLabel("shared_vars_default") + "[" + (index + 1) + "]";
+                    this.rows.add(new ComponentGrid.TextRow(this.screen, this.font, () -> defaultLabel,
+                            shared.defaultValue, text -> {
+                        shared.defaultValue = text.trim();
                         this.markDirty();
                     }));
                     this.rows.add(new ComponentGrid.ButtonRow(this.screen, this.font,
@@ -607,7 +652,7 @@ final class EventsTab extends EditorTab {
                 }
                 this.rows.add(new ComponentGrid.ButtonRow(this.screen, this.font,
                         "+ " + eventLabel("shared_vars_add"), () -> {
-                    effect.sharedVars.add("");
+                    effect.sharedVars.add(new SharedVarDraft("", ""));
                     this.rowsDirty = true;
                     this.markDirty();
                 }));

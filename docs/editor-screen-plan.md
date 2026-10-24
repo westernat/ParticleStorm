@@ -200,7 +200,8 @@ GUI pass 里 RenderSystem 的状态是：正交像素投影（`0..guiW, 0..guiH,
   - `weight` **不是可添加节点**：它只是 `randomize` 条目的权重字段（条目编辑器里多一行「权重」，条目列表里显示 `w权重 · 类型`）；
   - **事件组列表**：第一行「新事件」文本行（`ENTER` 创建空组）；每行组名 + 节点数；组内视图底部可「删除事件组」；
   - **组内节点列表**：每行节点摘要（如 `log: 消息`、`particle_effect: 效果id`、`sequence (n)`），点进入节点编辑器；`+ 添加节点` 下拉列出当前可添加的类型（没有可加类型时显示 `No node types available` 占位项）；
-  - **节点编辑器**：类型字段（log→消息；expression→表达式+记录日志；sound_effect→音效 id；particle_effect→效果 id / 效果类型 / 前置表达式 / 共享变量（每个变量一行，`+` 添加、`-` 删除）；weight→权重），`sequence`/`randomize` 有「子节点」入口与「删除节点」；
+  - **节点编辑器**：类型字段（log→消息；expression→表达式+记录日志；sound_effect→音效 id；particle_effect→效果 id / 效果类型 / 前置表达式 / 共享变量（每个变量两行：变量名 + 可选默认值，`+` 添加、`-` 删除）；weight→权重），`sequence`/`randomize` 有「子节点」入口与「删除节点」；
+  - `shared_vars` 的两种 JSON 写法都支持：Bedrock 原版列表 `["v.a", "v.b"]`，以及扩展 map `{"v.a": 0, "v.b": "v.a + 1"}`（值是可选的默认 Molang 表达式）。父发射器没有定义共享变量时，用默认值在父/子变量表里补一个共享 `Variable`；没有默认值则补 0 并打 warning，不再抛 `Shared vars must defined in parent directly!`；
   - 数据是**草稿树**：载入时从 `effect.events` 深拷贝（sequence 展开子节点；randomize 的条目折叠成「权重 + 单个节点」，多节点时折成 sequence），每次提交后用草稿重建整个 `events` map → 替换 `screen.effect` → 清场景重新发射；解析失败（无效 id、同容器重复类型）显示错误并保留旧效果；
   - 行复用组件 Grid 的行组件（`ComponentGrid.TextRow/ButtonRow/ToggleRow/SelectRow` + `DropdownWidget`），事件 UI 文案键 `particle_editor.event.*` / `particle_editor.event_node.*`。
 - **曲线页 `CurvesTab`**（`editor/CurvesTab.java`）：编辑 `DefinedParticleEffect#curves`（曲线名 → `ParticleCurve`），两级视图（内容超过屏幕高度时可滚轮滚动，渲染裁剪到内容区）：
