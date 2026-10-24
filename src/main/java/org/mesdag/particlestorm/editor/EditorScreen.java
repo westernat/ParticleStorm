@@ -17,6 +17,7 @@ import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.particle.ParticleRenderType;
 import net.minecraft.client.renderer.GameRenderer;
+import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.culling.Frustum;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.core.BlockPos;
@@ -61,22 +62,25 @@ import java.util.function.Consumer;
 /// 页签栏由本类绘制，内容区交给当前页签。
 ///
 /// 渲染注意点：本界面在 **GUI pass** 里绘制，默认为 GUI 的正交像素投影 + GUI 平移 model-view。
-/// 粒子顶点是**相机相对坐标**，所以绘制前要把 RenderSystem 的投影换成编辑器正交投影、
+/// 粒子顶点是**相机相对坐标**，所以绘制前要把 RenderSystem 的投影换成编辑器场景投影、
 /// model-view 换成相机视图矩阵（`rotation(conjugate(camera.rotation()))`），画完再恢复。
 public class EditorScreen extends Screen implements IParticleManagerScreen {
     /// 打开编辑器时默认发射的粒子（`loading.particle.json` 里定义的效果）。
     private static final ResourceLocation DEFAULT_PARTICLE = ResourceLocation.fromNamespaceAndPath("snowstorm", "loading");
     /// 描述页在页签列表里的下标（`tabs` = 描述 / 组件 / 事件 / 曲线）。
     private static final int DESCRIPTION_TAB = 0;
-    /// 标准正交视角。
+    /// 标准视角（正交与透视共用）。
     private static final float STANDARD_YAW = 45.0F;
     private static final float STANDARD_PITCH = 30.0F;
-    /// 正交视口在 zoom = 1 时的半高（世界单位）。
+    /// 场景在 zoom = 1 时焦点平面的半高（世界单位）；正交/透视共用同一缩放语义。
     private static final float BASE_HALF_HEIGHT = 4.0F;
     private static final float MIN_ZOOM = 0.25F;
     private static final float MAX_ZOOM = 8.0F;
-    /// 相机只用于近/远裁剪与朝向，不参与缩放。
-    private static final double CAMERA_DISTANCE = 64.0D;
+    /// 透视预览的竖直 FOV（度）。相机距离按 `sceneHalfHeight / tan(FOV/2)` 反算，
+    /// 保证焦点平面上的可视范围与正交模式一致（滚轮缩放语义不变）。
+    private static final float PERSPECTIVE_FOV = 70.0F;
+    /// 正交模式的相机距离：只用于近/远裁剪与朝向，不影响正交缩放。
+    private static final double ORTHO_CAMERA_DISTANCE = 64.0D;
 
     private static final float ORBIT_SENSITIVITY = 0.8F;
     private static final float PITCH_LIMIT = 89.0F;
@@ -101,7 +105,7 @@ public class EditorScreen extends Screen implements IParticleManagerScreen {
     private static final int AXIS_LENGTH = 1;
 
     /// Scene 下拉里的固定行下标：grid / axes / blocks，blocks 打开时紧跟 size x/y/z，
-    /// Stats 始终放在最后（所以行号取决于 blocks 是否展开，由 [#sceneStatsRow] 计算）。
+    /// 之后是 Perspective，Stats 始终在最后（行号由 [#scenePerspectiveRow] / [#sceneStatsRow] 计算）。
     private static final int SCENE_GRID_ROW = 0;
     private static final int SCENE_AXES_ROW = 1;
     private static final int SCENE_BLOCKS_ROW = 2;
@@ -135,6 +139,9 @@ public class EditorScreen extends Screen implements IParticleManagerScreen {
     private boolean axesVisible = true;
     /// 渲染场景原点附近的方块（区域大小以方块为单位，可在 Scene 下拉里改）。
     private boolean blocksVisible = true;
+    /// 场景投影：默认透视预览（Lookat 等按粒子到相机的方向计算，能看出和 Rotate 的差异）；
+    /// 关闭后切回建模用的正交投影。
+    private boolean perspective = true;
     /// 工具栏右侧的发射器/粒子/FPS 统计文本开关（Scene 下拉里的「Stats」）。
     private boolean statsVisible = true;
     private int blockSizeX = 16;
@@ -252,7 +259,9 @@ public class EditorScreen extends Screen implements IParticleManagerScreen {
         RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
-        guiGraphics.fill(0, 0, this.width, this.height, 0xFF000000);
+        // 用 guiOverlay（无深度测试、只写颜色）铺底：默认的 RenderType.gui() 会写深度，
+        // 正交场景深度很小还能通过，透视场景深度靠近 1.0，会被这层黑底直接挡掉（表现为整个场景空白）。
+        guiGraphics.fill(RenderType.guiOverlay(), 0, 0, this.width, this.height, 0xFF000000);
         // 场景只画在工具框右侧的 2/3 视口里（工具框/工具栏的底色是半透明的，
         // 不裁剪的话粒子会透到左侧栏和工具栏下面）
         int viewLeft = this.toolboxWidth();
@@ -260,11 +269,16 @@ public class EditorScreen extends Screen implements IParticleManagerScreen {
         if (this.atlasViewer == null) {
             guiGraphics.enableScissor(viewLeft, TOOLBAR_HEIGHT, this.width, this.height);
             try {
+                // GUI pass 沿用世界渲染留下的深度。正交场景的深度值很小，通常能通过；
+                // 透视投影下场景深度会靠近 1.0，几乎必然被世界深度挡掉（表现为整个场景空白），
+                // 所以进入场景 pass 前先在 scissor 范围内清掉深度。
+                RenderSystem.depthMask(true);
+                RenderSystem.clear(256, Minecraft.ON_OSX);
                 this.renderScene(partialTick, mouseX, mouseY);
             } finally {
                 guiGraphics.disableScissor();
             }
-            // 场景 pass 写的是编辑器自己的正交深度，和 GUI 的深度不在同一投影里：
+            // 场景 pass 写的是编辑器场景投影的深度，和 GUI 的深度不在同一投影里：
             // 不清掉的话工具栏下拉、工具框这些 GUI 元素在方块像素上会被深度测试挡掉（看起来像被方块盖住）。
             RenderSystem.clear(256, Minecraft.ON_OSX);
         }
@@ -283,7 +297,7 @@ public class EditorScreen extends Screen implements IParticleManagerScreen {
 
     // region 相机与场景
 
-    /// 重置为标准正交视角：焦点归到玩家所在坐标（同时作为场景原点），yaw/pitch 取标准 3/4 角，zoom 归 1。
+    /// 重置为标准视角（透视/正交共用）：焦点归到玩家所在坐标（同时作为场景原点），yaw/pitch 取标准 3/4 角，zoom 归 1。
     private void resetView() {
         this.yaw = STANDARD_YAW;
         this.pitch = STANDARD_PITCH;
@@ -294,21 +308,39 @@ public class EditorScreen extends Screen implements IParticleManagerScreen {
     }
 
     private void updateCamera() {
-        this.camera.orbit(this.focus, this.yaw, this.pitch, CAMERA_DISTANCE);
+        double distance = this.perspective ? this.perspectiveCameraDistance() : ORTHO_CAMERA_DISTANCE;
+        this.camera.orbit(this.focus, this.yaw, this.pitch, distance);
     }
 
-    /// 场景正交投影矩阵（[#renderScene] 与场景手柄的屏幕投影共用，保证命中判定和画面一致）。
+    /// 透视预览的相机距离：焦点平面的半高 = `distance * tan(FOV/2)`，所以
+    /// `distance = sceneHalfHeight / tan(FOV/2)`，与正交模式保持同样的滚轮缩放观感。
+    private double perspectiveCameraDistance() {
+        return Math.max(0.05D, this.sceneHalfHeight() / Math.tan(Math.toRadians(PERSPECTIVE_FOV) * 0.5D));
+    }
+
+    /// 场景投影矩阵（[#renderScene] 与场景手柄的屏幕投影共用，保证命中判定和画面一致）。
+    ///
+    /// 透视/正交两种模式都把投影中心平移到右侧场景视口的中心（NDC 原点 → 视口中心），
+    /// 所以场景只出现在工具框右边的 2/3 区域。
     private Matrix4f sceneProjection() {
         int viewLeft = this.toolboxWidth();
         int viewTop = TOOLBAR_HEIGHT;
         int viewWidth = Math.max(1, this.width - viewLeft);
         int viewHeight = Math.max(1, this.height - viewTop);
-        float halfHeight = this.sceneHalfHeight();
         float aspect = (float) Math.max(1, this.width) / (float) Math.max(1, this.height);
-        float halfWidth = halfHeight * aspect;
-        // 把投影中心平移到视口中心（NDC 原点 → 视口中心），场景就只出现在右 2/3
         float viewCenterX = viewLeft + viewWidth * 0.5F;
         float viewCenterY = viewTop + viewHeight * 0.5F;
+        if (this.perspective) {
+            Matrix4f projection = new Matrix4f().setPerspective(
+                    (float) Math.toRadians(PERSPECTIVE_FOV), aspect, 0.05F, 2048.0F);
+            // 在裁剪空间里平移 NDC 原点：x' = x + offsetX*w、y' = y + offsetY*w
+            float offsetNdcX = 2.0F * viewCenterX / this.width - 1.0F;
+            float offsetNdcY = 1.0F - 2.0F * viewCenterY / this.height;
+            Matrix4f shift = new Matrix4f().identity().m30(offsetNdcX).m31(offsetNdcY);
+            return shift.mul(projection);
+        }
+        float halfHeight = this.sceneHalfHeight();
+        float halfWidth = halfHeight * aspect;
         float offsetX = halfWidth * (this.width - 2.0F * viewCenterX) / this.width;
         float offsetY = halfHeight * (2.0F * viewCenterY - this.height) / this.height;
         return new Matrix4f().setOrtho(
@@ -317,12 +349,13 @@ public class EditorScreen extends Screen implements IParticleManagerScreen {
                 0.05F, 2048.0F);
     }
 
-    /// 正交视口在 zoom = 1 时的半高对应的当前世界半高（场景手柄按它自适应大小）。
+    /// 当前投影在焦点平面（zoom = 1 时）的半高（世界单位）。
     float sceneHalfHeight() {
         return BASE_HALF_HEIGHT / this.zoom;
     }
 
-    /// 屏幕 1 像素对应的世界长度（正交投影下处处相同，用于鼠标拖动 → 世界位移换算）。
+    /// 焦点平面上屏幕 1 像素对应的世界长度（用于鼠标拖动 → 世界位移换算；
+    /// 正交模式下处处相同，透视模式下是焦点平面的近似值）。
     float worldPerPixel() {
         return 2.0F * this.sceneHalfHeight() / Math.max(1, this.height);
     }
@@ -410,11 +443,11 @@ public class EditorScreen extends Screen implements IParticleManagerScreen {
         };
     }
 
-    /// 用正交投影 + 相机视图矩阵绘制场景里的粒子（场景视口 = 左侧工具框右边的 2/3 区域）。
+    /// 用场景投影（默认透视，可切正交）+ 相机视图矩阵绘制场景里的粒子（场景视口 = 左侧工具框右边的 2/3 区域）。
     private void renderScene(float partialTick, int mouseX, int mouseY) {
         this.updateCamera();
 
-        // 正交投影的 NDC 始终映射到整个窗口，所以 aspect 必须用屏幕宽高比（保持方形像素），
+        // 投影的 NDC 始终映射到整个窗口，所以 aspect 必须用屏幕宽高比（保持方形像素），
         // 视口只是靠 scissor 裁出来的子区域；用视口宽高比会把场景横向压扁。
         Matrix4f projection = this.sceneProjection();
         Matrix4f view = new Matrix4f().rotation(this.camera.rotation().conjugate(new Quaternionf()));
@@ -424,7 +457,9 @@ public class EditorScreen extends Screen implements IParticleManagerScreen {
         this.frustum.prepare(cameraPos.x, cameraPos.y, cameraPos.z);
 
         RenderSystem.backupProjectionMatrix();
-        RenderSystem.setProjectionMatrix(projection, VertexSorting.ORTHOGRAPHIC_Z);
+        RenderSystem.setProjectionMatrix(projection, this.perspective
+                ? VertexSorting.DISTANCE_TO_ORIGIN
+                : VertexSorting.ORTHOGRAPHIC_Z);
         Matrix4fStack modelViewStack = RenderSystem.getModelViewStack();
         modelViewStack.pushMatrix();
         modelViewStack.identity();
@@ -647,6 +682,9 @@ public class EditorScreen extends Screen implements IParticleManagerScreen {
             } else if (index == SCENE_BLOCKS_ROW) {
                 this.blocksVisible = !this.blocksVisible;
                 this.closeSceneSizeEditor();
+            } else if (index == this.scenePerspectiveRow()) {
+                this.perspective = !this.perspective;
+                this.updateCamera();
             } else if (index == this.sceneStatsRow()) {
                 this.statsVisible = !this.statsVisible;
             } else if (index >= SCENE_SIZE_FIRST_ROW && index < SCENE_SIZE_FIRST_ROW + 3 && this.blocksVisible) {
@@ -854,7 +892,7 @@ public class EditorScreen extends Screen implements IParticleManagerScreen {
                     this.manager.totalEmitterCount(), this.manager.totalParticleCount(), Minecraft.fps);
             guiGraphics.drawString(this.font, stats, this.width - this.font.width(stats) - 8, 6, 0xFFFFFF, true);
         }
-        // 场景手柄打开时在场景左上角显示操作提示（如消除平面的"方块平移 / 菱形旋转"）
+        // 场景手柄打开时显示操作提示（如消除平面的"方块平移 / 菱形旋转"）
         SceneGizmo gizmo = this.tabs.get(this.activeTabIndex).sceneGizmo();
         if (gizmo != null) {
             guiGraphics.drawString(this.font, gizmo.hint(), this.toolboxWidth() + 6, TOOLBAR_HEIGHT + 6, 0xFFB8D8FF, true);
@@ -1020,6 +1058,8 @@ public class EditorScreen extends Screen implements IParticleManagerScreen {
             sceneItems.add(Component.translatable("particle_editor.scene.size_y", this.blockSizeY).getString());
             sceneItems.add(Component.translatable("particle_editor.scene.size_z", this.blockSizeZ).getString());
         }
+        sceneItems.add((this.perspective ? "[x] " : "[ ] ")
+                + Component.translatable("particle_editor.scene.perspective").getString());
         sceneItems.add((this.statsVisible ? "[x] " : "[ ] ")
                 + Component.translatable("particle_editor.scene.stats").getString());
         this.sceneDropdown.setPosition(sceneX, TOOLBAR_HEIGHT);
@@ -1710,12 +1750,17 @@ public class EditorScreen extends Screen implements IParticleManagerScreen {
 
     // endregion
 
-    /// Scene 下拉里 Stats 的行号：始终排在最后（方块打开时在 size x/y/z 之后，关闭时紧跟 blocks）。
-    private int sceneStatsRow() {
+    /// Scene 下拉里 Perspective 的行号：方块打开时在 size x/y/z 之后，关闭时紧跟 blocks。
+    private int scenePerspectiveRow() {
         return this.blocksVisible ? SCENE_SIZE_FIRST_ROW + 3 : SCENE_BLOCKS_ROW + 1;
     }
 
-    /// 在 Scene 下拉的「size x/y/z」行上盖一个原版 EditBox（行号固定为 [SCENE_SIZE_FIRST_ROW] + axis）。
+    /// Scene 下拉里 Stats 的行号：始终排在最后（Perspective 之后）。
+    private int sceneStatsRow() {
+        return this.scenePerspectiveRow() + 1;
+    }
+
+    /// 在 Scene 下拉的「size x/y/z」行上盖一个原版 EditBox（行号固定为 [#SCENE_SIZE_FIRST_ROW] + axis）。
     private void openSceneSizeEditor(int axis) {
         int value = switch (axis) {
             case 0 -> this.blockSizeX;

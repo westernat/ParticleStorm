@@ -20,7 +20,7 @@
 4. **路由分工**：
    - 编辑器内部明确知道目标 → 直接调 manager（`_addEmitter` / `_removeEmitter` / `clearScene` 等）；
    - `MolangParticleEngine.addEmitter/addParticle` 这些静态方法只为「创建点拿不到 manager 的子发射器/粒子」按类型路由到编辑器 manager 或世界引擎。
-5. **相机**：正交投影（建模软件风格），初始重置为标准正交视角；左键拖拽绕焦点旋转、右键拖拽平移场景、滚轮缩放（改 `zoom` 而不是 `distance`）。
+5. **相机**：默认**透视预览**（`Lookat` 等朝向会像游戏内一样按「粒子→相机」方向计算，离屏幕中心越远越容易看出 `rotate_xyz` / `lookat_xyz` 的差异）；Scene → `Perspective` 可切回建模用的正交投影。左键拖拽绕焦点旋转、右键拖拽平移场景、滚轮缩放（透视模式改相机距离，正交模式改 `zoom`）。
 6. **深度**：`MolangParticleManager.renderParticles` 原本由 mixin 注入进原版 `ParticleEngine#render`，依赖那层原版的深度环境（渲染前 `enableDepthTest`，渲染后 `depthMask(true)`）。编辑器在 GUI pass 里要自己补这层环境。
 7. **半透明排序**：alpha 混合有顺序要求（先远后近）。排序只在编辑器启用（覆写 manager 的 `orderForRender` 钩子），世界渲染保持原版行为、零额外开销。
 
@@ -48,16 +48,19 @@ GUI pass 里 RenderSystem 的状态是：正交像素投影（`0..guiW, 0..guiH,
 
 `renderScene` 临时替换（场景视口 = 左侧工具框右边的 2/3 区域，宽度 `width/3` 给工具框）：
 
-- 视口：`left = toolboxWidth()`、`top = TOOLBAR_HEIGHT`；正交投影的 NDC 始终映射整个窗口，视口只是 scissor 裁出的子区域；
-- 投影：`setOrtho(-halfW+offsetX, halfW+offsetX, -halfH+offsetY, halfH+offsetY, 0.05F, 2048.0F)`，`halfH = BASE_HALF_HEIGHT / zoom`，`halfW = halfH * (width/height)`（**屏幕宽高比**，保持方形像素；用视口宽高比会横向压扁）；`offsetX/offsetY` 把 NDC 原点平移到视口中心（`halfW*(W-2·cx)/W`、`halfH*(2·cy-H)/H`）；
+- 视口：`left = toolboxWidth()`、`top = TOOLBAR_HEIGHT`；投影的 NDC 始终映射整个窗口，视口只是 scissor 裁出的子区域；
+- **透视预览（默认）**：`setPerspective(FOV=70°, width/height, 0.05F, 2048F)`，相机距离 = `sceneHalfHeight / tan(FOV/2)`（`sceneHalfHeight = BASE_HALF_HEIGHT / zoom`），保证焦点平面上的可视范围与正交模式一致、滚轮缩放观感不变；再用裁剪空间平移 `x' = x + offsetX*w`、`y' = y + offsetY*w` 把 NDC 原点移到右侧视口中心；`VertexSorting` 用 `DISTANCE_TO_ORIGIN`；
+- **正交模式（Scene → Perspective 关闭）**：`setOrtho(-halfW+offsetX, halfW+offsetX, -halfH+offsetY, halfH+offsetY, 0.05F, 2048.0F)`，`halfH = BASE_HALF_HEIGHT / zoom`，`halfW = halfH * (width/height)`（**屏幕宽高比**，保持方形像素；用视口宽高比会横向压扁）；`offsetX/offsetY` 把 NDC 原点平移到视口中心（`halfW*(W-2·cx)/W`、`halfH*(2·cy-H)/H`）；`VertexSorting` 用 `ORTHOGRAPHIC_Z`；
 - 裁剪：`renderScene` 外面套 `guiGraphics.enableScissor(viewLeft, TOOLBAR_HEIGHT, width, height)`，保证场景只出现在右 2/3 视口里（工具框/工具栏底色是半透明的，不裁剪粒子会透进左侧栏）；
-- model-view：`rotation(conjugate(camera.rotation()))`（与 `GameRenderer#renderLevel` 给 `LevelRenderer` 的矩阵同构）；
+- model-view：`rotation(conjugate(camera.rotation()))`（与 `GameRenderer#renderLevel` 给 `LevelRenderer` 的矩阵同构）；相机位置（透视距离/正交 64m）不进入 model-view，顶点仍是相机相对坐标；
 - `RenderSystem.backupProjectionMatrix()` / `getModelViewStack().pushMatrix()` 保存，`finally` 里恢复。
 
 ### 4.2 深度环境
 
 - 画之前 `RenderSystem.enableDepthTest()`（原版 `ParticleEngine#render` 提供这层）；
-- `finally` 里 `RenderSystem.depthMask(true)`（原版收尾同样这么做）。
+- `finally` 里 `RenderSystem.depthMask(true)`（原版收尾同样这么做）；
+- **背景必须用不写深度的 `RenderType.guiOverlay()`**（`NO_DEPTH_TEST + COLOR_WRITE`）。默认的 `RenderType.gui()` 带 `LEQUAL_DEPTH_TEST` 且默认 `COLOR_DEPTH_WRITE`，会把黑底写进深度；正交场景深度约 0.003 还能通过，而透视场景深度接近 1.0，会被黑底整片挡掉（表现就是“透视什么都不渲染”）；
+- 进入场景 pass 前在 scissor 范围内再 `depthMask(true) + clear(GL_DEPTH_BUFFER_BIT)` 一次，清掉之前的 GUI/世界深度，避免透视深度被其它 GUI 元素挡住。
 
 ### 4.3 视锥
 
@@ -92,7 +95,7 @@ GUI pass 里 RenderSystem 的状态是：正交像素投影（`0..guiW, 0..guiH,
   - 右键长按拖动：焦点沿相机 right/up 平移（按“像素 → 世界单位”换算，`2·halfH / height`），**XZ 方向限制在场景原点 ±8m 的 16m 网格内**（Y 不限）；
   - 滚轮：`zoom *= 1.15 / 1.15`，范围 [0.25, 8]；
   - `mouseClicked` 里对 left/right 记录拖动模式，`mouseDragged` 分派，`mouseReleased` 复位；
-- 相机距离 `CAMERA_DISTANCE = 64` 只影响近/远裁剪，不影响正交缩放。
+- 相机距离：正交模式 `ORTHO_CAMERA_DISTANCE = 64`（只影响近/远裁剪，不影响正交缩放）；透视模式按 `sceneHalfHeight / tan(FOV/2)` 计算，相机靠近焦点后 `Lookat` 才会随粒子偏离中心产生朝向差异。
 
 ## 6. 顶部工具栏、粒子下拉与场景工具
 
@@ -131,7 +134,7 @@ GUI pass 里 RenderSystem 的状态是：正交像素投影（`0..guiW, 0..guiH,
 - 下拉统一由 `editor/DropdownMenu` 组件负责：列表渲染、悬停/选中高亮、按屏幕高度截断行数、滚动（`contains`/`scroll`，放不下时带滚动条）、命中检测；按钮本身由 `EditorScreen` 绘制；**列表宽度不跟按钮走**——每帧按「当前条目里最长的文本宽度 + 10px 内边距」计算，按钮宽度只是 `minWidth` 下限（工具栏按钮 48px 时列表仍按内容展开）；
 - 四个下拉（Loaded / Scene / type / material）同一时间只展开一个（`closeMenus()` 互斥）；ESC 或点击下拉以外区域关闭；
 - 「Loaded」下拉（宽 `170`、行高 `12`）列出全部已加载粒子 id；点击 → `manager.clearScene()` + `spawnEmitter(id)`，并收起；
-- 「Scene」下拉列出 `[x] Grid (16m)`、`[x] Axes`、`[x] Blocks`、`[x] Stats` 四个开关（Blocks 打开时紧跟 `size x/y/z` 三行，Stats 始终在最后）；**选中开关后下拉保持展开**，等失焦（点下拉以外区域 / ESC / 打开其它下拉）才关闭，方便连续切换多个开关；
+- 「Scene」下拉列出 `[x] Grid (16m)`、`[x] Axes`、`[x] Blocks`、`[x] Perspective`、`[x] Stats` 五个条目（Blocks 打开时紧跟 `size x/y/z` 三行，Perspective/Stats 在尺寸行之后）；**选中开关后下拉保持展开**，等失焦（点下拉以外区域 / ESC / 打开其它下拉）才关闭，方便连续切换多个开关；
 - 工具栏右侧显示发射器/粒子数量统计（可通过 Scene → Stats 关闭），底部是操作提示。
 
 ### 6.1 场景网格、坐标轴与方块
@@ -139,13 +142,14 @@ GUI pass 里 RenderSystem 的状态是：正交像素投影（`0..guiW, 0..guiH,
 - 以**场景原点**（打开编辑器时的玩家坐标）为锚点的 XZ 平面网格：1m 一格、总共 16m × 16m（`GRID_RADIUS = 8`，每个方向 17 条线）；中心线略亮；
 - **网格原点**处画 1m 长的红/绿/蓝 XYZ 轴线段（只画**正方向**：原点 → +X / +Y / +Z，`AXIS_LENGTH = 1`），与网格一样锚定在世界里，不随相机/焦点移动；轴线段在方块/粒子之后绘制并关闭深度测试，所以会“透视”挡在前面的方块和粒子；
 - 场景绘制顺序：网格 → 方块 → 粒子 → 坐标轴。方块先写深度；粒子开启深度测试但不写深度，被方块挡住的部分不绘制；坐标轴最后画、关深度测试，始终可见；
-- 场景 pass 结束后（`renderScene` 的 finally 之后）会 `RenderSystem.clear(GL_DEPTH_BUFFER_BIT)`：场景写的是编辑器正交投影的深度，和 GUI 深度不在同一投影里，不清掉的话工具栏下拉等 GUI 元素会在方块像素上被深度测试挡掉；
+- 场景 pass 结束后（`renderScene` 的 finally 之后）会 `RenderSystem.clear(GL_DEPTH_BUFFER_BIT)`：场景写的是编辑器场景投影的深度，和 GUI 深度不在同一投影里，不清掉的话工具栏下拉等 GUI 元素会在方块像素上被深度测试挡掉；
 - 平移（右键拖动）时焦点被限制在该网格的 XZ 范围内，网格本身不移动；网格不写深度，粒子绘制在其上。
 - Scene 下拉项：
   - `[x] Grid (16m)`：网格显示开关；
   - `[x] Axes`：XYZ 红绿蓝轴线段开关（与网格独立，关闭网格仍可单独显示/隐藏轴线）；
   - `[ ] Blocks`：渲染场景原点附近的方块开关；打开后下拉里多出 `size x / size y / size z` 三行，点行就地弹原版 EditBox 编辑该轴方块数（范围 1..64，`ENTER` 提交、`ESC` 取消）；
-  - `[x] Stats`：工具栏右侧发射器 / 粒子数 / FPS 统计文本的开关；始终排在 Scene 下拉最后（size 行从 `SCENE_SIZE_FIRST_ROW = 3` 开始，Stats 行号由 `sceneStatsRow()` 计算：方块展开时 6、关闭时 3）；
+  - `[x] Perspective`：透视预览开关（默认开启）。开启后 `Lookat` 系列按「粒子→相机」方向计算，偏离视野中心的粒子会朝相机倾斜（和 `Rotate` 系列能看出差异）；关闭则回到正交投影（建模视角）。透视模式下相机距离随 `zoom` 变化，焦点平面可视范围与正交模式一致；
+  - `[x] Stats`：工具栏右侧发射器 / 粒子数 / FPS 统计文本的开关；始终排在 Scene 下拉最后（size 行从 `SCENE_SIZE_FIRST_ROW = 3` 开始，Perspective/Stats 行号由 `scenePerspectiveRow()` / `sceneStatsRow()` 计算）；
 - 方块渲染以 `sceneOrigin` 为中心、按 `blockSizeX/Y/Z` 取区域，**按原版 `tesselateWithoutAO` 流程自己实现，并把 `renderModelFaceFlat` 的取光逻辑改到我们这一层**：每个方块 `pushPose` → `translate(方块坐标 - 相机坐标)` → `BakedModel#getQuads(state, direction, random, ModelData, RenderType)`/`getQuads(state, null, …)` → `Block.shouldRenderFace` 剔除 → `getShade` 平光 + `BlockColors` 染色 → `putBulkData`；**光照选择**：区域内部方块的面用邻居的光（`getLightColor(level, state, relativePos)`），区域最外层“被切出来”的面和 `side == null` 的面用方块自身的光（`getLightColor(level, state, pos)`）——原版 `renderModelFaceFlat` 默认拿邻居的光，邻居在渲染区域外/被切面贴着实心方块时就是黑的；另外地下方块的 block light 和 sky light 都是 0，采样到的光也是 0（纯黑），所以取到的光再经 `ambientLight()` 保底（block light ≥ 2、sky light ≥ 4），地下被切出来的面就是暗灰色而不是黑；`Lighting.setupLevel()` 在场景 pass 里设置光照方向；**只有区域内部方块开启剔除**；场景 pass 前 `FogRenderer.setupNoFog()`、`shaderColor` 归白；写深度，能正常遮挡其后的粒子；只渲染非空气方块。
 
 ### 6.2 左侧工具框（组件 / 事件 / 曲线 / 描述）
@@ -188,6 +192,7 @@ GUI pass 里 RenderSystem 的状态是：正交像素投影（`0..guiW, 0..guiH,
   - **按模式显隐的行**：`ParticleAppearanceBillboardGrid` 的 `direction_mode` = 由速度推导时只显示 `min_speed_threshold`，= 自定义方向时只显示 `custom_direction`（下拉切换后 `rebuildRows()`，`load()` 末尾也重建行，不再持有行字段引用）；`EmitterShapeGrid` 同理：`direction` 选「自定义」才显示 `custom_direction`，`plane_normal` 选「自定义」才显示 `custom_plane`；
   - **不用 codec**：Grid 的 `build()` 直接用当前字段 **new 一个新组件** 替换 `effect.components`，再清场景并重新发射；
   - 内置 Grid 在 `editor/ComponentGrids` 注册，注册 id 全部直接用组件类的 `ID` 常量（Grid 本身不持有 id 字段）；**自定义组件**可在模组总线监听 `api/RegisterComponentGridEvent` 注册自己的 Grid（`register(MyComponent.ID, (screen, font) -> new MyGrid(...))`，多子类型用 `register(defaultId, label, variants, required, factory)`）；
+  - **给外部模组的行构造 API**：`ComponentGrid` 的包内行方法会返回行对象（内置 Grid 需要后续 `setValue`），外部 Grid 无法持有这些包内类型，所以另外提供 `protected` 的 `textRow` / `vectorRow` / `pairRow` / `selectRow` / `toggleRow` / `infoRow` / `buttonRow`（标签可传字段名走翻译键，或传 `Supplier<String>` 用动态字面量），配合已有的 `resetRows()` / `markChanged()` 重建整张表单；解析辅助 `expText` / `expOf` / `floatOf` / `optionLabel` / `localizedOptions` 也对外可见。参考实现：ThreeDimensionParticle 的 `thr_dim_particle:appearance`（`client/editor/TDParticleAppearanceGrid`）；
   - 目前**全部组件都可编辑**：`emitter_rate`、`emitter_lifetime`、`emitter_shape`、`emitter_local_space`、`emitter_initialization`、`emitter_lifetime_events`、`emitter_multi_shape`、`particle_initial_speed`、`particle_initial_spin`、`particle_initialization`、`particle_motion_dynamic`、`particle_motion_parametric`、`particle_motion_collision`、`particle_lifetime_expression`、`particle_lifetime_events`、`particle_kill_plane`、`particle_expire_if_(not_)in_blocks`、`particle_appearance_billboard`、`particle_appearance_lighting`、`particle_appearance_tinting`（`GridReadOnly` 已删除）；
 - **事件页 `EventsTab`**（`editor/EventsTab.java`）：编辑 `DefinedParticleEffect#events`（组名 → 节点树），三级视图：（内容超过屏幕高度时可滚轮滚动，行按滚动偏移绘制并裁剪到内容区）
   - 节点在 JSON 里的**键就是节点类型名**（`IEventNode.CODEC` 是按名字分发的 map），所以编辑器不提供「键」字段；同一容器里每种类型最多一个节点，需要多个同类节点请放进 `sequence`；
@@ -285,7 +290,7 @@ GUI pass 里 RenderSystem 的状态是：正交像素投影（`0..guiW, 0..guiH,
 | 不持有 `ParticleEmitter` 字段 | 场景可含多个发射器，manager 才是容器 |
 | 编辑器内直接调 manager | 目标明确；静态 `addEmitter/addParticle` 只为子发射器/粒子路由 |
 | 不做生命周期释放 | `minecraft.screen` 唯一持有，GC 回收 |
-| 正交投影 + 标准视角 + 三种鼠标操作 | 建模软件式操作习惯 |
+| 透视预览 + 标准视角 + 三种鼠标操作 | 默认透视让 Lookat/Rotate 等朝向在偏离中心时能看出差异；Scene 可切回正交建模视角 |
 | `renderParticles` 不改签名，加 `orderForRender` 钩子 | 编辑器专属行为留在 `EditorScreen` 的匿名子类里 |
 | BLEND/ADD 不写深度、按距离排序 | 写深度需 `discard`，会破坏平滑淡出 |
 | 排序只在编辑器启用 | 世界渲染保持原版行为，零额外开销 |

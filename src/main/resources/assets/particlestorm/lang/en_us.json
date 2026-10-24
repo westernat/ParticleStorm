@@ -17,6 +17,7 @@
     "particle_editor.scene.grid": "Grid (16m)",
     "particle_editor.scene.axes": "Axes",
     "particle_editor.scene.blocks": "Blocks",
+    "particle_editor.scene.perspective": "Perspective",
     "particle_editor.scene.stats": "Stats",
     "particle_editor.scene.size_x": "  size x: %s",
     "particle_editor.scene.size_y": "  size y: %s",

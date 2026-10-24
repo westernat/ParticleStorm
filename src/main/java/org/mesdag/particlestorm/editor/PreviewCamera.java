@@ -16,7 +16,7 @@ final class PreviewCamera extends Camera {
     ///
     /// @param yawDegrees   水平角（MC 约定：0 朝 +Z，90 朝 -X）
     /// @param pitchDegrees 俯仰角（正数向下看），调用方负责夹在 [-89, 89]
-    /// @param distance     只影响近/远裁剪，不影响正交投影下的缩放（缩放由 `zoom` 控制）
+    /// @param distance     相机到焦点的距离（透视模式按 FOV 计算；正交模式只影响裁剪）
     public void orbit(Vec3 focus, float yawDegrees, float pitchDegrees, double distance) {
         Vec3 forward = forwardOf(yawDegrees, pitchDegrees);
         Vec3 position = focus.subtract(forward.scale(distance));

@@ -189,10 +189,66 @@ public abstract class ComponentGrid {
         return row;
     }
 
+    /// 同上，标签由调用方动态给。
+    InfoRow info(Supplier<String> label, String value) {
+        InfoRow row = new InfoRow(this.screen, this.font, label, value);
+        this.rows.add(row);
+        return row;
+    }
+
     /// 清掉全部行（子类型切换时由子类重建行布局）。
     protected void resetRows() {
         this.rows.clear();
     }
+
+    // region 外部 Grid API
+
+    /// 给其它模组注册的 Grid 用的行构造入口（`RegisterComponentGridEvent`）。
+    ///
+    /// 内置 Grid 用的是包内版本（会返回行对象，便于后续 `setValue`）；外部 Grid 无法持有行对象，
+    /// 用这些不返回行的版本 + [#resetRows] 重建整张表单即可。
+    protected final void textRow(String label, String value, Consumer<String> commit) {
+        this.text(label, value, commit);
+    }
+
+    /// 同上，标签由调用方动态给（例如 `frame 1 model 2`）。
+    protected final void textRow(Supplier<String> label, String value, Consumer<String> commit) {
+        this.text(label, value, commit);
+    }
+
+    protected final void vectorRow(String label, FloatMolangExp3 value, Consumer<FloatMolangExp3> commit) {
+        this.vector(label, value, commit);
+    }
+
+    protected final void vectorRow(Supplier<String> label, FloatMolangExp3 value, Consumer<FloatMolangExp3> commit) {
+        this.vector(label, value, commit);
+    }
+
+    protected final void pairRow(String label, FloatMolangExp2 value, Consumer<FloatMolangExp2> commit) {
+        this.pair(label, value, commit);
+    }
+
+    protected final void selectRow(String label, List<String> options, int selected, IntConsumer commit) {
+        this.select(label, options, selected, commit);
+    }
+
+    protected final void toggleRow(String label, boolean value, Consumer<Boolean> commit) {
+        this.toggle(label, value, commit);
+    }
+
+    protected final void infoRow(String label, String value) {
+        this.info(label, value);
+    }
+
+    protected final void infoRow(Supplier<String> label, String value) {
+        this.info(label, value);
+    }
+
+    protected final void buttonRow(String label, Runnable action) {
+        this.button(label, action);
+    }
+
+    // endregion
 
     // endregion
 
@@ -334,14 +390,14 @@ public abstract class ComponentGrid {
         return Component.translatable("particle_editor.empty").getString();
     }
 
-    static String expText(MolangExp exp) {
+    protected static String expText(MolangExp exp) {
         if (exp instanceof FloatMolangExp floatExp && floatExp.getExpStr().isEmpty()) {
             return String.valueOf(floatExp.getConstant());
         }
         return exp.getExpStr();
     }
 
-    static FloatMolangExp expOf(String text) {
+    protected static FloatMolangExp expOf(String text) {
         String trimmed = text.trim();
         if (trimmed.isEmpty()) {
             return FloatMolangExp.ZERO;
@@ -353,12 +409,12 @@ public abstract class ComponentGrid {
         }
     }
 
-    static MolangExp molangOf(String text) {
+    protected static MolangExp molangOf(String text) {
         String trimmed = text.trim();
         return trimmed.isEmpty() ? MolangExp.EMPTY : new MolangExp(trimmed);
     }
 
-    static float floatOf(String text) {
+    protected static float floatOf(String text) {
         return Float.parseFloat(text.trim());
     }
 
