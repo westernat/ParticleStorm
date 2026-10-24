@@ -3,26 +3,13 @@ package org.mesdag.particlestorm.particle;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.gson.JsonParseException;
-import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.BufferBuilder;
-import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.blaze3d.vertex.Tesselator;
 import com.mojang.serialization.JsonOps;
 import it.unimi.dsi.fastutil.Hash;
 import it.unimi.dsi.fastutil.objects.Object2ObjectLinkedOpenHashMap;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenCustomHashMap;
-import net.minecraft.CrashReport;
-import net.minecraft.CrashReportCategory;
-import net.minecraft.ReportedException;
 import net.minecraft.Util;
-import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.particle.ParticleRenderType;
 import net.minecraft.client.player.LocalPlayer;
-import net.minecraft.client.renderer.GameRenderer;
-import net.minecraft.client.renderer.LightTexture;
-import net.minecraft.client.renderer.culling.Frustum;
-import net.minecraft.client.renderer.texture.TextureManager;
 import net.minecraft.resources.FileToIdConverter;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.PreparableReloadListener;
@@ -33,15 +20,11 @@ import net.minecraft.util.profiling.ProfilerFiller;
 import net.minecraft.world.entity.Entity;
 import net.minecraftforge.fml.ModLoader;
 import org.jetbrains.annotations.Nullable;
-import org.lwjgl.opengl.GL11;
 import org.mesdag.particlestorm.PSClientConfigs;
-import org.mesdag.particlestorm.PSGameClient;
 import org.mesdag.particlestorm.ParticleStorm;
 import org.mesdag.particlestorm.api.*;
 import org.mesdag.particlestorm.api.geckolib.GeckoLibHelper;
 import org.mesdag.particlestorm.data.DefinedParticleEffect;
-import org.mesdag.particlestorm.network.EmitterRemovalPacket;
-import org.mesdag.particlestorm.network.EmitterSynchronizePacket;
 import org.mesdag.particlestorm.particle.screen.IParticleManagerScreen;
 import org.mesdag.particlestorm.particle.screen.ScreenParticleEmitter;
 
@@ -53,7 +36,6 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
-import java.util.function.Predicate;
 
 public final class MolangParticleEngine extends MolangParticleManager implements PreparableReloadListener {
     public static final MolangParticleEngine INSTANCE = new MolangParticleEngine();
@@ -177,68 +159,9 @@ public final class MolangParticleEngine extends MolangParticleManager implements
         }
     }
 
-    public void renderParticles(LightTexture lightTexture, TextureManager textureManager, PoseStack poseStack, Camera camera, float partialTick, Frustum frustum, Predicate<ParticleRenderType> renderTypePredicate) {
-        if (groupedParticles.isEmpty()) return;
-        lightTexture.turnOnLightLayer();
-        boolean cull = GL11.glIsEnabled(GL11.GL_CULL_FACE);
-        if (cull) {
-            RenderSystem.disableCull();
-        }
-        RenderSystem.enableDepthTest();
-        RenderSystem.activeTexture(org.lwjgl.opengl.GL13.GL_TEXTURE2);
-        RenderSystem.activeTexture(org.lwjgl.opengl.GL13.GL_TEXTURE0);
-        PoseStack posestack = RenderSystem.getModelViewStack();
-        posestack.pushPose();
-        posestack.mulPoseMatrix(poseStack.last().pose());
-        RenderSystem.applyModelViewMatrix();
-        Tesselator tesselator = Tesselator.getInstance();
-        BufferBuilder builder = tesselator.getBuilder();
 
-        var iterator = groupedParticles.reference2ObjectEntrySet().fastIterator();
-        while (iterator.hasNext()) {
-            var entry = iterator.next();
-            ParticleRenderType type = entry.getKey();
-            if (type == ParticleRenderType.NO_RENDER || !renderTypePredicate.test(type)) continue;
-            Queue<IMolangParticleInstance> queue = entry.getValue();
-            if (queue.isEmpty()) continue;
-
-            RenderSystem.setShader(!ParticleStorm.OCULUS_LOADED && PSGameClient.isTranslucent(type)
-                    ? PSGameClient::getParticleNoDiscardShader
-                    : GameRenderer::getParticleShader);
-            type.begin(builder, textureManager);
-
-            for (IMolangParticleInstance instance : queue) {
-                if (instance.isVisible(camera, frustum, partialTick)) {
-                    try {
-                        instance.self().render(builder, camera, partialTick);
-                    } catch (Throwable e) {
-                        CrashReport report = CrashReport.forThrowable(e, "Rendering Molang Particle");
-                        CrashReportCategory category = report.addCategory("Molang Particle being rendered");
-                        category.setDetail("Molang Particle Id", () -> instance.getEmitter().particleId.toString());
-                        throw new ReportedException(report);
-                    }
-                }
-            }
-            type.end(tesselator);
-        }
-
-        posestack.popPose();
-        RenderSystem.applyModelViewMatrix();
-        RenderSystem.depthMask(true);
-        RenderSystem.disableBlend();
-        lightTexture.turnOffLightLayer();
-        if (cull) {
-            RenderSystem.enableCull();
-        }
-    }
-
-    public void addEmitter(ParticleEmitter emitter, boolean sync) {
-        _addEmitter(emitter);
-        if (sync) EmitterSynchronizePacket.syncToServer(emitter);
-    }
-
-    public void addEmitter(ParticleEmitter emitter) {
-        addEmitter(emitter, false);
+    public static void addEmitter(ParticleEmitter emitter) {
+        INSTANCE._addEmitter(emitter);
     }
 
     public boolean addTrackedEmitter(Entity entity, ResourceLocation particleId, boolean hideOutline) {
@@ -259,16 +182,12 @@ public final class MolangParticleEngine extends MolangParticleManager implements
         return addTrackedEmitter(entity, particleId, true);
     }
 
-    public @Nullable ParticleEmitter removeEmitter(int id, boolean sync) {
-        ParticleEmitter removed = _removeEmitter(id);
-        if (removed != null && sync) {
-            EmitterRemovalPacket.sendToServer(id);
-        }
-        return removed;
+    public static @Nullable ParticleEmitter removeEmitter(int id) {
+        return INSTANCE._removeEmitter(id);
     }
 
-    public void removeEmitter(ParticleEmitter emitter, boolean sync) {
-        removeEmitter(emitter.id, sync);
+    public static void removeEmitter(ParticleEmitter emitter) {
+        removeEmitter(emitter.id);
     }
 
     @Override
@@ -277,12 +196,16 @@ public final class MolangParticleEngine extends MolangParticleManager implements
         tracker.clear();
     }
 
-    public @Nullable ParticleEmitter getEmitter(int id) {
-        return _getEmitter(id);
+    public static @Nullable ParticleEmitter getEmitter(int id) {
+        MolangParticleManager manager = getScreenManager();
+        if (manager != null && manager._getEmitter(id) instanceof ScreenParticleEmitter emitter) {
+            return emitter;
+        }
+        return INSTANCE._getEmitter(id);
     }
 
-    public @Nullable Queue<IMolangParticleInstance> getParticlesForEmitter(ParticleEmitter emitter) {
-        return _getParticlesForEmitter(emitter);
+    public static @Nullable Queue<IMolangParticleInstance> getParticlesForEmitter(ParticleEmitter emitter) {
+        return getParticlesForEmitterRouted(emitter);
     }
 
     @Override

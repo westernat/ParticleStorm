@@ -25,7 +25,7 @@ import org.jetbrains.annotations.Nullable;
 import org.mesdag.particlestorm.data.molang.MolangExp;
 import org.mesdag.particlestorm.network.EmitterAttachPacketS2C;
 import org.mesdag.particlestorm.network.EmitterCreationPacketS2C;
-import org.mesdag.particlestorm.network.EmitterRemovalPacket;
+import org.mesdag.particlestorm.network.EmitterRemovalPacketS2C;
 import org.mesdag.particlestorm.network.OpenEditorPacketS2C;
 
 import java.util.Collection;
@@ -151,22 +151,20 @@ public class MolangParticleCommand {
         }
         if (i == 0) {
             throw ERROR_FAILED.create();
-        } else {
-            return i;
         }
+        return i;
     }
 
     private static int removeParticle(int id, Collection<ServerPlayer> viewers) throws CommandSyntaxException {
         int i = 0;
         for (ServerPlayer serverplayer : viewers) {
-            EmitterRemovalPacket.sendToClient(serverplayer, id);
+            EmitterRemovalPacketS2C.sendToClient(serverplayer, id);
             i++;
         }
         if (i == 0) {
             throw ERROR_FAILED.create();
-        } else {
-            return i;
         }
+        return i;
     }
 
     private static int sendParticle(CommandSourceStack source, ResourceLocation particle, Vec3 pos, MolangExp expression, @Nullable Entity entity, Collection<ServerPlayer> viewers) throws CommandSyntaxException {
@@ -177,9 +175,8 @@ public class MolangParticleCommand {
         }
         if (i == 0) {
             throw ERROR_FAILED.create();
-        } else {
-            source.sendSuccess(() -> Component.translatable("commands.particle.success", particle.toString()), true);
-            return i;
         }
+        source.sendSuccess(() -> Component.translatable("commands.particle.success", particle.toString()), true);
+        return i;
     }
 }

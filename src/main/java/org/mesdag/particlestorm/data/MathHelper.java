@@ -8,18 +8,18 @@ import org.joml.Vector3f;
 
 public class MathHelper {
     public static Quaternionf setFromUnitVectors(Vector3f e, Vector3f t, Quaternionf dest) {
-        float n = e.dot(t) + 1.0F;
+        float n = e.dot(t) + 1;
         if (n < Mth.EPSILON) {
             if (Math.abs(e.x) > Math.abs(e.z)) {
                 dest.x = -e.y;
                 dest.y = e.x;
-                dest.z = 0.0F;
+                dest.z = 0;
             } else {
-                dest.x = 0.0F;
+                dest.x = 0;
                 dest.y = -e.z;
                 dest.z = e.y;
             }
-            dest.w = 0.0F;
+            dest.w = 0;
         } else {
             dest.x = e.y * t.z - e.z * t.y;
             dest.y = e.z * t.x - e.x * t.z;

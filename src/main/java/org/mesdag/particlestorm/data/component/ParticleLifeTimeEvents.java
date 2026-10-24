@@ -22,9 +22,9 @@ import java.util.Map;
 public final class ParticleLifeTimeEvents implements IParticleComponent {
     public static final ResourceLocation ID = ResourceLocation.withDefaultNamespace("particle_lifetime_events");
     public static final Codec<ParticleLifeTimeEvents> CODEC = RecordCodecBuilder.create(instance -> instance.group(
-            ParticleStorm.STRING_LIST_CODEC.fieldOf("creation_event").orElseGet(List::of).forGetter(events -> events.creationEvent),
-            ParticleStorm.STRING_LIST_CODEC.fieldOf("expiration_event").orElseGet(List::of).forGetter(events -> events.expirationEvent),
-            Codec.unboundedMap(Codec.STRING, ParticleStorm.STRING_LIST_CODEC).fieldOf("timeline").orElseGet(Map::of).forGetter(events -> events.timeline)
+            ParticleStorm.lenientOptionalFieldOf(ParticleStorm.STRING_LIST_CODEC, "creation_event", List::of).forGetter(events -> events.creationEvent),
+            ParticleStorm.lenientOptionalFieldOf(ParticleStorm.STRING_LIST_CODEC, "expiration_event", List::of).forGetter(events -> events.expirationEvent),
+            ParticleStorm.lenientOptionalFieldOf(Codec.unboundedMap(Codec.STRING, ParticleStorm.STRING_LIST_CODEC), "timeline", Map::of).forGetter(events -> events.timeline)
     ).apply(instance, ParticleLifeTimeEvents::new));
     public final List<String> creationEvent;
     public final List<String> expirationEvent;

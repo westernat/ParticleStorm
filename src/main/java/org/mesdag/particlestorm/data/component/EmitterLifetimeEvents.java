@@ -24,11 +24,11 @@ import java.util.Map;
 public final class EmitterLifetimeEvents implements IEmitterComponent {
     public static final ResourceLocation ID = ResourceLocation.withDefaultNamespace("emitter_lifetime_events");
     public static final Codec<EmitterLifetimeEvents> CODEC = RecordCodecBuilder.create(instance -> instance.group(
-            ParticleStorm.STRING_LIST_CODEC.fieldOf("creation_event").orElseGet(List::of).forGetter(events -> events.creationEvent),
-            ParticleStorm.STRING_LIST_CODEC.fieldOf("expiration_event").orElseGet(List::of).forGetter(events -> events.expirationEvent),
-            Codec.unboundedMap(Codec.STRING, ParticleStorm.STRING_LIST_CODEC).fieldOf("timeline").orElseGet(Map::of).forGetter(events -> events.timeline),
-            Codec.unboundedMap(Codec.STRING, ParticleStorm.STRING_LIST_CODEC).fieldOf("travel_distance_events").orElseGet(Map::of).forGetter(events -> events.travelDistanceEvents),
-            Codec.list(LoopingTravelDistanceEvent.CODEC).fieldOf("looping_travel_distance_events").orElseGet(List::of).forGetter(events -> events.loopingTravelDistanceEvents)
+            ParticleStorm.lenientOptionalFieldOf(ParticleStorm.STRING_LIST_CODEC, "creation_event", List::of).forGetter(events -> events.creationEvent),
+            ParticleStorm.lenientOptionalFieldOf(ParticleStorm.STRING_LIST_CODEC, "expiration_event", List::of).forGetter(events -> events.expirationEvent),
+            ParticleStorm.lenientOptionalFieldOf(Codec.unboundedMap(Codec.STRING, ParticleStorm.STRING_LIST_CODEC), "timeline", Map::of).forGetter(events -> events.timeline),
+            ParticleStorm.lenientOptionalFieldOf(Codec.unboundedMap(Codec.STRING, ParticleStorm.STRING_LIST_CODEC), "travel_distance_events", Map::of).forGetter(events -> events.travelDistanceEvents),
+            ParticleStorm.lenientOptionalFieldOf(Codec.list(LoopingTravelDistanceEvent.CODEC), "looping_travel_distance_events", List::of).forGetter(events -> events.loopingTravelDistanceEvents)
     ).apply(instance, EmitterLifetimeEvents::new));
     public final List<String> creationEvent;
     public final List<String> expirationEvent;

@@ -1,8 +1,10 @@
 package org.mesdag.particlestorm.data.component;
 
+
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.resources.ResourceLocation;
+import org.mesdag.particlestorm.ParticleStorm;
 import org.mesdag.particlestorm.api.IEmitterComponent;
 import org.mesdag.particlestorm.api.IMolangParticleInstance;
 import org.mesdag.particlestorm.data.molang.FloatMolangExp;
@@ -20,8 +22,8 @@ public abstract sealed class EmitterLifetime implements IEmitterComponent permit
     public static final class Expression extends EmitterLifetime {
         public static final ResourceLocation ID = ResourceLocation.withDefaultNamespace("emitter_lifetime_expression");
         public static final Codec<Expression> CODEC = RecordCodecBuilder.create(instance -> instance.group(
-                FloatMolangExp.CODEC.fieldOf("activation_expression").orElse(FloatMolangExp.ONE).forGetter(Expression::getActivationExpression),
-                FloatMolangExp.CODEC.fieldOf("expiration_expression").orElse(FloatMolangExp.ZERO).forGetter(Expression::getExpirationExpression)
+                ParticleStorm.lenientOptionalFieldOf(FloatMolangExp.CODEC, "activation_expression", () -> FloatMolangExp.ONE).forGetter(Expression::getActivationExpression),
+                ParticleStorm.lenientOptionalFieldOf(FloatMolangExp.CODEC, "expiration_expression", () -> FloatMolangExp.ZERO).forGetter(Expression::getExpirationExpression)
         ).apply(instance, Expression::new));
         private final FloatMolangExp activationExpression;
         private final FloatMolangExp expirationExpression;
@@ -82,8 +84,8 @@ public abstract sealed class EmitterLifetime implements IEmitterComponent permit
     public static final class Looping extends EmitterLifetime {
         public static final ResourceLocation ID = ResourceLocation.withDefaultNamespace("emitter_lifetime_looping");
         public static final Codec<Looping> CODEC = RecordCodecBuilder.create(instance -> instance.group(
-                FloatMolangExp.CODEC.fieldOf("active_time").orElseGet(() -> FloatMolangExp.ofConstant(10)).forGetter(Looping::getActiveTime),
-                FloatMolangExp.CODEC.fieldOf("sleep_time").orElse(FloatMolangExp.ZERO).forGetter(Looping::getSleepTime)
+                ParticleStorm.lenientOptionalFieldOf(FloatMolangExp.CODEC, "active_time", () -> FloatMolangExp.ofConstant(10)).forGetter(Looping::getActiveTime),
+                ParticleStorm.lenientOptionalFieldOf(FloatMolangExp.CODEC, "sleep_time", () -> FloatMolangExp.ZERO).forGetter(Looping::getSleepTime)
         ).apply(instance, Looping::new));
         private final FloatMolangExp activeTime;
         private final FloatMolangExp sleepTime;
@@ -133,7 +135,7 @@ public abstract sealed class EmitterLifetime implements IEmitterComponent permit
                     e.apply(emitter);
                 }
                 emitter.updateRandoms(emitter.level.random);
-                Queue<IMolangParticleInstance> queue = MolangParticleEngine.INSTANCE.getParticlesForEmitter(emitter);
+                Queue<IMolangParticleInstance> queue = MolangParticleEngine.getParticlesForEmitterRouted(emitter);
                 if (queue != null) {
                     for (IMolangParticleInstance instance : queue) {
                         ParticleInitialization initialization = instance.getPreset().initialization;
@@ -161,7 +163,7 @@ public abstract sealed class EmitterLifetime implements IEmitterComponent permit
     public static final class Once extends EmitterLifetime {
         public static final ResourceLocation ID = ResourceLocation.withDefaultNamespace("emitter_lifetime_once");
         public static final Codec<Once> CODEC = RecordCodecBuilder.create(instance -> instance.group(
-                FloatMolangExp.CODEC.fieldOf("active_time").orElseGet(() -> FloatMolangExp.ofConstant(10)).forGetter(Once::getActiveTime)
+                ParticleStorm.lenientOptionalFieldOf(FloatMolangExp.CODEC, "active_time", () -> FloatMolangExp.ofConstant(10)).forGetter(Once::getActiveTime)
         ).apply(instance, Once::new));
         private final FloatMolangExp activeTime;
 

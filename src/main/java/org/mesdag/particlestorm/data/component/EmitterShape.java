@@ -1,5 +1,6 @@
 package org.mesdag.particlestorm.data.component;
 
+
 import com.mojang.datafixers.util.Either;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
@@ -15,6 +16,7 @@ import net.minecraft.world.entity.EntityDimensions;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
+import org.mesdag.particlestorm.ParticleStorm;
 import org.mesdag.particlestorm.api.*;
 import org.mesdag.particlestorm.data.MathHelper;
 import org.mesdag.particlestorm.data.molang.FloatMolangExp;
@@ -137,11 +139,11 @@ public abstract sealed class EmitterShape implements IEmitterComponent permits E
     /// This component spawns particles using a disc shape, particles can be spawned inside the shape or on its outer perimeter.
     public static final class Disc extends EmitterShape {
         public static final Codec<Disc> CODEC = RecordCodecBuilder.create(instance -> instance.group(
-                FloatMolangExp3.CODEC.fieldOf("offset").orElse(FloatMolangExp3.ZERO).forGetter(disc -> disc.offset),
-                FloatMolangExp.CODEC.fieldOf("radius").orElse(FloatMolangExp.ONE).forGetter(disc -> disc.radius),
-                PlaneNormal.CODEC.fieldOf("plane_normal").orElse(PlaneNormal.Y).forGetter(disc -> disc.planeNormal),
-                Direction.CODEC.fieldOf("direction").orElse(Direction.OUTWARDS).forGetter(disc -> disc.direction),
-                Codec.BOOL.fieldOf("surface_only").orElse(false).forGetter(EmitterShape::isSurfaceOnly)
+                ParticleStorm.lenientOptionalFieldOf(FloatMolangExp3.CODEC, "offset", () -> FloatMolangExp3.ZERO).forGetter(disc -> disc.offset),
+                ParticleStorm.lenientOptionalFieldOf(FloatMolangExp.CODEC, "radius", () -> FloatMolangExp.ONE).forGetter(disc -> disc.radius),
+                ParticleStorm.lenientOptionalFieldOf(PlaneNormal.CODEC, "plane_normal", () -> PlaneNormal.Y).forGetter(disc -> disc.planeNormal),
+                ParticleStorm.lenientOptionalFieldOf(Direction.CODEC, "direction", () -> Direction.OUTWARDS).forGetter(disc -> disc.direction),
+                ParticleStorm.lenientOptionalFieldOf(Codec.BOOL, "surface_only", () -> false).forGetter(EmitterShape::isSurfaceOnly)
         ).apply(instance, Disc::new));
         public static final ResourceLocation ID = registerId("emitter_shape_disc", CODEC);
         /// Specifies the offset from the emitter to emit the particles
@@ -246,10 +248,10 @@ public abstract sealed class EmitterShape implements IEmitterComponent permits E
     /// All particles come out of a box of the specified size from the emitter.
     public static final class Box extends EmitterShape {
         public static final Codec<Box> CODEC = RecordCodecBuilder.create(instance -> instance.group(
-                FloatMolangExp3.CODEC.fieldOf("offset").orElse(FloatMolangExp3.ZERO).forGetter(box -> box.offset),
-                FloatMolangExp3.CODEC.fieldOf("half_dimensions").orElse(FloatMolangExp3.ZERO).forGetter(box -> box.halfDimensions),
-                Direction.CODEC.fieldOf("direction").orElse(Direction.OUTWARDS).forGetter(box -> box.direction),
-                Codec.BOOL.fieldOf("surface_only").orElse(false).forGetter(EmitterShape::isSurfaceOnly)
+                ParticleStorm.lenientOptionalFieldOf(FloatMolangExp3.CODEC, "offset", () -> FloatMolangExp3.ZERO).forGetter(box -> box.offset),
+                ParticleStorm.lenientOptionalFieldOf(FloatMolangExp3.CODEC, "half_dimensions", () -> FloatMolangExp3.ZERO).forGetter(box -> box.halfDimensions),
+                ParticleStorm.lenientOptionalFieldOf(Direction.CODEC, "direction", () -> Direction.OUTWARDS).forGetter(box -> box.direction),
+                ParticleStorm.lenientOptionalFieldOf(Codec.BOOL, "surface_only", () -> false).forGetter(EmitterShape::isSurfaceOnly)
         ).apply(instance, Box::new));
         public static final ResourceLocation ID = registerId("emitter_shape_box", CODEC);
         /// Specifies the offset from the emitter to emit the particles
@@ -316,8 +318,8 @@ public abstract sealed class EmitterShape implements IEmitterComponent permits E
     /// All particles come out of the axis-aligned bounding box AABB for the entity the emitter is attached to, or the emitter point if no entity.
     public static final class EntityAABB extends EmitterShape {
         public static final Codec<EntityAABB> CODEC = RecordCodecBuilder.create(instance -> instance.group(
-                Direction.CODEC.fieldOf("direction").orElse(Direction.OUTWARDS).forGetter(entityAABB -> entityAABB.direction),
-                Codec.BOOL.fieldOf("surface_only").orElse(false).forGetter(EmitterShape::isSurfaceOnly)
+                ParticleStorm.lenientOptionalFieldOf(Direction.CODEC, "direction", () -> Direction.OUTWARDS).forGetter(entityAABB -> entityAABB.direction),
+                ParticleStorm.lenientOptionalFieldOf(Codec.BOOL, "surface_only", () -> false).forGetter(EmitterShape::isSurfaceOnly)
         ).apply(instance, EntityAABB::new));
         public static final ResourceLocation ID = registerId("emitter_shape_entity_aabb", CODEC);
         public final Direction direction;
@@ -372,8 +374,8 @@ public abstract sealed class EmitterShape implements IEmitterComponent permits E
     /// All particles come out of a point offset from the emitter.
     public static final class Point extends EmitterShape {
         public static final Codec<Point> CODEC = RecordCodecBuilder.create(instance -> instance.group(
-                FloatMolangExp3.CODEC.fieldOf("offset").orElse(FloatMolangExp3.ZERO).forGetter(point -> point.offset),
-                Direction.CODEC.fieldOf("direction").orElse(Direction.OUTWARDS).forGetter(point -> point.direction)
+                ParticleStorm.lenientOptionalFieldOf(FloatMolangExp3.CODEC, "offset", () -> FloatMolangExp3.ZERO).forGetter(point -> point.offset),
+                ParticleStorm.lenientOptionalFieldOf(Direction.CODEC, "direction", () -> Direction.OUTWARDS).forGetter(point -> point.direction)
         ).apply(instance, Point::new));
         public static final ResourceLocation ID = registerId("emitter_shape_point", CODEC);
         /// Specifies the offset from the emitter to emit the particles
@@ -430,10 +432,10 @@ public abstract sealed class EmitterShape implements IEmitterComponent permits E
 
     public static final class Sphere extends EmitterShape {
         public static final Codec<Sphere> CODEC = RecordCodecBuilder.create(instance -> instance.group(
-                FloatMolangExp3.CODEC.fieldOf("offset").orElse(FloatMolangExp3.ZERO).forGetter(sphere -> sphere.offset),
-                FloatMolangExp.CODEC.fieldOf("radius").orElse(FloatMolangExp.ONE).forGetter(sphere -> sphere.radius),
-                Direction.CODEC.fieldOf("direction").orElse(Direction.OUTWARDS).forGetter(sphere -> sphere.direction),
-                Codec.BOOL.fieldOf("surface_only").orElse(false).forGetter(EmitterShape::isSurfaceOnly)
+                ParticleStorm.lenientOptionalFieldOf(FloatMolangExp3.CODEC, "offset", () -> FloatMolangExp3.ZERO).forGetter(sphere -> sphere.offset),
+                ParticleStorm.lenientOptionalFieldOf(FloatMolangExp.CODEC, "radius", () -> FloatMolangExp.ONE).forGetter(sphere -> sphere.radius),
+                ParticleStorm.lenientOptionalFieldOf(Direction.CODEC, "direction", () -> Direction.OUTWARDS).forGetter(sphere -> sphere.direction),
+                ParticleStorm.lenientOptionalFieldOf(Codec.BOOL, "surface_only", () -> false).forGetter(EmitterShape::isSurfaceOnly)
         ).apply(instance, Sphere::new));
         public static final ResourceLocation ID = registerId("emitter_shape_sphere", CODEC);
         /// Specifies the offset from the emitter to emit the particles

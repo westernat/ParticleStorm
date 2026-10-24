@@ -17,7 +17,7 @@ import java.util.Set;
 
 public final class ParticleExpireIfNotInBlocks implements IParticleComponent {
     public static final ResourceLocation ID = ResourceLocation.withDefaultNamespace("particle_expire_if_not_in_blocks");
-    public static final Codec<ParticleExpireIfNotInBlocks> CODEC = Codec.list(Codec.STRING).xmap(
+    public static final Codec<ParticleExpireIfNotInBlocks> CODEC = Codec.STRING.listOf().xmap(
             states -> new ParticleExpireIfNotInBlocks(new HashSet<>(states)),
             blocks -> List.copyOf(blocks.ids)
     );

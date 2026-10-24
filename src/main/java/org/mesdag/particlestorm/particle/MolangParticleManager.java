@@ -2,6 +2,7 @@ package org.mesdag.particlestorm.particle;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.BufferBuilder;
+import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.Tesselator;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
@@ -262,13 +263,27 @@ public class MolangParticleManager {
     }
 
     public void renderParticles(LightTexture lightTexture, TextureManager textureManager, Camera camera, float partialTick, Frustum frustum, Predicate<ParticleRenderType> renderTypePredicate) {
+        renderParticles(lightTexture, textureManager, null, camera, partialTick, frustum, renderTypePredicate);
+    }
+
+    /// 场景/世界通用渲染入口。`poseStack` 非 null 时把它乘进 model-view（世界渲染）；
+    /// 屏幕/编辑器由调用方自己设置 model-view，传 null 即可。
+    public void renderParticles(LightTexture lightTexture, TextureManager textureManager, @Nullable PoseStack poseStack,
+                                Camera camera, float partialTick, Frustum frustum, Predicate<ParticleRenderType> renderTypePredicate) {
         if (groupedParticles.isEmpty()) return;
-        if (RenderSystem.getShaderTexture(2) == 0) {
-            lightTexture.turnOnLightLayer();
-        }
+        lightTexture.turnOnLightLayer();
         boolean cull = GL11.glIsEnabled(GL11.GL_CULL_FACE);
         if (cull) {
             RenderSystem.disableCull();
+        }
+        RenderSystem.enableDepthTest();
+        RenderSystem.activeTexture(org.lwjgl.opengl.GL13.GL_TEXTURE2);
+        RenderSystem.activeTexture(org.lwjgl.opengl.GL13.GL_TEXTURE0);
+        if (poseStack != null) {
+            PoseStack posestack = RenderSystem.getModelViewStack();
+            posestack.pushPose();
+            posestack.mulPoseMatrix(poseStack.last().pose());
+            RenderSystem.applyModelViewMatrix();
         }
         Tesselator tesselator = Tesselator.getInstance();
         BufferBuilder builder = tesselator.getBuilder();
@@ -291,6 +306,13 @@ public class MolangParticleManager {
 
             type.end(tesselator);
         }
+        if (poseStack != null) {
+            RenderSystem.getModelViewStack().popPose();
+            RenderSystem.applyModelViewMatrix();
+        }
+        RenderSystem.depthMask(true);
+        RenderSystem.disableBlend();
+        lightTexture.turnOffLightLayer();
         if (cull) {
             RenderSystem.enableCull();
         }

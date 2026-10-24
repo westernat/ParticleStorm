@@ -4,25 +4,24 @@ import com.mojang.datafixers.util.Either;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.MapCodec;
 import net.minecraft.core.particles.ParticleType;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.RegisterCommandsEvent;
-import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import net.minecraftforge.fml.loading.FMLEnvironment;
 import net.minecraftforge.fml.loading.LoadingModList;
 import net.minecraftforge.network.NetworkRegistry;
-import net.minecraftforge.network.PacketDistributor;
 import net.minecraftforge.network.simple.SimpleChannel;
 import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.RegistryObject;
 import org.mesdag.particlestorm.api.geckolib.GeckoLibHelper;
-import org.mesdag.particlestorm.network.*;
+import org.mesdag.particlestorm.network.EmitterAttachPacketS2C;
+import org.mesdag.particlestorm.network.EmitterCreationPacketS2C;
+import org.mesdag.particlestorm.network.EmitterRemovalPacketS2C;
+import org.mesdag.particlestorm.network.OpenEditorPacketS2C;
 import org.mesdag.particlestorm.particle.MolangParticleCommand;
 import org.mesdag.particlestorm.particle.MolangParticleOption;
 import org.slf4j.Logger;
@@ -34,8 +33,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Supplier;
-
-import static org.mesdag.particlestorm.network.EmitterSynchronizePacket.KEY;
 
 @Mod(ParticleStorm.MODID)
 public final class ParticleStorm {
@@ -88,7 +85,6 @@ public final class ParticleStorm {
         registerGeoTest(eventBus);
         registerNetwork();
         MinecraftForge.EVENT_BUS.addListener(ParticleStorm::registerCommands);
-        MinecraftForge.EVENT_BUS.addListener(ParticleStorm::playerLoggedIn);
     }
 
     private static void registerNetwork() {
@@ -102,17 +98,12 @@ public final class ParticleStorm {
                 .decoder(EmitterAttachPacketS2C::decode)
                 .consumerMainThread(EmitterAttachPacketS2C::handle)
                 .add();
-        CHANNEL.messageBuilder(EmitterRemovalPacket.class, 2)
-                .encoder(EmitterRemovalPacket::encode)
-                .decoder(EmitterRemovalPacket::decode)
-                .consumerMainThread(EmitterRemovalPacket::handle)
+        CHANNEL.messageBuilder(EmitterRemovalPacketS2C.class, 2)
+                .encoder(EmitterRemovalPacketS2C::encode)
+                .decoder(EmitterRemovalPacketS2C::decode)
+                .consumerMainThread(EmitterRemovalPacketS2C::handle)
                 .add();
-        CHANNEL.messageBuilder(EmitterSynchronizePacket.class, 3)
-                .encoder(EmitterSynchronizePacket::encode)
-                .decoder(EmitterSynchronizePacket::decode)
-                .consumerMainThread(EmitterSynchronizePacket::handle)
-                .add();
-        CHANNEL.messageBuilder(OpenEditorPacketS2C.class, 4)
+        CHANNEL.messageBuilder(OpenEditorPacketS2C.class, 3)
                 .encoder(OpenEditorPacketS2C::encode)
                 .decoder(OpenEditorPacketS2C::decode)
                 .consumerMainThread(OpenEditorPacketS2C::handle)
@@ -121,18 +112,6 @@ public final class ParticleStorm {
 
     private static void registerCommands(RegisterCommandsEvent event) {
         MolangParticleCommand.register(event.getDispatcher());
-    }
-
-    private static void playerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {
-        if (event.getEntity() instanceof ServerPlayer player) {
-            CompoundTag data = player.getPersistentData();
-            if (data.contains(KEY)) {
-                CompoundTag emitters = data.getCompound(KEY);
-                for (String emitterId : emitters.getAllKeys()) {
-                    CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), new EmitterSynchronizePacket(Integer.parseInt(emitterId), emitters.getCompound(emitterId)));
-                }
-            }
-        }
     }
 
     private static void registerGeoTest(IEventBus bus) {
@@ -146,7 +125,12 @@ public final class ParticleStorm {
     }
 
     public static <A> MapCodec<A> lenientOptionalFieldOf(Codec<A> codec, String name, Supplier<? extends A> value) {
-        return Codec.optionalField(name, codec).xmap(
+        // 字段存在但解析失败时也退回默认值：1.21 的 lenientOptionalFieldOf 语义。
+        Codec<A> lenient = Codec.either(codec, Codec.unit(value.get())).xmap(
+                either -> either.map(Function.identity(), Function.identity()),
+                Either::left
+        );
+        return Codec.optionalField(name, lenient).xmap(
                 o -> o.orElseGet(value),
                 a -> Objects.equals(a, value.get()) ? Optional.empty() : Optional.of(a)
         );

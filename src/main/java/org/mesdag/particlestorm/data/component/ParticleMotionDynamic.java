@@ -1,10 +1,12 @@
 package org.mesdag.particlestorm.data.component;
 
+
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
 import org.joml.Vector3f;
+import org.mesdag.particlestorm.ParticleStorm;
 import org.mesdag.particlestorm.api.IMolangParticleInstance;
 import org.mesdag.particlestorm.api.IParticleComponent;
 import org.mesdag.particlestorm.data.molang.FloatMolangExp;
@@ -44,10 +46,10 @@ public record ParticleMotionDynamic(
 ) implements IParticleComponent {
     public static final ResourceLocation ID = ResourceLocation.withDefaultNamespace("particle_motion_dynamic");
     public static final Codec<ParticleMotionDynamic> CODEC = RecordCodecBuilder.create(instance -> instance.group(
-            FloatMolangExp3.CODEC.fieldOf("linear_acceleration").orElse(FloatMolangExp3.ZERO).forGetter(ParticleMotionDynamic::linerAcceleration),
-            FloatMolangExp.CODEC.fieldOf("linear_drag_coefficient").orElse(FloatMolangExp.ZERO).forGetter(ParticleMotionDynamic::linearDragCoefficient),
-            FloatMolangExp.CODEC.fieldOf("rotation_acceleration").orElse(FloatMolangExp.ZERO).forGetter(ParticleMotionDynamic::rotationAcceleration),
-            FloatMolangExp.CODEC.fieldOf("rotation_drag_coefficient").orElse(FloatMolangExp.ZERO).forGetter(ParticleMotionDynamic::rotationDragCoefficient)
+            ParticleStorm.lenientOptionalFieldOf(FloatMolangExp3.CODEC, "linear_acceleration", () -> FloatMolangExp3.ZERO).forGetter(ParticleMotionDynamic::linerAcceleration),
+            ParticleStorm.lenientOptionalFieldOf(FloatMolangExp.CODEC, "linear_drag_coefficient", () -> FloatMolangExp.ZERO).forGetter(ParticleMotionDynamic::linearDragCoefficient),
+            ParticleStorm.lenientOptionalFieldOf(FloatMolangExp.CODEC, "rotation_acceleration", () -> FloatMolangExp.ZERO).forGetter(ParticleMotionDynamic::rotationAcceleration),
+            ParticleStorm.lenientOptionalFieldOf(FloatMolangExp.CODEC, "rotation_drag_coefficient", () -> FloatMolangExp.ZERO).forGetter(ParticleMotionDynamic::rotationDragCoefficient)
     ).apply(instance, ParticleMotionDynamic::new));
 
     @Override

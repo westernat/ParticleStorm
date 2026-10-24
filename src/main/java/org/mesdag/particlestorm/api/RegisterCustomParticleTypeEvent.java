@@ -43,7 +43,7 @@ public class RegisterCustomParticleTypeEvent extends Event implements IModBusEve
     }
 
     public static Map<ParticleType<?>, Provider<?>> map() {
-        return map;
+        return map == null ? Map.of() : map;
     }
 
     public static ExtendMutableSpriteSet sprites() {

@@ -1,8 +1,10 @@
 package org.mesdag.particlestorm.data.component;
 
+
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.resources.ResourceLocation;
+import org.mesdag.particlestorm.ParticleStorm;
 import org.mesdag.particlestorm.api.IEmitterComponent;
 import org.mesdag.particlestorm.data.molang.MolangExp;
 import org.mesdag.particlestorm.particle.ParticleEmitter;
@@ -16,8 +18,8 @@ import java.util.List;
 public record EmitterInitialization(MolangExp creationExpression, MolangExp perUpdateExpression) implements IEmitterComponent {
     public static final ResourceLocation ID = ResourceLocation.withDefaultNamespace("emitter_initialization");
     public static final Codec<EmitterInitialization> CODEC = RecordCodecBuilder.create(instance -> instance.group(
-            MolangExp.CODEC.fieldOf("creation_expression").orElse(MolangExp.EMPTY).forGetter(EmitterInitialization::creationExpression),
-            MolangExp.CODEC.fieldOf("per_update_expression").orElse(MolangExp.EMPTY).forGetter(EmitterInitialization::perUpdateExpression)
+            ParticleStorm.lenientOptionalFieldOf(MolangExp.CODEC, "creation_expression", () -> MolangExp.EMPTY).forGetter(EmitterInitialization::creationExpression),
+            ParticleStorm.lenientOptionalFieldOf(MolangExp.CODEC, "per_update_expression", () -> MolangExp.EMPTY).forGetter(EmitterInitialization::perUpdateExpression)
     ).apply(instance, EmitterInitialization::new));
 
     public EmitterInitialization {

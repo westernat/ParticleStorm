@@ -1,5 +1,6 @@
 package org.mesdag.particlestorm.data.component;
 
+
 import com.google.common.collect.ImmutableMap;
 import com.mojang.datafixers.util.Either;
 import com.mojang.serialization.Codec;
@@ -7,6 +8,7 @@ import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
 import net.minecraft.util.Tuple;
+import org.mesdag.particlestorm.ParticleStorm;
 import org.mesdag.particlestorm.api.IMolangParticleInstance;
 import org.mesdag.particlestorm.api.IParticleComponent;
 import org.mesdag.particlestorm.api.MolangInstance;
@@ -106,8 +108,8 @@ public record ParticleAppearanceTinting(Color color, ColorField colorField) impl
     public record Color(Gradient gradient, FloatMolangExp interpolant) {
         public static final Color EMPTY = new Color(Gradient.EMPTY, FloatMolangExp.ZERO);
         public static final Codec<Color> CODEC = RecordCodecBuilder.create(instance -> instance.group(
-                Gradient.CODEC.fieldOf("gradient").orElse(Gradient.EMPTY).forGetter(Color::gradient),
-                FloatMolangExp.CODEC.fieldOf("interpolant").orElse(FloatMolangExp.ZERO).forGetter(Color::interpolant)
+                ParticleStorm.lenientOptionalFieldOf(Gradient.CODEC, "gradient", () -> Gradient.EMPTY).forGetter(Color::gradient),
+                ParticleStorm.lenientOptionalFieldOf(FloatMolangExp.CODEC, "interpolant", () -> FloatMolangExp.ZERO).forGetter(Color::interpolant)
         ).apply(instance, Color::new));
 
         @Override
@@ -120,7 +122,7 @@ public record ParticleAppearanceTinting(Color color, ColorField colorField) impl
 
         public static final class Gradient {
             public static final Gradient EMPTY = new Gradient(Map.of());
-            public static final Codec<Gradient> CODEC = Codec.either(Codec.list(ColorField.CODEC), Codec.unboundedMap(Codec.STRING, ColorField.CODEC)).xmap(
+            public static final Codec<Gradient> CODEC = Codec.either(ColorField.CODEC.listOf(), Codec.unboundedMap(Codec.STRING, ColorField.CODEC)).xmap(
                     either -> either.map(l -> {
                         float step = 1.0F / l.size();
                         Iterator<ColorField> iterator = l.iterator();

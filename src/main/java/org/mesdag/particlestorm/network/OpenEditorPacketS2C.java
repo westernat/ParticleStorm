@@ -10,21 +10,21 @@ import org.mesdag.particlestorm.ParticleStorm;
 
 import java.util.function.Supplier;
 
-public record OpenEditorPacketS2C() {
+public enum OpenEditorPacketS2C {
+    INSTANCE;
+
     public static void encode(OpenEditorPacketS2C msg, FriendlyByteBuf buf) {
     }
 
     public static OpenEditorPacketS2C decode(FriendlyByteBuf buf) {
-        return new OpenEditorPacketS2C();
+        return INSTANCE;
     }
 
     public void handle(Supplier<NetworkEvent.Context> ctx) {
-        NetworkEvent.Context context = ctx.get();
-        context.enqueueWork(() -> DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> PSClientPacketHandler::handleOpenEditor));
-        context.setPacketHandled(true);
+        DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> PSClientPacketHandler.handleOpenEditor());
     }
 
     public static void sendToClient(ServerPlayer player) {
-        ParticleStorm.CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), new OpenEditorPacketS2C());
+        ParticleStorm.CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), INSTANCE);
     }
 }
