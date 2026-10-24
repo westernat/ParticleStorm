@@ -49,4 +49,8 @@ public class PSClientPacketHandler {
             MolangParticleEngine.INSTANCE.loadEmitter(player.level(), packet.id(), packet.tag());
         }
     }
+
+    public static void handleOpenEditor() {
+        org.mesdag.particlestorm.editor.EditorScreen.open();
+    }
 }

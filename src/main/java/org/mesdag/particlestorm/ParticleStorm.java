@@ -21,10 +21,7 @@ import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.RegistryObject;
 import org.mesdag.particlestorm.api.geckolib.GeckoLibHelper;
-import org.mesdag.particlestorm.network.EmitterAttachPacketS2C;
-import org.mesdag.particlestorm.network.EmitterCreationPacketS2C;
-import org.mesdag.particlestorm.network.EmitterRemovalPacket;
-import org.mesdag.particlestorm.network.EmitterSynchronizePacket;
+import org.mesdag.particlestorm.network.*;
 import org.mesdag.particlestorm.particle.MolangParticleCommand;
 import org.mesdag.particlestorm.particle.MolangParticleOption;
 import org.slf4j.Logger;
@@ -110,6 +107,11 @@ public final class ParticleStorm {
                 .encoder(EmitterSynchronizePacket::encode)
                 .decoder(EmitterSynchronizePacket::decode)
                 .consumerMainThread(EmitterSynchronizePacket::handle)
+                .add();
+        CHANNEL.messageBuilder(OpenEditorPacketS2C.class, 4)
+                .encoder(OpenEditorPacketS2C::encode)
+                .decoder(OpenEditorPacketS2C::decode)
+                .consumerMainThread(OpenEditorPacketS2C::handle)
                 .add();
     }
 

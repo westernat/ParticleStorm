@@ -2,6 +2,7 @@ package org.mesdag.particlestorm.data.component;
 
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Vector3f;
 import org.mesdag.particlestorm.api.IMolangParticleInstance;
@@ -27,6 +28,7 @@ import java.util.List;
 /// @param rotation         Directly set the rotation of the particle<p>
 ///                         Evaluated every frame
 public record ParticleMotionParametric(FloatMolangExp3 relativePosition, FloatMolangExp3 direction, FloatMolangExp rotation) implements IParticleComponent {
+    public static final ResourceLocation ID = ResourceLocation.withDefaultNamespace("particle_motion_parametric");
     public static final Codec<ParticleMotionParametric> CODEC = RecordCodecBuilder.create(instance -> instance.group(
             FloatMolangExp3.CODEC.optionalFieldOf("relative_position", FloatMolangExp3.ZERO).forGetter(ParticleMotionParametric::relativePosition),
             FloatMolangExp3.CODEC.optionalFieldOf("direction", FloatMolangExp3.ZERO).forGetter(ParticleMotionParametric::direction),

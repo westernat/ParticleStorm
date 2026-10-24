@@ -50,6 +50,8 @@ import org.mesdag.particlestorm.api.geckolib.GeckoLibHelper;
 import org.mesdag.particlestorm.data.DefinedParticleEffect;
 import org.mesdag.particlestorm.network.EmitterRemovalPacket;
 import org.mesdag.particlestorm.network.EmitterSynchronizePacket;
+import org.mesdag.particlestorm.particle.screen.IParticleManagerScreen;
+import org.mesdag.particlestorm.particle.screen.ScreenParticleEmitter;
 
 import java.io.IOException;
 import java.io.Reader;
@@ -80,7 +82,7 @@ public final class MolangParticleEngine implements PreparableReloadListener {
     private final Int2ObjectOpenHashMap<Queue<IMolangParticleInstance>> particlesForEmitter = new Int2ObjectOpenHashMap<>();
     private final Queue<IMolangParticleInstance> particlesToAdd = new ArrayDeque<>();
     private final Reference2ObjectOpenHashMap<ParticleRenderType, Queue<IMolangParticleInstance>> groupedParticles = new Reference2ObjectOpenHashMap<>();
-    private final IntAllocator allocator = new IntAllocator();
+    public final IntAllocator allocator = new IntAllocator();
     private boolean initialized = false;
 
     private MolangParticleEngine() {}
@@ -95,6 +97,62 @@ public final class MolangParticleEngine implements PreparableReloadListener {
 
     public Map<ResourceLocation, EmitterPreset> id2Emitter() {
         return id2Emitter;
+    }
+
+    /// 把编辑器里改过的效果写回内存：同时重建 [ParticlePreset] / [EmitterPreset]。
+    public void saveEffect(DefinedParticleEffect effect) {
+        ResourceLocation id = effect.description.identifier();
+        ParticlePreset particlePreset = new ParticlePreset(effect);
+        EmitterPreset emitterPreset = new EmitterPreset(effect.description.type(), effect.orderedEmitterComponents, effect.events);
+        for (IComponent component : effect.orderedComponents) {
+            if (component instanceof IParticleComponent particleComponent) {
+                particleComponent.initialize(Minecraft.getInstance().level);
+            }
+        }
+        Map<ResourceLocation, DefinedParticleEffect> effects = new HashMap<>(this.id2Effect);
+        effects.put(id, effect);
+        this.id2Effect = effects;
+        Map<ResourceLocation, ParticlePreset> particles = new HashMap<>(this.id2Particle);
+        particles.put(id, particlePreset);
+        this.id2Particle = particles;
+        Map<ResourceLocation, EmitterPreset> emitters = new HashMap<>(this.id2Emitter);
+        emitters.put(id, emitterPreset);
+        this.id2Emitter = emitters;
+    }
+
+    public static @Nullable MolangParticleManager getScreenManager() {
+        return Minecraft.getInstance().screen instanceof IParticleManagerScreen screen ? screen.getManager() : null;
+    }
+
+    /// 编辑器/屏幕粒子：发射器是 [ScreenParticleEmitter] 时只进屏幕自己的 manager，绝不进世界引擎。
+    public static void addEmitterRouted(ParticleEmitter emitter) {
+        if (emitter instanceof ScreenParticleEmitter) {
+            MolangParticleManager manager = getScreenManager();
+            if (manager != null) {
+                manager._addEmitter(emitter);
+            }
+            return;
+        }
+        INSTANCE.addEmitter(emitter);
+    }
+
+    public static void addParticleRouted(IMolangParticleInstance instance) {
+        if (instance.getEmitter() instanceof ScreenParticleEmitter) {
+            MolangParticleManager manager = getScreenManager();
+            if (manager != null) {
+                manager._addParticle(instance);
+            }
+            return;
+        }
+        INSTANCE.addParticle(instance);
+    }
+
+    public static @Nullable Queue<IMolangParticleInstance> getParticlesForEmitterRouted(ParticleEmitter emitter) {
+        if (emitter instanceof ScreenParticleEmitter) {
+            MolangParticleManager manager = getScreenManager();
+            return manager == null ? null : manager._getParticlesForEmitter(emitter);
+        }
+        return INSTANCE.getParticlesForEmitter(emitter);
     }
 
     @SuppressWarnings("CallToPrintStackTrace")

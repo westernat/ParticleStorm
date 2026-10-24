@@ -1,6 +1,8 @@
 package org.mesdag.particlestorm.data.component;
 
 import com.mojang.serialization.Codec;
+import net.minecraft.resources.ResourceLocation;
+import org.mesdag.particlestorm.ParticleStorm;
 import org.mesdag.particlestorm.api.IEmitterComponent;
 import org.mesdag.particlestorm.data.ConditionDispatch;
 import org.mesdag.particlestorm.data.molang.BoolMolangExp;
@@ -9,6 +11,7 @@ import org.mesdag.particlestorm.particle.ParticleEmitter;
 import java.util.List;
 
 public record EmitterMultiShape(List<ConditionDispatch<EmitterShape>> shapes) implements IEmitterComponent {
+    public static final ResourceLocation ID = ParticleStorm.asResource("emitter_multi_shape");
     public static final Codec<EmitterMultiShape> CODEC = ConditionDispatch.codec(EmitterShape.MAP).listOf().xmap(EmitterMultiShape::new, EmitterMultiShape::shapes);
 
     @Override

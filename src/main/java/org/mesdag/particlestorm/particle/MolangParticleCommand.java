@@ -26,6 +26,7 @@ import org.mesdag.particlestorm.data.molang.MolangExp;
 import org.mesdag.particlestorm.network.EmitterAttachPacketS2C;
 import org.mesdag.particlestorm.network.EmitterCreationPacketS2C;
 import org.mesdag.particlestorm.network.EmitterRemovalPacket;
+import org.mesdag.particlestorm.network.OpenEditorPacketS2C;
 
 import java.util.Collection;
 import java.util.List;
@@ -33,14 +34,16 @@ import java.util.concurrent.CompletableFuture;
 
 public class MolangParticleCommand {
     private static final SimpleCommandExceptionType ERROR_FAILED = new SimpleCommandExceptionType(Component.translatable("commands.particle.failed"));
+    private static final SimpleCommandExceptionType ERROR_NOT_PLAYER = new SimpleCommandExceptionType(Component.translatable(
+            "commands.particle_editor.not_player"));
     private static final List<String> POSITION_SUGGESTIONS = List.of("~ ~ ~", "~ ~1 ~", "~ ~-1 ~", "^ ^ ^", "^ ^ ^1");
     private static final List<String> EXPRESSION_SUGGESTIONS = List.of("\"\"", "\"v.size=1;\"", "\"v.alpha=1;\"", "\"v.size=1;v.alpha=1;\"");
     private static final List<String> ENTITY_SUGGESTIONS = List.of("@s", "@p", "@e[limit=1,sort=nearest]");
     private static final List<String> VIEWER_SUGGESTIONS = List.of("@a", "@p", "@s");
 
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
-        dispatcher.register(Commands.literal("particlestorm").requires(sourceStack -> sourceStack.hasPermission(2))
-                .then(Commands.literal("add").then(Commands.argument("particle", ResourceLocationArgument.id()).executes(context -> sendParticle(
+        dispatcher.register(Commands.literal("particlestorm")
+                .then(Commands.literal("add").requires(sourceStack -> sourceStack.hasPermission(2)).then(Commands.argument("particle", ResourceLocationArgument.id()).executes(context -> sendParticle(
                                 context.getSource(),
                                 ResourceLocationArgument.getId(context, "particle"),
                                 context.getSource().getPosition(),
@@ -89,7 +92,7 @@ public class MolangParticleCommand {
                                 )
                         )
                 ))
-                .then(Commands.literal("remove").then(Commands.argument("id", IntegerArgumentType.integer(0)).suggests(MolangParticleCommand::suggestEmitterIds).executes(context -> removeParticle(
+                .then(Commands.literal("remove").requires(sourceStack -> sourceStack.hasPermission(2)).then(Commands.argument("id", IntegerArgumentType.integer(0)).suggests(MolangParticleCommand::suggestEmitterIds).executes(context -> removeParticle(
                                 IntegerArgumentType.getInteger(context, "id"),
                                 context.getSource().getServer().getPlayerList().getPlayers()
                         )).then(Commands.argument("viewers", EntityArgument.players()).suggests((context, builder) ->
@@ -100,7 +103,7 @@ public class MolangParticleCommand {
                                 )
                         ))
                 ))
-                .then(Commands.literal("attach").then(Commands.argument("id", IntegerArgumentType.integer(0)).suggests(MolangParticleCommand::suggestEmitterIds).then(Commands.argument("entity", EntityArgument.entity()).suggests((context, builder) ->
+                .then(Commands.literal("attach").requires(sourceStack -> sourceStack.hasPermission(2)).then(Commands.argument("id", IntegerArgumentType.integer(0)).suggests(MolangParticleCommand::suggestEmitterIds).then(Commands.argument("entity", EntityArgument.entity()).suggests((context, builder) ->
                                 SharedSuggestionProvider.suggest(ENTITY_SUGGESTIONS, builder)
                         ).executes(context -> attachEmitter2Entity(
                                 IntegerArgumentType.getInteger(context, "id"),
@@ -115,7 +118,17 @@ public class MolangParticleCommand {
                                 )
                         ))
                 )))
+                .then(Commands.literal("editor").executes(context -> openEditor(context.getSource())))
         );
+    }
+
+    private static int openEditor(CommandSourceStack source) throws CommandSyntaxException {
+        ServerPlayer player = source.getPlayer();
+        if (player == null) {
+            throw ERROR_NOT_PLAYER.create();
+        }
+        OpenEditorPacketS2C.sendToClient(player);
+        return 1;
     }
 
     private static CompletableFuture<Suggestions> suggestEmitterIds(CommandContext<CommandSourceStack> context, SuggestionsBuilder builder) {

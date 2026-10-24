@@ -2,6 +2,7 @@ package org.mesdag.particlestorm.data.component;
 
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
+import net.minecraft.resources.ResourceLocation;
 import org.mesdag.particlestorm.api.IEmitterComponent;
 import org.mesdag.particlestorm.api.IMolangParticleInstance;
 import org.mesdag.particlestorm.data.molang.FloatMolangExp;
@@ -17,6 +18,7 @@ public abstract sealed class EmitterLifetime implements IEmitterComponent permit
     ///
     /// This is useful for situations like driving an entity-attached emitter from an entity variable.
     public static final class Expression extends EmitterLifetime {
+        public static final ResourceLocation ID = ResourceLocation.withDefaultNamespace("emitter_lifetime_expression");
         public static final Codec<Expression> CODEC = RecordCodecBuilder.create(instance -> instance.group(
                 FloatMolangExp.CODEC.fieldOf("activation_expression").orElse(FloatMolangExp.ONE).forGetter(Expression::getActivationExpression),
                 FloatMolangExp.CODEC.fieldOf("expiration_expression").orElse(FloatMolangExp.ZERO).forGetter(Expression::getExpirationExpression)
@@ -78,6 +80,7 @@ public abstract sealed class EmitterLifetime implements IEmitterComponent permit
 
     /// Emitter will loop until it is removed.
     public static final class Looping extends EmitterLifetime {
+        public static final ResourceLocation ID = ResourceLocation.withDefaultNamespace("emitter_lifetime_looping");
         public static final Codec<Looping> CODEC = RecordCodecBuilder.create(instance -> instance.group(
                 FloatMolangExp.CODEC.fieldOf("active_time").orElseGet(() -> FloatMolangExp.ofConstant(10)).forGetter(Looping::getActiveTime),
                 FloatMolangExp.CODEC.fieldOf("sleep_time").orElse(FloatMolangExp.ZERO).forGetter(Looping::getSleepTime)
@@ -156,6 +159,7 @@ public abstract sealed class EmitterLifetime implements IEmitterComponent permit
     }
 
     public static final class Once extends EmitterLifetime {
+        public static final ResourceLocation ID = ResourceLocation.withDefaultNamespace("emitter_lifetime_once");
         public static final Codec<Once> CODEC = RecordCodecBuilder.create(instance -> instance.group(
                 FloatMolangExp.CODEC.fieldOf("active_time").orElseGet(() -> FloatMolangExp.ofConstant(10)).forGetter(Once::getActiveTime)
         ).apply(instance, Once::new));

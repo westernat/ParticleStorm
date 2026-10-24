@@ -19,6 +19,7 @@ import java.util.Set;
 ///
 /// Note: this component can exist alongside particle_lifetime_expression.
 public final class ParticleExpireIfInBlocks implements IParticleComponent {
+    public static final ResourceLocation ID = ResourceLocation.withDefaultNamespace("particle_expire_if_in_blocks");
     public static final Codec<ParticleExpireIfInBlocks> CODEC = Codec.list(Codec.STRING).xmap(
             states -> new ParticleExpireIfInBlocks(new HashSet<>(states)),
             blocks -> List.copyOf(blocks.ids)

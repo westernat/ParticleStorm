@@ -20,6 +20,7 @@ import org.mesdag.particlestorm.api.ParticleEmitterAttachable;
 import org.mesdag.particlestorm.data.component.EmitterLifetime;
 import org.mesdag.particlestorm.data.component.EmitterRate;
 import org.mesdag.particlestorm.data.event.ParticleEffect;
+import org.mesdag.particlestorm.data.molang.FloatMolangExp;
 import org.mesdag.particlestorm.data.molang.MolangExp;
 import org.mesdag.particlestorm.data.molang.VariableTable;
 import org.mesdag.particlestorm.data.molang.compiler.MolangParser;
@@ -139,13 +140,35 @@ public class ParticleEmitter implements MolangInstance {
         };
         addParent(parent);
         createVars();
-        for (String name : effect.sharedVars()) {
-            Variable variable = parent.getVars().getVariable(name);
-            if (variable == null) throw new IllegalArgumentException("Shared vars must defined in parent directly!");
-            vars.table.put(name, variable);
+        for (ParticleEffect.SharedVar shared : effect.sharedVars()) {
+            Variable variable = parent.getVars().getVariable(shared.name());
+            if (variable == null) {
+                // 父发射器没有定义这个共享变量：用声明的默认值补一个，并放进父表，
+                // 这样父子引用的是同一个 Variable；没有默认值就用 0，避免直接崩溃。
+                variable = createSharedVariable(shared);
+                parent.getVars().table.put(shared.name(), variable);
+            }
+            vars.table.put(shared.name(), variable);
         }
         initVars();
         createComponents();
+    }
+
+    private Variable createSharedVariable(ParticleEffect.SharedVar shared) {
+        String name = shared.name();
+        FloatMolangExp defaultValue = shared.defaultValue();
+        if (defaultValue == null) {
+            ParticleStorm.LOGGER.warn("Shared variable '{}' is not defined in parent; using 0", name);
+            return new Variable(name, 0.0F);
+        }
+        try {
+            defaultValue.compile(new MolangParser(vars));
+            ParticleStorm.LOGGER.warn("Shared variable '{}' is not defined in parent; using default '{}'", name, defaultValue);
+            return new Variable(name, instance -> defaultValue.calculate(instance));
+        } catch (RuntimeException e) {
+            ParticleStorm.LOGGER.warn("Invalid default value for shared variable '{}': {}", name, defaultValue, e);
+            return new Variable(name, 0.0F);
+        }
     }
 
     public void attachEntity(@Nullable Entity entity) {
@@ -179,11 +202,21 @@ public class ParticleEmitter implements MolangInstance {
     }
 
     protected void createVars() {
-        this.preset = MolangParticleEngine.INSTANCE.id2Emitter().get(particleId);
+        this.preset = getEmitterPreset();
         if (preset == null) {
             throw new IllegalArgumentException("Unknown particle id: '" + particleId + "'!");
         }
         this.vars = new VariableTable(preset.vars);
+    }
+
+    /// 粒子预设。默认取引擎的加载数据；编辑器会覆写为内存里的草稿预设。
+    public ParticlePreset getParticlePreset() {
+        return MolangParticleEngine.INSTANCE.id2Particle().get(particleId);
+    }
+
+    /// 发射器预设。默认取引擎的加载数据；编辑器会覆写为内存里的草稿预设。
+    public EmitterPreset getEmitterPreset() {
+        return MolangParticleEngine.INSTANCE.id2Emitter().get(particleId);
     }
 
     protected void initVars() {

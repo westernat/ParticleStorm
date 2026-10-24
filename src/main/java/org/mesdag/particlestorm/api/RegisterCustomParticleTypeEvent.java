@@ -11,7 +11,6 @@ import net.minecraftforge.fml.event.IModBusEvent;
 import net.minecraftforge.registries.ForgeRegistries;
 import org.jetbrains.annotations.Contract;
 import org.mesdag.particlestorm.particle.ExtendMutableSpriteSet;
-import org.mesdag.particlestorm.particle.MolangParticleEngine;
 import org.mesdag.particlestorm.particle.ParticleEmitter;
 import org.mesdag.particlestorm.particle.ParticlePreset;
 
@@ -43,13 +42,21 @@ public class RegisterCustomParticleTypeEvent extends Event implements IModBusEve
         ModLoader.get().postEvent(new RegisterCustomParticleTypeEvent(spriteSets));
     }
 
+    public static Map<ParticleType<?>, Provider<?>> map() {
+        return map;
+    }
+
+    public static ExtendMutableSpriteSet sprites() {
+        return sprites;
+    }
+
     public static <V extends Particle & IMolangParticleInstance> V createParticle(ParticleEmitter emitter) {
         Provider<?> provider = map.get(emitter.getPreset().type);
         if (provider == null) {
             throw new NullPointerException("Provider from '" + ForgeRegistries.PARTICLE_TYPES.getKey(emitter.getPreset().type) + "' is not registered");
         }
 
-        return (V) provider.create(emitter, MolangParticleEngine.INSTANCE.id2Particle().get(emitter.particleId), (ClientLevel) emitter.level, emitter.getX(), emitter.getY(), emitter.getZ(), sprites);
+        return (V) provider.create(emitter, emitter.getParticlePreset(), (ClientLevel) emitter.level, emitter.getX(), emitter.getY(), emitter.getZ(), sprites);
     }
 
     @FunctionalInterface

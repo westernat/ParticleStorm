@@ -226,6 +226,7 @@ public final class PSGameClient {
         IComponent.register("particle_expire_if_not_in_blocks", ParticleExpireIfNotInBlocks.CODEC);
 
         ModLoader.get().postEvent(new RegisterCustomComponentEvent());
+        org.mesdag.particlestorm.api.RegisterComponentGridEvent.postEvent();
     }
 
     private static void registerEventNodes() {

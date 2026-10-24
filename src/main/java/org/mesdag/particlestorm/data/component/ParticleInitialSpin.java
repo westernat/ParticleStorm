@@ -2,6 +2,7 @@ package org.mesdag.particlestorm.data.component;
 
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
 import org.mesdag.particlestorm.api.IMolangParticleInstance;
 import org.mesdag.particlestorm.api.IParticleComponent;
@@ -15,6 +16,7 @@ import java.util.List;
 /// @param rotation     Specifies the initial rotation in degrees. Evaluated once
 /// @param rotationRate Specifies the spin rate in degrees/second. Evaluated once
 public record ParticleInitialSpin(FloatMolangExp rotation, FloatMolangExp rotationRate) implements IParticleComponent {
+    public static final ResourceLocation ID = ResourceLocation.withDefaultNamespace("particle_initial_spin");
     public static final Codec<ParticleInitialSpin> CODEC = RecordCodecBuilder.create(instance -> instance.group(
             FloatMolangExp.CODEC.fieldOf("rotation").orElse(FloatMolangExp.ZERO).forGetter(ParticleInitialSpin::rotation),
             FloatMolangExp.CODEC.fieldOf("rotation_rate").orElse(FloatMolangExp.ZERO).forGetter(ParticleInitialSpin::rotationRate)
