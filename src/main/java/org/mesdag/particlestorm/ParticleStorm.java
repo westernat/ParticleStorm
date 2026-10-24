@@ -2,6 +2,7 @@ package org.mesdag.particlestorm;
 
 import com.mojang.datafixers.util.Either;
 import com.mojang.serialization.Codec;
+import com.mojang.serialization.MapCodec;
 import net.minecraft.core.particles.ParticleType;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
@@ -29,7 +30,10 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 import static org.mesdag.particlestorm.network.EmitterSynchronizePacket.KEY;
 
@@ -139,5 +143,12 @@ public final class ParticleStorm {
 
     public static ResourceLocation asResource(String path) {
         return ResourceLocation.fromNamespaceAndPath(MODID, path);
+    }
+
+    public static <A> MapCodec<A> lenientOptionalFieldOf(Codec<A> codec, String name, Supplier<? extends A> value) {
+        return Codec.optionalField(name, codec).xmap(
+                o -> o.orElseGet(value),
+                a -> Objects.equals(a, value.get()) ? Optional.empty() : Optional.of(a)
+        );
     }
 }

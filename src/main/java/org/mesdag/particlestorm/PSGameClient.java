@@ -40,7 +40,6 @@ public final class PSGameClient {
     public static final ParticleRenderType PARTICLE_ADD = new ParticleRenderType() {
         @Override
         public void begin(BufferBuilder builder, TextureManager textureManager) {
-            RenderSystem.enableDepthTest();
             RenderSystem.depthMask(false);
             RenderSystem.setShaderTexture(0, TextureAtlas.LOCATION_PARTICLES);
             RenderSystem.enableBlend();
@@ -60,7 +59,6 @@ public final class PSGameClient {
     public static final ParticleRenderType PARTICLE_BLEND = new ParticleRenderType() {
         @Override
         public void begin(BufferBuilder builder, TextureManager textureManager) {
-            RenderSystem.enableDepthTest();
             RenderSystem.depthMask(false);
             RenderSystem.setShaderTexture(0, TextureAtlas.LOCATION_PARTICLES);
             RenderSystem.enableBlend();
@@ -145,7 +143,7 @@ public final class PSGameClient {
         if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_PARTICLES) return;
         if (!PSClientConfigs.showEmitterOutline) return;
         Minecraft minecraft = Minecraft.getInstance();
-        if (!minecraft.getEntityRenderDispatcher().shouldRenderHitBoxes()) return;
+        if (minecraft.screen != null || !minecraft.getEntityRenderDispatcher().shouldRenderHitBoxes()) return;
         PoseStack poseStack = event.getPoseStack();
         MultiBufferSource.BufferSource bufferSource = minecraft.renderBuffers().bufferSource();
         Camera camera = event.getCamera();
@@ -162,7 +160,7 @@ public final class PSGameClient {
             double z = Mth.lerp(partialTick, emitter.posO.z, emitter.getZ());
             DebugRenderer.renderFloatingText(poseStack, bufferSource, emitter.particleId.toString(), x, y + 0.5, z, 0xFFFFFF);
             DebugRenderer.renderFloatingText(poseStack, bufferSource, "id: " + emitter.id, x, y + 0.3, z, 0xFFFFFF);
-            Queue<IMolangParticleInstance> queue = MolangParticleEngine.INSTANCE.getParticlesForEmitter(emitter);
+            Queue<IMolangParticleInstance> queue = MolangParticleEngine.INSTANCE._getParticlesForEmitter(emitter);
             int count = queue == null ? 0 : queue.size();
             DebugRenderer.renderFloatingText(poseStack, bufferSource, "particles: " + count, x, y + 0.1, z, count >= emitter.particleGroup.getLimit() ? 0xFF0000 : 0xFFFFFF);
             poseStack.pushPose();

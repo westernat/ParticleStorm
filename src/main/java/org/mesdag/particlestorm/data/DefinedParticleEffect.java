@@ -3,6 +3,7 @@ package org.mesdag.particlestorm.data;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.resources.ResourceLocation;
+import org.mesdag.particlestorm.ParticleStorm;
 import org.mesdag.particlestorm.api.IComponent;
 import org.mesdag.particlestorm.api.IEmitterComponent;
 import org.mesdag.particlestorm.api.IEventNode;
@@ -18,9 +19,9 @@ import java.util.Map;
 public class DefinedParticleEffect {
     public static final Codec<DefinedParticleEffect> CODEC = RecordCodecBuilder.create(instance -> instance.group(
             ParticleDescription.CODEC.fieldOf("description").forGetter(effect -> effect.description),
-            Codec.unboundedMap(Codec.STRING, ParticleCurve.CODEC).fieldOf("curves").orElseGet(Map::of).forGetter(effect -> effect.curves),
+            ParticleStorm.lenientOptionalFieldOf(Codec.unboundedMap(Codec.STRING, ParticleCurve.CODEC), "curves", Map::of).forGetter(effect -> effect.curves),
             DFUCompat.dispatchedMap(ResourceLocation.CODEC, IComponent.COMPONENTS::get).fieldOf("components").forGetter(effect -> effect.components),
-            Codec.unboundedMap(Codec.STRING, IEventNode.CODEC).fieldOf("events").orElseGet(Map::of).forGetter(effect -> effect.events)
+            ParticleStorm.lenientOptionalFieldOf(Codec.unboundedMap(Codec.STRING, IEventNode.CODEC), "events", Map::of).forGetter(effect -> effect.events)
     ).apply(instance, DefinedParticleEffect::new));
     public final ParticleDescription description;
     public final Map<String, ParticleCurve> curves;

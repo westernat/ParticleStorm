@@ -54,7 +54,7 @@ public final class EmitterAttachHandler {
             if (data == null && (data = stateMap.get(state)) == null) return true;
             WithBlockParticleEmitter emitter = data.apply(level, pos, state);
             if (emitter == null) return data.allowsVanilla;
-            MolangParticleEngine.INSTANCE.addEmitter(emitter);
+            MolangParticleEngine.addEmitterRouted(emitter);
             attachedToBlockEmitters.put(pos.immutable(), pair = new ObjectBooleanImmutablePair<>(emitter, data.allowsVanilla));
         }
         return pair.rightBoolean();
@@ -94,7 +94,7 @@ public final class EmitterAttachHandler {
     public static boolean addEmitter(Level level, Vec3 pos, ResourceLocation particle, Variable... variables) {
         if (ableToAddEmitter()) {
             PresetVarsParticleEmitter emitter = new PresetVarsParticleEmitter(level, pos, particle, false, variables);
-            MolangParticleEngine.INSTANCE.addEmitter(emitter);
+            MolangParticleEngine.addEmitterRouted(emitter);
             ignoreRangeEmitters.add(emitter);
             return false;
         }

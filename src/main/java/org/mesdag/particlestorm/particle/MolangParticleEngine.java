@@ -9,12 +9,8 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.Tesselator;
 import com.mojang.serialization.JsonOps;
 import it.unimi.dsi.fastutil.Hash;
-import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
-import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.objects.Object2ObjectLinkedOpenHashMap;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenCustomHashMap;
-import it.unimi.dsi.fastutil.objects.ObjectIterator;
-import it.unimi.dsi.fastutil.objects.Reference2ObjectOpenHashMap;
 import net.minecraft.CrashReport;
 import net.minecraft.CrashReportCategory;
 import net.minecraft.ReportedException;
@@ -27,18 +23,14 @@ import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.culling.Frustum;
 import net.minecraft.client.renderer.texture.TextureManager;
-import net.minecraft.core.particles.ParticleGroup;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.FileToIdConverter;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.PreparableReloadListener;
 import net.minecraft.server.packs.resources.Resource;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.util.GsonHelper;
-import net.minecraft.util.Mth;
 import net.minecraft.util.profiling.ProfilerFiller;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.level.Level;
 import net.minecraftforge.fml.ModLoader;
 import org.jetbrains.annotations.Nullable;
 import org.lwjgl.opengl.GL11;
@@ -55,19 +47,21 @@ import org.mesdag.particlestorm.particle.screen.ScreenParticleEmitter;
 
 import java.io.IOException;
 import java.io.Reader;
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Queue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.function.Predicate;
 
-public final class MolangParticleEngine implements PreparableReloadListener {
+public final class MolangParticleEngine extends MolangParticleManager implements PreparableReloadListener {
     public static final MolangParticleEngine INSTANCE = new MolangParticleEngine();
     private static final FileToIdConverter PARTICLE_LISTER = FileToIdConverter.json("particle_definitions");
     private Map<ResourceLocation, DefinedParticleEffect> id2Effect = ImmutableMap.of();
     private Map<ResourceLocation, ParticlePreset> id2Particle = ImmutableMap.of();
     private Map<ResourceLocation, EmitterPreset> id2Emitter = ImmutableMap.of();
 
-    private final Int2ObjectOpenHashMap<ParticleEmitter> emitters = new Int2ObjectOpenHashMap<>();
     private final Object2ObjectOpenCustomHashMap<Entity, Object2ObjectLinkedOpenHashMap<ResourceLocation, ParticleEmitter>> tracker = new Object2ObjectOpenCustomHashMap<>(new Hash.Strategy<>() {
         @Override
         public int hashCode(Entity o) {
@@ -79,13 +73,11 @@ public final class MolangParticleEngine implements PreparableReloadListener {
             return a == b || (a != null && b != null && a.getUUID().equals(b.getUUID()));
         }
     });
-    private final Int2ObjectOpenHashMap<Queue<IMolangParticleInstance>> particlesForEmitter = new Int2ObjectOpenHashMap<>();
-    private final Queue<IMolangParticleInstance> particlesToAdd = new ArrayDeque<>();
-    private final Reference2ObjectOpenHashMap<ParticleRenderType, Queue<IMolangParticleInstance>> groupedParticles = new Reference2ObjectOpenHashMap<>();
-    public final IntAllocator allocator = new IntAllocator();
     private boolean initialized = false;
 
-    private MolangParticleEngine() {}
+    private MolangParticleEngine() {
+        super(new IntAllocator());
+    }
 
     public Map<ResourceLocation, DefinedParticleEffect> id2Effect() {
         return id2Effect;
@@ -144,7 +136,7 @@ public final class MolangParticleEngine implements PreparableReloadListener {
             }
             return;
         }
-        INSTANCE.addParticle(instance);
+        INSTANCE._addParticle(instance);
     }
 
     public static @Nullable Queue<IMolangParticleInstance> getParticlesForEmitterRouted(ParticleEmitter emitter) {
@@ -171,32 +163,7 @@ public final class MolangParticleEngine implements PreparableReloadListener {
             }
             this.initialized = true;
         }
-        if (!emitters.isEmpty()) {
-            int renderDistSqr = Mth.square(minecraft.options.renderDistance().get() * 16);
-            var iterator = emitters.int2ObjectEntrySet().fastIterator();
-            while (iterator.hasNext()) {
-                ParticleEmitter emitter = iterator.next().getValue();
-                try {
-                    if (emitter.isRemoved() || emitter.level.dimension() != player.clientLevel.dimension()) {
-                        emitter.onRemove();
-                        removeEmitterNoUpdate(emitter);
-                        iterator.remove();
-                    } else if (Mth.lengthSquared(
-                            emitter.getPosition().x - player.getX(),
-                            emitter.getPosition().z - player.getZ()
-                    ) < renderDistSqr) {
-                        emitter.tick();
-                    }
-                } catch (Throwable e) {
-                    ParticleStorm.LOGGER.warn("Error ticking emitter: {}", e.getMessage());
-                    e.printStackTrace();
-                    if (emitter != null) {
-                        removeEmitterNoUpdate(emitter);
-                    }
-                    iterator.remove();
-                }
-            }
-        }
+        super.tick(minecraft, player);
         if (!tracker.isEmpty()) {
             var iterator = tracker.object2ObjectEntrySet().fastIterator();
             while (iterator.hasNext()) {
@@ -206,35 +173,6 @@ public final class MolangParticleEngine implements PreparableReloadListener {
                 } else if (entry.getValue().values().removeIf(ParticleEmitter::isRemoved) && entry.getValue().isEmpty()) {
                     iterator.remove();
                 }
-            }
-        }
-        if (!particlesToAdd.isEmpty()) {
-            for (IMolangParticleInstance instance : particlesToAdd) {
-                particlesForEmitter.computeIfAbsent(instance.getEmitter().id, i -> new ArrayDeque<>()).add(instance);
-                groupedParticles.computeIfAbsent(instance.self().getRenderType(), o -> new ArrayDeque<>()).add(instance);
-            }
-            particlesToAdd.clear();
-        }
-        if (!groupedParticles.isEmpty()) {
-            var iterator = groupedParticles.reference2ObjectEntrySet().fastIterator();
-            while (iterator.hasNext()) {
-                iterator.next().getValue().removeIf(instance -> {
-                    try {
-                        instance.self().tick();
-                        return instance.isDiscarded();
-                    } catch (Throwable e) {
-                        ParticleStorm.LOGGER.warn("Error ticking particle: {}", e.getMessage());
-                        e.printStackTrace();
-                        instance.discard();
-                        return true;
-                    }
-                });
-            }
-        }
-        if (!particlesForEmitter.isEmpty()) {
-            var iterator = particlesForEmitter.int2ObjectEntrySet().fastIterator();
-            while (iterator.hasNext()) {
-                iterator.next().getValue().removeIf(IMolangParticleInstance::isDiscarded);
             }
         }
     }
@@ -294,30 +232,8 @@ public final class MolangParticleEngine implements PreparableReloadListener {
         }
     }
 
-    public ObjectIterator<Int2ObjectMap.Entry<ParticleEmitter>> getEmitters() {
-        return emitters.int2ObjectEntrySet().fastIterator();
-    }
-
-    public int totalEmitterCount() {
-        return emitters.size();
-    }
-
-    public int totalParticleCount() {
-        return particlesForEmitter.values().stream().mapToInt(Queue::size).sum();
-    }
-
-    public void loadEmitter(Level level, int id, CompoundTag tag) {
-        ParticleEmitter emitter = RegisterCustomEmitterTypeEvent.create(level, tag);
-        emitter.id = id;
-        emitters.put(id, emitter);
-        if (allocator.forceAllocate(id)) {
-            ParticleStorm.LOGGER.warn("There was an emitter exist before, now replaced");
-        }
-    }
-
     public void addEmitter(ParticleEmitter emitter, boolean sync) {
-        emitter.id = allocator.allocate();
-        emitters.put(emitter.id, emitter);
+        _addEmitter(emitter);
         if (sync) EmitterSynchronizePacket.syncToServer(emitter);
     }
 
@@ -343,64 +259,30 @@ public final class MolangParticleEngine implements PreparableReloadListener {
         return addTrackedEmitter(entity, particleId, true);
     }
 
-    public void addParticle(IMolangParticleInstance instance) {
-        Optional<ParticleGroup> optional = instance.self().getParticleGroup();
-        if (optional.isPresent()) {
-            Queue<IMolangParticleInstance> queue = particlesForEmitter.get(instance.getEmitter().id);
-            if (queue == null || queue.size() < optional.get().getLimit()) {
-                particlesToAdd.add(instance);
-            }
-        } else {
-            particlesToAdd.add(instance);
+    public @Nullable ParticleEmitter removeEmitter(int id, boolean sync) {
+        ParticleEmitter removed = _removeEmitter(id);
+        if (removed != null && sync) {
+            EmitterRemovalPacket.sendToServer(id);
         }
-    }
-
-    public @Nullable Queue<IMolangParticleInstance> getParticlesForEmitter(ParticleEmitter emitter) {
-        return particlesForEmitter.get(emitter.id);
-    }
-
-    private void removeEmitterNoUpdate(ParticleEmitter emitter) {
-        emitter.remove();
-        allocator.release(emitter.id);
-        particlesForEmitter.remove(emitter.id);
+        return removed;
     }
 
     public void removeEmitter(ParticleEmitter emitter, boolean sync) {
         removeEmitter(emitter.id, sync);
     }
 
-    public @Nullable ParticleEmitter removeEmitter(int id, boolean sync) {
-        ParticleEmitter removed = emitters.remove(id);
-        if (removed != null) {
-            removed.onRemove();
-            allocator.release(id);
-            particlesForEmitter.remove(id);
-            if (sync) EmitterRemovalPacket.sendToServer(id);
-        }
-        return removed;
-    }
-
+    @Override
     public void removeAll() {
-        if (!emitters.isEmpty()) {
-            ObjectIterator<Int2ObjectMap.Entry<ParticleEmitter>> iterator = emitters.int2ObjectEntrySet().fastIterator();
-            while (iterator.hasNext()) {
-                iterator.next().getValue().remove();
-                iterator.remove();
-            }
-        }
+        super.removeAll();
         tracker.clear();
-        particlesForEmitter.clear();
-        particlesToAdd.clear();
-        groupedParticles.clear();
-        allocator.clear();
-    }
-
-    public boolean contains(int id) {
-        return allocator.isAllocated(id);
     }
 
     public @Nullable ParticleEmitter getEmitter(int id) {
-        return emitters.get(id);
+        return _getEmitter(id);
+    }
+
+    public @Nullable Queue<IMolangParticleInstance> getParticlesForEmitter(ParticleEmitter emitter) {
+        return _getParticlesForEmitter(emitter);
     }
 
     @Override

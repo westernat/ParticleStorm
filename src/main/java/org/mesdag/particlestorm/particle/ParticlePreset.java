@@ -5,10 +5,7 @@ import net.minecraft.client.particle.ParticleRenderType;
 import net.minecraftforge.fml.ModLoader;
 import org.jetbrains.annotations.Nullable;
 import org.mesdag.particlestorm.PSGameClient;
-import org.mesdag.particlestorm.api.IEventNode;
-import org.mesdag.particlestorm.api.IParticleComponent;
-import org.mesdag.particlestorm.api.MolangInstance;
-import org.mesdag.particlestorm.api.ParticlePresetLoadedEvent;
+import org.mesdag.particlestorm.api.*;
 import org.mesdag.particlestorm.data.DefinedParticleEffect;
 import org.mesdag.particlestorm.data.component.*;
 import org.mesdag.particlestorm.data.curve.ParticleCurve;
@@ -95,6 +92,7 @@ public class ParticlePreset {
         this.motionDynamic = effect.components.containsKey(ParticleMotionDynamic.ID);
         this.initialization = (ParticleInitialization) effect.components.get(ParticleInitialization.ID);
         for (Map.Entry<String, ParticleCurve> entry : effect.curves.entrySet()) {
+            String curveKey = entry.getKey();
             ParticleCurve curve = entry.getValue();
             curve.input.compile(parser);
             curve.horizontalRange.compile(parser);
@@ -103,8 +101,14 @@ public class ParticlePreset {
                     exp.compile(parser);
                 }
             });
-            String name = applyPrefixAliases(entry.getKey(), "variable.", "v.");
-            table.table.put(name, new Variable(name, p -> curve.calculate(p, name)));
+            String name = applyPrefixAliases(curveKey, "variable.", "v.");
+            table.table.put(name, new Variable(name, p -> {
+                if (p instanceof IMolangParticleInstance particle) {
+                    ParticleCurve latest = particle.getPreset().effect.curves.get(curveKey);
+                    return latest == null ? 0.0F : latest.calculate(p, name);
+                }
+                return curve.calculate(p, name);
+            }));
         }
         for (IParticleComponent component : Iterables.concat(effect.orderedParticleEarlyComponents, effect.orderedParticleComponents)) {
             assert component != null;

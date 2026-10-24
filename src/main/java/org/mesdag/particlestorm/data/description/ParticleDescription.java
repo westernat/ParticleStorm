@@ -11,7 +11,7 @@ public record ParticleDescription(ResourceLocation identifier, DescriptionParame
     public static final Codec<ParticleDescription> CODEC = RecordCodecBuilder.create(instance -> instance.group(
             ResourceLocation.CODEC.fieldOf("identifier").forGetter(ParticleDescription::identifier),
             DescriptionParameters.CODEC.optionalFieldOf("basic_render_parameters", DescriptionParameters.EMPTY).forGetter(ParticleDescription::parameters),
-            BuiltInRegistries.PARTICLE_TYPE.byNameCodec().fieldOf("type").orElseGet(ParticleStorm.MOLANG).forGetter(ParticleDescription::type)
+            ParticleStorm.lenientOptionalFieldOf(BuiltInRegistries.PARTICLE_TYPE.byNameCodec(), "type", () -> ParticleStorm.MOLANG.get()).forGetter(ParticleDescription::type)
     ).apply(instance, ParticleDescription::new));
 
     public ParticleDescription(ResourceLocation identifier, DescriptionParameters parameters) {

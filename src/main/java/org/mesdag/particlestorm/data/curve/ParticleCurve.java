@@ -4,6 +4,7 @@ import com.mojang.datafixers.util.Either;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.util.Tuple;
+import org.mesdag.particlestorm.ParticleStorm;
 import org.mesdag.particlestorm.api.MolangInstance;
 import org.mesdag.particlestorm.data.molang.FloatMolangExp;
 
@@ -14,9 +15,9 @@ import java.util.Map;
 
 public final class ParticleCurve {
     public static final Codec<ParticleCurve> CODEC = RecordCodecBuilder.create(instance -> instance.group(
-            CurveType.CODEC.fieldOf("type").orElse(CurveType.LINEAR).forGetter(curve -> curve.type),
+            ParticleStorm.lenientOptionalFieldOf(CurveType.CODEC, "type", () -> CurveType.LINEAR).forGetter(curve -> curve.type),
             FloatMolangExp.CODEC.fieldOf("input").forGetter(curve -> curve.input),
-            FloatMolangExp.CODEC.fieldOf("horizontal_range").orElse(FloatMolangExp.ONE).forGetter(curve -> curve.horizontalRange),
+            ParticleStorm.lenientOptionalFieldOf(FloatMolangExp.CODEC, "horizontal_range", () -> FloatMolangExp.ONE).forGetter(curve -> curve.horizontalRange),
             Codec.either(CurveNodes.MAP_CODEC, CurveNodes.LIST_CODEC).xmap(
                     either -> either.left().orElse(either.right().orElseThrow()),
                     nodes -> nodes.isLeft ? Either.left(nodes) : Either.right(nodes)
