@@ -63,7 +63,7 @@ public class MolangParticleInstance extends TextureSheetParticle implements IMol
     protected float[] UV;
 
     protected boolean insideKillPlane;
-    protected ParticleGroup particleGroup;
+    protected Optional<ParticleGroup> particleGroup = Optional.empty();
     protected int lastTimeline;
 
     public MolangParticleInstance(ParticlePreset preset, ClientLevel level, double x, double y, double z, ExtendMutableSpriteSet sprites) {
@@ -251,7 +251,7 @@ public class MolangParticleInstance extends TextureSheetParticle implements IMol
 
     @Override
     public void setParticleGroup(ParticleGroup group) {
-        this.particleGroup = group;
+        this.particleGroup = Optional.ofNullable(group);
     }
 
     @Override
@@ -589,6 +589,6 @@ public class MolangParticleInstance extends TextureSheetParticle implements IMol
 
     @Override
     public Optional<ParticleGroup> getParticleGroup() {
-        return Optional.ofNullable(particleGroup);
+        return particleGroup;
     }
 }

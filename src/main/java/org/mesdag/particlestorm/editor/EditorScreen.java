@@ -27,10 +27,7 @@ import net.minecraft.util.Mth;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
-import org.joml.Matrix4f;
-import org.joml.Matrix4fStack;
-import org.joml.Quaternionf;
-import org.joml.Vector3f;
+import org.joml.*;
 import org.mesdag.particlestorm.ParticleStorm;
 import org.mesdag.particlestorm.api.IComponent;
 import org.mesdag.particlestorm.api.IMolangParticleInstance;
@@ -47,6 +44,7 @@ import org.mesdag.particlestorm.particle.MolangParticleManager;
 import org.mesdag.particlestorm.particle.ParticleEmitter;
 import org.mesdag.particlestorm.particle.screen.IParticleManagerScreen;
 
+import java.lang.Math;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -102,6 +100,13 @@ public class EditorScreen extends Screen implements IParticleManagerScreen {
     private static final int GRID_RADIUS = 8;
     private static final int AXIS_LENGTH = 1;
 
+    /// Scene 下拉里的固定行下标：grid / axes / blocks，blocks 打开时紧跟 size x/y/z，
+    /// Stats 始终放在最后（所以行号取决于 blocks 是否展开，由 [#sceneStatsRow] 计算）。
+    private static final int SCENE_GRID_ROW = 0;
+    private static final int SCENE_AXES_ROW = 1;
+    private static final int SCENE_BLOCKS_ROW = 2;
+    private static final int SCENE_SIZE_FIRST_ROW = 3;
+
     /// 左侧工具框：组件 / 事件 / 曲线 / 描述 的编辑面板，宽度为屏幕宽度的 1/3（场景占右侧 2/3）。
     /// 每个页签是一个 [EditorTab]：页签栏由本类绘制，内容区交给当前页签负责。
 
@@ -130,6 +135,8 @@ public class EditorScreen extends Screen implements IParticleManagerScreen {
     private boolean axesVisible = true;
     /// 渲染场景原点附近的方块（区域大小以方块为单位，可在 Scene 下拉里改）。
     private boolean blocksVisible = true;
+    /// 工具栏右侧的发射器/粒子/FPS 统计文本开关（Scene 下拉里的「Stats」）。
+    private boolean statsVisible = true;
     private int blockSizeX = 16;
     private int blockSizeY = 16;
     private int blockSizeZ = 16;
@@ -253,7 +260,7 @@ public class EditorScreen extends Screen implements IParticleManagerScreen {
         if (this.atlasViewer == null) {
             guiGraphics.enableScissor(viewLeft, TOOLBAR_HEIGHT, this.width, this.height);
             try {
-                this.renderScene(partialTick);
+                this.renderScene(partialTick, mouseX, mouseY);
             } finally {
                 guiGraphics.disableScissor();
             }
@@ -288,6 +295,67 @@ public class EditorScreen extends Screen implements IParticleManagerScreen {
 
     private void updateCamera() {
         this.camera.orbit(this.focus, this.yaw, this.pitch, CAMERA_DISTANCE);
+    }
+
+    /// 场景正交投影矩阵（[#renderScene] 与场景手柄的屏幕投影共用，保证命中判定和画面一致）。
+    private Matrix4f sceneProjection() {
+        int viewLeft = this.toolboxWidth();
+        int viewTop = TOOLBAR_HEIGHT;
+        int viewWidth = Math.max(1, this.width - viewLeft);
+        int viewHeight = Math.max(1, this.height - viewTop);
+        float halfHeight = this.sceneHalfHeight();
+        float aspect = (float) Math.max(1, this.width) / (float) Math.max(1, this.height);
+        float halfWidth = halfHeight * aspect;
+        // 把投影中心平移到视口中心（NDC 原点 → 视口中心），场景就只出现在右 2/3
+        float viewCenterX = viewLeft + viewWidth * 0.5F;
+        float viewCenterY = viewTop + viewHeight * 0.5F;
+        float offsetX = halfWidth * (this.width - 2.0F * viewCenterX) / this.width;
+        float offsetY = halfHeight * (2.0F * viewCenterY - this.height) / this.height;
+        return new Matrix4f().setOrtho(
+                -halfWidth + offsetX, halfWidth + offsetX,
+                -halfHeight + offsetY, halfHeight + offsetY,
+                0.05F, 2048.0F);
+    }
+
+    /// 正交视口在 zoom = 1 时的半高对应的当前世界半高（场景手柄按它自适应大小）。
+    float sceneHalfHeight() {
+        return BASE_HALF_HEIGHT / this.zoom;
+    }
+
+    /// 屏幕 1 像素对应的世界长度（正交投影下处处相同，用于鼠标拖动 → 世界位移换算）。
+    float worldPerPixel() {
+        return 2.0F * this.sceneHalfHeight() / Math.max(1, this.height);
+    }
+
+    /// 世界坐标 → 屏幕像素坐标（左上角原点）；场景手柄用它做命中判定。
+    Vector2f projectToScreen(Vec3 world) {
+        Vec3 relative = world.subtract(this.camera.getPosition());
+        Matrix4f view = new Matrix4f().rotation(this.camera.rotation().conjugate(new Quaternionf()));
+        Matrix4f projection = this.sceneProjection().mul(view);
+        Vector4f clip = projection.transform(new Vector4f((float) relative.x, (float) relative.y, (float) relative.z, 1.0F));
+        float inverseW = 1.0F / clip.w;
+        return new Vector2f(
+                (clip.x * inverseW * 0.5F + 0.5F) * this.width,
+                (0.5F - clip.y * inverseW * 0.5F) * this.height);
+    }
+
+    Vec3 cameraForward() {
+        return PreviewCamera.forwardOf(this.yaw, this.pitch);
+    }
+
+    /// 屏幕向右对应的世界方向。
+    Vec3 cameraRight() {
+        return PreviewCamera.rightOf(this.yaw);
+    }
+
+    /// 屏幕向上对应的世界方向。
+    Vec3 cameraUp() {
+        return PreviewCamera.upOf(this.yaw, this.pitch);
+    }
+
+    /// 发射器所在的场景原点（消除平面等"相对发射器"的几何都锚定在这里）。
+    Vec3 sceneOriginPos() {
+        return this.sceneOrigin;
     }
 
     /// 用当前缓存的 [EditorScreen#effect] 发射一个发射器（目标明确，直接走 manager）。
@@ -343,28 +411,12 @@ public class EditorScreen extends Screen implements IParticleManagerScreen {
     }
 
     /// 用正交投影 + 相机视图矩阵绘制场景里的粒子（场景视口 = 左侧工具框右边的 2/3 区域）。
-    private void renderScene(float partialTick) {
+    private void renderScene(float partialTick, int mouseX, int mouseY) {
         this.updateCamera();
 
-        int viewLeft = this.toolboxWidth();
-        int viewTop = TOOLBAR_HEIGHT;
-        int viewWidth = Math.max(1, this.width - viewLeft);
-        int viewHeight = Math.max(1, this.height - viewTop);
-        float halfHeight = BASE_HALF_HEIGHT / this.zoom;
         // 正交投影的 NDC 始终映射到整个窗口，所以 aspect 必须用屏幕宽高比（保持方形像素），
         // 视口只是靠 scissor 裁出来的子区域；用视口宽高比会把场景横向压扁。
-        float aspect = (float) Math.max(1, this.width) / (float) Math.max(1, this.height);
-        float halfWidth = halfHeight * aspect;
-
-        // 把投影中心平移到视口中心（NDC 原点 → 视口中心），场景就只出现在右 2/3
-        float viewCenterX = viewLeft + viewWidth * 0.5F;
-        float viewCenterY = viewTop + viewHeight * 0.5F;
-        float offsetX = halfWidth * (this.width - 2.0F * viewCenterX) / this.width;
-        float offsetY = halfHeight * (2.0F * viewCenterY - this.height) / this.height;
-        Matrix4f projection = new Matrix4f().setOrtho(
-                -halfWidth + offsetX, halfWidth + offsetX,
-                -halfHeight + offsetY, halfHeight + offsetY,
-                0.05F, 2048.0F);
+        Matrix4f projection = this.sceneProjection();
         Matrix4f view = new Matrix4f().rotation(this.camera.rotation().conjugate(new Quaternionf()));
 
         this.frustum = new Frustum(view, projection);
@@ -405,6 +457,11 @@ public class EditorScreen extends Screen implements IParticleManagerScreen {
             // 坐标轴最后画、关掉深度测试 → 透视方块和粒子
             if (this.axesVisible) {
                 this.renderAxes(cameraPos);
+            }
+            // 组件 Grid 的场景内手柄（如粒子消除平面）画在最上层，同样能透视方块和粒子
+            SceneGizmo gizmo = this.tabs.get(this.activeTabIndex).sceneGizmo();
+            if (gizmo != null) {
+                gizmo.render(mouseX, mouseY, cameraPos);
             }
         } finally {
             // 与 ParticleEngine#render 收尾一致：把 depthMask 还给 GUI 的默认状态
@@ -582,16 +639,18 @@ public class EditorScreen extends Screen implements IParticleManagerScreen {
                 return true;
             }
             int index = this.sceneDropdown.hitTest(mouseX, mouseY);
-            if (index == 0) {
+            if (index == SCENE_GRID_ROW) {
                 // 选完保持展开，等失焦（点别处 / ESC / 打开其它下拉）再关
                 this.gridVisible = !this.gridVisible;
-            } else if (index == 1) {
+            } else if (index == SCENE_AXES_ROW) {
                 this.axesVisible = !this.axesVisible;
-            } else if (index == 2) {
+            } else if (index == SCENE_BLOCKS_ROW) {
                 this.blocksVisible = !this.blocksVisible;
                 this.closeSceneSizeEditor();
-            } else if (index >= 3 && index <= 5 && this.blocksVisible) {
-                this.openSceneSizeEditor(index - 3);
+            } else if (index == this.sceneStatsRow()) {
+                this.statsVisible = !this.statsVisible;
+            } else if (index >= SCENE_SIZE_FIRST_ROW && index < SCENE_SIZE_FIRST_ROW + 3 && this.blocksVisible) {
+                this.openSceneSizeEditor(index - SCENE_SIZE_FIRST_ROW);
             } else {
                 // 点在下拉列表之外：失焦，关闭
                 this.sceneDropdown.close();
@@ -606,6 +665,11 @@ public class EditorScreen extends Screen implements IParticleManagerScreen {
         if (button == 0 && this.tabs.get(this.activeTabIndex).isCapturingInput()) {
             // 点击工具框之外：关闭下拉/取消编辑，并吞掉这次点击（避免误触相机操作）
             this.closeMenus();
+            return true;
+        }
+        // 场景内的组件手柄优先于相机：命中时消费点击，不进入轨道旋转
+        if (button == 0 && this.isInScene(mouseX, mouseY)
+                && this.tabs.get(this.activeTabIndex).sceneMouseClicked(mouseX, mouseY, button)) {
             return true;
         }
         if (button == 0) {
@@ -627,6 +691,10 @@ public class EditorScreen extends Screen implements IParticleManagerScreen {
         }
         MolangEditBox editingBox = this.editingVariableBox();
         if (editingBox != null && editingBox.mouseDragged(mouseX, mouseY, 0, 0, 0)) {
+            return true;
+        }
+        // 场景内手柄拖动优先（拖动可能离开场景视口，仍要把位移继续给手柄）
+        if (this.tabs.get(this.activeTabIndex).sceneMouseDragged(mouseX, mouseY)) {
             return true;
         }
         // 工具框里的拖拽交互（例如渐变色标）优先；没在拖时返回 false 再走相机
@@ -669,6 +737,7 @@ public class EditorScreen extends Screen implements IParticleManagerScreen {
         if (editingBox != null) {
             editingBox.mouseReleased(mouseX, mouseY, 0);
         }
+        this.tabs.get(this.activeTabIndex).sceneMouseReleased(mouseX, mouseY);
         this.tabs.get(this.activeTabIndex).mouseReleased(mouseX, mouseY);
         this.dragging = DRAG_NONE;
         return super.mouseReleased(mouseX, mouseY, button);
@@ -780,9 +849,16 @@ public class EditorScreen extends Screen implements IParticleManagerScreen {
         // 先画左侧工具框，再画工具栏（含下拉列表），保证工具栏和下拉不被工具框盖住
         this.renderToolbox(guiGraphics, mouseX, mouseY);
         this.renderToolbar(guiGraphics, mouseX, mouseY);
-        Component stats = Component.translatable("particle_editor.stats",
-                this.manager.totalEmitterCount(), this.manager.totalParticleCount(), Minecraft.fps);
-        guiGraphics.drawString(this.font, stats, this.width - this.font.width(stats) - 8, 6, 0xFFFFFF, true);
+        if (this.statsVisible) {
+            Component stats = Component.translatable("particle_editor.stats",
+                    this.manager.totalEmitterCount(), this.manager.totalParticleCount(), Minecraft.fps);
+            guiGraphics.drawString(this.font, stats, this.width - this.font.width(stats) - 8, 6, 0xFFFFFF, true);
+        }
+        // 场景手柄打开时在场景左上角显示操作提示（如消除平面的"方块平移 / 菱形旋转"）
+        SceneGizmo gizmo = this.tabs.get(this.activeTabIndex).sceneGizmo();
+        if (gizmo != null) {
+            guiGraphics.drawString(this.font, gizmo.hint(), this.toolboxWidth() + 6, TOOLBAR_HEIGHT + 6, 0xFFB8D8FF, true);
+        }
         int textX = this.toolboxWidth() + 6;
         if (this.status != null) {
             guiGraphics.drawString(this.font, this.status, textX, this.height - 36, 0x55FF55, true);
@@ -944,6 +1020,8 @@ public class EditorScreen extends Screen implements IParticleManagerScreen {
             sceneItems.add(Component.translatable("particle_editor.scene.size_y", this.blockSizeY).getString());
             sceneItems.add(Component.translatable("particle_editor.scene.size_z", this.blockSizeZ).getString());
         }
+        sceneItems.add((this.statsVisible ? "[x] " : "[ ] ")
+                + Component.translatable("particle_editor.scene.stats").getString());
         this.sceneDropdown.setPosition(sceneX, TOOLBAR_HEIGHT);
         this.sceneDropdown.setItems(sceneItems);
         this.sceneDropdown.render(guiGraphics, this.font, mouseX, mouseY, this.height);
@@ -1632,14 +1710,19 @@ public class EditorScreen extends Screen implements IParticleManagerScreen {
 
     // endregion
 
-    /// 在 Scene 下拉的「size x/y/z」行上盖一个原版 EditBox（行号固定为 3 + axis）。
+    /// Scene 下拉里 Stats 的行号：始终排在最后（方块打开时在 size x/y/z 之后，关闭时紧跟 blocks）。
+    private int sceneStatsRow() {
+        return this.blocksVisible ? SCENE_SIZE_FIRST_ROW + 3 : SCENE_BLOCKS_ROW + 1;
+    }
+
+    /// 在 Scene 下拉的「size x/y/z」行上盖一个原版 EditBox（行号固定为 [SCENE_SIZE_FIRST_ROW] + axis）。
     private void openSceneSizeEditor(int axis) {
         int value = switch (axis) {
             case 0 -> this.blockSizeX;
             case 1 -> this.blockSizeY;
             default -> this.blockSizeZ;
         };
-        int rowY = TOOLBAR_HEIGHT + (3 + axis) * TOOLBAR_ROW_HEIGHT;
+        int rowY = TOOLBAR_HEIGHT + (SCENE_SIZE_FIRST_ROW + axis) * TOOLBAR_ROW_HEIGHT;
         this.sceneSizeAxis = axis;
         int sceneX = this.sceneButtonX();
         this.sceneSizeBox = new EditBox(this.font, sceneX + 1, rowY, this.sceneButtonWidth() - 2, TOOLBAR_ROW_HEIGHT, Component.literal("size"));
@@ -1709,6 +1792,12 @@ public class EditorScreen extends Screen implements IParticleManagerScreen {
 
     private boolean isInToolbox(double mouseX, double mouseY) {
         return mouseX >= 0 && mouseX < this.toolboxWidth() && mouseY >= TOOLBAR_HEIGHT && mouseY < this.height;
+    }
+
+    /// 是否落在右侧预览场景里（工具栏下方、工具框右边）。
+    private boolean isInScene(double mouseX, double mouseY) {
+        return mouseX >= this.toolboxWidth() && mouseX < this.width
+                && mouseY >= TOOLBAR_HEIGHT && mouseY < this.height;
     }
 
     private void onToolboxClick(double mouseX, double mouseY) {

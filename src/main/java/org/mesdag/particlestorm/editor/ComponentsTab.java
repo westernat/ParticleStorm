@@ -279,6 +279,19 @@ final class ComponentsTab extends EditorTab {
         return this.addDropdown.isOpen() || (this.grid != null && this.grid.isCapturingInput());
     }
 
+    /// Grid 打开期间它可能带一个场景内手柄（例如粒子消除平面）：只在当前显示的 Grid 上暴露。
+    @Override
+    @Nullable
+    SceneGizmo sceneGizmo() {
+        return this.grid == null ? null : this.grid.sceneGizmo();
+    }
+
+    /// 手柄拖动松手后 `markChanged` 才为 true，这里复用 Grid 的落地流程。
+    @Override
+    void onSceneGizmoChanged() {
+        this.applyPendingChanges();
+    }
+
     @Override
     boolean scroll(double mouseX, double mouseY, double scrollY) {
         if (this.addDropdown.contains(mouseX, mouseY)) {

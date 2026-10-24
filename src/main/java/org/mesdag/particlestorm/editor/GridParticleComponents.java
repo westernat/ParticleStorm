@@ -14,6 +14,7 @@ import org.mesdag.particlestorm.data.molang.FloatMolangExp3;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 
 /// 粒子侧组件的编辑 Grid（`minecraft:particle_*`）。
 final class ParticleInitialSpeedGrid extends ComponentGrid {
@@ -310,38 +311,44 @@ final class ParticleLifetimeExpressionGrid extends ComponentGrid {
 
 final class ParticleKillPlaneGrid extends ComponentGrid {
     private float a;
-    private float b;
+    private float b = 1.0F;
     private float c;
     private float d;
     private final TextRow aRow;
     private final TextRow bRow;
     private final TextRow cRow;
     private final TextRow dRow;
+    /// 场景内平面手柄：拖动时只改本 Grid 的草稿值，松手才 `markChanged` 重建组件。
+    private final PlaneGizmo gizmo;
 
     ParticleKillPlaneGrid(EditorScreen screen, Font font) {
         super(screen, font);
         this.setComponentId(ParticleLifetimeKillPlane.ID);
-        this.aRow = this.text("a", String.valueOf(this.a), text -> {
+        this.aRow = this.text("a", planeText(this.a), text -> {
             this.a = floatOf(text);
             this.markChanged();
         });
-        this.bRow = this.text("b", String.valueOf(this.b), text -> {
+        this.bRow = this.text("b", planeText(this.b), text -> {
             this.b = floatOf(text);
             this.markChanged();
         });
-        this.cRow = this.text("c", String.valueOf(this.c), text -> {
+        this.cRow = this.text("c", planeText(this.c), text -> {
             this.c = floatOf(text);
             this.markChanged();
         });
-        this.dRow = this.text("d", String.valueOf(this.d), text -> {
+        this.dRow = this.text("d", planeText(this.d), text -> {
             this.d = floatOf(text);
             this.markChanged();
         });
+        this.gizmo = new PlaneGizmo(screen,
+                () -> new PlaneGizmo.Plane(this.a, this.b, this.c, this.d),
+                this::applyPlane);
     }
 
     @Override
     public BuiltComponent createDefault() {
-        return new BuiltComponent(ParticleLifetimeKillPlane.ID, new ParticleLifetimeKillPlane(0, 0, 0, 0));
+        // 水平平面（法线 +Y、过发射器原点）：新加的组件一打开就有合法的平面手柄可拖
+        return new BuiltComponent(ParticleLifetimeKillPlane.ID, new ParticleLifetimeKillPlane(0, 1, 0, 0));
     }
 
     @Override
@@ -356,10 +363,58 @@ final class ParticleKillPlaneGrid extends ComponentGrid {
         this.b = plane.B;
         this.c = plane.C;
         this.d = plane.D;
-        this.aRow.setValue(String.valueOf(this.a));
-        this.bRow.setValue(String.valueOf(this.b));
-        this.cRow.setValue(String.valueOf(this.c));
-        this.dRow.setValue(String.valueOf(this.d));
+        if (this.a == 0.0F && this.b == 0.0F && this.c == 0.0F) {
+            // 旧数据里的退化平面（A=B=C=0）：按水平平面显示，否则打开 Grid 时连手柄都看不到；
+            // 只有之后再编辑/拖动时才会把 [0,1,0,0] 写回组件
+            this.b = 1.0F;
+        }
+        this.aRow.setValue(planeText(this.a));
+        this.bRow.setValue(planeText(this.b));
+        this.cRow.setValue(planeText(this.c));
+        this.dRow.setValue(planeText(this.d));
+    }
+
+    @Override
+    SceneGizmo sceneGizmo() {
+        return this.gizmo;
+    }
+
+    @Override
+    void closeEditing() {
+        // 拖动到一半关闭 Grid：先把草稿按松手处理，避免草稿和组件数据不一致
+        this.gizmo.cancelDrag();
+        super.closeEditing();
+    }
+
+    /// 手柄的草稿落地：同步四个字段和文字行；`commit` 为 true 时才通知宿主重建组件。
+    private void applyPlane(PlaneGizmo.Plane plane, boolean commit) {
+        this.a = plane.a();
+        this.b = plane.b();
+        this.c = plane.c();
+        this.d = plane.d();
+        this.aRow.setValue(planeText(this.a));
+        this.bRow.setValue(planeText(this.b));
+        this.cRow.setValue(planeText(this.c));
+        this.dRow.setValue(planeText(this.d));
+        if (commit) {
+            this.markChanged();
+        }
+    }
+
+    /// 平面参数的显示/输入文本：去掉浮点噪声（`-0.0`、`0.30000001`），最多保留 4 位小数。
+    private static String planeText(float value) {
+        if (Math.abs(value) < 1.0E-5F) {
+            return "0";
+        }
+        String text = String.format(Locale.ROOT, "%.4f", value);
+        int end = text.length();
+        while (end > 0 && text.charAt(end - 1) == '0') {
+            end--;
+        }
+        if (end > 0 && text.charAt(end - 1) == '.') {
+            end--;
+        }
+        return text.substring(0, end);
     }
 }
 

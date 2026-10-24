@@ -129,24 +129,28 @@ public final class MolangParticleEngine extends MolangParticleManager implements
         }
     }
 
+    public static @Nullable MolangParticleManager getScreenManager() {
+        return screenManager;
+    }
+
     public static void addParticle(IMolangParticleInstance instance) {
-        if (screenManager != null && instance.getEmitter() instanceof ScreenParticleEmitter) {
-            screenManager._addParticle(instance);
+        if (getScreenManager() != null && instance.getEmitter() instanceof ScreenParticleEmitter) {
+            getScreenManager()._addParticle(instance);
         } else {
             INSTANCE._addParticle(instance);
         }
     }
 
     public static void addEmitter(ParticleEmitter emitter) {
-        if (screenManager != null && emitter instanceof ScreenParticleEmitter) {
-            screenManager._addEmitter(emitter);
+        if (getScreenManager() != null && emitter instanceof ScreenParticleEmitter) {
+            getScreenManager()._addEmitter(emitter);
         } else {
             INSTANCE._addEmitter(emitter);
         }
     }
 
     public static void removeEmitter(int id) {
-        if (screenManager != null && screenManager._removeEmitter(id) instanceof ScreenParticleEmitter) {
+        if (getScreenManager() != null && getScreenManager()._removeEmitter(id) instanceof ScreenParticleEmitter) {
             return;
         }
         INSTANCE._removeEmitter(id);
@@ -177,15 +181,15 @@ public final class MolangParticleEngine extends MolangParticleManager implements
     }
 
     public static @Nullable ParticleEmitter getEmitter(int id) {
-        if (screenManager != null && screenManager._getEmitter(id) instanceof ScreenParticleEmitter emitter) {
+        if (getScreenManager() != null && getScreenManager()._getEmitter(id) instanceof ScreenParticleEmitter emitter) {
             return emitter;
         }
         return INSTANCE._getEmitter(id);
     }
 
     public static @Nullable Queue<IMolangParticleInstance> getParticlesForEmitter(ParticleEmitter emitter) {
-        if (screenManager != null && emitter instanceof ScreenParticleEmitter) {
-            return screenManager._getParticlesForEmitter(emitter);
+        if (getScreenManager() != null && emitter instanceof ScreenParticleEmitter) {
+            return getScreenManager()._getParticlesForEmitter(emitter);
         }
         return INSTANCE._getParticlesForEmitter(emitter);
     }

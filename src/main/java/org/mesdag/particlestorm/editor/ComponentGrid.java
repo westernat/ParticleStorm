@@ -79,6 +79,12 @@ public abstract class ComponentGrid {
         return true;
     }
 
+    /// 场景内 3D 手柄：组件有可拖拽的几何表示时覆盖它，Grid 打开期间 [EditorScreen] 会在场景里绘制并转发鼠标。
+    @Nullable
+    SceneGizmo sceneGizmo() {
+        return null;
+    }
+
     // region 行构造
 
     TextRow text(String label, String value, Consumer<String> commit) {

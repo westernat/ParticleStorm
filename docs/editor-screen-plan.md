@@ -131,8 +131,8 @@ GUI pass 里 RenderSystem 的状态是：正交像素投影（`0..guiW, 0..guiH,
 - 下拉统一由 `editor/DropdownMenu` 组件负责：列表渲染、悬停/选中高亮、按屏幕高度截断行数、滚动（`contains`/`scroll`，放不下时带滚动条）、命中检测；按钮本身由 `EditorScreen` 绘制；**列表宽度不跟按钮走**——每帧按「当前条目里最长的文本宽度 + 10px 内边距」计算，按钮宽度只是 `minWidth` 下限（工具栏按钮 48px 时列表仍按内容展开）；
 - 四个下拉（Loaded / Scene / type / material）同一时间只展开一个（`closeMenus()` 互斥）；ESC 或点击下拉以外区域关闭；
 - 「Loaded」下拉（宽 `170`、行高 `12`）列出全部已加载粒子 id；点击 → `manager.clearScene()` + `spawnEmitter(id)`，并收起；
-- 「Scene」下拉列出 `[x] Grid (16m)`、`[x] Axes`、`[ ] Blocks` 三个开关（Blocks 打开时多出 `size x/y/z` 三行）；**选中开关后下拉保持展开**，等失焦（点下拉以外区域 / ESC / 打开其它下拉）才关闭，方便连续切换多个开关；
-- 工具栏右侧显示发射器/粒子数量统计，底部是操作提示。
+- 「Scene」下拉列出 `[x] Grid (16m)`、`[x] Axes`、`[x] Blocks`、`[x] Stats` 四个开关（Blocks 打开时紧跟 `size x/y/z` 三行，Stats 始终在最后）；**选中开关后下拉保持展开**，等失焦（点下拉以外区域 / ESC / 打开其它下拉）才关闭，方便连续切换多个开关；
+- 工具栏右侧显示发射器/粒子数量统计（可通过 Scene → Stats 关闭），底部是操作提示。
 
 ### 6.1 场景网格、坐标轴与方块
 
@@ -145,6 +145,7 @@ GUI pass 里 RenderSystem 的状态是：正交像素投影（`0..guiW, 0..guiH,
   - `[x] Grid (16m)`：网格显示开关；
   - `[x] Axes`：XYZ 红绿蓝轴线段开关（与网格独立，关闭网格仍可单独显示/隐藏轴线）；
   - `[ ] Blocks`：渲染场景原点附近的方块开关；打开后下拉里多出 `size x / size y / size z` 三行，点行就地弹原版 EditBox 编辑该轴方块数（范围 1..64，`ENTER` 提交、`ESC` 取消）；
+  - `[x] Stats`：工具栏右侧发射器 / 粒子数 / FPS 统计文本的开关；始终排在 Scene 下拉最后（size 行从 `SCENE_SIZE_FIRST_ROW = 3` 开始，Stats 行号由 `sceneStatsRow()` 计算：方块展开时 6、关闭时 3）；
 - 方块渲染以 `sceneOrigin` 为中心、按 `blockSizeX/Y/Z` 取区域，**按原版 `tesselateWithoutAO` 流程自己实现，并把 `renderModelFaceFlat` 的取光逻辑改到我们这一层**：每个方块 `pushPose` → `translate(方块坐标 - 相机坐标)` → `BakedModel#getQuads(state, direction, random, ModelData, RenderType)`/`getQuads(state, null, …)` → `Block.shouldRenderFace` 剔除 → `getShade` 平光 + `BlockColors` 染色 → `putBulkData`；**光照选择**：区域内部方块的面用邻居的光（`getLightColor(level, state, relativePos)`），区域最外层“被切出来”的面和 `side == null` 的面用方块自身的光（`getLightColor(level, state, pos)`）——原版 `renderModelFaceFlat` 默认拿邻居的光，邻居在渲染区域外/被切面贴着实心方块时就是黑的；另外地下方块的 block light 和 sky light 都是 0，采样到的光也是 0（纯黑），所以取到的光再经 `ambientLight()` 保底（block light ≥ 2、sky light ≥ 4），地下被切出来的面就是暗灰色而不是黑；`Lighting.setupLevel()` 在场景 pass 里设置光照方向；**只有区域内部方块开启剔除**；场景 pass 前 `FogRenderer.setupNoFog()`、`shaderColor` 归白；写深度，能正常遮挡其后的粒子；只渲染非空气方块。
 
 ### 6.2 左侧工具框（组件 / 事件 / 曲线 / 描述）
@@ -230,6 +231,17 @@ GUI pass 里 RenderSystem 的状态是：正交像素投影（`0..guiW, 0..guiH,
 - **换粒子时**：先 `this.effect = id2Effect().get(id)`，再清场景并 `spawnEmitter(id)`（之前的修改不会带到别的粒子）；随后调用 `onEffectReplaced()`：遍历所有页签执行 `EditorTab#onEffectReplaced`（默认收起编辑，`ComponentsTab` 直接丢弃打开的 Grid / 下拉 / 滚动偏移，**不提交旧 Grid 的改动**），再切回**描述页**（`DESCRIPTION_TAB = 0`）；「新建」同样会走这套重置；
 - **组件 / 事件 / 曲线页**都已可编辑（组件 Grid、事件节点树、曲线编辑器）。
 
+### 6.3 场景内平面手柄（粒子消除平面）
+
+- `ParticleKillPlaneGrid` 显示期间通过 `EditorTab#sceneGizmo()` 向 `EditorScreen` 暴露一个 `SceneGizmo`（`editor/PlaneGizmo.java`）；关闭 Grid / 切走页签后返回 null，场景里就不再绘制、也不再响应鼠标；
+- 绘制：以**场景原点**（发射器位置）为基准画出 `A*x + B*y + C*z + D = 0` 的平面（半透明面 + 平面内网格 + 法线箭头），大小随 zoom 自适应（`sceneHalfHeight() * 0.75`）；两个手柄是屏幕空间定宽的世界几何（中心方块 = 平移、法线末端菱形 = 旋转），画在场景 pass 末尾并关闭深度测试，所以能透视方块和粒子；overlay 左上角显示一行操作提示；
+- 命中/拖动：用 `EditorScreen#projectToScreen`（与 `sceneProjection()` 共用同一个投影矩阵）投影回屏幕做 10px 半径判定；拖动时用 `worldPerPixel()` 把屏幕位移换算成世界位移，用 `cameraRight()` / `cameraUp()` 取相机基向量；
+- **平移手柄**：屏幕位移 → 世界位移，只取沿法线（未归一化）的分量改 `D`：`D -= delta · (A,B,C)`；
+- **旋转手柄**：把鼠标映射到以平面中心为球心、法线箭头长度为半径的**虚拟半球**（`rotateStartA/B` 记录拖动开始时的法线在相机 right/up 上的分量，拖向圆内 = 法线朝相机倾斜、沿圆周拖 = 法线在屏幕平面内旋转，超出圆则钳在边界）；法线朝向相机/背离相机用 `rotateTowardSign` 决定半球 z 符号；然后 `D = -n' · anchor`，`anchor` 是拖动开始时的平面中心（发射器局部坐标），平面原地旋转、不会跳走；
+- 手柄拖动只更新 Grid 的草稿字段和四个文字行，**松手才 `markChanged`** → `ComponentsTab` 重建组件并重新发射，避免拖动时每帧清场景重放粒子；拖动中关闭 Grid 会按松手处理一次；
+- 新添加的 `ParticleLifetimeKillPlane` 默认值是水平平面 `[0, 1, 0, 0]`（法线 +Y、过发射器原点），保证一打开就有合法手柄可拖；
+- 同时修正了 `ParticleLifetimeKillPlane` 的运行时判定：原实现拿粒子到**世界原点**的距离平方与 `D²/|n|²` 比较、完全忽略 `A/B/C`，并且在 `particle_motion_dynamic` 存在时直接跳过；现在按 `A*(x-ex) + B*(y-ey) + C*(z-ez) + D` 的**符号变化**判断穿越（本地空间粒子先经 `getWorldPosition` 转世界坐标，`ex/ey/ez` 是发射器位置），与手柄显示的平面一致。
+
 ## 7. 关键代码位置
 
 | 内容 | 位置 |
@@ -240,6 +252,7 @@ GUI pass 里 RenderSystem 的状态是：正交像素投影（`0..guiW, 0..guiH,
 | 组件页签（列表 + 增删 + 编辑 Grid 宿主） | `editor/ComponentsTab.java` |
 | 组件编辑 Grid 基类与字段行 | `editor/ComponentGrid.java` |
 | 内置组件 Grid（发射器侧 / 粒子侧） | `editor/GridEmitterComponents.java`、`editor/GridParticleComponents.java` |
+| 场景内 3D 手柄（消除平面） | `editor/SceneGizmo.java`、`editor/PlaneGizmo.java` |
 | 内置 Grid 注册 / 自定义 Grid 事件 | `editor/ComponentGrids.java`、`api/RegisterComponentGridEvent.java` |
 | 曲线页签（可编辑） | `editor/CurvesTab.java` |
 | 下拉列表组件 | `editor/DropdownMenu.java` |

@@ -3,6 +3,7 @@ package org.mesdag.particlestorm.editor;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
+import org.jetbrains.annotations.Nullable;
 
 /// 左侧工具框的页签：每一页只负责自己那片内容区的渲染与交互。
 ///
@@ -42,6 +43,42 @@ abstract class EditorTab {
     /// 当前页签是否正在吃掉外部点击（编辑框中 / 下拉展开时）。
     boolean isCapturingInput() {
         return false;
+    }
+
+    /// 场景内的 3D 手柄（当前页签没有正在显示的 3D 编辑 Grid 时返回 null）。
+    @Nullable
+    SceneGizmo sceneGizmo() {
+        return null;
+    }
+
+    /// 场景内手柄被拖动/修改后调用：由宿主把草稿落地（[ComponentsTab] 会重建组件并重新发射）。
+    void onSceneGizmoChanged() {
+    }
+
+    /// 场景内点击：命中手柄时消费，否则继续走相机操作。
+    boolean sceneMouseClicked(double mouseX, double mouseY, int button) {
+        SceneGizmo gizmo = this.sceneGizmo();
+        return gizmo != null && gizmo.mouseClicked(mouseX, mouseY, button);
+    }
+
+    /// 场景内拖动：交给手柄；草稿有变化时立刻通知宿主。
+    boolean sceneMouseDragged(double mouseX, double mouseY) {
+        SceneGizmo gizmo = this.sceneGizmo();
+        if (gizmo == null || !gizmo.mouseDragged(mouseX, mouseY)) {
+            return false;
+        }
+        this.onSceneGizmoChanged();
+        return true;
+    }
+
+    /// 场景内松开左键：手柄提交草稿后由宿主落地。
+    boolean sceneMouseReleased(double mouseX, double mouseY) {
+        SceneGizmo gizmo = this.sceneGizmo();
+        if (gizmo == null || !gizmo.mouseReleased(mouseX, mouseY)) {
+            return false;
+        }
+        this.onSceneGizmoChanged();
+        return true;
     }
 
     /// 指针在展开的下拉列表上时让页签自己滚动列表；返回 true 表示已消费。
