@@ -312,10 +312,7 @@ final class DescriptionTab extends EditorTab {
 
     /// 按贴图名在当前材质的图集里找到 sprite 并登记进共享集合（找不到就留给 missing）。
     private static void registerTexture(DescriptionMaterial material, DescriptionParameters parameters) {
-        TextureAtlasSprite sprite = AtlasViewer.spriteFor(material, parameters.texture());
-        if (sprite != null) {
-            RegisterCustomParticleTypeEvent.sprites().addSprite(sprite);
-        }
+        RegisterCustomParticleTypeEvent.sprites().addSprite(AtlasViewer.spriteFor(material, parameters.texture()));
     }
 
     /// 效果缓存更新后的统一收尾：清空场景，再用新效果重新发射。

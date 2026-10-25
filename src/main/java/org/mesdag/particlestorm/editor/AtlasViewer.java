@@ -98,9 +98,7 @@ final class AtlasViewer {
         // 图集由材质自己声明（DescriptionMaterial 注册时带的 Supplier<TextureAtlas>）
         TextureAtlas atlas = material.getAtlas();
         this.atlasLocation = atlas.location();
-        List<TextureAtlasSprite> list = atlas.getTextureLocations().stream().map(atlas::getSprite).toList();
-        list.sort(Comparator.comparing(sprite -> sprite.contents().name().toString()));
-        this.sprites = list;
+        this.sprites = atlas.getTextureLocations().stream().map(atlas::getSprite).sorted(Comparator.comparing(sprite -> sprite.contents().name().toString())).toList();
         this.atlasWidth = deduceAtlasSize(true);
         this.atlasHeight = deduceAtlasSize(false);
         this.searchBox = new MolangEditBox(font, 0, 0, SEARCH_WIDTH, 14, Component.empty());
@@ -113,7 +111,7 @@ final class AtlasViewer {
     // region 静态工具
 
     /// 按「材质 → 图集」在该图集里按名字查 sprite（查不到返回 null）。
-    static @Nullable TextureAtlasSprite spriteFor(DescriptionMaterial material, ResourceLocation texture) {
+    static TextureAtlasSprite spriteFor(DescriptionMaterial material, ResourceLocation texture) {
         return material.getAtlas().getSprite(texture);
     }
 

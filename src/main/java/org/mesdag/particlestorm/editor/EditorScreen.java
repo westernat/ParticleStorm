@@ -1535,10 +1535,7 @@ public class EditorScreen extends Screen implements IParticleManagerScreen {
             return;
         }
         DescriptionParameters parameters = current.description.parameters();
-        TextureAtlasSprite sprite = AtlasViewer.spriteFor(parameters.material(), parameters.texture());
-        if (sprite != null) {
-            RegisterCustomParticleTypeEvent.sprites().addSprite(sprite);
-        }
+        RegisterCustomParticleTypeEvent.sprites().addSprite(AtlasViewer.spriteFor(parameters.material(), parameters.texture()));
     }
 
     // endregion
