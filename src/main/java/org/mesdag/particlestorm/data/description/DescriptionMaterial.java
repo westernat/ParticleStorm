@@ -1,5 +1,6 @@
 package org.mesdag.particlestorm.data.description;
 
+import com.google.common.base.Suppliers;
 import com.mojang.serialization.Codec;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.texture.AbstractTexture;
@@ -22,8 +23,11 @@ import java.util.function.Supplier;
 /// 默认是粒子图集（`textures/atlas/particles.png`），`terrain_sheet` 是方块图集；
 /// 自定义材质想用别的图集就在 [RegisterCustomMaterialEvent] 里传自己的 supplier。
 public final class DescriptionMaterial implements StringRepresentable {
-    private static List<DescriptionMaterial> list = new ArrayList<>();
-    private static DescriptionMaterial[] values;
+    private static final List<DescriptionMaterial> list = new ArrayList<>();
+    private static final Supplier<DescriptionMaterial[]> values = Suppliers.memoize(() -> {
+        ModLoader.get().postEvent(new RegisterCustomMaterialEvent(DescriptionMaterial::register));
+        return list.toArray(DescriptionMaterial[]::new);
+    });
 
     private static final Supplier<TextureAtlas> PARTICLES_ATLAS = () -> atlas(TextureAtlas.LOCATION_PARTICLES);
     private static final Supplier<TextureAtlas> BLOCKS_ATLAS = () -> atlas(TextureAtlas.LOCATION_BLOCKS);
@@ -48,19 +52,14 @@ public final class DescriptionMaterial implements StringRepresentable {
     }
 
     public static final Codec<DescriptionMaterial> CODEC = Codec.STRING.xmap(
-            name -> Arrays.stream(values()).filter(material -> material.getSerializedName().equals(name)).findFirst().orElse(CUSTOM),
+            name -> Arrays.stream(values.get()).filter(material -> material.getSerializedName().equals(name)).findFirst().orElse(CUSTOM),
             DescriptionMaterial::getSerializedName
     );
 
     /// 所有已注册的材质（与 [#CODEC] 使用同一份 `values` 数组；首次调用时完成自定义材质的注册）。
     @ApiStatus.Internal
     public static DescriptionMaterial[] values() {
-        if (values == null) {
-            ModLoader.get().postEvent(new RegisterCustomMaterialEvent(DescriptionMaterial::register));
-            values = list.toArray(DescriptionMaterial[]::new);
-            list = null;
-        }
-        return values;
+        return values.get();
     }
 
     private final String name;
