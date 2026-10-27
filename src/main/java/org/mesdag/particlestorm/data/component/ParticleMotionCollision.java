@@ -5,7 +5,6 @@ import com.mojang.datafixers.util.Either;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.util.ExtraCodecs;
 import net.minecraft.util.Mth;
 import org.mesdag.particlestorm.ParticleStorm;
 import org.mesdag.particlestorm.api.IMolangParticleInstance;
@@ -25,16 +24,10 @@ import java.util.function.Function;
 ///
 /// and setting its direction to not be aimed towards the collision (usually perpendicular to the collision surface).
 ///
-/// @param enabled                  Enables collision when true/non-zero.<p>
-///                                 Evaluated every frame
-/// @param collisionDrag            Alters the speed of the particle when it has collided<p>
-///                                 Useful for emulating friction/drag when colliding, e.g a particle that hits the ground would slow to a stop.<p>
-///                                 This drag slows down the particle by this amount in blocks/sec when in contact
-/// @param coefficientOfRestitution Used for bouncing/not-bouncing<p>
-///                                 Set to 0.0 to not bounce, 1.0 to bounce back up to original height and in-between to lose speed after bouncing.<p>
-///                                 Set to >1.0 to gain energy on each bounce
-/// @param collisionRadius          Used to minimize interpenetration of particles with the environment<p>
-///                                 Note that this must be less than or equal to 1/2 block
+/// @param enabled                  Enables collision when true/non-zero.<p>Evaluated every frame
+/// @param collisionDrag            Alters the speed of the particle when it has collided<p>Useful for emulating friction/drag when colliding, e.g a particle that hits the ground would slow to a stop.<p>This drag slows down the particle by this amount in blocks/sec when in contact
+/// @param coefficientOfRestitution Used for bouncing/not-bouncing<p>Set to 0.0 to not bounce, 1.0 to bounce back up to original height and in-between to lose speed after bouncing.<p>Set to >1.0 to gain energy on each bounce
+/// @param collisionRadius          Used to minimize interpenetration of particles with the environment<p>Note that this must be less than or equal to 1/2 block
 /// @param expireOnContact          Triggers expiration on contact if true
 /// @param events                   Triggers an event array of individual events
 public record ParticleMotionCollision(
@@ -105,7 +98,7 @@ public record ParticleMotionCollision(
     public record Event(String event, float minSpeed) {
         public static final Codec<Event> CODEC = RecordCodecBuilder.create(instance -> instance.group(
                 Codec.STRING.fieldOf("event").forGetter(Event::event),
-                ParticleStorm.lenientOptionalFieldOf(ExtraCodecs.POSITIVE_FLOAT, "min_speed", () -> 2.0F).forGetter(Event::minSpeed)
+                ParticleStorm.lenientOptionalFieldOf(Codec.FLOAT, "min_speed", () -> 2.0F).forGetter(Event::minSpeed)
         ).apply(instance, Event::new));
 
         @Override
