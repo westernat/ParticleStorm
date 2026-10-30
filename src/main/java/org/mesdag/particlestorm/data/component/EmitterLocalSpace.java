@@ -29,11 +29,7 @@ public record EmitterLocalSpace(boolean position, boolean rotation, boolean velo
             Codec.BOOL.optionalFieldOf("velocity", false).forGetter(EmitterLocalSpace::velocity)
     ).apply(instance, EmitterLocalSpace::new));
 
-    public EmitterLocalSpace(boolean position, boolean rotation, boolean velocity) {
-        this.position = position;
-        this.rotation = rotation;
-        this.velocity = velocity;
-
+    public EmitterLocalSpace {
         if (rotation && !position) throw new IllegalArgumentException("rotation = true and position = false is an invalid option");
     }
 

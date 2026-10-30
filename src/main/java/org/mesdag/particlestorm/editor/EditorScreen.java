@@ -413,7 +413,7 @@ public class EditorScreen extends Screen implements IParticleManagerScreen {
     void spawnEmitter(ResourceLocation particle) {
         try {
             this.ensureSpriteRegistered();
-            this.manager._addEmitter(new EditorParticleEmitter(this.minecraft.level, this.sceneOrigin, particle, MolangExp.EMPTY,
+            this.manager.addEmitter(new EditorParticleEmitter(this.minecraft.level, this.sceneOrigin, particle, MolangExp.EMPTY,
                     this.effect, this.variablesMap()));
             this.selectedParticle = particle;
             this.error = null;
@@ -1887,7 +1887,7 @@ public class EditorScreen extends Screen implements IParticleManagerScreen {
         if (iterator.hasNext()) {
             return iterator.next().getValue();
         }
-        return this.manager._peekPendingEmitter();
+        return this.manager.peekPendingEmitter();
     }
 
     /// 变量表面板的一行：`[变量名] = [值]`，名字和数据都可编辑。

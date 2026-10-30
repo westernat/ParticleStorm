@@ -54,4 +54,9 @@ public abstract class ParticleEngineMixin implements IPSParticleEngine {
     private void cachePreparations(CallbackInfo ci, @Local SpriteLoader.Preparations spriteloader$preparations) {
         this.particlestorm$preparations = spriteloader$preparations;
     }
+
+    @Inject(method = "setLevel", at = @At("TAIL"))
+    private void reset(CallbackInfo ci) {
+        MolangParticleEngine.INSTANCE.removeAll();
+    }
 }

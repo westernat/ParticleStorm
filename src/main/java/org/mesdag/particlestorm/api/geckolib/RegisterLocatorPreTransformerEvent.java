@@ -32,7 +32,7 @@ public class RegisterLocatorPreTransformerEvent extends Event implements IModBus
     private static final Reference2ObjectMap<BlockEntityType<?>, Transformer<?>> blockEntityTransformers = new Reference2ObjectOpenHashMap<>();
     private static final Reference2ObjectMap<EntityType<?>, Transformer<?>> entityTransformers = new Reference2ObjectOpenHashMap<>();
 
-    RegisterLocatorPreTransformerEvent() {}
+    public RegisterLocatorPreTransformerEvent() {}
 
     public <T extends Item & GeoItem> void register(T item, Transformer<T> transformer) {
         singletonTransformers.put(item.getAnimatableInstanceCache(), transformer);

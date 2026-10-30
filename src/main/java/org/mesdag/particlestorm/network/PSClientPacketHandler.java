@@ -12,7 +12,7 @@ public class PSClientPacketHandler {
     public static void handleEmitterAttach(EmitterAttachPacketS2C packet) {
         LocalPlayer player = Minecraft.getInstance().player;
         if (player != null) {
-            ParticleEmitter emitter = MolangParticleEngine.getEmitter(packet.particleId());
+            ParticleEmitter emitter = MolangParticleEngine._getEmitter(packet.particleId());
             Entity entity;
             if (emitter != null && (entity = player.level().getEntity(packet.entityId())) != null) {
                 emitter.attachEntity(entity);
@@ -27,14 +27,14 @@ public class PSClientPacketHandler {
             if (packet.entityId() > 0) {
                 emitter.attachEntity(player.level().getEntity(packet.entityId()));
             }
-            MolangParticleEngine.addEmitter(emitter);
+            MolangParticleEngine._addEmitter(emitter);
         }
     }
 
     public static void handleEmitterRemoval(EmitterRemovalPacketS2C packet) {
         LocalPlayer player = Minecraft.getInstance().player;
         if (player != null) {
-            ParticleEmitter emitter = MolangParticleEngine.INSTANCE._removeEmitter(packet.id());
+            ParticleEmitter emitter = MolangParticleEngine.INSTANCE.removeEmitter(packet.id());
             if (emitter == null) {
                 player.displayClientMessage(Component.translatable("particle.notFound", packet.id()), false);
             } else {
