@@ -125,12 +125,12 @@ public abstract sealed class EmitterShape implements IEmitterComponent permits E
         }
         instance.setComponents(particlePreset.effect.orderedParticleComponentsWhichRequireUpdate);
         if (!particlePreset.motionDynamic) instance.setParticleSpeed(0.0, 0.0, 0.0);
-        MolangParticleEngine.addParticle(instance);
+        MolangParticleEngine._addParticle(instance);
     }
 
     private static boolean hasSpaceInParticleLimit(ParticleEmitter emitter) {
         ParticleGroup particleGroup = emitter.particleGroup;
-        Queue<IMolangParticleInstance> queue = MolangParticleEngine.getParticlesForEmitter(emitter);
+        Queue<IMolangParticleInstance> queue = MolangParticleEngine._getParticlesForEmitter(emitter);
         return queue == null || queue.size() < particleGroup.getLimit();
     }
 

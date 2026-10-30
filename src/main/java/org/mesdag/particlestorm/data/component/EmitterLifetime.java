@@ -133,7 +133,7 @@ public abstract sealed class EmitterLifetime implements IEmitterComponent permit
                     e.apply(emitter);
                 }
                 emitter.updateRandoms(emitter.level.random);
-                Queue<IMolangParticleInstance> queue = MolangParticleEngine.getParticlesForEmitter(emitter);
+                Queue<IMolangParticleInstance> queue = MolangParticleEngine._getParticlesForEmitter(emitter);
                 if (queue != null) {
                     for (IMolangParticleInstance instance : queue) {
                         ParticleInitialization initialization = instance.getPreset().initialization;

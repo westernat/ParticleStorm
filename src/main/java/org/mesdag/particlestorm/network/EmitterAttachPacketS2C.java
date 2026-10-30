@@ -29,7 +29,7 @@ public record EmitterAttachPacketS2C(int particleId, int entityId) implements Cu
     public void handle(IPayloadContext context) {
         context.enqueueWork(() -> {
             Player player = context.player();
-            ParticleEmitter emitter = MolangParticleEngine.INSTANCE._getEmitter(particleId);
+            ParticleEmitter emitter = MolangParticleEngine.INSTANCE.getEmitter(particleId);
             Entity entity;
             if (emitter != null && (entity = player.level().getEntity(entityId)) != null) {
                 emitter.attachEntity(entity);

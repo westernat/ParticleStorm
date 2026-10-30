@@ -78,4 +78,9 @@ public abstract class ParticleEngineMixin implements IPSParticleEngine {
         if (frustum == null || renderTypePredicate == null) return;
         MolangParticleEngine.INSTANCE.renderParticles(lightTexture, textureManager, camera, partialTick, frustum, renderTypePredicate);
     }
+
+    @Inject(method = "setLevel", at = @At("TAIL"))
+    private void reset(CallbackInfo ci) {
+        MolangParticleEngine.INSTANCE.removeAll();
+    }
 }

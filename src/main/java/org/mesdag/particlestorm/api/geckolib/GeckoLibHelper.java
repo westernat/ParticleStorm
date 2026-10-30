@@ -92,7 +92,7 @@ public final class GeckoLibHelper {
             } else {
                 IntIterator ii = integers.intIterator();
                 while (ii.hasNext()) {
-                    ParticleEmitter current = MolangParticleEngine.getEmitter(ii.nextInt());
+                    ParticleEmitter current = MolangParticleEngine._getEmitter(ii.nextInt());
                     if (current == null || current.isRemoved() || !particle.equals(current.particleId)) {
                         createNeoOne(attachable, particle, expression, integers, locator, cache);
                     }
@@ -104,7 +104,7 @@ public final class GeckoLibHelper {
 
     private static void createNeoOne(ParticleEmitterAttachable attachable, ResourceLocation particle, MolangExp expression, IntList integers, LocatorValue locator, IPSAnimatableInstanceCache cache) {
         ParticleEmitter emitter = new ParticleEmitter(attachable.getLevel(), attachable.getPos(), particle, expression);
-        MolangParticleEngine.addEmitter(emitter);
+        MolangParticleEngine._addEmitter(emitter);
         integers.add(emitter.id);
         emitter.attach(attachable);
         if (cache.particlestorm$getLocatorState(locator) == null) {
@@ -125,7 +125,7 @@ public final class GeckoLibHelper {
             for (IntList integers : ids.values()) {
                 IntIterator ii = integers.intIterator();
                 while (ii.hasNext()) {
-                    MolangParticleEngine.removeEmitter(ii.nextInt());
+                    MolangParticleEngine._removeEmitter(ii.nextInt());
                 }
             }
             ids.clear();
@@ -145,7 +145,7 @@ public final class GeckoLibHelper {
             if (integers == null || integers.isEmpty()) continue;
             IntIterator iter = integers.intIterator();
             while (iter.hasNext()) {
-                ParticleEmitter emitter = MolangParticleEngine.getEmitter(iter.nextInt());
+                ParticleEmitter emitter = MolangParticleEngine._getEmitter(iter.nextInt());
                 if (emitter == null || emitter.isRemoved()) continue;
                 LocatorState state = cache.particlestorm$getLocatorState(locator);
                 if (state == null) continue;

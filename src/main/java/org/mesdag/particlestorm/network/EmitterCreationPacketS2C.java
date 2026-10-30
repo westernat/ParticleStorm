@@ -41,7 +41,7 @@ public record EmitterCreationPacketS2C(ResourceLocation id, Vector3f pos, Molang
             if (entityId > 0) {
                 emitter.attachEntity(player.level().getEntity(entityId));
             }
-            MolangParticleEngine.addEmitter(emitter);
+            MolangParticleEngine._addEmitter(emitter);
         });
     }
 

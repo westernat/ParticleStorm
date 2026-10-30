@@ -120,8 +120,7 @@ public class MolangParticleManager {
         }
     }
 
-    @ApiStatus.Internal
-    public void _addParticle(IMolangParticleInstance instance) {
+    public void addParticle(IMolangParticleInstance instance) {
         Optional<ParticleGroup> optional = instance.self().getParticleGroup();
         if (optional.isPresent()) {
             Queue<IMolangParticleInstance> queue = particlesForEmitter.get(instance.getEmitter().id);
@@ -133,8 +132,7 @@ public class MolangParticleManager {
         }
     }
 
-    @ApiStatus.Internal
-    public void _addEmitter(ParticleEmitter emitter) {
+    public void addEmitter(ParticleEmitter emitter) {
         emitter.id = allocator.allocate();
         // 所有新建发射器都先进队列，tick 开始时统一并入 `emitters`
         emittersToAdd.add(emitter);
@@ -158,8 +156,7 @@ public class MolangParticleManager {
         }
     }
 
-    @ApiStatus.Internal
-    public @Nullable ParticleEmitter _removeEmitter(int id) {
+    public @Nullable ParticleEmitter removeEmitter(int id) {
         ParticleEmitter removed = emitters.remove(id);
         if (removed != null) {
             removed.onRemove();
@@ -226,8 +223,7 @@ public class MolangParticleManager {
         return allocator.isAllocated(id);
     }
 
-    @ApiStatus.Internal
-    public @Nullable ParticleEmitter _getEmitter(int id) {
+    public @Nullable ParticleEmitter getEmitter(int id) {
         ParticleEmitter emitter = emitters.get(id);
         if (emitter != null) {
             return emitter;
@@ -240,8 +236,7 @@ public class MolangParticleManager {
         return null;
     }
 
-    @ApiStatus.Internal
-    public @Nullable Queue<IMolangParticleInstance> _getParticlesForEmitter(ParticleEmitter emitter) {
+    public @Nullable Queue<IMolangParticleInstance> getParticlesForEmitter(ParticleEmitter emitter) {
         return particlesForEmitter.get(emitter.id);
     }
 
@@ -251,7 +246,7 @@ public class MolangParticleManager {
 
     /// 还没被 tick 收编进 `emitters` 的第一个发射器（暂停时不会 tick，发射器会一直停在待加入队列里）。
     @ApiStatus.Internal
-    public @Nullable ParticleEmitter _peekPendingEmitter() {
+    public @Nullable ParticleEmitter peekPendingEmitter() {
         return emittersToAdd.peek();
     }
 

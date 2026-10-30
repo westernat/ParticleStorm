@@ -25,7 +25,7 @@ public record EmitterRemovalPacketS2C(int id) implements CustomPacketPayload {
     public void handle(IPayloadContext context) {
         context.enqueueWork(() -> {
             Player player = context.player();
-            ParticleEmitter emitter = MolangParticleEngine.INSTANCE._removeEmitter(id);
+            ParticleEmitter emitter = MolangParticleEngine.INSTANCE.removeEmitter(id);
             if (emitter == null) {
                 player.sendSystemMessage(Component.translatable("particle.notFound", id));
             } else {
