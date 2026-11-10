@@ -10,6 +10,7 @@ import it.unimi.dsi.fastutil.objects.Object2ObjectOpenCustomHashMap;
 import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.resources.FileToIdConverter;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.PreparableReloadListener;
@@ -26,10 +27,12 @@ import org.mesdag.particlestorm.ParticleStorm;
 import org.mesdag.particlestorm.api.*;
 import org.mesdag.particlestorm.api.geckolib.GeckoLibHelper;
 import org.mesdag.particlestorm.data.DefinedParticleEffect;
+import org.mesdag.particlestorm.data.description.DescriptionMaterial;
+import org.mesdag.particlestorm.data.description.DescriptionParameters;
+import org.mesdag.particlestorm.data.description.ParticleDescription;
 import org.mesdag.particlestorm.particle.screen.IParticleManagerScreen;
 import org.mesdag.particlestorm.particle.screen.ScreenParticleEmitter;
 
-import java.io.IOException;
 import java.io.Reader;
 import java.util.HashMap;
 import java.util.List;
@@ -41,7 +44,9 @@ import java.util.concurrent.Executor;
 public final class MolangParticleEngine extends MolangParticleManager implements PreparableReloadListener {
     public static final MolangParticleEngine INSTANCE = new MolangParticleEngine();
     private static final FileToIdConverter PARTICLE_LISTER = FileToIdConverter.json("particle_definitions");
+    private static final DefinedParticleEffect ERROR_EFFECT = new DefinedParticleEffect(new ParticleDescription(ParticleStorm.asResource("_"), new DescriptionParameters(DescriptionMaterial.NO_RENDER, ParticleStorm.asResource("_")), ParticleTypes.BLOCK), Map.of(), Map.of(), Map.of());
     private static MolangParticleManager screenManager;
+
     private Map<ResourceLocation, DefinedParticleEffect> id2Effect = ImmutableMap.of();
     private Map<ResourceLocation, ParticlePreset> id2Particle = ImmutableMap.of();
     private Map<ResourceLocation, EmitterPreset> id2Emitter = ImmutableMap.of();
@@ -75,7 +80,6 @@ public final class MolangParticleEngine extends MolangParticleManager implements
         return id2Emitter;
     }
 
-    /// 把编辑器里改过的效果写回内存：同时重建 [ParticlePreset] / [EmitterPreset]。
     public void saveEffect(DefinedParticleEffect effect) {
         ResourceLocation id = effect.description.identifier();
         ParticlePreset particlePreset = new ParticlePreset(effect);
@@ -172,12 +176,10 @@ public final class MolangParticleEngine extends MolangParticleManager implements
         }
     }
 
-
-    public boolean addTrackedEmitter(Entity entity, ResourceLocation particleId, boolean hideOutline) {
+    public boolean addTrackedEmitter(Entity entity, ResourceLocation particleId) {
         var queue = tracker.computeIfAbsent(entity, e -> new Object2ObjectLinkedOpenHashMap<>());
         if (!queue.isEmpty() && queue.containsKey(particleId)) return false;
         ParticleEmitter emitter = new ParticleEmitter(entity.level(), entity.position(), particleId);
-        emitter.hideOutline = hideOutline;
         _addEmitter(emitter);
         emitter.attachEntity(entity);
         queue.put(particleId, emitter);
@@ -185,10 +187,6 @@ public final class MolangParticleEngine extends MolangParticleManager implements
             queue.removeFirst();
         }
         return true;
-    }
-
-    public boolean addTrackedEmitter(Entity entity, ResourceLocation particleId) {
-        return addTrackedEmitter(entity, particleId, true);
     }
 
     @Override
@@ -203,12 +201,13 @@ public final class MolangParticleEngine extends MolangParticleManager implements
             ModLoader.get().postEvent(new MolangParticleLoadEvent.Pre(backgroundExecutor));
             List<CompletableFuture<DefinedParticleEffect>> list = Lists.newArrayListWithExpectedSize(map.size());
             for (Map.Entry<ResourceLocation, Resource> entry : map.entrySet()) {
-                ResourceLocation id = PARTICLE_LISTER.fileToId(entry.getKey());
                 list.add(CompletableFuture.supplyAsync(() -> {
                     try (Reader reader = entry.getValue().openAsReader()) {
                         return DefinedParticleEffect.CODEC.parse(JsonOps.INSTANCE, GsonHelper.parse(reader).get("particle_effect")).getOrThrow(false, msg -> {throw new JsonParseException(msg);});
-                    } catch (IOException exception) {
-                        throw new IllegalStateException("Failed to load definition for particle " + id, exception);
+                    } catch (Exception e) {
+                        ResourceLocation id = PARTICLE_LISTER.fileToId(entry.getKey());
+                        ParticleStorm.LOGGER.error("Failed to load definition for particle {}, skipped", id, e);
+                        return ERROR_EFFECT;
                     }
                 }, backgroundExecutor));
             }
@@ -218,14 +217,24 @@ public final class MolangParticleEngine extends MolangParticleManager implements
             ImmutableMap.Builder<ResourceLocation, ParticlePreset> id2Particle = ImmutableMap.builder();
             ImmutableMap.Builder<ResourceLocation, EmitterPreset> id2Emitter = ImmutableMap.builder();
             for (DefinedParticleEffect effect : effects) {
+                if (effect == ERROR_EFFECT) continue;
                 ResourceLocation id = effect.description.identifier();
+                ParticlePreset pp;
+                EmitterPreset ep;
+                try {
+                    pp = new ParticlePreset(effect);
+                    ep = new EmitterPreset(
+                            effect.description.type(),
+                            effect.orderedEmitterComponents,
+                            effect.events
+                    );
+                } catch (Exception e) {
+                    ParticleStorm.LOGGER.error("Error parsing particle '{}', skipped", id, e);
+                    continue;
+                }
                 id2Effect.put(id, effect);
-                id2Particle.put(id, new ParticlePreset(effect));
-                id2Emitter.put(id, new EmitterPreset(
-                        effect.description.type(),
-                        effect.orderedEmitterComponents,
-                        effect.events
-                ));
+                id2Particle.put(id, pp);
+                id2Emitter.put(id, ep);
             }
             this.id2Effect = id2Effect.build();
             this.id2Particle = id2Particle.build();

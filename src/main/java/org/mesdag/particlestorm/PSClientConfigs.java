@@ -13,7 +13,6 @@ import org.mesdag.particlestorm.particle.attach.WithBlockParticleEmitter;
 import java.util.List;
 
 public final class PSClientConfigs {
-    private static ForgeConfigSpec.BooleanValue SHOW_EMITTER_OUTLINE;
     private static ForgeConfigSpec.IntValue MAX_TRACKERS_PER_ENTITY;
 
     private static ForgeConfigSpec.IntValue EMITTER_LIMIT;
@@ -24,7 +23,6 @@ public final class PSClientConfigs {
     private static ForgeConfigSpec.IntValue EMITTER_AUTO_REMOVE_ATTENUATION_DISTANCE;
     private static ForgeConfigSpec.DoubleValue EMITTER_AUTO_REMOVE_ATTENUATION_COEFFICIENT;
 
-    public static boolean showEmitterOutline = true;
     public static int maxTrackersPerEntity = 64;
 
     public static int emitterLimit = 50;
@@ -36,7 +34,6 @@ public final class PSClientConfigs {
     public static double emitterAutoRemoveAttenuationCoefficient = 0.25;
 
     public static void onLoad() {
-        showEmitterOutline = SHOW_EMITTER_OUTLINE.get();
         maxTrackersPerEntity = MAX_TRACKERS_PER_ENTITY.get();
 
         emitterLimit = EMITTER_LIMIT.get();
@@ -52,7 +49,6 @@ public final class PSClientConfigs {
         ForgeConfigSpec.Builder builder = new ForgeConfigSpec.Builder();
 
         builder.push("Normal");
-        SHOW_EMITTER_OUTLINE = builder.define("showEmitterOutline", true);
         MAX_TRACKERS_PER_ENTITY = builder.defineInRange("maxTrackersPerEntity", 64, 0, 16384);
         builder.pop();
 

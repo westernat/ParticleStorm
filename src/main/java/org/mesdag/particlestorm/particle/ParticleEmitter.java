@@ -61,7 +61,7 @@ public class ParticleEmitter implements MolangInstance {
     public transient int loopingTime;
     public transient int activeTime;
     public transient int fullLoopTime;
-    public transient MutableParticleGroup particleGroup;
+    protected transient MutableParticleGroup particleGroup;
     public transient float spawnChance;
     public transient int spawnRate;
     public transient boolean spawned;
@@ -75,7 +75,6 @@ public class ParticleEmitter implements MolangInstance {
     public transient final Level level;
     protected Vec3 pos;
     public Vec3 posO;
-    public boolean hideOutline;
     private transient boolean removed;
 
     public ParticleEmitter(ResourceLocation type, Level level, Vec3 pos, ResourceLocation particleId, MolangExp expression) {
@@ -121,7 +120,6 @@ public class ParticleEmitter implements MolangInstance {
         this.expression = effect.preEffectExpression();
         updateRandoms(level.random);
         this.invTickRate = 1.0F / 20.0F;
-        this.hideOutline = parent.hideOutline;
         this.afterParentInit = () -> {
             switch (effect.type()) {
                 case EMITTER -> {}
@@ -164,7 +162,7 @@ public class ParticleEmitter implements MolangInstance {
         try {
             defaultValue.compile(new MolangParser(vars));
             ParticleStorm.LOGGER.warn("Shared variable '{}' is not defined in parent; using default '{}'", name, defaultValue);
-            return new Variable(name, instance -> defaultValue.calculate(instance));
+            return new Variable(name, defaultValue::calculate);
         } catch (RuntimeException e) {
             ParticleStorm.LOGGER.warn("Invalid default value for shared variable '{}': {}", name, defaultValue, e);
             return new Variable(name, 0.0F);
@@ -202,9 +200,10 @@ public class ParticleEmitter implements MolangInstance {
     }
 
     protected void createVars() {
-        this.preset = this.getEmitterPreset();
+        this.preset = getEmitterPreset();
         if (preset == null) {
-            throw new IllegalArgumentException("Unknown particle id: '" + particleId + "'!");
+            ParticleStorm.LOGGER.error("Unknown particle id: '{}', using default", particleId);
+            this.preset = MolangParticleEngine.INSTANCE.id2Emitter().get(ResourceLocation.fromNamespaceAndPath("snowstorm", "loading"));
         }
         this.vars = new VariableTable(preset.vars);
     }
@@ -388,7 +387,6 @@ public class ParticleEmitter implements MolangInstance {
         this.emitterRandom3 = tag.getFloat("emitterRandom3");
         this.emitterRandom4 = tag.getFloat("emitterRandom4");
         this.posO = this.pos = new Vec3(tag.getDouble("posX"), tag.getDouble("posY"), tag.getDouble("posZ"));
-        this.hideOutline = tag.getBoolean("hideOutline");
     }
 
     public final CompoundTag serialize() {
@@ -408,7 +406,6 @@ public class ParticleEmitter implements MolangInstance {
         tag.putDouble("posX", pos.x);
         tag.putDouble("posY", pos.y);
         tag.putDouble("posZ", pos.z);
-        tag.putBoolean("hideOutline", hideOutline);
     }
 
     public double getX() {
@@ -421,6 +418,11 @@ public class ParticleEmitter implements MolangInstance {
 
     public double getZ() {
         return pos.z;
+    }
+
+    public MutableParticleGroup getParticleGroup() {
+        if (particleGroup == null) this.particleGroup = new MutableParticleGroup(16384);
+        return particleGroup;
     }
 
     @Override

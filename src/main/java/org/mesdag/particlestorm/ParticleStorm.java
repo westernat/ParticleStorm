@@ -40,7 +40,7 @@ public final class ParticleStorm {
     public static final Logger LOGGER = LoggerFactory.getLogger("ParticleStorm");
     public static final boolean GECKOLIB_LOADED = LoadingModList.get().getModFileById("geckolib") != null;
     public static final boolean OCULUS_LOADED = LoadingModList.get().getModFileById("oculus") != null;
-    public static final boolean DEBUG = Boolean.getBoolean("particlestorm.debug") && GECKOLIB_LOADED;
+    public static final boolean DEBUG = Boolean.getBoolean("particlestorm.debug");
 
     private static final DeferredRegister<ParticleType<?>> REGISTER = DeferredRegister.create(ForgeRegistries.PARTICLE_TYPES, MODID);
     public static final RegistryObject<ParticleType<MolangParticleOption>> MOLANG = registerParticleType(REGISTER, "molang");
@@ -115,7 +115,7 @@ public final class ParticleStorm {
     }
 
     private static void registerGeoTest(IEventBus bus) {
-        if (DEBUG) {
+        if (DEBUG && GECKOLIB_LOADED) {
             GeckoLibHelper.registerStuffs(bus);
         }
     }

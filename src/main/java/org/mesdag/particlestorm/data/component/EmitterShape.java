@@ -6,7 +6,6 @@ import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import net.minecraft.client.particle.Particle;
-import net.minecraft.core.particles.ParticleGroup;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
@@ -117,7 +116,7 @@ public abstract sealed class EmitterShape implements IEmitterComponent permits E
 
         instance.setParticleSpeed(speed.x, speed.y, speed.z);
         instance.setPos(position.x, position.y, position.z, true);
-        instance.setParticleGroup(emitter.particleGroup);
+        instance.setParticleGroup(emitter.getParticleGroup());
 
         for (IParticleComponent component : particlePreset.effect.orderedParticleComponents) {
             component.apply(instance);
@@ -131,9 +130,8 @@ public abstract sealed class EmitterShape implements IEmitterComponent permits E
     }
 
     private static boolean hasSpaceInParticleLimit(ParticleEmitter emitter) {
-        ParticleGroup particleGroup = emitter.particleGroup;
         Queue<IMolangParticleInstance> queue = MolangParticleEngine._getParticlesForEmitter(emitter);
-        return queue == null || queue.size() < particleGroup.getLimit();
+        return queue == null || queue.size() < emitter.getParticleGroup().getLimit();
     }
 
     /// This component spawns particles using a disc shape, particles can be spawned inside the shape or on its outer perimeter.

@@ -8,7 +8,6 @@ import org.mesdag.particlestorm.ParticleStorm;
 import org.mesdag.particlestorm.api.IEmitterComponent;
 import org.mesdag.particlestorm.data.molang.FloatMolangExp;
 import org.mesdag.particlestorm.data.molang.MolangExp;
-import org.mesdag.particlestorm.particle.MutableParticleGroup;
 import org.mesdag.particlestorm.particle.ParticleEmitter;
 
 import java.util.List;
@@ -56,9 +55,6 @@ public abstract sealed class EmitterRate implements IEmitterComponent permits Em
             int limit = (int) numParticles.calculate(emitter);
             if (emitter.spawnRate != limit) {
                 emitter.spawnRate = limit;
-                if (emitter.particleGroup == null) {
-                    emitter.particleGroup = new MutableParticleGroup(16384);
-                }
             }
         }
 
@@ -106,18 +102,13 @@ public abstract sealed class EmitterRate implements IEmitterComponent permits Em
         @Override
         public void apply(ParticleEmitter emitter) {
             float calculated = spawnRate.calculate(emitter);
-            float tickrate = 20.0F;
             if (emitter.spawnRate != calculated) {
-                float ratePerTick = calculated / tickrate;
+                float ratePerTick = calculated * emitter.invTickRate;
                 int perTick = (int) ratePerTick;
                 emitter.spawnRate = perTick;
                 emitter.spawnChance = ratePerTick - perTick;
                 int limit = (int) maxParticles.calculate(emitter);
-                if (emitter.particleGroup == null) {
-                    emitter.particleGroup = new MutableParticleGroup(limit);
-                } else {
-                    emitter.particleGroup.setLimit(limit);
-                }
+                emitter.getParticleGroup().setLimit(limit);
             }
         }
 
@@ -159,11 +150,7 @@ public abstract sealed class EmitterRate implements IEmitterComponent permits Em
         @Override
         public void apply(ParticleEmitter emitter) {
             int limit = (int) maxParticles.calculate(emitter);
-            if (emitter.particleGroup == null) {
-                emitter.particleGroup = new MutableParticleGroup(limit);
-            } else {
-                emitter.particleGroup.setLimit(limit);
-            }
+            emitter.getParticleGroup().setLimit(limit);
             emitter.spawnRate = limit;
         }
 

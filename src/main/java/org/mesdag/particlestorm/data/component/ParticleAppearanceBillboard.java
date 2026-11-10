@@ -66,7 +66,7 @@ public record ParticleAppearanceBillboard(FloatMolangExp2 size, FaceCameraMode f
             instance.setCurrentFrame(instance.getMaxFrame() * instance.getAge() / instance.self().getLifetime());
         } else {
             float gameTime = (float) ((int) instance.getLevel().getGameTime() & 0b11111111);
-            if (gameTime % (20.0F / flipbook.framesPerSecond) < 1.0F) {
+            if (gameTime % (1 / (flipbook.framesPerSecond * instance.getInvTickRate())) < 1.0F) {
                 updateFlipbookUV(instance);
                 instance.setMaxFrame((int) flipbook.maxFrame.calculate(instance));
                 int currentFrame = instance.getCurrentFrame() + 1;
