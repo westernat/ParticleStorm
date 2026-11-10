@@ -31,7 +31,7 @@ public class EmitterPreset {
     /// For custom preset data
     protected Map<Class<?>, Object> tickets;
 
-    public EmitterPreset(ParticleType<?> type, List<IEmitterComponent> components, Map<String, Map<String, IEventNode>> events) {
+    public EmitterPreset(ParticleType<?> type, List<IEmitterComponent> components, Map<String, Map<String, IEventNode>> events) throws IllegalStateException {
         this.type = type;
         this.components = components;
         this.events = events;
@@ -43,12 +43,12 @@ public class EmitterPreset {
         for (IEmitterComponent component : components) {
             if (component instanceof EmitterLifetime) {
                 if (lifeTime) {
-                    throw new IllegalArgumentException("Duplicate emitter lifetime component");
+                    throw new IllegalStateException("Duplicate emitter lifetime component");
                 }
                 lifeTime = true;
             } else if (component instanceof EmitterRate) {
                 if (rate) {
-                    throw new IllegalArgumentException("Duplicate emitter rate component");
+                    throw new IllegalStateException("Duplicate emitter rate component");
                 }
                 rate = true;
                 switch (component) {
@@ -58,7 +58,7 @@ public class EmitterPreset {
                 }
             } else if (component instanceof EmitterShape) {
                 if (shape) {
-                    throw new IllegalArgumentException("Duplicate emitter shape component");
+                    throw new IllegalStateException("Duplicate emitter shape component");
                 }
                 shape = true;
             } else if (component instanceof EmitterLocalSpace(boolean position, boolean rotation, boolean velocity)) {

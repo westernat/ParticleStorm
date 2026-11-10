@@ -23,6 +23,7 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.event.config.ModConfigEvent;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
+import net.neoforged.fml.loading.FMLEnvironment;
 import net.neoforged.neoforge.client.event.*;
 import net.neoforged.neoforge.client.gui.ConfigurationScreen;
 import net.neoforged.neoforge.client.gui.IConfigScreenFactory;
@@ -89,7 +90,7 @@ public final class PSGameClient {
 
     @SubscribeEvent
     public static void registerRenderers(EntityRenderersEvent.RegisterRenderers event) {
-        if (ParticleStorm.DEBUG) {
+        if (ParticleStorm.DEBUG && ParticleStorm.GECKOLIB_LOADED) {
             GeckoLibHelper.registerRenderers(event);
         }
     }
@@ -133,8 +134,7 @@ public final class PSGameClient {
 
     @SubscribeEvent
     public static void renderLevelStage(RenderLevelStageEvent event) {
-        if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_PARTICLES) return;
-        if (!PSClientConfigs.showEmitterOutline) return;
+        if (!ParticleStorm.DEBUG || event.getStage() != RenderLevelStageEvent.Stage.AFTER_PARTICLES) return;
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft.screen != null || !minecraft.getEntityRenderDispatcher().shouldRenderHitBoxes()) return;
         PoseStack poseStack = event.getPoseStack();
@@ -147,7 +147,6 @@ public final class PSGameClient {
         var iterator = MolangParticleEngine.INSTANCE.getEmitters();
         while (iterator.hasNext()) {
             ParticleEmitter emitter = iterator.next().getValue();
-            if (emitter.hideOutline) continue;
             double x = Mth.lerp(partialTick, emitter.posO.x, emitter.getX());
             double y = Mth.lerp(partialTick, emitter.posO.y, emitter.getY());
             double z = Mth.lerp(partialTick, emitter.posO.z, emitter.getZ());
@@ -155,7 +154,7 @@ public final class PSGameClient {
             DebugRenderer.renderFloatingText(poseStack, bufferSource, "id: " + emitter.id, x, y + 0.3, z, 0xFFFFFF);
             Queue<IMolangParticleInstance> queue = MolangParticleEngine.INSTANCE.getParticlesForEmitter(emitter);
             int count = queue == null ? 0 : queue.size();
-            DebugRenderer.renderFloatingText(poseStack, bufferSource, "particles: " + count, x, y + 0.1, z, count >= emitter.particleGroup.getLimit() ? 0xFF0000 : 0xFFFFFF);
+            DebugRenderer.renderFloatingText(poseStack, bufferSource, "particles: " + count, x, y + 0.1, z, count >= emitter.getParticleGroup().getLimit() ? 0xFF0000 : 0xFFFFFF);
             poseStack.pushPose();
             poseStack.translate(x - camX, y - camY, z - camZ);
             LevelRenderer.renderLineBox(poseStack, bufferSource.getBuffer(RenderType.lines()), -0.5, -0.5, -0.5, 0.5, 0.5, 0.5, 0, 1, 0, 1);

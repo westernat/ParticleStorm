@@ -41,7 +41,7 @@ public class ParticlePreset {
     /// For custom preset data
     protected Map<Class<?>, Object> tickets;
 
-    public ParticlePreset(DefinedParticleEffect effect) {
+    public ParticlePreset(DefinedParticleEffect effect) throws IllegalStateException {
         this.effect = effect;
         DescriptionMaterial material = effect.description.parameters().material();
         if (material == DescriptionMaterial.TERRAIN_SHEET) {

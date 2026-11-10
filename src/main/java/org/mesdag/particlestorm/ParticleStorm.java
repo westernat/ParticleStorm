@@ -41,7 +41,7 @@ public final class ParticleStorm {
     public static final boolean GECKOLIB_LOADED = LoadingModList.get().getModFileById("geckolib") != null;
     public static final boolean SODIUM_LOADED = LoadingModList.get().getModFileById("sodium") != null;
     public static final boolean IRIS_LOADED = LoadingModList.get().getModFileById("iris") != null;
-    public static final boolean DEBUG = Boolean.getBoolean("particlestorm.debug") && GECKOLIB_LOADED;
+    public static final boolean DEBUG = Boolean.getBoolean("particlestorm.debug");
 
     private static final DeferredRegister<ParticleType<?>> REGISTER = DeferredRegister.create(Registries.PARTICLE_TYPE, MODID);
     public static final DeferredHolder<ParticleType<?>, ParticleType<MolangParticleOption>> MOLANG = registerParticleType(REGISTER, "molang");
@@ -71,7 +71,7 @@ public final class ParticleStorm {
     }
 
     private static void registerGeoTest(IEventBus bus) {
-        if (DEBUG) {
+        if (DEBUG && GECKOLIB_LOADED) {
             GeckoLibHelper.registerStuffs(bus);
         }
     }
