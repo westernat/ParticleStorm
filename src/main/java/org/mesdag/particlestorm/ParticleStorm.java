@@ -20,7 +20,6 @@ import org.mesdag.particlestorm.api.geckolib.GeckoLibHelper;
 import org.mesdag.particlestorm.network.EmitterAttachPacketS2C;
 import org.mesdag.particlestorm.network.EmitterCreationPacketS2C;
 import org.mesdag.particlestorm.network.EmitterRemovalPacketS2C;
-import org.mesdag.particlestorm.network.OpenEditorPacketS2C;
 import org.mesdag.particlestorm.particle.MolangParticleCommand;
 import org.mesdag.particlestorm.particle.MolangParticleOption;
 import org.slf4j.Logger;
@@ -61,13 +60,12 @@ public final class ParticleStorm {
         event.registrar("1")
                 .playToClient(EmitterCreationPacketS2C.TYPE, EmitterCreationPacketS2C.STREAM_CODEC, EmitterCreationPacketS2C::handle)
                 .playToClient(EmitterAttachPacketS2C.TYPE, EmitterAttachPacketS2C.STREAM_CODEC, EmitterAttachPacketS2C::handle)
-                .playToClient(OpenEditorPacketS2C.TYPE, OpenEditorPacketS2C.STREAM_CODEC, OpenEditorPacketS2C::handle)
                 .playToClient(EmitterRemovalPacketS2C.TYPE, EmitterRemovalPacketS2C.STREAM_CODEC, EmitterRemovalPacketS2C::handle)
         ;
     }
 
     private static void registerCommands(RegisterCommandsEvent event) {
-        MolangParticleCommand.register(event.getDispatcher());
+        MolangParticleCommand.registerServer(event.getDispatcher());
     }
 
     private static void registerGeoTest(IEventBus bus) {

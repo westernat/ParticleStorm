@@ -23,7 +23,6 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.event.config.ModConfigEvent;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
-import net.neoforged.fml.loading.FMLEnvironment;
 import net.neoforged.neoforge.client.event.*;
 import net.neoforged.neoforge.client.gui.ConfigurationScreen;
 import net.neoforged.neoforge.client.gui.IConfigScreenFactory;
@@ -31,6 +30,7 @@ import org.mesdag.particlestorm.api.*;
 import org.mesdag.particlestorm.api.geckolib.GeckoLibHelper;
 import org.mesdag.particlestorm.data.component.*;
 import org.mesdag.particlestorm.data.event.*;
+import org.mesdag.particlestorm.particle.MolangParticleCommand;
 import org.mesdag.particlestorm.particle.MolangParticleEngine;
 import org.mesdag.particlestorm.particle.MolangParticleInstance;
 import org.mesdag.particlestorm.particle.ParticleEmitter;
@@ -43,7 +43,7 @@ import java.util.Queue;
 @Mod(value = ParticleStorm.MODID, dist = Dist.CLIENT)
 @EventBusSubscriber(modid = ParticleStorm.MODID, value = Dist.CLIENT)
 public final class PSGameClient {
-    public static final ParticleRenderType PARTICLE_ADD = new ParticleRenderType() {
+    public static final ParticleRenderType PARTICLE_ADD = new IDepthPrepassParticleType() {
         @Override
         public BufferBuilder begin(Tesselator tesselator, TextureManager textureManager) {
             RenderSystem.depthMask(false);
@@ -57,7 +57,7 @@ public final class PSGameClient {
             return "PARTICLE_ADD";
         }
     };
-    public static final ParticleRenderType PARTICLE_BLEND = new ParticleRenderType() {
+    public static final ParticleRenderType PARTICLE_BLEND = new IDepthPrepassParticleType() {
         @Override
         public BufferBuilder begin(Tesselator tesselator, TextureManager textureManager) {
             RenderSystem.depthMask(false);
@@ -239,5 +239,10 @@ public final class PSGameClient {
             }
             EmitterAttachHandler.postEvent();
         });
+    }
+
+    @SubscribeEvent
+    public static void registerClientCommands(RegisterClientCommandsEvent event) {
+        MolangParticleCommand.registerClient(event.getDispatcher());
     }
 }

@@ -212,12 +212,7 @@ public class EditorScreen extends Screen implements IParticleManagerScreen {
     protected void init() {
         // 编辑器专属的绘制顺序：半透明粒子按相机距离从远到近排序（alpha 混合有顺序要求），
         // 世界渲染保持 MolangParticleManager 默认的队列顺序。
-        this.manager = new MolangParticleManager(MolangParticleEngine.INSTANCE.allocator) {
-            @Override
-            protected Iterator<IMolangParticleInstance> orderForRender(ParticleRenderType type, Queue<IMolangParticleInstance> queue, Camera camera, float partialTick) {
-                return EditorScreen.this.sortedForRender(type, queue, camera, partialTick);
-            }
-        };
+        this.manager = new MolangParticleManager(MolangParticleEngine.INSTANCE.allocator);
         this.camera = new PreviewCamera();
         this.frustum = new Frustum(new Matrix4f(), new Matrix4f());
         this.fileDropdown = new DropdownWidget(this.fileButtonX(), TOOLBAR_HEIGHT, this.fileButtonWidth(), TOOLBAR_ROW_HEIGHT);

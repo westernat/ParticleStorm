@@ -1,14 +1,17 @@
 package org.mesdag.particlestorm.particle;
 
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonParseException;
+import com.mojang.datafixers.util.Pair;
 import com.mojang.serialization.JsonOps;
 import it.unimi.dsi.fastutil.Hash;
 import it.unimi.dsi.fastutil.objects.Object2ObjectLinkedOpenHashMap;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenCustomHashMap;
+import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.resources.FileToIdConverter;
@@ -34,10 +37,7 @@ import org.mesdag.particlestorm.particle.screen.IParticleManagerScreen;
 import org.mesdag.particlestorm.particle.screen.ScreenParticleEmitter;
 
 import java.io.Reader;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Queue;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 
@@ -47,9 +47,9 @@ public final class MolangParticleEngine extends MolangParticleManager implements
     private static final DefinedParticleEffect ERROR_EFFECT = new DefinedParticleEffect(new ParticleDescription(ParticleStorm.asResource("_"), new DescriptionParameters(DescriptionMaterial.NO_RENDER, ParticleStorm.asResource("_")), ParticleTypes.BLOCK), Map.of(), Map.of(), Map.of());
     private static MolangParticleManager screenManager;
 
-    private Map<ResourceLocation, DefinedParticleEffect> id2Effect = ImmutableMap.of();
-    private Map<ResourceLocation, ParticlePreset> id2Particle = ImmutableMap.of();
-    private Map<ResourceLocation, EmitterPreset> id2Emitter = ImmutableMap.of();
+    private Map<ResourceLocation, DefinedParticleEffect> id2Effect = Map.of();
+    private Map<ResourceLocation, ParticlePreset> id2Particle = Map.of();
+    private Map<ResourceLocation, EmitterPreset> id2Emitter = Map.of();
 
     private final Object2ObjectOpenCustomHashMap<Entity, Object2ObjectLinkedOpenHashMap<ResourceLocation, ParticleEmitter>> tracker = new Object2ObjectOpenCustomHashMap<>(new Hash.Strategy<>() {
         @Override
@@ -84,9 +84,10 @@ public final class MolangParticleEngine extends MolangParticleManager implements
         ResourceLocation id = effect.description.identifier();
         ParticlePreset particlePreset = new ParticlePreset(effect);
         EmitterPreset emitterPreset = new EmitterPreset(effect.description.type(), effect.orderedEmitterComponents, effect.events);
+        ClientLevel level = Minecraft.getInstance().level;
         for (IComponent component : effect.orderedComponents) {
             if (component instanceof IParticleComponent particleComponent) {
-                particleComponent.initialize(Minecraft.getInstance().level);
+                particleComponent.initialize(level);
             }
         }
         Map<ResourceLocation, DefinedParticleEffect> effects = new HashMap<>(this.id2Effect);
@@ -200,46 +201,58 @@ public final class MolangParticleEngine extends MolangParticleManager implements
     public CompletableFuture<Void> reload(PreparationBarrier preparationBarrier, ResourceManager resourceManager, ProfilerFiller preparationsProfiler, ProfilerFiller reloadProfiler, Executor backgroundExecutor, Executor gameExecutor) {
         return CompletableFuture.supplyAsync(() -> PARTICLE_LISTER.listMatchingResources(resourceManager), backgroundExecutor).thenCompose(map -> {
             ModLoader.postEvent(new MolangParticleLoadEvent.Pre(backgroundExecutor));
-            List<CompletableFuture<DefinedParticleEffect>> list = Lists.newArrayListWithExpectedSize(map.size());
+            List<CompletableFuture<Pair<ResourceLocation, DefinedParticleEffect>>> list = Lists.newArrayListWithExpectedSize(map.size());
             for (Map.Entry<ResourceLocation, Resource> entry : map.entrySet()) {
                 list.add(CompletableFuture.supplyAsync(() -> {
+                    ResourceLocation file = PARTICLE_LISTER.fileToId(entry.getKey());
                     try (Reader reader = entry.getValue().openAsReader()) {
-                        return DefinedParticleEffect.CODEC.parse(JsonOps.INSTANCE, GsonHelper.parse(reader).get("particle_effect")).getOrThrow(JsonParseException::new);
+                        JsonElement particleEffect = GsonHelper.parse(reader).get("particle_effect");
+                        return new Pair<>(file, DefinedParticleEffect.CODEC.parse(JsonOps.INSTANCE, particleEffect).getOrThrow(JsonParseException::new));
                     } catch (Exception e) {
-                        ResourceLocation id = PARTICLE_LISTER.fileToId(entry.getKey());
-                        ParticleStorm.LOGGER.error("Failed to load definition for particle {}, skipped", id, e);
-                        return ERROR_EFFECT;
+                        ParticleStorm.LOGGER.error("Failed to load definition for particle {}, skipped", file, e);
+                        return new Pair<>(file, ERROR_EFFECT);
                     }
                 }, backgroundExecutor));
             }
             return Util.sequence(list);
-        }).thenCompose(preparationBarrier::wait).thenAcceptAsync(effects -> {
-            ImmutableMap.Builder<ResourceLocation, DefinedParticleEffect> id2Effect = ImmutableMap.builder();
-            ImmutableMap.Builder<ResourceLocation, ParticlePreset> id2Particle = ImmutableMap.builder();
-            ImmutableMap.Builder<ResourceLocation, EmitterPreset> id2Emitter = ImmutableMap.builder();
-            for (DefinedParticleEffect effect : effects) {
+        }).thenCompose(preparationBarrier::wait).thenAcceptAsync(pairs -> {
+            Map<ResourceLocation, DefinedParticleEffect> id2Effect = new Object2ObjectOpenHashMap<>();
+            Map<ResourceLocation, ParticlePreset> id2Particle = new Object2ObjectOpenHashMap<>();
+            Map<ResourceLocation, EmitterPreset> id2Emitter = new Object2ObjectOpenHashMap<>();
+            Map<ResourceLocation, List<ResourceLocation>> duplicated = new Object2ObjectOpenHashMap<>();
+            for (Pair<ResourceLocation, DefinedParticleEffect> pair : pairs) {
+                DefinedParticleEffect effect = pair.getSecond();
                 if (effect == ERROR_EFFECT) continue;
+                ResourceLocation file = pair.getFirst();
                 ResourceLocation id = effect.description.identifier();
-                ParticlePreset pp;
-                EmitterPreset ep;
                 try {
-                    pp = new ParticlePreset(effect);
-                    ep = new EmitterPreset(
+                    ParticlePreset pp = new ParticlePreset(effect);
+                    EmitterPreset ep = new EmitterPreset(
                             effect.description.type(),
                             effect.orderedEmitterComponents,
                             effect.events
                     );
+                    id2Effect.put(id, effect);
+                    id2Particle.put(id, pp);
+                    id2Emitter.put(id, ep);
+                    duplicated.computeIfAbsent(id, rl -> new ArrayList<>()).add(file);
                 } catch (Exception e) {
-                    ParticleStorm.LOGGER.error("Error parsing particle '{}', skipped", id, e);
-                    continue;
+                    ParticleStorm.LOGGER.error("Error parsing particle, skipped. id={}, file={}", id, file, e);
                 }
-                id2Effect.put(id, effect);
-                id2Particle.put(id, pp);
-                id2Emitter.put(id, ep);
             }
-            this.id2Effect = id2Effect.build();
-            this.id2Particle = id2Particle.build();
-            this.id2Emitter = id2Emitter.build();
+            for (Map.Entry<ResourceLocation, List<ResourceLocation>> entry : duplicated.entrySet()) {
+                List<ResourceLocation> files = entry.getValue();
+                int length = files.size() - 1;
+                if (length < 1) continue;
+                ResourceLocation[] beReplaced = new ResourceLocation[length];
+                for (int i = 0; i < beReplaced.length; i++) {
+                    beReplaced[i] = files.get(i);
+                }
+                ParticleStorm.LOGGER.warn("Duplicated particle id {} found, files {} was replaced by file {}", entry.getKey(), Arrays.toString(beReplaced), files.getLast());
+            }
+            this.id2Effect = Collections.unmodifiableMap(id2Effect);
+            this.id2Particle = Collections.unmodifiableMap(id2Particle);
+            this.id2Emitter = Collections.unmodifiableMap(id2Emitter);
             this.initialized = false;
             ModLoader.postEvent(new MolangParticleLoadEvent.Post(gameExecutor));
         }, gameExecutor);

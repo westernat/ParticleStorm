@@ -15,6 +15,8 @@ import java.util.List;
 public final class PSClientConfigs {
     private static ModConfigSpec.IntValue MAX_TRACKERS_PER_ENTITY;
 
+    private static ModConfigSpec.BooleanValue DEPTH_PREPASS;
+
     private static ModConfigSpec.IntValue EMITTER_LIMIT;
     private static ModConfigSpec.IntValue FPS_THRESHOLD;
     private static ModConfigSpec.BooleanValue ALLOWS_VANILLA_PARTICLE_WHEN_REACH_LIMIT;
@@ -24,6 +26,9 @@ public final class PSClientConfigs {
     private static ModConfigSpec.DoubleValue EMITTER_AUTO_REMOVE_ATTENUATION_COEFFICIENT;
 
     public static int maxTrackersPerEntity = 64;
+    /// 是否给不写深度的半透明粒子（`particles_blend` / `particles_add`）补一遍仅深度 pass。
+    /// 关掉可以省一次 draw，但之后绘制的原版云层会盖在近处粒子上。
+    public static boolean depthPrepass = true;
 
     public static int emitterLimit = 50;
     public static int fpsThreshold = 30;
@@ -35,6 +40,7 @@ public final class PSClientConfigs {
 
     public static void onLoad() {
         maxTrackersPerEntity = MAX_TRACKERS_PER_ENTITY.get();
+        depthPrepass = DEPTH_PREPASS.get();
 
         emitterLimit = EMITTER_LIMIT.get();
         fpsThreshold = FPS_THRESHOLD.get();
@@ -50,6 +56,10 @@ public final class PSClientConfigs {
 
         builder.push("Normal");
         MAX_TRACKERS_PER_ENTITY = builder.defineInRange("maxTrackersPerEntity", 64, 0, 16384);
+        builder.pop();
+
+        builder.push("Render");
+        DEPTH_PREPASS = builder.define("depthPrepass", true);
         builder.pop();
 
         builder.push("Attach");

@@ -1,5 +1,7 @@
 package org.mesdag.particlestorm.particle;
 
+import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
+import it.unimi.dsi.fastutil.objects.Reference2ObjectOpenHashMap;
 import net.minecraft.core.particles.ParticleType;
 import net.neoforged.fml.ModLoader;
 import org.jetbrains.annotations.Nullable;
@@ -12,8 +14,6 @@ import org.mesdag.particlestorm.data.molang.VariableTable;
 import org.mesdag.particlestorm.data.molang.compiler.MolangParser;
 import org.mesdag.particlestorm.data.molang.compiler.value.Variable;
 
-import java.util.HashMap;
-import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
 
@@ -78,7 +78,7 @@ public class EmitterPreset {
     }
 
     public <T> void setTicket(Class<T> clazz, T value) {
-        if (tickets == null) this.tickets = new HashMap<>();
+        if (tickets == null) this.tickets = new Reference2ObjectOpenHashMap<>();
         tickets.put(clazz, value);
     }
 
@@ -87,14 +87,14 @@ public class EmitterPreset {
         return tickets == null ? null : (T) tickets.get(clazz);
     }
 
-    private static Hashtable<String, Variable> addDefaultVariables() {
-        Hashtable<String, Variable> table = new Hashtable<>();
+    private static Map<String, Variable> addDefaultVariables() {
+        Map<String, Variable> table = new Object2ObjectOpenHashMap<>();
         table.computeIfAbsent("variable.emitter_age", s -> new Variable(s, i -> i.getEmitter().tickAge()));
         table.computeIfAbsent("variable.emitter_lifetime", s -> new Variable(s, i -> i.getEmitter().tickLifetime()));
-        table.computeIfAbsent("variable.emitter_random_1", s -> new Variable(s, i -> i.getEmitter().emitterRandom1));
-        table.computeIfAbsent("variable.emitter_random_2", s -> new Variable(s, i -> i.getEmitter().emitterRandom2));
-        table.computeIfAbsent("variable.emitter_random_3", s -> new Variable(s, i -> i.getEmitter().emitterRandom3));
-        table.computeIfAbsent("variable.emitter_random_4", s -> new Variable(s, i -> i.getEmitter().emitterRandom4));
+        table.computeIfAbsent("variable.emitter_random_1", s -> new Variable(s, i -> i.getEmitter().getRandom1()));
+        table.computeIfAbsent("variable.emitter_random_2", s -> new Variable(s, i -> i.getEmitter().getRandom2()));
+        table.computeIfAbsent("variable.emitter_random_3", s -> new Variable(s, i -> i.getEmitter().getRandom3()));
+        table.computeIfAbsent("variable.emitter_random_4", s -> new Variable(s, i -> i.getEmitter().getRandom4()));
         return table;
     }
 }
