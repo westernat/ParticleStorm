@@ -240,7 +240,6 @@ public final class PSGameClient {
         });
     }
 
-    @SubscribeEvent
     public static void registerClientCommands(RegisterClientCommandsEvent event) {
         MolangParticleCommand.registerClient(event.getDispatcher());
     }

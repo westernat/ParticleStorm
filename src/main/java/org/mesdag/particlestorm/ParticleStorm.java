@@ -79,6 +79,7 @@ public final class ParticleStorm {
             MinecraftForge.EVENT_BUS.addListener(PSGameClient::clientNetwork$LoggingOut);
             MinecraftForge.EVENT_BUS.addListener(PSGameClient::clientTick$Pre);
             MinecraftForge.EVENT_BUS.addListener(PSGameClient::renderLevelStage);
+            MinecraftForge.EVENT_BUS.addListener(PSGameClient::registerClientCommands);
         }
         REGISTER.register(eventBus);
         registerGeoTest(eventBus);
