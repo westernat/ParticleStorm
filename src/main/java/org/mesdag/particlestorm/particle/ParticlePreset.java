@@ -1,6 +1,8 @@
 package org.mesdag.particlestorm.particle;
 
 import com.google.common.collect.Iterables;
+import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
+import it.unimi.dsi.fastutil.objects.Reference2ObjectOpenHashMap;
 import net.minecraft.client.particle.ParticleRenderType;
 import net.minecraftforge.fml.ModLoader;
 import org.jetbrains.annotations.Nullable;
@@ -17,8 +19,6 @@ import org.mesdag.particlestorm.data.molang.VariableTable;
 import org.mesdag.particlestorm.data.molang.compiler.MolangParser;
 import org.mesdag.particlestorm.data.molang.compiler.value.Variable;
 
-import java.util.HashMap;
-import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
 
@@ -121,7 +121,7 @@ public class ParticlePreset {
     }
 
     public <T> void setTicket(Class<T> clazz, T value) {
-        if (tickets == null) this.tickets = new HashMap<>();
+        if (tickets == null) this.tickets = new Reference2ObjectOpenHashMap<>();
         tickets.put(clazz, value);
     }
 
@@ -130,8 +130,8 @@ public class ParticlePreset {
         return tickets == null ? null : (T) tickets.get(clazz);
     }
 
-    private static Hashtable<String, Variable> addDefaultVariables() {
-        Hashtable<String, Variable> table = new Hashtable<>();
+    private static Map<String, Variable> addDefaultVariables() {
+        Map<String, Variable> table = new Object2ObjectOpenHashMap<>();
         table.computeIfAbsent("variable.particle_age", s -> new Variable(s, MolangInstance::tickAge));
         table.computeIfAbsent("variable.particle_lifetime", s -> new Variable(s, MolangInstance::tickLifetime));
         table.computeIfAbsent("variable.particle_random_1", s -> new Variable(s, MolangInstance::getRandom1));

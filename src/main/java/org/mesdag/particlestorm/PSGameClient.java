@@ -2,7 +2,10 @@ package org.mesdag.particlestorm;
 
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.*;
+import com.mojang.blaze3d.vertex.BufferBuilder;
+import com.mojang.blaze3d.vertex.DefaultVertexFormat;
+import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.VertexFormat;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.particle.ParticleRenderType;
@@ -27,6 +30,7 @@ import org.mesdag.particlestorm.api.*;
 import org.mesdag.particlestorm.api.geckolib.GeckoLibHelper;
 import org.mesdag.particlestorm.data.component.*;
 import org.mesdag.particlestorm.data.event.*;
+import org.mesdag.particlestorm.particle.MolangParticleCommand;
 import org.mesdag.particlestorm.particle.MolangParticleEngine;
 import org.mesdag.particlestorm.particle.MolangParticleInstance;
 import org.mesdag.particlestorm.particle.ParticleEmitter;
@@ -37,7 +41,7 @@ import java.util.Queue;
 
 @Mod.EventBusSubscriber(modid = ParticleStorm.MODID, value = Dist.CLIENT, bus = Mod.EventBusSubscriber.Bus.MOD)
 public final class PSGameClient {
-    public static final ParticleRenderType PARTICLE_ADD = new ParticleRenderType() {
+    public static final ParticleRenderType PARTICLE_ADD = new IDepthPrepassParticleType() {
         @Override
         public void begin(BufferBuilder builder, TextureManager textureManager) {
             RenderSystem.depthMask(false);
@@ -47,16 +51,11 @@ public final class PSGameClient {
             builder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.PARTICLE);
         }
 
-        @Override
-        public void end(Tesselator tesselator) {
-            tesselator.end();
-        }
-
         public String toString() {
             return "PARTICLE_ADD";
         }
     };
-    public static final ParticleRenderType PARTICLE_BLEND = new ParticleRenderType() {
+    public static final ParticleRenderType PARTICLE_BLEND = new IDepthPrepassParticleType() {
         @Override
         public void begin(BufferBuilder builder, TextureManager textureManager) {
             RenderSystem.depthMask(false);
@@ -64,11 +63,6 @@ public final class PSGameClient {
             RenderSystem.enableBlend();
             RenderSystem.blendFunc(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA);
             builder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.PARTICLE);
-        }
-
-        @Override
-        public void end(Tesselator tesselator) {
-            tesselator.end();
         }
 
         public String toString() {
@@ -244,5 +238,10 @@ public final class PSGameClient {
             }
             EmitterAttachHandler.postEvent();
         });
+    }
+
+    @SubscribeEvent
+    public static void registerClientCommands(RegisterClientCommandsEvent event) {
+        MolangParticleCommand.registerClient(event.getDispatcher());
     }
 }

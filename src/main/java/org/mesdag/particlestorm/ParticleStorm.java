@@ -21,7 +21,6 @@ import org.mesdag.particlestorm.api.geckolib.GeckoLibHelper;
 import org.mesdag.particlestorm.network.EmitterAttachPacketS2C;
 import org.mesdag.particlestorm.network.EmitterCreationPacketS2C;
 import org.mesdag.particlestorm.network.EmitterRemovalPacketS2C;
-import org.mesdag.particlestorm.network.OpenEditorPacketS2C;
 import org.mesdag.particlestorm.particle.MolangParticleCommand;
 import org.mesdag.particlestorm.particle.MolangParticleOption;
 import org.slf4j.Logger;
@@ -103,15 +102,10 @@ public final class ParticleStorm {
                 .decoder(EmitterRemovalPacketS2C::decode)
                 .consumerMainThread(EmitterRemovalPacketS2C::handle)
                 .add();
-        CHANNEL.messageBuilder(OpenEditorPacketS2C.class, 3)
-                .encoder(OpenEditorPacketS2C::encode)
-                .decoder(OpenEditorPacketS2C::decode)
-                .consumerMainThread(OpenEditorPacketS2C::handle)
-                .add();
     }
 
     private static void registerCommands(RegisterCommandsEvent event) {
-        MolangParticleCommand.register(event.getDispatcher());
+        MolangParticleCommand.registerServer(event.getDispatcher());
     }
 
     private static void registerGeoTest(IEventBus bus) {

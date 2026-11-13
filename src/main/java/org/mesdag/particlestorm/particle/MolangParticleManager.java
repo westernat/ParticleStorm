@@ -4,6 +4,7 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.BufferBuilder;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.Tesselator;
+import com.mojang.blaze3d.vertex.VertexBuffer;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.objects.ObjectIterator;
@@ -25,9 +26,12 @@ import net.minecraft.util.Mth;
 import net.minecraft.world.level.Level;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Nullable;
+import org.joml.Matrix4f;
 import org.lwjgl.opengl.GL11;
+import org.mesdag.particlestorm.PSClientConfigs;
 import org.mesdag.particlestorm.PSGameClient;
 import org.mesdag.particlestorm.ParticleStorm;
+import org.mesdag.particlestorm.api.IDepthPrepassParticleType;
 import org.mesdag.particlestorm.api.IMolangParticleInstance;
 import org.mesdag.particlestorm.api.IntAllocator;
 import org.mesdag.particlestorm.api.RegisterCustomEmitterTypeEvent;
@@ -47,6 +51,12 @@ public class MolangParticleManager {
     protected final Queue<IMolangParticleInstance> particlesToAdd = new ArrayDeque<>();
     protected final Reference2ObjectOpenHashMap<ParticleRenderType, Queue<IMolangParticleInstance>> groupedParticles = new Reference2ObjectOpenHashMap<>();
     public final IntAllocator allocator;
+    /// 颜色 pass 不写深度的渲染类型需要把同一份顶点画两遍，而 {@link VertexBuffer#upload}
+    /// 会关闭传入的 {@link BufferBuilder.RenderedBuffer}，所以按渲染类型缓存顶点缓冲，避免每帧新建 GL buffer。
+    ///
+    /// 用静态缓存：编辑器预览的 manager 每次 `init` 都会重建，挂在实例上会随开/关编辑器泄漏 GL buffer。
+    /// 渲染线程是串行的，预览和世界共用同一份缓冲不会冲突。
+    private static final Reference2ObjectOpenHashMap<ParticleRenderType, VertexBuffer> particleBuffers = new Reference2ObjectOpenHashMap<>();
 
     public MolangParticleManager(IntAllocator allocator) {
         this.allocator = allocator;
@@ -295,11 +305,15 @@ public class MolangParticleManager {
                     : GameRenderer::getParticleShader);
             type.begin(builder, textureManager);
 
-            for (Iterator<IMolangParticleInstance> ordered = orderForRender(type, queue, camera, partialTick); ordered.hasNext(); ) {
-                renderInstance(ordered.next(), builder, camera, frustum, partialTick);
+            for (IMolangParticleInstance instance : queue) {
+                renderInstance(instance, builder, camera, frustum, partialTick);
             }
 
-            type.end(tesselator);
+            if (PSClientConfigs.depthPrepass && type instanceof IDepthPrepassParticleType) {
+                drawWithDepthPrepass(type, builder.end());
+            } else {
+                type.end(tesselator);
+            }
         }
         if (poseStack != null) {
             RenderSystem.getModelViewStack().popPose();
@@ -313,12 +327,22 @@ public class MolangParticleManager {
         }
     }
 
-    /// 决定某个渲染类型粒子的绘制顺序。默认返回队列自身的迭代器（世界渲染保持原版行为）。
-    ///
-    /// 编辑器预览会覆写为“按相机距离从远到近”，因为 alpha 混合有顺序要求，
-    /// 否则后生成的“远处粒子”会盖在“近处粒子”上面，看起来像穿透。
-    protected Iterator<IMolangParticleInstance> orderForRender(ParticleRenderType type, Queue<IMolangParticleInstance> queue, Camera camera, float partialTick) {
-        return queue.iterator();
+    private static void drawWithDepthPrepass(ParticleRenderType type, BufferBuilder.RenderedBuffer mesh) {
+        if (mesh.isEmpty()) {
+            mesh.release();
+            return;
+        }
+        VertexBuffer buffer = particleBuffers.computeIfAbsent(type, t -> new VertexBuffer(VertexBuffer.Usage.DYNAMIC));
+        buffer.bind();
+        buffer.upload(mesh);
+        Matrix4f modelView = RenderSystem.getModelViewMatrix();
+        Matrix4f projection = RenderSystem.getProjectionMatrix();
+        buffer.drawWithShader(modelView, projection, RenderSystem.getShader());
+        RenderSystem.depthMask(true);
+        RenderSystem.colorMask(false, false, false, false);
+        buffer.drawWithShader(modelView, projection, GameRenderer.getParticleShader());
+        RenderSystem.colorMask(true, true, true, true);
+        VertexBuffer.unbind();
     }
 
     private void renderInstance(IMolangParticleInstance instance, BufferBuilder builder, Camera camera, Frustum frustum, float partialTick) {
