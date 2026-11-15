@@ -1,6 +1,8 @@
 package org.mesdag.particlestorm.data.molang.compiler;
 
 import com.mojang.datafixers.util.Either;
+import it.unimi.dsi.fastutil.Hash;
+import it.unimi.dsi.fastutil.objects.Object2ObjectOpenCustomHashMap;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.minecraft.Util;
 import org.jetbrains.annotations.Nullable;
@@ -21,24 +23,32 @@ import org.mesdag.particlestorm.data.molang.compiler.function.random.RandomInteg
 import org.mesdag.particlestorm.data.molang.compiler.function.round.*;
 import org.mesdag.particlestorm.data.molang.compiler.value.*;
 
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.*;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
 
 import static org.mesdag.particlestorm.data.molang.compiler.MolangQueries.applyPrefixAliases;
 
 @SuppressWarnings("unchecked")
-public class MolangParser {
+public record MolangParser(VariableTable table) {
     private static final Pattern EXPRESSION_FORMAT = Pattern.compile("^[\\w\\s_+-/*%^&|<>=!?:.,()']+$");
     private static final Pattern WHITESPACE = Pattern.compile("\\s");
     private static final Pattern NUMERIC = Pattern.compile("^-?\\d+(\\.\\d+)?$");
     private static final String MOLANG_RETURN = "return ";
     private static final String STATEMENT_DELIMITER = ";";
-    private static final Map<String, MathFunction.Factory<?>> FUNCTION_FACTORIES = Util.make(new ConcurrentHashMap<>(18), map -> {
+    private static final Map<String, MathFunction.Factory<?>> FUNCTION_FACTORIES = Util.make(new Object2ObjectOpenCustomHashMap<>(new Hash.Strategy<>() {
+        @Override
+        public int hashCode(String o) {
+            return o.toLowerCase(Locale.ROOT).hashCode();
+        }
+
+        @Override
+        public boolean equals(@Nullable String a, @Nullable String b) {
+            if (a != null) a = a.toLowerCase(Locale.ROOT);
+            if (b != null) b = b.toLowerCase(Locale.ROOT);
+            return Objects.equals(a, b);
+        }
+    }), map -> {
         map.put("math.abs", AbsFunction::new);
         map.put("math.acos", ACosFunction::new);
         map.put("math.asin", ASinFunction::new);
@@ -70,15 +80,6 @@ public class MolangParser {
         map.put("math.trunc", TruncateFunction::new);
         map.put("query.is_block", IsBlockFunction::new);
     });
-    private final VariableTable table;
-
-    public MolangParser(VariableTable table) {
-        this.table = table;
-    }
-
-    public VariableTable table() {
-        return table;
-    }
 
     public boolean isFunctionRegistered(String name) {
         return FUNCTION_FACTORIES.containsKey(name);
@@ -136,7 +137,7 @@ public class MolangParser {
         if (!EXPRESSION_FORMAT.matcher(expression).matches())
             throw new IllegalArgumentException("Invalid characters found in expression: '" + expression + "'");
 
-        final char[] chars = WHITESPACE.matcher(expression).replaceAll("").toLowerCase(Locale.ROOT).toCharArray();
+        final char[] chars = WHITESPACE.matcher(expression).replaceAll("").toCharArray();
         int groupState = 0;
 
         for (char character : chars) {
@@ -157,7 +158,7 @@ public class MolangParser {
     }
 
     @Nullable
-    protected String tryMergeOperativeSymbols(char[] chars, int index) {
+    private String tryMergeOperativeSymbols(char[] chars, int index) {
         char ch = chars[index];
 
         if (!Operator.isOperativeSymbol(ch))
@@ -270,7 +271,7 @@ public class MolangParser {
     }
 
     @Nullable
-    protected MathValue compileValue(List<Either<String, List<MathValue>>> symbols) throws IllegalArgumentException {
+    private MathValue compileValue(List<Either<String, List<MathValue>>> symbols) throws IllegalArgumentException {
         if (symbols.size() == 1)
             return compileSingleValue(symbols.getFirst());
 
@@ -283,7 +284,7 @@ public class MolangParser {
     }
 
     @Nullable
-    protected MathValue compileSingleValue(Either<String, List<MathValue>> symbol) throws IllegalArgumentException {
+    private MathValue compileSingleValue(Either<String, List<MathValue>> symbol) throws IllegalArgumentException {
         if (symbol.right().isPresent())
             return new Group(symbol.right().get().getFirst());
 
@@ -312,7 +313,7 @@ public class MolangParser {
     }
 
     @Nullable
-    protected MathValue compileCalculation(List<Either<String, List<MathValue>>> symbols) throws IllegalArgumentException {
+    private MathValue compileCalculation(List<Either<String, List<MathValue>>> symbols) throws IllegalArgumentException {
         final int symbolCount = symbols.size();
         int operatorIndex = -1;
         Operator lastOperator = null;
@@ -344,7 +345,7 @@ public class MolangParser {
     }
 
     @Nullable
-    protected Ternary compileTernary(List<Either<String, List<MathValue>>> symbols) throws IllegalArgumentException {
+    private Ternary compileTernary(List<Either<String, List<MathValue>>> symbols) throws IllegalArgumentException {
         final int symbolCount = symbols.size();
 
         if (symbolCount < 3)
@@ -385,7 +386,7 @@ public class MolangParser {
     }
 
     @Nullable
-    protected MathValue compileFunction(String name, List<MathValue> args) throws IllegalArgumentException {
+    private MathValue compileFunction(String name, List<MathValue> args) throws IllegalArgumentException {
         if (name.startsWith("!")) {
             if (name.length() == 1)
                 return new BooleanNegate(args.getFirst());
@@ -412,11 +413,11 @@ public class MolangParser {
         return NUMERIC.matcher(string).matches();
     }
 
-    protected static Operator getOperatorFor(String op) throws IllegalArgumentException {
+    private static Operator getOperatorFor(String op) throws IllegalArgumentException {
         return Operator.getOperatorFor(op).orElseThrow(() -> new IllegalArgumentException("Unknown operator symbol '" + op + "'"));
     }
 
-    protected boolean isLikelyVariable(String string) {
+    private boolean isLikelyVariable(String string) {
         if (MolangQueries.isExistingVariable(string)) {
             return true;
         }
