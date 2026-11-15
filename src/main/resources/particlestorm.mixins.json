@@ -17,7 +17,6 @@
         "TextureAtlasSpriteMixin",
         "integration.geckolib.AnimatableInstanceCacheMixin",
         "integration.geckolib.AnimationControllerMixin",
-        "integration.geckolib.AnimationProcessorMixin",
         "integration.geckolib.BakedModelFactory$BuiltinMixin",
         "integration.geckolib.GeoBoneMixin",
         "integration.geckolib.GeoModelMixin",

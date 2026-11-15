@@ -16,7 +16,6 @@ import software.bernie.geckolib.core.keyframe.event.data.ParticleKeyframeData;
 import software.bernie.geckolib.loading.json.raw.LocatorValue;
 
 import java.io.PrintStream;
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -43,16 +42,6 @@ public abstract class AnimationControllerMixin<T extends GeoAnimatable> implemen
         GeckoLibHelper.addReloadCallback(() -> this.particlestorm$bonesWhichHasLocators = null);
     }
 
-    @Override
-    public void particlestorm$setBonesWhichHasLocators(Collection<GeoBone> registeredBones) {
-        if (particlestorm$bonesWhichHasLocators == null) {
-            this.particlestorm$bonesWhichHasLocators = registeredBones.stream().filter(bone -> {
-                Map<String, LocatorValue> locators = IPSGeoBone.of(bone).particlestorm$getLocators();
-                return locators != null && !locators.isEmpty();
-            }).toList();
-        }
-    }
-
     @WrapWithCondition(method = "processCurrentAnimation", at = @At(value = "INVOKE", target = "Ljava/io/PrintStream;println(Ljava/lang/String;)V", ordinal = 1))
     private boolean processParticleEffect(PrintStream instance, String x, @Local(name = "keyframeData") ParticleKeyframeData keyframeData) {
         return GeckoLibHelper.processParticleEffect(animatable, (AnimationController<?>) (Object) this, keyframeData);
@@ -62,6 +51,16 @@ public abstract class AnimationControllerMixin<T extends GeoAnimatable> implemen
     private void removeEmitters(CallbackInfo ci) {
         if (!particlestorm$getBonesWhichHasLocators().isEmpty()) {
             GeckoLibHelper.removeEmittersWhenAnimationChange(animationState, animatable.getAnimatableInstanceCache());
+        }
+    }
+
+    @Inject(method = "process", at = @At("HEAD"))
+    private void fillLocators(CallbackInfo ci, @Local(argsOnly = true, ordinal = 0) Map<String, GeoBone> bones) {
+        if (particlestorm$bonesWhichHasLocators == null) {
+            this.particlestorm$bonesWhichHasLocators = bones.values().stream().filter(bone -> {
+                Map<String, LocatorValue> locators = IPSGeoBone.of(bone).particlestorm$getLocators();
+                return locators != null && !locators.isEmpty();
+            }).toList();
         }
     }
 }
